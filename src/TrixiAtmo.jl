@@ -8,6 +8,10 @@ using StaticArrays: SVector
 using Static: True, False
 using LinearAlgebra: norm
 
+foo() = true
+bar() = false
+baz() = Trixi.examples_dir()
+
 include("equations/equations.jl")
 
 end # module TrixiAtmo
