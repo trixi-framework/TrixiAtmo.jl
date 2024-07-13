@@ -1,17 +1,17 @@
 module TrixiAtmo
 
+using Reexport: @reexport
+
 using Trixi
-# Import additional symbols that are not exported by Trixi.jl
-# using Trixi:
 using MuladdMacro: @muladd
-using StaticArrays: SVector
+@reexport using StaticArrays: SVector, SMatrix
 using Static: True, False
-using LinearAlgebra: norm
+using LinearAlgebra: norm, dot
+using DiffEqCallbacks: PeriodicCallback, PeriodicCallbackAffect
 
-foo() = true
-bar() = false
-baz() = Trixi.examples_dir()
+include("meshes/meshes.jl")
 
+export EARTH_RADIUS, EARTH_GRAVITATIONAL_ACCELERATION, EARTH_ROTATION_RATE, SECONDS_PER_DAY
 include("equations/equations.jl")
 
 end # module TrixiAtmo
