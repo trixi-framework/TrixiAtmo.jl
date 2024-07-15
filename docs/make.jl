@@ -26,4 +26,4 @@ makedocs(;
 deploydocs(;
            repo = "github.com/trixi-framework/TrixiAtmo.jl",
            devbranch = "main",
-           push_preview = "false")
+           push_preview = true)
