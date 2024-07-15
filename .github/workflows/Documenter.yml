@@ -1,0 +1,54 @@
+name: Documentation
+
+on:
+  push:
+    branches:
+      - 'main'
+    tags: '*'
+    paths-ignore:
+      - '.zenodo.json'
+      - '.github/workflows/ci.yml'
+      - '.github/workflows/CompatHelper.yml'
+      - '.github/workflows/TagBot.yml'
+  pull_request:
+    paths-ignore:
+      - '.zenodo.json'
+      - '.github/workflows/ci.yml'
+      - '.github/workflows/CompatHelper.yml'
+      - '.github/workflows/TagBot.yml'
+  workflow_dispatch:
+
+# Cancel redundant CI tests automatically
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-documentation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+          show-versioninfo: true
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+        env:
+          PYTHON: ""
+      - name: Install dependencies
+        run: julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+      - name: Build and deploy
+        uses: julia-actions/julia-docdeploy@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }} # For authentication with SSH deploy key
+          GKSwstype: 100 # To make GitHub Action work, disable showing a plot window with the GR backend of the Plots package
+      - name: Run doctests
+        run: |
+          julia --project=docs --color=yes -e '
+            using Documenter: DocMeta, doctest
+            using TrixiAtmo
+            DocMeta.setdocmeta!(TrixiAtmo, :DocTestSetup, :(using TrixiAtmo); recursive=true)
+            doctest(TrixiAtmo)'
+
