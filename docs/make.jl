@@ -25,5 +25,6 @@ makedocs(;
          plugins = [links],)
 
 deploydocs(;
-           repo = "github.com/trixi-framework/TrixiAtmo.jl",
-           devbranch = "main",)
+           repo = Github("trixi-framework", "TrixiAtmo.jl"),
+           devbranch = "main",
+           push_preview = false)
