@@ -15,8 +15,6 @@ on:
       - 'LICENSE.md'
       - 'README.md'
       - '.zenodo.json'
-      - '.github/workflows/CompatHelper.yml'
-      - '.github/workflows/TagBot.yml'
       - 'docs/**'
   workflow_dispatch:
 
