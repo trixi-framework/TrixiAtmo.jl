@@ -33,9 +33,6 @@ jobs:
           version: '1'
           show-versioninfo: true
       - uses: julia-actions/cache@v2
-      - uses: julia-actions/julia-buildpkg@v1
-        env:
-          PYTHON: ""
       - name: Install dependencies
         run: julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
       - name: Build and deploy
@@ -51,4 +48,3 @@ jobs:
             using TrixiAtmo
             DocMeta.setdocmeta!(TrixiAtmo, :DocTestSetup, :(using TrixiAtmo); recursive=true)
             doctest(TrixiAtmo)'
-
