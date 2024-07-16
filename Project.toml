@@ -1,7 +1,7 @@
 name = "TrixiAtmo"
 uuid = "c9ed1054-d170-44a9-8ee2-d5566f5d1389"
-authors = ["Benedict Geihe <bgeihe@uni-koeln.de>"]
-version = "0.1.0"
+authors = ["Benedict Geihe <bgeihe@uni-koeln.de>", "Tristan Montoya <montoya.tristan@gmail.com>", "Hendrik Ranocha <hendrik.ranocha@uni-mainz.de>", "Michael Schlottke-Lakemper <michael@sloede.com>"]
+version = "0.1.0-DEV"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
