@@ -69,6 +69,10 @@ semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver)
 # Create ODE problem with time span from 0 to T
 ode = semidiscretize(semi, (0.0, pi))
 
+# At the beginning of the main loop, the SummaryCallback prints a summary of the simulation setup
+# and resets the timers
+summary_callback = SummaryCallback()
+
 # The SaveSolutionCallback allows to save the solution to a file in regular intervals
 save_solution = SaveSolutionCallback(interval = 10,
                                      solution_variables = cons2cons)

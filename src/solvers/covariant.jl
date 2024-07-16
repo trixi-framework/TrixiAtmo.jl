@@ -1,17 +1,17 @@
 @inline function reference_normal_vector(direction)
     # Get the normal vector to the reference element at a given node
     orientation = (direction + 1) >> 1
+    sign = isodd(direction) ? -1 : 1
     if orientation == 1
-        return (isodd(direction) ? -1 : 1) * SVector(1f0,0f0,0f0)
+        return SVector(sign,0f0,0f0)
     else
-        return (isodd(direction) ? -1 : 1) * SVector(0f0,1f0,0f0)
+        return SVector(0f0,sign,0f0)
     end
 end
 
-@inline function cartesian2contravariant(u_node::SVector{NVARS}, 
-                                         mesh::Trixi.AbstractMesh{2}, 
-                                         equations::AbstractCovariantEquations3D{NVARS}, 
-                                         i, j, element, cache) where {NVARS}
+@inline function cartesian2contravariant(u_node, mesh::Trixi.AbstractMesh{2}, 
+                                         equations::AbstractCovariantEquations3D{4}, 
+                                         i, j, element, cache)
 
     (; contravariant_vectors, inverse_jacobian) = cache.elements
 
@@ -23,26 +23,19 @@ end
             SMatrix{2,3}(Ja11, Ja21, Ja12, Ja22, Ja13, Ja23) * 
             SVector(u_node[1], u_node[2], u_node[3])
 
-    return SVector{NVARS}(u_con_1, 
-                          u_con_2, 
-                          zero(eltype(u_node)),
-                          u_node[4:end]...)
+    return SVector(u_con_1, u_con_2, zero(eltype(u_node)), u_node[4])
 end
 
-@inline function contravariant2cartesian(u_node::SVector{NVARS}, 
-                                         mesh::Trixi.AbstractMesh{2}, 
-                                         equations::AbstractCovariantEquations3D{NVARS}, 
-                                         i, j, element, cache) where {NVARS}
+@inline function contravariant2cartesian(u_node, mesh::Trixi.AbstractMesh{2}, 
+                                         equations::AbstractCovariantEquations3D{4}, 
+                                         i, j, element, cache)
 
     (; jacobian_matrix) = cache.elements
 
-    u_car_1, u_car_2, u_car_3 = SMatrix{3,2}(jacobian_matrix[:,:, i,j,element]) * 
+    u_car_1, u_car_2, u_car_3 = SMatrix{3,2}(view(jacobian_matrix,:,:, i,j,element)) * 
         SVector(u_node[1], u_node[2])
 
-    return SVector{NVARS}(u_car_1, 
-                          u_car_2, 
-                          u_car_3, 
-                          u_node[4:end]...)
+    return SVector(u_car_1, u_car_2, u_car_3, u_node[4])
 end
 
 function Trixi.compute_coefficients!(u, func, t, mesh::Trixi.AbstractMesh{2}, 
@@ -139,14 +132,13 @@ function Trixi.calc_interface_flux!(surface_flux_values,
         end
 
         for node in eachnode(dg)
-                    
+            
             Trixi.calc_interface_flux!(surface_flux_values, mesh, nonconservative_terms,
-                                       equations, surface_integral, dg, cache, interface, 
-                                       i_primary, j_primary, i_secondary, j_secondary,
-                                       node, primary_direction, primary_element,
-                                       node_secondary, secondary_direction,
-                                       secondary_element)
-
+                                    equations, surface_integral, dg, cache, interface, 
+                                    i_primary, j_primary, i_secondary, j_secondary,
+                                    node, primary_direction, primary_element,
+                                    node_secondary, secondary_direction,
+                                    secondary_element)
             # Increment primary and secondary element indices
             i_primary += i_primary_step
             j_primary += j_primary_step
@@ -179,30 +171,23 @@ end
     u_ll, u_rr = Trixi.get_surface_node_vars(u, equations, dg, primary_node_index,
         interface_index)
 
-    # transform to Cartesian components
     u_ll_car = contravariant2cartesian(u_ll, mesh, equations, i_primary, j_primary,
-                                       primary_element_index, cache)
+                                        primary_element_index, cache)
     u_rr_car = contravariant2cartesian(u_rr, mesh, equations, i_secondary, j_secondary,
-                                       secondary_element_index, cache)
-                                    
-    # transform solution on secondary element into frame of primary element
-    u_rr_ll = cartesian2contravariant(u_rr_car, mesh, equations, 
-                                   i_primary, j_primary, primary_element_index, cache)
-
-    # compute the flux for the primary element scaled by the Jacobian
+                                        secondary_element_index, cache)
+    u_rr_ll = cartesian2contravariant(u_rr_car, mesh, equations, i_primary, j_primary,
+                                      primary_element_index, cache)
+    u_ll_rr = cartesian2contravariant(u_ll_car, mesh, equations, i_secondary, j_secondary,
+                                      secondary_element_index, cache)
+    
     reference_normal_primary = reference_normal_vector(primary_direction_index)
+    reference_normal_secondary = reference_normal_vector(secondary_direction_index)
+
     flux_primary = surface_flux(u_ll, u_rr_ll, reference_normal_primary, equations) / 
         inverse_jacobian[i_primary, j_primary, primary_element_index]
-
-    # transform solution on primary element into frame of secondary element
-    u_ll_rr = cartesian2contravariant(u_ll_car, mesh, equations, 
-        i_secondary, j_secondary, secondary_element_index, cache)
-
-    # compute the flux for the secondary element scaled by the Jacobian
-    reference_normal_secondary = reference_normal_vector(secondary_direction_index)
     flux_secondary = surface_flux(u_rr, u_ll_rr, reference_normal_secondary, equations) / 
             inverse_jacobian[i_secondary, j_secondary, secondary_element_index]
-    
+
     for v in eachvariable(equations)
         surface_flux_values[v, primary_node_index, primary_direction_index,
             primary_element_index] = flux_primary[v]

@@ -20,7 +20,7 @@ default_analysis_errors(::CovariantLinearAdvectionEquation3D) = ()
                         equations::CovariantLinearAdvectionEquation3D)
     z = zero(eltype(u_ll))
     λ = dissipation.max_abs_speed(u_ll, u_rr, normal_direction, equations)
-    return -0.5f0 * λ * SVector(z, z, z, u_rr[end] - u_ll[end])
+    return -0.5f0 * λ * SVector(z, z, z, u_rr[4] - u_ll[4])
 end
 
 """
@@ -28,7 +28,7 @@ end
 """
 @inline function Trixi.flux(u, orientation::Int, ::CovariantLinearAdvectionEquation3D)
     z = zero(eltype(u))
-    return SVector(z, z, z, u[orientation] * u[end])
+    return SVector(z, z, z, u[orientation] * u[4])
 end
 
 """
@@ -37,7 +37,8 @@ end
 @inline function Trixi.flux(u, normal_direction::AbstractVector,
                                ::CovariantLinearAdvectionEquation3D)
     z = zero(eltype(u))
-    return SVector(z, z, z, dot(u[1:3], normal_direction) * u[end])
+    return SVector(z, z, z, 
+                   (u[1] * normal_direction[1] + u[2] * normal_direction[2]) * u[4])
 end
 
 """
@@ -45,9 +46,9 @@ end
 """
 @inline function Trixi.max_abs_speed_naive(u_ll, u_rr, normal_direction,
                                            ::CovariantLinearAdvectionEquation3D)
-    v_n_ll = dot(u_ll[1:3], normal_direction)
-    v_n_rr = dot(u_rr[1:3], normal_direction)
 
+    v_n_ll = u_ll[1] * normal_direction[1] + u_ll[2] * normal_direction[2]
+    v_n_rr = u_rr[1] * normal_direction[1] + u_rr[2] * normal_direction[2]
     return max(abs(v_n_ll), abs(v_n_rr))
 end
 
@@ -55,5 +56,5 @@ end
     Maximum wave speeds with respect to the contravariant basis
 """
 @inline function Trixi.max_abs_speeds(u, ::CovariantLinearAdvectionEquation3D)
-    return abs(u[1]), abs(u[2]), abs(u[3])
+    return abs(u[1]), abs(u[2]), zero(eltype(u))
 end
