@@ -13,6 +13,7 @@ Rotations = "6038ab10-8711-5258-84ad-4b1120ba62dc"
 Static = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Trixi = "a7f1ee26-1774-49b1-8366-f1abc58fbfcb"
+Trixi2Vtk = "bc1476a1-1ca6-4cc3-950b-c312b255ff95"
 
 [compat]
 LinearAlgebra = "1"

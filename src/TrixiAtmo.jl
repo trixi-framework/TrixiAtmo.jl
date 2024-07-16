@@ -17,9 +17,9 @@ using Static: True, False
 using LinearAlgebra: norm, dot
 using DiffEqCallbacks: PeriodicCallback, PeriodicCallbackAffect
 
-include("meshes/meshes.jl")
-
 export EARTH_RADIUS, EARTH_GRAVITATIONAL_ACCELERATION, EARTH_ROTATION_RATE, SECONDS_PER_DAY
 include("equations/equations.jl")
+
+include("solvers/solvers.jl")
 
 end # module TrixiAtmo
