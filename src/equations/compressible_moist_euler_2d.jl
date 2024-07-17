@@ -309,12 +309,12 @@ import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
         dE = E * rho_x + rho * mu * dT
         dp = xi * (T * rho_x + rho * dT)
 
-        #Calculate Error in Sources with exact solution and u
+        # Calculate Error in Sources with exact solution and u
         u_exact = SVector(rho, rho, rho, rho * E, rho * qv, rho * ql)
 
         du1, du2, du3, du4, du5, du6 = (source_terms_moist_bubble(u, x, t, equations) -
                                         source_terms_moist_bubble(u_exact, x, t, equations))
-        #du1, du2, du3, du4, du5, du6 = zeros(Float64, 6)
+        # du1, du2, du3, du4, du5, du6 = zeros(Float64, 6)
         # Note that d/dt rho = -d/dx rho = -d/dy rho.
 
         du1 += rho_x
@@ -351,9 +351,9 @@ import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
     end
 
     # Raylight damping sponge source term form A. Sridhar et al.,
-    #Large-eddy simulations with ClimateMachine: a new open-sourcecode for
-    #atmospheric simulations on GPUs and CPUs, 2 Oct 2021, doi: 10.5194/gmd-15-6259-2022,
-    #https://arxiv.org/abs/2110.00853 [physics.ao-ph] .
+    # Large-eddy simulations with ClimateMachine: a new open-sourcecode for
+    # atmospheric simulations on GPUs and CPUs, 2 Oct 2021, doi: 10.5194/gmd-15-6259-2022,
+    # https://arxiv.org/abs/2110.00853 [physics.ao-ph] .
     @inline function source_terms_nonhydrostatic_raylight_sponge(u, x, t,
                                                                  equations::CompressibleMoistEulerEquations2D)
         rho, rho_v1, rho_v2, rho_e, rho_qv, rho_ql = u
@@ -369,7 +369,7 @@ import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
         z_top = 16000.0
         # positive even power with default value 2
         gamma = 2.0
-        #relaxation coefficient > 0
+        # relaxation coefficient > 0
         alpha = 0.5
 
         tau_s = zero(eltype(u))
@@ -528,7 +528,7 @@ import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
         v_square = v1^2 + v2^2
         rho_qd = rho - rho_qv - rho_ql
 
-        # Work around if an individual density is zero
+        # Workaround if an individual density is zero
         # Thermodynamic entropy
         s_d = 0
         s_v = 0
@@ -826,7 +826,7 @@ import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
         L_v = L_00 + (c_pv - c_pl) * T
         c_p = c_pd + r_t * c_pl
 
-        #equivalentpotential temperature
+        # equivalent potential temperature
         aeq_pot = (T * (p_0 / p_d)^(R_d / c_p) * H^(-r_v * R_v / c_p) *
                    exp(L_v * r_v * inv(c_p * T)))
 
@@ -852,7 +852,7 @@ import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
         L_v = L_00 + (c_pv - c_pl) * T
         c_p = c_pd + r_t * c_pl
 
-        #equivalentpotential temperature
+        # equivalent potential temperature
         aeq_pot = (T * (p_0 / p_d)^(R_d / c_p) * H^(-r_v * R_v / c_p) *
                    exp(L_v * r_v * inv(c_p * T)))
 

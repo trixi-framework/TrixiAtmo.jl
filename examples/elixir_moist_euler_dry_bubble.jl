@@ -25,7 +25,7 @@ function initial_condition_warm_bubble(x, t, equations::CompressibleMoistEulerEq
         Δθ = 2 * cospi(0.5 * r / rc)^2
     end
 
-    #Perturbed state:
+    # Perturbed state:
     θ = θ_ref + Δθ # potential temperature
     # π_exner = 1 - g / (c_pd * θ) * x[2] # exner pressure
     # rho = p_0 / (R_d * θ) * (π_exner)^(c_vd / R_d) # density
@@ -33,12 +33,12 @@ function initial_condition_warm_bubble(x, t, equations::CompressibleMoistEulerEq
     # calculate background pressure with assumption hydrostatic and neutral
     p = p_0 * (1 - kappa * g * x[2] / (R_d * θ_ref))^(c_pd / R_d)
 
-    #calculate rho and T with p and theta (now perturbed) rho = p / R_d T, T = θ / π
+    # calculate rho and T with p and theta (now perturbed) rho = p / R_d T, T = θ / π
     rho = p / ((p / p_0)^kappa * R_d * θ)
     T = p / (R_d * rho)
 
     v1 = 20.0
-    #v1 = 0.0
+    # v1 = 0.0
     v2 = 0.0
     rho_v1 = rho * v1
     rho_v2 = rho * v2
