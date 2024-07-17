@@ -20,7 +20,7 @@ import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
         R_v::RealT   # moist air gas constant
         c_pl::RealT # liqid water constant
         g::RealT # gravitation constant
-        kappa::RealT # ratio of the gas constand R_d
+        kappa::RealT # ratio of the gas constant R_d
         gamma::RealT # = inv(kappa- 1); can be used to write slow divisions as fast multiplications
         L_00::RealT # latent heat of evaporation  at 0 K
         a::RealT
@@ -91,7 +91,7 @@ import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
         return SVector(f1, f2, f3, f4, f5, f6)
     end
 
-    # Slip-wall boundary condition 
+    # Slip-wall boundary condition
     # Determine the boundary numerical surface flux for a slip wall condition.
     # Imposes a zero normal velocity at the wall.
     @inline function boundary_condition_slip_wall(u_inner, normal_direction::AbstractVector,
@@ -115,7 +115,7 @@ import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
         # Get the solution of the pressure Riemann problem
         # See Section 6.3.3 of
         # Eleuterio F. Toro (2009)
-        # Riemann Solvers and Numerical Methods for Fluid Dynamics: A Pratical Introduction
+        # Riemann Solvers and Numerical Methods for Fluid Dynamics: A Practical Introduction
         # [DOI: 10.1007/b79761](https://doi.org/10.1007/b79761)
         if v_normal <= 0.0
             sound_speed = sqrt(gamma * p_local / rho_local) # local sound speed
@@ -139,7 +139,7 @@ import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
                        zero(eltype(u_inner))) * norm_
     end
 
-    # Fix sign for structured mesh. 
+    # Fix sign for structured mesh.
     @inline function boundary_condition_slip_wall(u_inner, normal_direction::AbstractVector,
                                                   direction, x, t,
                                                   surface_flux_function,
@@ -314,7 +314,7 @@ import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
 
         du1, du2, du3, du4, du5, du6 = (source_terms_moist_bubble(u, x, t, equations) -
                                         source_terms_moist_bubble(u_exact, x, t, equations))
-        #du1, du2, du3, du4, du5, du6 = zeros(Float64, 6)                              
+        #du1, du2, du3, du4, du5, du6 = zeros(Float64, 6)
         # Note that d/dt rho = -d/dx rho = -d/dy rho.
 
         du1 += rho_x
@@ -350,7 +350,7 @@ import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
                        zero(eltype(u)), zero(eltype(u)))
     end
 
-    # Raylight damping sponge source term form A. Sridhar et al., 
+    # Raylight damping sponge source term form A. Sridhar et al.,
     #Large-eddy simulations with ClimateMachine: a new open-sourcecode for
     #atmospheric simulations on GPUs and CPUs, 2 Oct 2021, doi: 10.5194/gmd-15-6259-2022,
     #https://arxiv.org/abs/2110.00853 [physics.ao-ph] .
@@ -423,14 +423,14 @@ import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
         # saturation vapor pressure
         p_vs = 611.2 * exp(17.62 * T_C / (243.12 + T_C))
 
-        # saturation density of vapor 
+        # saturation density of vapor
         rho_star_qv = p_vs / (R_v * T)
 
         # Fisher-Burgmeister-Function
         a = rho_star_qv - rho_qv
         b = rho - rho_qv - rho_qd
 
-        # saturation control factor  
+        # saturation control factor
         # < 1: stronger saturation effect
         # > 1: weaker saturation effect
         C = 1
@@ -447,10 +447,10 @@ import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
                        zero(eltype(u)), Q_ph, -Q_ph)
     end
 
-    # Low Mach number approximate Riemann solver (LMARS) from 
+    # Low Mach number approximate Riemann solver (LMARS) from
     # X. Chen, N. Andronova, B. Van Leer, J. E. Penner, J. P. Boyd, C. Jablonowski, S.
     # Lin, A Control-Volume Model of the Compressible Euler Equations with a Vertical Lagrangian
-    # Coordinate Monthly Weather Review Vol. 141.7, pages 2526–2544, 2013, 
+    # Coordinate Monthly Weather Review Vol. 141.7, pages 2526–2544, 2013,
     # https://journals.ametsoc.org/view/journals/mwre/141/7/mwr-d-12-00129.1.xml.
     @inline function flux_LMARS(u_ll, u_rr, normal_direction::AbstractVector,
                                 equations::CompressibleMoistEulerEquations2D)
@@ -468,7 +468,7 @@ import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
         v_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2]
         v_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2]
 
-        # diffusion parameter <= 1 
+        # diffusion parameter <= 1
         beta = 1
 
         # Compute the necessary interface flux components
@@ -504,7 +504,7 @@ import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
         return SVector(rho, v1, v2, p, qv, ql)
     end
 
-    # Convert conservative variables to primitive with 
+    # Convert conservative variables to primitive with
     # temperature instead of pressure.
     @inline function cons2temp(u, equations::CompressibleMoistEulerEquations2D)
         rho, rho_v1, rho_v2, rho_E, rho_qv, rho_ql = u
@@ -570,7 +570,7 @@ import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
         return SVector(rho, rho_v1, rho_v2, rho_E, rho_qv, rho_ql)
     end
 
-    # Convert conservative variables to primitive with 
+    # Convert conservative variables to primitive with
     # potential temperature instead of pressure.
     @inline function cons2drypot(u, equations::CompressibleMoistEulerEquations2D)
         rho, rho_v1, rho_v2, rho_E, rho_qv, rho_ql = u
@@ -590,7 +590,7 @@ import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
         return SVector(pot1, pot2, pot3, pot4, pot5, pot6)
     end
 
-    # Convert conservative variables to primitive with 
+    # Convert conservative variables to primitive with
     # moist potential temperature instead of pressure.
     @inline function cons2moistpot(u, equations::CompressibleMoistEulerEquations2D)
         rho, rho_v1, rho_v2, rho_E, rho_qv, rho_ql = u
@@ -641,7 +641,7 @@ import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
         pot3 = r_v + r_l
         pot4 = T
         pot5 = H
-        pot6 = aequivalent_pottemp_thermodynamic(u, equations)
+        pot6 = equivalent_pottemp_thermodynamic(u, equations)
 
         return SVector(pot1, pot2, pot3, pot4, pot5, pot6)
     end
@@ -808,8 +808,8 @@ import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
         return pot
     end
 
-    # Calculate the aequivalent potential temperature for a conservative state `cons`.
-    @inline function aequivalent_pottemp_thermodynamic(cons,
+    # Calculate the equivalent potential temperature for a conservative state `cons`.
+    @inline function equivalent_pottemp_thermodynamic(cons,
                                                        equations::CompressibleMoistEulerEquations2D)
         @unpack c_pd, c_pv, c_pl, R_d, R_v, p_0, kappa, L_00 = equations
         rho, rho_v1, rho_v2, rho_E, rho_qv, rho_ql = cons
@@ -826,15 +826,15 @@ import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
         L_v = L_00 + (c_pv - c_pl) * T
         c_p = c_pd + r_t * c_pl
 
-        #Aequivalentpotential temperature
+        #equivalentpotential temperature
         aeq_pot = (T * (p_0 / p_d)^(R_d / c_p) * H^(-r_v * R_v / c_p) *
                    exp(L_v * r_v * inv(c_p * T)))
 
         return aeq_pot
     end
 
-    # Convert conservative variables to primitive varuables with 
-    # aequivalent potential temperature instead of pressure
+    # Convert conservative variables to primitive varuables with
+    # equivalent potential temperature instead of pressure
     # and mixing ratios innstead of specific contend.
     @inline function cons2aeqpot(cons, equations::CompressibleMoistEulerEquations2D)
         @unpack c_pd, c_pv, c_pl, R_d, R_v, p_0, L_00 = equations
@@ -852,7 +852,7 @@ import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
         L_v = L_00 + (c_pv - c_pl) * T
         c_p = c_pd + r_t * c_pl
 
-        #Aequivalentpotential temperature
+        #equivalentpotential temperature
         aeq_pot = (T * (p_0 / p_d)^(R_d / c_p) * H^(-r_v * R_v / c_p) *
                    exp(L_v * r_v * inv(c_p * T)))
 

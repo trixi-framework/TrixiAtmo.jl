@@ -21,7 +21,7 @@ function moist_state(y, dz, y0, r_t0, theta_e0, equations::CompressibleMoistEule
   p_vs = 611.2 * exp(17.62 * T_C / (243.12 + T_C))
   L = L_00 - (c_pl - c_pv) * T
 
-  F[1] = (p - p0) / dz + g * rho 
+  F[1] = (p - p0) / dz + g * rho
   F[2] = p - (R_d * rho_d + R_v * rho_qv) * T
   # H = 1 is assumed
   F[3] = (theta_e - T * (p_d / p_0)^(-R_d / (c_pd + c_pl * r_t)) *
@@ -45,9 +45,9 @@ end
 #Create Initial atmosphere by generating a layer data set
 struct AtmossphereLayers{RealT<:Real}
   equations::CompressibleMoistEulerEquations2D
-  # structure:  1--> i-layer (z = total_hight/precision *(i-1)),  2--> rho, rho_theta, rho_qv, rho_ql
+  # structure:  1--> i-layer (z = total_height/precision *(i-1)),  2--> rho, rho_theta, rho_qv, rho_ql
   LayerData::Matrix{RealT} # Contains the layer data for each height
-  total_hight::RealT # Total height of the atmosphere
+  total_height::RealT # Total height of the atmosphere
   preciseness::Int # Space between each layer data (dz)
   layers::Int # Amount of layers (total height / dz)
   ground_state::NTuple{2, RealT} # (rho_0, p_tilde_0) to define the initial values at height z=0
@@ -56,7 +56,7 @@ struct AtmossphereLayers{RealT<:Real}
 end
 
 
-function AtmossphereLayers(equations ; total_hight=10010.0, preciseness=10, ground_state=(1.4, 100000.0), equivalentpotential_temperature=320, mixing_ratios=(0.02, 0.02), RealT=Float64)
+function AtmossphereLayers(equations ; total_height=10010.0, preciseness=10, ground_state=(1.4, 100000.0), equivalentpotential_temperature=320, mixing_ratios=(0.02, 0.02), RealT=Float64)
   @unpack kappa, p_0, c_pd, c_vd, c_pv, c_vv, R_d, R_v, c_pl = equations
   rho0, p0 = ground_state
   r_t0, r_v0 = mixing_ratios
@@ -66,18 +66,18 @@ function AtmossphereLayers(equations ; total_hight=10010.0, preciseness=10, grou
   T0 = theta_e0
   y0 = [p0, rho0, T0, r_t0, r_v0, rho_qv0, theta_e0]
 
-  n = convert(Int, total_hight / preciseness)
+  n = convert(Int, total_height / preciseness)
   dz = 0.01
   LayerData = zeros(RealT, n+1, 4)
 
   F = generate_function_of_y(dz, y0, r_t0, theta_e0, equations)
   sol = nlsolve(F, y0)
   p, rho, T, r_t, r_v, rho_qv, theta_e = sol.zero
-  
+
   rho_d = rho / (1 + r_t)
   rho_ql = rho - rho_d - rho_qv
   kappa_M=(R_d * rho_d + R_v * rho_qv) / (c_pd * rho_d + c_pv * rho_qv + c_pl * rho_ql)
-  rho_theta = rho * (p0 / p)^kappa_M * T * (1 + (R_v / R_d) *r_v) / (1 + r_t) 
+  rho_theta = rho * (p0 / p)^kappa_M * T * (1 + (R_v / R_d) *r_v) / (1 + r_t)
 
   LayerData[1, :] = [rho, rho_theta, rho_qv, rho_ql]
    for i in (1:n)
@@ -86,32 +86,32 @@ function AtmossphereLayers(equations ; total_hight=10010.0, preciseness=10, grou
     F = generate_function_of_y(dz, y0, r_t0, theta_e0, equations)
     sol = nlsolve(F, y0)
     p, rho, T, r_t, r_v, rho_qv, theta_e = sol.zero
-    
+
     rho_d = rho / (1 + r_t)
     rho_ql = rho - rho_d - rho_qv
     kappa_M=(R_d * rho_d + R_v * rho_qv) / (c_pd * rho_d + c_pv * rho_qv + c_pl * rho_ql)
-    rho_theta = rho * (p0 / p)^kappa_M * T * (1 + (R_v / R_d) *r_v) / (1 + r_t) 
+    rho_theta = rho * (p0 / p)^kappa_M * T * (1 + (R_v / R_d) *r_v) / (1 + r_t)
 
     LayerData[i+1, :] = [rho, rho_theta, rho_qv, rho_ql]
    end
-  
-  return AtmossphereLayers{RealT}(equations, LayerData, total_hight, dz, n, ground_state, theta_e0, mixing_ratios)
+
+  return AtmossphereLayers{RealT}(equations, LayerData, total_height, dz, n, ground_state, theta_e0, mixing_ratios)
 end
 
 # Generate background state from the Layer data set by linearely interpolating the layers
 function initial_condition_moist_bubble(x, t, equations::CompressibleMoistEulerEquations2D, AtmosphereLayers::AtmossphereLayers)
-  @unpack LayerData, preciseness, total_hight = AtmosphereLayers
+  @unpack LayerData, preciseness, total_height = AtmosphereLayers
   dz = preciseness
-  z = x[2] 
-  if (z > total_hight && !(isapprox(z, total_hight)))
+  z = x[2]
+  if (z > total_height && !(isapprox(z, total_height)))
     error("The atmossphere does not match the simulation domain")
   end
   n = convert(Int, floor(z/dz)) + 1
   z_l = (n-1) * dz
   (rho_l, rho_theta_l, rho_qv_l, rho_ql_l) = LayerData[n, :]
   z_r = n * dz
-  if (z_l == total_hight)
-    z_r = z_l + dz 
+  if (z_l == total_height)
+    z_r = z_l + dz
     n = n-1
   end
   (rho_r, rho_theta_r, rho_qv_r, rho_ql_r) = LayerData[n+1, :]
@@ -140,7 +140,7 @@ function PerturbMoistProfile(x, rho, rho_theta, rho_qv, rho_ql, equations::Compr
   rc = 2000
   # Peak perturbation at center
   Δθ = 10
-  
+
   r = sqrt((x[1] - xc)^2 + (x[2] - zc)^2)
   rho_d = rho - rho_qv - rho_ql
   kappa_M = (R_d * rho_d + R_v * rho_qv) / (c_pd * rho_d + c_pv * rho_qv + c_pl * rho_ql)
@@ -150,14 +150,14 @@ function PerturbMoistProfile(x, rho, rho_theta, rho_qv, rho_ql, equations::Compr
 
 
   # Assume pressure stays constant
-  if (r < rc && Δθ > 0) 
+  if (r < rc && Δθ > 0)
     θ_dens = rho_theta / rho * (p_loc / p_0)^(kappa_M - kappa)
     θ_dens_new = θ_dens * (1 + Δθ * cospi(0.5*r/rc)^2 / 300)
-    rt =(rho_qv + rho_ql) / rho_d 
+    rt =(rho_qv + rho_ql) / rho_d
     rv = rho_qv / rho_d
     θ_loc = θ_dens_new * (1 + rt)/(1 + (R_v / R_d) * rv)
-    if rt > 0 
-      while true 
+    if rt > 0
+      while true
         T_loc = θ_loc * (p_loc / p_0)^kappa
         T_C = T_loc - 273.15
         # SaturVapor
