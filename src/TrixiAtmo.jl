@@ -9,7 +9,6 @@ See also: [trixi-framework/TrixiAtmo.jl](https://github.com/trixi-framework/Trix
 module TrixiAtmo
 
 using Reexport: @reexport
-using Infiltrator
 
 using Trixi
 using MuladdMacro: @muladd

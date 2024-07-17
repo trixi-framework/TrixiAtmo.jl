@@ -8,7 +8,7 @@ using Rotations  # to compute solid body rotation
 ###############################################################################
 # Problem definition
 
-function initial_condition_advection_sphere(x, t, ::CovariantLinearAdvectionEquation3D)
+function initial_condition_advection_sphere(x, t, ::CovariantLinearAdvectionEquation2D)
     # Gaussian density
     rho = 1.0 + exp(-20 * (x[1]^2 + x[3]^2))
 
@@ -53,7 +53,7 @@ cells_per_dimension = 2
 
 mesh = Trixi.P4estMeshCubedSphere2D(5, 1.0, polydeg = polydeg, initial_refinement_level = 0)
 
-equations = CovariantLinearAdvectionEquation3D()
+equations = CovariantLinearAdvectionEquation2D()
 
 initial_condition = initial_condition_advection_sphere
 
