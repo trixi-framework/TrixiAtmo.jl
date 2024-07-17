@@ -9,6 +9,7 @@ using NLsolve: nlsolve
 
 equations = CompressibleMoistEulerEquations2D()
 
+# TODO - Should the IC functions and struct be in the equation file?
 function moist_state(y, dz, y0, r_t0, theta_e0, equations::CompressibleMoistEulerEquations2D)
   @unpack p_0, g, c_pd, c_pv, c_vd, c_vv, R_d, R_v, c_pl, L_00 = equations
   (p, rho, T, r_t, r_v, rho_qv, theta_e) = y

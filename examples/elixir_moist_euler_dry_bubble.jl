@@ -1,5 +1,5 @@
 using OrdinaryDiffEq
-using Trixi
+using Trixi # TODO - Decide. This structure requires Trixi.jl to be in Project.toml of `Test`
 using TrixiAtmo
 using TrixiAtmo: flux_LMARS, source_terms_geopotential, cons2drypot
 
@@ -29,10 +29,10 @@ function initial_condition_warm_bubble(x, t, equations::CompressibleMoistEulerEq
   θ = θ_ref + Δθ # potential temperature
   # π_exner = 1 - g / (c_pd * θ) * x[2] # exner pressure
   # rho = p_0 / (R_d * θ) * (π_exner)^(c_vd / R_d) # density
-  
+
   # calculate background pressure with assumption hydrostatic and neutral
   p = p_0 * (1-kappa * g * x[2] / (R_d * θ_ref))^(c_pd / R_d)
-  
+
   #calculate rho and T with p and theta (now perturbed) rho = p / R_d T, T = θ / π
   rho = p / ((p / p_0)^kappa*R_d*θ)
   T = p / (R_d * rho)
@@ -42,7 +42,7 @@ function initial_condition_warm_bubble(x, t, equations::CompressibleMoistEulerEq
   v2 = 0.0
   rho_v1 = rho * v1
   rho_v2 = rho * v2
-  rho_E = rho * c_vd * T + 1/2 * rho * (v1^2 + v2^2)  
+  rho_E = rho * c_vd * T + 1/2 * rho * (v1^2 + v2^2)
   return SVector(rho, rho_v1, rho_v2, rho_E, zero(eltype(g)) ,zero(eltype(g)))
 end
 
@@ -67,7 +67,7 @@ volume_flux = flux_chandrashekar
 volume_integral=VolumeIntegralFluxDifferencing(volume_flux)
 
 
-# Create DG solver with polynomial degree = 4 and LMARS flux as surface flux 
+# Create DG solver with polynomial degree = 4 and LMARS flux as surface flux
 # and the EC flux (chandrashekar) as volume flux
 solver = DGSEM(basis, surface_flux, volume_integral)
 
@@ -120,7 +120,7 @@ callbacks = CallbackSet(summary_callback,
 
 ###############################################################################
 # run the simulation
-sol = solve(ode, CarpenterKennedy2N54(williamson_condition=false), 
+sol = solve(ode, CarpenterKennedy2N54(williamson_condition=false),
             maxiters=1.0e7,
             dt=1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
             save_everystep=false, callback=callbacks);

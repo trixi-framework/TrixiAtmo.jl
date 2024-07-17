@@ -21,4 +21,8 @@ const TRIXI_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
             @test TrixiAtmo.baz() isa String
         end
     end
+
+    @time if TRIXI_TEST == "all" || TRIXI_TEST == "moist_euler"
+        include("test_2d_moist_euler.jl")
+    end
 end
