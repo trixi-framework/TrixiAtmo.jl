@@ -810,7 +810,7 @@ import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
 
     # Calculate the equivalent potential temperature for a conservative state `cons`.
     @inline function equivalent_pottemp_thermodynamic(cons,
-                                                       equations::CompressibleMoistEulerEquations2D)
+                                                      equations::CompressibleMoistEulerEquations2D)
         @unpack c_pd, c_pv, c_pl, R_d, R_v, p_0, kappa, L_00 = equations
         rho, rho_v1, rho_v2, rho_E, rho_qv, rho_ql = cons
         rho_d = rho - rho_qv - rho_ql
