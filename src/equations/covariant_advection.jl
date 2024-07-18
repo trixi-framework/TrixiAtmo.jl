@@ -1,6 +1,9 @@
 ###############################################################################
-# Linear advection equation in general covariant form
+# Linear advection equation in covariant form
 ###############################################################################
+
+@muladd begin
+#! format: noindent
 
 struct CovariantLinearAdvectionEquation2D <: AbstractCovariantEquations2D{3} end
 
@@ -8,8 +11,7 @@ function Trixi.varnames(::typeof(cons2cons), ::CovariantLinearAdvectionEquation2
     return ("contravariant vel. 1", "contravariant vel. 2", "density")
 end
 
-default_analysis_integrals(::CovariantLinearAdvectionEquation2D) = ()
-default_analysis_errors(::CovariantLinearAdvectionEquation2D) = ()
+Trixi.cons2entropy(u, ::CovariantLinearAdvectionEquation2D) = u
 
 """
     Custom dissipation to ensure no flux is applied to variable coefficients
@@ -55,3 +57,4 @@ end
 @inline function Trixi.max_abs_speeds(u, ::CovariantLinearAdvectionEquation2D)
     return abs(u[1]), abs(u[2])
 end
+end # @muladd

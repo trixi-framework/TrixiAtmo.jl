@@ -73,25 +73,28 @@ ode = semidiscretize(semi, (0.0, pi))
 # and resets the timers
 summary_callback = SummaryCallback()
 
+# The AnalysisCallback allows to analyse the solution in regular intervals and prints the results
+analysis_callback = AnalysisCallback(semi, interval = 10,
+                                     save_analysis = true)
+
+alive_callback = AliveCallback(alive_interval = 10)
+
 # The SaveSolutionCallback allows to save the solution to a file in regular intervals
 save_solution = SaveSolutionCallback(interval = 10,
                                      solution_variables = cons2cons)
 
 # The StepsizeCallback handles the re-calculation of the maximum Δt after each time step
-stepsize_callback = StepsizeCallback(cfl = 0.7)
-
-# The AliveCallback prints short status information in regular intervals
-alive_callback = AliveCallback(alive_interval = 10)
+#stepsize_callback = StepsizeCallback(cfl = 0.7)
 
 # Create a CallbackSet to collect all callbacks such that they can be passed to the ODE solver
-callbacks = CallbackSet(alive_callback, summary_callback, save_solution, stepsize_callback)
+callbacks = CallbackSet(summary_callback, analysis_callback, alive_callback, save_solution)
 
 ###############################################################################
 # run the simulation
 
 # OrdinaryDiffEq's `solve` method evolves the solution in time and executes the passed callbacks
 sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
-            dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
+            dt = pi*1e-3, adaptive=false,
             save_everystep = false, callback = callbacks);
 
 # Print the timer summary

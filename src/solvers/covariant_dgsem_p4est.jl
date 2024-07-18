@@ -1,3 +1,10 @@
+###############################################################################
+# DGSEM for covariant formulations on manifolds using P4estMesh
+###############################################################################
+
+@muladd begin
+#! format: noindent
+
 @inline function reference_normal_vector(direction)
     # Get the normal vector to the reference element at a given node
     orientation = (direction + 1) >> 1
@@ -57,10 +64,11 @@ function Trixi.compute_coefficients!(u, func, t, mesh::Trixi.AbstractMesh{2},
     end
 end
 
-@inline function Trixi.weak_form_kernel!(du, u, element, 
-    mesh::Union{StructuredMesh{2}, UnstructuredMesh2D, P4estMesh{2}, T8codeMesh{2}},
-    nonconservative_terms::False, equations::AbstractCovariantEquations2D,
-    dg::DGSEM, cache, alpha = true)
+@inline function Trixi.weak_form_kernel!(du, u, element, mesh::Union{P4estMesh{2},
+                                StructuredMesh{2}, T8codeMesh{2}, UnstructuredMesh2D},
+                                nonconservative_terms::False, 
+                                equations::AbstractCovariantEquations2D,
+                                dg::DGSEM, cache, alpha = true)
    
     (; derivative_dhat) = dg.basis
     (; inverse_jacobian) = cache.elements
@@ -86,10 +94,9 @@ end
 end
 
 function Trixi.calc_interface_flux!(surface_flux_values,
-    mesh::Union{P4estMesh{2}, T8codeMesh{2}},
-    nonconservative_terms,
-    equations::AbstractCovariantEquations2D, 
-    surface_integral, dg::DG, cache)
+                                    mesh::P4estMesh{2}, nonconservative_terms,
+                                    equations::AbstractCovariantEquations2D, 
+                                    surface_integral, dg::DG, cache)
 
     (; neighbor_ids, node_indices) = cache.interfaces
     index_range = eachnode(dg)
@@ -158,8 +165,7 @@ function Trixi.calc_interface_flux!(surface_flux_values,
     return nothing
 end
 
-@inline function Trixi.calc_interface_flux!(surface_flux_values,
-                                            mesh::Union{P4estMesh{2}, T8codeMesh{2}},
+@inline function Trixi.calc_interface_flux!(surface_flux_values, mesh::P4estMesh{2},
                                             nonconservative_terms::False, equations,
                                             surface_integral, dg::DG, cache,
                                             interface_index, 
@@ -202,3 +208,102 @@ end
             secondary_element_index] = flux_secondary[v]
     end
 end
+
+function Trixi.max_dt(u, t, mesh::Union{P4estMesh{2}, StructuredMesh{2}, T8codeMesh{2},
+                      UnstructuredMesh2D}, constant_speed::False,
+                      equations::AbstractCovariantEquations2D, dg::DG, cache)
+
+    # to avoid a division by zero if the speed vanishes everywhere,
+    # e.g. for steady-state linear advection
+    max_scaled_speed = nextfloat(zero(t))
+
+    # Because the covariant form computes max_abs_speeds using the contravariant 
+    # velocity components already, there is no need to transform them here
+    for element in eachelement(dg, cache)
+        max_lambda1 = max_lambda2 = zero(max_scaled_speed)
+        for j in eachnode(dg), i in eachnode(dg)
+            u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
+            lambda1, lambda2 = Trixi.max_abs_speeds(u_node, equations)
+
+            max_lambda1 = max(max_lambda1, lambda1)
+            max_lambda2 = max(max_lambda2, lambda2)
+        end
+
+        max_scaled_speed = max(max_scaled_speed, max_lambda1 + max_lambda2)
+    end
+
+    return 2 / (nnodes(dg) * max_scaled_speed)
+end
+
+function Trixi.create_cache_analysis(analyzer,
+                                     mesh::Union{StructuredMesh{2}, UnstructuredMesh2D, 
+                                                 P4estMesh{2}, T8codeMesh{2}},
+                                     equations::AbstractCovariantEquations2D, dg::DG, cache,
+                                     RealT, uEltype)
+
+    # pre-allocate buffers
+    # We use `StrideArray`s here since these buffers are used in performance-critical
+    # places and the additional information passed to the compiler makes them faster
+    # than native `Array`s.
+    u_local = StrideArray(undef, uEltype,
+                          StaticInt(nvariables(equations)), StaticInt(nnodes(analyzer)),
+                          StaticInt(nnodes(analyzer)))
+    u_tmp1 = StrideArray(undef, uEltype,
+                         StaticInt(nvariables(equations)), StaticInt(nnodes(analyzer)),
+                         StaticInt(nnodes(dg)))
+    x_local = StrideArray(undef, RealT,
+                          StaticInt(3), StaticInt(nnodes(analyzer)),
+                          StaticInt(nnodes(analyzer)))
+    x_tmp1 = StrideArray(undef, RealT,
+                         StaticInt(3), StaticInt(nnodes(analyzer)),
+                         StaticInt(nnodes(dg)))
+    jacobian_local = StrideArray(undef, RealT,
+                                 StaticInt(nnodes(analyzer)),
+                                 StaticInt(nnodes(analyzer)))
+    jacobian_tmp1 = StrideArray(undef, RealT,
+                                StaticInt(nnodes(analyzer)), StaticInt(nnodes(dg)))
+
+    return (; u_local, u_tmp1, x_local, x_tmp1, jacobian_local, jacobian_tmp1)
+end
+
+function Trixi.calc_error_norms(func, u, t, analyzer, 
+                          mesh::Union{StructuredMesh{2}, UnstructuredMesh2D, P4estMesh{2},
+                                      T8codeMesh{2}},
+                          equations::AbstractCovariantEquations2D,
+                          initial_condition, dg::DGSEM, cache, cache_analysis)
+
+    (; weights) = dg.basis
+    (; node_coordinates, inverse_jacobian) = cache.elements
+
+    # Set up data structures
+    l2_error = zero(func(Trixi.get_node_vars(u, equations, dg, 1, 1, 1), equations))
+    linf_error = copy(l2_error)
+    total_volume = zero(real(mesh))
+
+    # Iterate over all elements for error calculations
+    for element in eachelement(dg, cache)
+        # Calculate errors at each volume quadrature node
+        for j in eachnode(dg), i in eachnode(dg)
+
+            x = Trixi.get_node_coords(node_coordinates, equations, dg, i, j, element)
+            u_exact = initial_condition(x, t, equations)
+
+            diff = cartesian2contravariant(func(u_exact, equations), 
+                                           mesh, equations, i, j, element, cache)  -
+                    func(Trixi.get_node_vars(u, equations, dg, i, j, element), equations)
+
+            J = inv(abs(inverse_jacobian[i, j, element]))
+
+            l2_error += diff .^ 2 * (weights[i] * weights[j] * J)
+            linf_error = @. max(linf_error, abs(diff))
+            total_volume += weights[i] * weights[j] * J
+        end
+    end
+
+    # For L2 error, divide by total volume
+    l2_error = @. sqrt(l2_error / total_volume)
+
+    return l2_error, linf_error
+end
+
+end # @muladd

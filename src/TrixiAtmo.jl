@@ -14,6 +14,7 @@ using Trixi
 using MuladdMacro: @muladd
 @reexport using StaticArrays: SVector, SMatrix
 using Static: True, False
+using StrideArrays: StrideArray, StaticInt
 using LinearAlgebra: norm, dot
 using DiffEqCallbacks: PeriodicCallback, PeriodicCallbackAffect
 

@@ -130,18 +130,17 @@ save_solution = SaveSolutionCallback(interval = 10,
                                      solution_variables = cons2prim)
 
 # The StepsizeCallback handles the re-calculation of the maximum Δt after each time step
-stepsize_callback = StepsizeCallback(cfl = 0.7)
+#stepsize_callback = StepsizeCallback(cfl = 0.7)
 
 # Create a CallbackSet to collect all callbacks such that they can be passed to the ODE solver
-callbacks = CallbackSet(summary_callback, analysis_callback, save_solution,
-                        stepsize_callback)
+callbacks = CallbackSet(summary_callback, analysis_callback, save_solution)
 
 ###############################################################################
 # run the simulation
 
 # OrdinaryDiffEq's `solve` method evolves the solution in time and executes the passed callbacks
 sol = solve(ode_semi_custom, CarpenterKennedy2N54(williamson_condition = false),
-            dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
+            dt = pi*1e-3, adaptive=false,
             save_everystep = false, callback = callbacks);
 
 # Print the timer summary
