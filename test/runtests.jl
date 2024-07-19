@@ -9,9 +9,7 @@ const TRIXIATMO_MPI_NPROCS = clamp(Sys.CPU_THREADS, 2, 3)
 const TRIXIATMO_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
 
 @time @testset verbose=true showtiming=true "TrixiAtmo.jl tests" begin
-
     @time if TRIXIATMO_TEST == "all" || TRIXIATMO_TEST == "trixi_consistency"
         include("test_trixi_consistency.jl")
     end
-
 end

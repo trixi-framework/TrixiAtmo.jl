@@ -17,8 +17,8 @@ isdir(outdir) && rm(outdir, recursive = true)
 
     # Override maxiter and volume_flux
     trixi_include(trixi_elixir;
-                  volume_flux=Trixi.flux_chandrashekar,
-                  maxiters=maxiters)
+                  volume_flux = Trixi.flux_chandrashekar,
+                  maxiters = maxiters)
 
     # Save errors
     errors_trixi = Main.analysis_callback(Main.sol)
@@ -32,14 +32,14 @@ isdir(outdir) && rm(outdir, recursive = true)
 
     # Redefine source terms for CompressibleMoistEulerEquations2D
     @inline function (setup::Main.WarmBubbleSetup)(u, x, t,
-        equations_moist::CompressibleMoistEulerEquations2D)
+                                                   equations_moist::CompressibleMoistEulerEquations2D)
         ret_trixi = setup(u, x, t, equations_trixi)
         return vcat(ret_trixi, add_zeros)
     end
 
     # Redefine initial condition for CompressibleMoistEulerEquations2D
     @inline function (setup::Main.WarmBubbleSetup)(x, t,
-        equations_moist::CompressibleMoistEulerEquations2D)
+                                                   equations_moist::CompressibleMoistEulerEquations2D)
         ret_trixi = setup(x, t, equations_trixi)
         return vcat(ret_trixi, add_zeros)
     end
