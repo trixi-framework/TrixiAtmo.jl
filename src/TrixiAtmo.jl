@@ -9,17 +9,20 @@ See also: [trixi-framework/TrixiAtmo.jl](https://github.com/trixi-framework/Trix
 module TrixiAtmo
 
 using Trixi
-# Import additional symbols that are not exported by Trixi.jl
-# using Trixi:
 using MuladdMacro: @muladd
 using StaticArrays: SVector
 using Static: True, False
 using LinearAlgebra: norm
+using Reexport: @reexport
+@reexport using StaticArrays: SVector
 
-foo() = true
-bar() = false
-baz() = Trixi.examples_dir()
-
+include("auxiliary/auxiliary.jl")
 include("equations/equations.jl")
+
+export CompressibleMoistEulerEquations2D
+
+export flux_chandrashekar, flux_LMARS
+
+export examples_dir
 
 end # module TrixiAtmo
