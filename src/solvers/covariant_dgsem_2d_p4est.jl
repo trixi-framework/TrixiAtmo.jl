@@ -1,12 +1,12 @@
 ###############################################################################
-# DGSEM for covariant formulations on manifolds using P4estMesh
+# DGSEM for hyperbolic partial differential equations in covariant form
 ###############################################################################
 
 @muladd begin
 #! format: noindent
 
+# Get the normal vector to the reference quadrilateral at a given node
 @inline function reference_normal_vector(direction)
-    # Get the normal vector to the reference element at a given node
     orientation = (direction + 1) >> 1
     sign = isodd(direction) ? -1 : 1
     if orientation == 1
@@ -16,8 +16,7 @@
     end
 end
 
-@inline function cartesian2contravariant(u_car, mesh::Trixi.AbstractMesh{2}, 
-                                         equations::AbstractCovariantEquations2D{3}, 
+@inline function cartesian2contravariant(u_cartesian, ::AbstractCovariantEquations2D{3}, 
                                          i, j, element, cache)
 
     (; contravariant_vectors, inverse_jacobian) = cache.elements
@@ -26,24 +25,26 @@ end
                                                       element)
     Ja21, Ja22, Ja23 = Trixi.get_contravariant_vector(2, contravariant_vectors, i, j, 
                                                       element)
+    invJ = inverse_jacobian[i, j, element] 
 
-    u_con_1, u_con_2 = inverse_jacobian[i, j, element] * 
-        SMatrix{2,3}(Ja11, Ja21, Ja12, Ja22, Ja13, Ja23) * 
-        SVector(u_car[1], u_car[2], u_car[3])
-
-    return SVector(u_con_1, u_con_2, u_car[4])
+    return SVector(u_cartesian[1],
+                   invJ * (Ja11 * u_cartesian[2] + 
+                           Ja12 * u_cartesian[3] + 
+                           Ja13 * u_cartesian[4]),
+                   invJ * (Ja21 * u_cartesian[2] + 
+                           Ja22 * u_cartesian[3] + 
+                           Ja23 * u_cartesian[4]))
 end
 
-@inline function contravariant2cartesian(u_node, mesh::Trixi.AbstractMesh{2}, 
-                                         equations::AbstractCovariantEquations2D{3}, 
+@inline function contravariant2cartesian(u_node, ::AbstractCovariantEquations2D{3}, 
                                          i, j, element, cache)
 
-    (; jacobian_matrix) = cache.elements
-
-    A = SMatrix{3,2}(view(jacobian_matrix, :, :, i, j, element))
-    u_car_1, u_car_2, u_car_3 = A * SVector(u_node[1], u_node[2])
-
-    return SVector(u_car_1, u_car_2, u_car_3, u_node[3])
+    A11, A21, A31, A12, A22, A32 = view(cache.elements.jacobian_matrix, :, :, i, j, element)
+    
+    return SVector(u_node[1],
+                   A11 * u_node[2] + A12 * u_node[3],
+                   A21 * u_node[2] + A22 * u_node[3],
+                   A31 * u_node[2] + A32 * u_node[3])
 end
 
 @inline function Trixi.get_node_coords(x, ::AbstractCovariantEquations2D, ::DG, indices...)
@@ -51,42 +52,47 @@ end
 end
 
 function Trixi.compute_coefficients!(u, func, t, mesh::Trixi.AbstractMesh{2}, 
-    equations::AbstractCovariantEquations2D, dg::DG, cache)
+                                     equations::AbstractCovariantEquations2D, dg::DG, cache)
 
     (; node_coordinates) = cache.elements
+
     for element in eachelement(dg, cache)
         for j in eachnode(dg), i in eachnode(dg)
             x_node = Trixi.get_node_coords(node_coordinates, equations, dg, i, j, element)
             u_car = func(x_node, t, equations)
-            u_node = cartesian2contravariant(u_car, mesh, equations, i, j, element, cache)
+            u_node = cartesian2contravariant(u_car, equations, i, j, element, cache)
             Trixi.set_node_vars!(u, u_node, equations, dg, i, j, element)
         end
     end
 end
 
-@inline function Trixi.weak_form_kernel!(du, u, element, mesh::Union{P4estMesh{2},
-                                StructuredMesh{2}, T8codeMesh{2}, UnstructuredMesh2D},
-                                nonconservative_terms::False, 
-                                equations::AbstractCovariantEquations2D,
-                                dg::DGSEM, cache, alpha = true)
+@inline function Trixi.weak_form_kernel!(du, u, element, 
+                                         mesh::Union{P4estMesh{2},
+                                                     StructuredMesh{2}, T8codeMesh{2}, UnstructuredMesh2D},
+                                        nonconservative_terms::False, 
+                                        equations::AbstractCovariantEquations2D,
+                                        dg::DGSEM, cache, alpha = true)
    
     (; derivative_dhat) = dg.basis
     (; inverse_jacobian) = cache.elements
 
     for j in eachnode(dg), i in eachnode(dg)
         u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
+        J = inv(inverse_jacobian[i,j,element])
         
-        contravariant_flux1 = flux(u_node, 1, equations) / inverse_jacobian[i,j,element]
-        contravariant_flux2 = flux(u_node, 2, equations) / inverse_jacobian[i,j,element]
+        contravariant_flux1 = J * flux(u_node, 1, equations)
+        contravariant_flux2 = J * flux(u_node, 2, equations)
 
         for ii in eachnode(dg)
             Trixi.multiply_add_to_node_vars!(du, alpha * derivative_dhat[ii, i],
-                    contravariant_flux1, equations, dg, ii, j, element)
+                                             contravariant_flux1, equations, dg, ii, j,
+                                             element)
         end
         
         for jj in eachnode(dg)
             Trixi.multiply_add_to_node_vars!(du, alpha * derivative_dhat[jj, j],
-                    contravariant_flux2, equations, dg, i, jj, element)
+                                             contravariant_flux2, equations, dg, i, jj,
+                                             element)
         end
     end
 
@@ -99,6 +105,7 @@ function Trixi.calc_interface_flux!(surface_flux_values,
                                     surface_integral, dg::DG, cache)
 
     (; neighbor_ids, node_indices) = cache.interfaces
+    
     index_range = eachnode(dg)
     index_end = last(index_range)
 
@@ -144,11 +151,11 @@ function Trixi.calc_interface_flux!(surface_flux_values,
         for node in eachnode(dg)
             
             Trixi.calc_interface_flux!(surface_flux_values, mesh, nonconservative_terms,
-                                    equations, surface_integral, dg, cache, interface, 
-                                    i_primary, j_primary, i_secondary, j_secondary,
-                                    node, primary_direction, primary_element,
-                                    node_secondary, secondary_direction,
-                                    secondary_element)
+                                       equations, surface_integral, dg, cache, interface, 
+                                       i_primary, j_primary, i_secondary, j_secondary,
+                                       node, primary_direction, primary_element,
+                                       node_secondary, secondary_direction,
+                                       secondary_element)
 
             # Increment primary and secondary element indices
             i_primary += i_primary_step
@@ -184,13 +191,13 @@ end
     u_ll, u_rr = Trixi.get_surface_node_vars(u, equations, dg, primary_node_index,
         interface_index)
 
-    u_ll_car = contravariant2cartesian(u_ll, mesh, equations, i_primary, j_primary,
+    u_ll_car = contravariant2cartesian(u_ll, equations, i_primary, j_primary,
                                        primary_element_index, cache)
-    u_rr_car = contravariant2cartesian(u_rr, mesh, equations, i_secondary, j_secondary,
+    u_rr_car = contravariant2cartesian(u_rr, equations, i_secondary, j_secondary,
                                        secondary_element_index, cache)
-    u_rr_ll = cartesian2contravariant(u_rr_car, mesh, equations, i_primary, j_primary,
+    u_rr_ll = cartesian2contravariant(u_rr_car, equations, i_primary, j_primary,
                                       primary_element_index, cache)
-    u_ll_rr = cartesian2contravariant(u_ll_car, mesh, equations, i_secondary, j_secondary,
+    u_ll_rr = cartesian2contravariant(u_ll_car, equations, i_secondary, j_secondary,
                                       secondary_element_index, cache)
     
     reference_normal_primary = reference_normal_vector(primary_direction_index)
@@ -209,8 +216,10 @@ end
     end
 end
 
-function Trixi.max_dt(u, t, mesh::Union{P4estMesh{2}, StructuredMesh{2}, T8codeMesh{2},
-                      UnstructuredMesh2D}, constant_speed::False,
+function Trixi.max_dt(u, t, 
+                      mesh::Union{P4estMesh{2}, StructuredMesh{2}, T8codeMesh{2},
+                                  UnstructuredMesh2D}, 
+                      constant_speed::False,
                       equations::AbstractCovariantEquations2D, dg::DG, cache)
 
     # to avoid a division by zero if the speed vanishes everywhere,
@@ -289,7 +298,7 @@ function Trixi.calc_error_norms(func, u, t, analyzer,
             u_exact = initial_condition(x, t, equations)
 
             diff = cartesian2contravariant(func(u_exact, equations), 
-                                           mesh, equations, i, j, element, cache)  -
+                                           equations, i, j, element, cache)  -
                     func(Trixi.get_node_vars(u, equations, dg, i, j, element), equations)
 
             J = inv(abs(inverse_jacobian[i, j, element]))
