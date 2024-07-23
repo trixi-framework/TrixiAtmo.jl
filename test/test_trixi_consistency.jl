@@ -15,7 +15,7 @@ isdir(outdir) && rm(outdir, recursive = true)
     trixi_elixir = joinpath(TRIXI_EXAMPLES_DIR, "structured_2d_dgsem",
                             "elixir_euler_warm_bubble.jl")
 
-    # Override maxiter and volume_flux
+    # Override maxiter and fluxes
     trixi_include(trixi_elixir;
                   volume_flux = Trixi.flux_chandrashekar,
                   surface_flux = Trixi.FluxLMARS(360.0),
