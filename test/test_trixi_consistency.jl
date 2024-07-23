@@ -18,6 +18,7 @@ isdir(outdir) && rm(outdir, recursive = true)
     # Override maxiter and volume_flux
     trixi_include(trixi_elixir;
                   volume_flux = Trixi.flux_chandrashekar,
+                  surface_flux = Trixi.FluxLMARS(360.0),
                   maxiters = maxiters)
 
     # Save errors
@@ -54,10 +55,10 @@ isdir(outdir) && rm(outdir, recursive = true)
     errors_atmo = Main.analysis_callback(Main.sol)
 
     for (error_trixi, error_atmo) in zip(errors_trixi.l2, errors_atmo.l2)
-        @test isapprox(error_trixi, error_atmo, atol = 1e-7, rtol = 1e-7)
+        @test isapprox(error_trixi, error_atmo, rtol = 1e-12)
     end
     for (error_trixi, error_atmo) in zip(errors_trixi.linf, errors_atmo.linf)
-        @test isapprox(error_trixi, error_atmo, atol = 1e-7, rtol = 1e-7)
+        @test isapprox(error_trixi, error_atmo, rtol = 2e-12)
     end
 end
 end
