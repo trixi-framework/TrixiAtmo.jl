@@ -357,7 +357,7 @@ import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
     # Large-eddy simulations with ClimateMachine: a new open-sourcecode for
     # atmospheric simulations on GPUs and CPUs, 2 Oct 2021, doi: 10.5194/gmd-15-6259-2022,
     # https://arxiv.org/abs/2110.00853 [physics.ao-ph] .
-    @inline function source_terms_nonhydrostatic_raylight_sponge(u, x, t,
+    @inline function source_terms_nonhydrostatic_rayleigh_sponge(u, x, t,
                                                                  equations::CompressibleMoistEulerEquations2D)
         rho, rho_v1, rho_v2, rho_e, rho_qv, rho_ql = u
         v1 = rho_v1 / rho
