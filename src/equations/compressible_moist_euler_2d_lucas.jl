@@ -353,7 +353,7 @@ import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
                        zero(eltype(u)), zero(eltype(u)))
     end
 
-    # Raylight damping sponge source term form A. Sridhar et al.,
+    # Rayleigh damping sponge source term form A. Sridhar et al.,
     # Large-eddy simulations with ClimateMachine: a new open-sourcecode for
     # atmospheric simulations on GPUs and CPUs, 2 Oct 2021, doi: 10.5194/gmd-15-6259-2022,
     # https://arxiv.org/abs/2110.00853 [physics.ao-ph] .
