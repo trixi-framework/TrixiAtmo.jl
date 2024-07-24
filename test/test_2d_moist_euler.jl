@@ -34,7 +34,7 @@ EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples") # TODO - Do we need a subdirectory 
         u_ode = sol.u[end]
         du_ode = similar(u_ode)
         analysis_callback(sol)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 2000
+        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
         # TODO - It performs 1920 allocations. Is that okay? All tests in Trixi take 1000.
     end
 end
@@ -67,7 +67,7 @@ end
         u_ode = sol.u[end]
         du_ode = similar(u_ode)
         analysis_callback(sol)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 2000
+        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
         # TODO - It performs 1920 allocations. Is that okay? All tests in Trixi take 1000.
     end
 end
