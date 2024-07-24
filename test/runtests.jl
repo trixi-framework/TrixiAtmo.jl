@@ -13,7 +13,7 @@ const TRIXIATMO_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
         include("test_trixi_consistency.jl")
     end
 
-    @time if TRIXI_TEST == "all" || TRIXI_TEST == "moist_euler"
+    @time if TRIXIATMO_TEST == "all" || TRIXIATMO_TEST == "moist_euler"
         include("test_2d_moist_euler.jl")
     end
 end
