@@ -1,4 +1,5 @@
 using Test: @test
+using Trixi: Trixi, examples_dir, trixi_include
 import TrixiAtmo
 
 # Use a macro to avoid world age issues when defining new initial conditions etc.
@@ -177,35 +178,14 @@ macro test_nowarn_mod(expr, additional_ignore_content = String[])
 end
 
 """
-    @timed_testset "name of the testset" #= code to test #=
-
-Similar to `@testset`, but prints the name of the testset and its runtime
-after execution.
-"""
-macro timed_testset(name, expr)
-    @assert name isa String
-    quote
-        local time_start = time_ns()
-        @testset $name $expr
-        local time_stop = time_ns()
-        if TrixiAtmo.Trixi.mpi_isroot()
-            flush(stdout)
-            @info("Testset "*$name*" finished in "
-                  *string(1.0e-9 * (time_stop - time_start))*" seconds.\n")
-            flush(stdout)
-        end
-    end
-end
-
-"""
-    @trixi_testset "name of the testset" #= code to test #=
+    @trixiatmo_testset "name of the testset" #= code to test #=
 
 Similar to `@testset`, but wraps the code inside a temporary module to avoid
 namespace pollution. It also `include`s this file again to provide the
 definition of `@test_trixi_include`. Moreover, it records the execution time
 of the testset similarly to [`timed_testset`](@ref).
 """
-macro trixi_testset(name, expr)
+macro trixiatmo_testset(name, expr)
     @assert name isa String
     # TODO: `@eval` is evil
     # We would like to use
@@ -218,7 +198,7 @@ macro trixi_testset(name, expr)
     # module name here.
     quote
         local time_start = time_ns()
-        @eval module TrixiTestModule
+        @eval module TrixiAtmoTestModule
         using Test
         using TrixiAtmo
         include(@__FILE__)
@@ -227,6 +207,7 @@ macro trixi_testset(name, expr)
         # and we want to fail gracefully if it's not defined.
         try
             import ..EXAMPLES_DIR
+            import ..TRIXI_EXAMPLES_DIR
         catch
             nothing
         end
