@@ -51,7 +51,7 @@ end
 polydeg = 3
 cells_per_dimension = 2
 
-mesh = Trixi.P4estMeshCubedSphere2D(5, 1.0, polydeg = polydeg, initial_refinement_level = 0)
+mesh = P4estMeshCubedSphere2D(5, 1.0, polydeg = polydeg, initial_refinement_level = 0)
 
 equations = CovariantLinearAdvectionEquation2D()
 
@@ -85,15 +85,14 @@ save_solution = SaveSolutionCallback(interval = 10,
 stepsize_callback = StepsizeCallback(cfl = 0.4)
 
 # Create a CallbackSet to collect all callbacks such that they can be passed to the ODE solver
-callbacks = CallbackSet(summary_callback, analysis_callback, save_solution,
-                        stepsize_callback)
+callbacks = CallbackSet(summary_callback, analysis_callback, save_solution)
 
 ###############################################################################
 # run the simulation
 
 # OrdinaryDiffEq's `solve` method evolves the solution in time and executes the passed callbacks
 sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
-            dt = 1.0, save_everystep = false, callback = callbacks);
+            dt = pi * 1e-3, adaptive = false, save_everystep = false, callback = callbacks);
 
 # Print the timer summary
 summary_callback()

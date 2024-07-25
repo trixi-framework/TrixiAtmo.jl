@@ -9,18 +9,16 @@ See also: [trixi-framework/TrixiAtmo.jl](https://github.com/trixi-framework/Trix
 module TrixiAtmo
 
 using Reexport: @reexport
-
 using Trixi
 using MuladdMacro: @muladd
 @reexport using StaticArrays: SVector, SMatrix
 using Static: True, False
-using StrideArrays: StrideArray, StaticInt
+using StrideArrays: StrideArray, StaticInt, PtrArray
 using LinearAlgebra: norm, dot
 using DiffEqCallbacks: PeriodicCallback, PeriodicCallbackAffect
 
 export EARTH_RADIUS, EARTH_GRAVITATIONAL_ACCELERATION, EARTH_ROTATION_RATE, SECONDS_PER_DAY
 include("equations/equations.jl")
-
+include("meshes/meshes.jl")
 include("solvers/solvers.jl")
-
 end # module TrixiAtmo

@@ -20,8 +20,8 @@ Trixi.cons2entropy(u, ::CovariantLinearAdvectionEquation2D) = u
     Custom dissipation to ensure no flux is applied to variable coefficients
 """
 @inline function (dissipation::DissipationLocalLaxFriedrichs)(u_ll, u_rr,
-                        normal_direction::AbstractVector,
-                        equations::CovariantLinearAdvectionEquation2D)
+                                                              normal_direction::AbstractVector,
+                                                              equations::CovariantLinearAdvectionEquation2D)
     z = zero(eltype(u_ll))
     λ = dissipation.max_abs_speed(u_ll, u_rr, normal_direction, equations)
     return -0.5f0 * λ * SVector(u_rr[1] - u_ll[1], z, z)
@@ -32,16 +32,17 @@ end
 """
 @inline function Trixi.flux(u, orientation::Int, ::CovariantLinearAdvectionEquation2D)
     z = zero(eltype(u))
-    return SVector(u[orientation+1] * u[1], z, z)
+    return SVector(u[orientation + 1] * u[1], z, z)
 end
 
 """
     Compute the flux component in a given normal direction
 """
 @inline function Trixi.flux(u, normal_direction::AbstractVector,
-                               ::CovariantLinearAdvectionEquation2D)
+                            ::CovariantLinearAdvectionEquation2D)
     z = zero(eltype(u))
-    return SVector((u[2] * normal_direction[1] + u[3] * normal_direction[2]) * u[1], z, z)
+    return SVector((u[2] * normal_direction[1] + u[3] * normal_direction[2]) * u[1], z,
+                   z)
 end
 
 """

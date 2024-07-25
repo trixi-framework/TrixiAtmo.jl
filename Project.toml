@@ -1,6 +1,6 @@
 name = "TrixiAtmo"
 uuid = "c9ed1054-d170-44a9-8ee2-d5566f5d1389"
-authors = ["Benedict Geihe <bgeihe@uni-koeln.de>", "Tristan Montoya <montoya.tristan@gmail.com>", "Hendrik Ranocha <hendrik.ranocha@uni-mainz.de>", "Michael Schlottke-Lakemper <michael@sloede.com>"]
+authors = ["Benedict Geihe <bgeihe@uni-koeln.de>", "Tristan Montoya <montoya.tristan@gmail.com>", "Andrés Rueda-Ramírez <aruedara@uni-koeln.de>", "Hendrik Ranocha <hendrik.ranocha@uni-mainz.de>", "Michael Schlottke-Lakemper <michael@sloede.com>"]
 version = "0.1.0-DEV"
 
 [deps]
@@ -18,8 +18,7 @@ Trixi = "a7f1ee26-1774-49b1-8366-f1abc58fbfcb"
 [compat]
 LinearAlgebra = "1"
 MuladdMacro = "0.2.2"
-Static = "0.8"
+Static = "0.8, 1"
 StaticArrays = "1"
-StrideArrays = "0.1.26"
-Trixi = "0.6, 0.7, 0.8"
+Trixi = "0.7, 0.8"
 julia = "1.9"

@@ -1,2 +1,3 @@
 export cartesian2contravariant, covariant2cartesian
-include("covariant_dgsem_2d_p4est.jl")
+include("dgsem_p4est_covariant/dg.jl")
+include("dgsem_p4est_covariant/containers.jl")
