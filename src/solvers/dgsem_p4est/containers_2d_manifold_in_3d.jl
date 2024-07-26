@@ -28,16 +28,29 @@ mutable struct P4estElementContainerPtrArray{NDIMS, RealT <: Real, uEltype <: Re
     _surface_flux_values::Vector{uEltype}
 end
 
+@inline function nelements(elements::P4estElementContainerPtrArray)
+    size(elements.node_coordinates, ndims(elements) + 2)
+end
+@inline Base.ndims(::P4estElementContainerPtrArray{NDIMS}) where {NDIMS} = NDIMS
+@inline function Base.eltype(::P4estElementContainerPtrArray{NDIMS, RealT, uEltype}) where {
+                                                                                            NDIMS,
+                                                                                            RealT,
+                                                                                            uEltype
+                                                                                            }
+    uEltype
+end
+
 # Create element container and initialize element data.
 # This function dispatches on the dimensions of the mesh and the equation (AbstractEquations{3})
 function Trixi.init_elements(mesh::Union{P4estMesh{2, RealT},
                                          T8codeMesh{2, RealT}},
                              equations::AbstractEquations{3},
                              basis,
-                             ::Type{uEltype}) where {NDIMS, RealT <: Real,
+                             ::Type{uEltype}) where {RealT <: Real,
                                                      uEltype <: Real}
     nelements = Trixi.ncells(mesh)
 
+    NDIMS = 2 #Dimension of the manifold
     ndims_spa = size(mesh.tree_node_coordinates, 1)
 
     _node_coordinates = Vector{RealT}(undef,
@@ -148,11 +161,13 @@ function calc_node_coordinates_2d_shell!(node_coordinates,
     # We use `StrideArray`s here since these buffers are used in performance-critical
     # places and the additional information passed to the compiler makes them faster
     # than native `Array`s.
-    tmp1 = StrideArray(undef, real(mesh),
-                       Trixi.StaticInt(size(mesh.tree_node_coordinates, 1)),
-                       Trixi.static_length(nodes), Trixi.static_length(mesh.nodes))
-    matrix1 = StrideArray(undef, real(mesh),
-                          Trixi.static_length(nodes), Trixi.static_length(mesh.nodes))
+    tmp1 = Trixi.StrideArray(undef, real(mesh),
+                             Trixi.StaticInt(size(mesh.tree_node_coordinates, 1)),
+                             Trixi.static_length(nodes),
+                             Trixi.static_length(mesh.nodes))
+    matrix1 = Trixi.StrideArray(undef, real(mesh),
+                                Trixi.static_length(nodes),
+                                Trixi.static_length(mesh.nodes))
     matrix2 = similar(matrix1)
     baryweights_in = Trixi.barycentric_weights(mesh.nodes)
 
