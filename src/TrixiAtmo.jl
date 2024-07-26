@@ -18,6 +18,8 @@ using Reexport: @reexport
 
 include("auxiliary/auxiliary.jl")
 include("equations/equations.jl")
+include("meshes/meshes.jl")
+include("solvers/solvers.jl")
 
 export CompressibleMoistEulerEquations2D
 
