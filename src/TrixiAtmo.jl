@@ -12,6 +12,8 @@ using Trixi
 using MuladdMacro: @muladd
 using StaticArrays: SVector
 using Static: True, False
+using StrideArrays: PtrArray
+using StaticArrayInterface: static_size
 using LinearAlgebra: norm
 using Reexport: @reexport
 @reexport using StaticArrays: SVector

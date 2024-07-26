@@ -1,10 +1,38 @@
 @muladd begin
 #! format: noindent
 
-# Create element container and initialize element data
-function Trixi.init_elements(mesh::Union{P4estMesh{NDIMS, RealT},
-                                         T8codeMesh{NDIMS, RealT}},
-                             equations::AbstractCovariantEquations2D,
+# New p4est element container that allows the use of a PtrArray for the contravariant_vectors
+mutable struct P4estElementContainerPtrArray{NDIMS, RealT <: Real, uEltype <: Real,
+                                             NDIMSP1,
+                                             NDIMSP2, NDIMSP3,
+                                             ContravariantVectors <:
+                                             AbstractArray{RealT, NDIMSP3}} <:
+               Trixi.AbstractContainer
+    # Physical coordinates at each node
+    node_coordinates::Array{RealT, NDIMSP2}   # [orientation, node_i, node_j, node_k, element]
+    # Jacobian matrix of the transformation
+    # [jacobian_i, jacobian_j, node_i, node_j, node_k, element] where jacobian_i is the first index of the Jacobian matrix,...
+    jacobian_matrix::Array{RealT, NDIMSP3}
+    # Contravariant vectors, scaled by J, in Kopriva's blue book called Ja^i_n (i index, n dimension)
+    contravariant_vectors::ContravariantVectors  # [dimension, index, node_i, node_j, node_k, element]
+    # 1/J where J is the Jacobian determinant (determinant of Jacobian matrix)
+    inverse_jacobian::Array{RealT, NDIMSP1}   # [node_i, node_j, node_k, element]
+    # Buffer for calculated surface flux
+    surface_flux_values::Array{uEltype, NDIMSP2} # [variable, i, j, direction, element]
+
+    # internal `resize!`able storage
+    _node_coordinates::Vector{RealT}
+    _jacobian_matrix::Vector{RealT}
+    _contravariant_vectors::Vector{RealT}
+    _inverse_jacobian::Vector{RealT}
+    _surface_flux_values::Vector{uEltype}
+end
+
+# Create element container and initialize element data.
+# This function dispatches on the dimensions of the mesh and the equation (AbstractEquations{3})
+function Trixi.init_elements(mesh::Union{P4estMesh{2, RealT},
+                                         T8codeMesh{2, RealT}},
+                             equations::AbstractEquations{3},
                              basis,
                              ::Type{uEltype}) where {NDIMS, RealT <: Real,
                                                      uEltype <: Real}
@@ -30,10 +58,10 @@ function Trixi.init_elements(mesh::Union{P4estMesh{NDIMS, RealT},
     _contravariant_vectors = Vector{RealT}(undef,
                                            ndims_spa^2 * nnodes(basis)^NDIMS *
                                            nelements)
-    contravariant_vectors = Trixi.unsafe_wrap(Array, pointer(_contravariant_vectors),
-                                              (ndims_spa, ndims_spa,
-                                               ntuple(_ -> nnodes(basis), NDIMS)...,
-                                               nelements))
+    contravariant_vectors = PtrArray(pointer(_contravariant_vectors),
+                                     (Trixi.StaticInt(ndims_spa), ndims_spa,
+                                      ntuple(_ -> nnodes(basis), NDIMS)...,
+                                      nelements))
 
     _inverse_jacobian = Vector{RealT}(undef, nnodes(basis)^NDIMS * nelements)
     inverse_jacobian = Trixi.unsafe_wrap(Array, pointer(_inverse_jacobian),
@@ -49,24 +77,27 @@ function Trixi.init_elements(mesh::Union{P4estMesh{NDIMS, RealT},
                                              ntuple(_ -> nnodes(basis), NDIMS - 1)...,
                                              NDIMS * 2, nelements))
 
-    elements = Trixi.P4estElementContainer{NDIMS, RealT, uEltype, NDIMS + 1, NDIMS + 2,
-                                           NDIMS + 3}(node_coordinates, jacobian_matrix,
-                                                      contravariant_vectors,
-                                                      inverse_jacobian,
-                                                      surface_flux_values,
-                                                      _node_coordinates,
-                                                      _jacobian_matrix,
-                                                      _contravariant_vectors,
-                                                      _inverse_jacobian,
-                                                      _surface_flux_values)
+    elements = P4estElementContainerPtrArray{NDIMS, RealT, uEltype, NDIMS + 1,
+                                             NDIMS + 2,
+                                             NDIMS + 3, typeof(contravariant_vectors)}(node_coordinates,
+                                                                                       jacobian_matrix,
+                                                                                       contravariant_vectors,
+                                                                                       inverse_jacobian,
+                                                                                       surface_flux_values,
+                                                                                       _node_coordinates,
+                                                                                       _jacobian_matrix,
+                                                                                       _contravariant_vectors,
+                                                                                       _inverse_jacobian,
+                                                                                       _surface_flux_values)
 
-    init_elements_covariant!(elements, mesh, basis)
+    init_elements_2d_manifold_in_3d!(elements, mesh, basis)
 
     return elements
 end
 
-function init_elements_covariant!(elements, mesh::Union{P4estMesh{2}, T8codeMesh{2}},
-                                  basis::LobattoLegendreBasis)
+function init_elements_2d_manifold_in_3d!(elements,
+                                          mesh::Union{P4estMesh{2}, T8codeMesh{2}},
+                                          basis::LobattoLegendreBasis)
     (; node_coordinates, jacobian_matrix,
     contravariant_vectors, inverse_jacobian) = elements
 
@@ -118,7 +149,7 @@ function calc_node_coordinates_2d_shell!(node_coordinates,
     # places and the additional information passed to the compiler makes them faster
     # than native `Array`s.
     tmp1 = StrideArray(undef, real(mesh),
-                       StaticInt(size(mesh.tree_node_coordinates, 1)),
+                       Trixi.StaticInt(size(mesh.tree_node_coordinates, 1)),
                        Trixi.static_length(nodes), Trixi.static_length(mesh.nodes))
     matrix1 = StrideArray(undef, real(mesh),
                           Trixi.static_length(nodes), Trixi.static_length(mesh.nodes))

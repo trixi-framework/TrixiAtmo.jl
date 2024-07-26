@@ -1,1 +1,2 @@
-include("dgsem_p4est_covariant/containers.jl")
+include("dgsem_p4est/dg.jl")
+include("dgsem_p4est/containers_2d_manifold_in_3d.jl")
