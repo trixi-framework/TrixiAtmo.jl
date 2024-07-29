@@ -28,15 +28,12 @@ mutable struct P4estElementContainerPtrArray{NDIMS, RealT <: Real, uEltype <: Re
     _surface_flux_values::Vector{uEltype}
 end
 
-@inline function nelements(elements::P4estElementContainerPtrArray)
+@inline function Trixi.nelements(elements::P4estElementContainerPtrArray)
     size(elements.node_coordinates, ndims(elements) + 2)
 end
 @inline Base.ndims(::P4estElementContainerPtrArray{NDIMS}) where {NDIMS} = NDIMS
-@inline function Base.eltype(::P4estElementContainerPtrArray{NDIMS, RealT, uEltype}) where {
-                                                                                            NDIMS,
-                                                                                            RealT,
-                                                                                            uEltype
-                                                                                            }
+@inline function Base.eltype(
+    ::P4estElementContainerPtrArray{NDIMS, RealT, uEltype}) where {NDIMS, RealT, uEltype}
     uEltype
 end
 
@@ -44,7 +41,8 @@ end
 # This function dispatches on the dimensions of the mesh and the equation (AbstractEquations{3})
 function Trixi.init_elements(mesh::Union{P4estMesh{2, RealT},
                                          T8codeMesh{2, RealT}},
-                             equations::AbstractEquations{3},
+                             equations::Union{AbstractEquations{3},
+                                              AbstractCovariantEquations2D},
                              basis,
                              ::Type{uEltype}) where {RealT <: Real,
                                                      uEltype <: Real}

@@ -1,4 +1,5 @@
 using Trixi: AbstractEquations
+
 """
     Physical constants
 """
@@ -8,9 +9,9 @@ const EARTH_ROTATION_RATE = 7.292f-5  # rad/s
 const SECONDS_PER_DAY = 8.64f4
 
 abstract type AbstractCovariantEquations2D{NVARS} <: Trixi.AbstractEquations{2, NVARS} end
+abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:
+    AbstractEquations{NDIMS, NVARS} end
 
 export CovariantLinearAdvectionEquation2D
 include("covariant_advection.jl")
-abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:
-              AbstractEquations{NDIMS, NVARS} end
 include("compressible_moist_euler_2d_lucas.jl")

@@ -27,6 +27,4 @@ export CompressibleMoistEulerEquations2D
 export flux_chandrashekar, flux_LMARS
 
 export examples_dir
-include("meshes/meshes.jl")
-include("solvers/solvers.jl")
 end # module TrixiAtmo

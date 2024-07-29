@@ -3,7 +3,6 @@
 ###############################################################################
 
 using OrdinaryDiffEq, Trixi, TrixiAtmo
-using Rotations  # to compute solid body rotation
 
 ###############################################################################
 # Problem definition

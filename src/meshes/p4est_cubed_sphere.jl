@@ -30,6 +30,7 @@ function P4estMeshCubedSphere2D(trees_per_face_dimension, radius;
                                 polydeg, RealT = Float64,
                                 initial_refinement_level = 0, unsaved_changes = true,
                                 p4est_partition_allow_for_coarsening = true)
+                                
     connectivity = connectivity_cubed_sphere_2D(trees_per_face_dimension)
 
     n_trees = 6 * trees_per_face_dimension^2
