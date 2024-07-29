@@ -1,3 +1,4 @@
+using Trixi: AbstractEquations
 """
     Physical constants
 """
@@ -10,3 +11,6 @@ abstract type AbstractCovariantEquations2D{NVARS} <: Trixi.AbstractEquations{2, 
 
 export CovariantLinearAdvectionEquation2D
 include("covariant_advection.jl")
+abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:
+              AbstractEquations{NDIMS, NVARS} end
+include("compressible_moist_euler_2d_lucas.jl")
