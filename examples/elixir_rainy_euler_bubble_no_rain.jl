@@ -1,20 +1,22 @@
 using OrdinaryDiffEq
 using Trixi
+using TrixiAtmo
+using TrixiAtmo: source_terms_no_rain
 
 
 
 function initial_condition_bubble_no_rain(x, t, equations::CompressibleRainyEulerEquations2D)
     #TODO
-    return
+    return SVector(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 end
 
 
+
 ###############################################################################
-# semidiscretization of the compressible Euler equations
+# semidiscretization of the compressible rainy Euler equations
 
 equations = CompressibleRainyEulerEquations2D()
 
-#TODO check boundary conditions
 boundary_conditions = (x_neg = boundary_condition_periodic,
                        x_pos = boundary_condition_periodic,
                        y_neg = boundary_condition_slip_wall,
@@ -35,7 +37,6 @@ cells_per_dimension = (64, 32)
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = (true, false))
 
-#TODO import source terms from equations
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_bubble_no_rain, solver,
                                     source_terms = source_terms_no_rain,
                                     boundary_conditions = boundary_conditions)
@@ -44,7 +45,7 @@ semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_bubble_no
 # ODE solvers, callbacks etc.
 
 #TODO adjust values
-tspan = (0.0, 1000.0)  # 1000 seconds final time
+tspan = (0.0, 1000.0)
 
 ode = semidiscretize(semi, tspan)
 
@@ -52,6 +53,7 @@ summary_callback = SummaryCallback()
 
 analysis_interval = 1000
 
+# entropy?
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
                                      extra_analysis_errors = (:entropy_conservation_error,))
 
@@ -75,7 +77,7 @@ callbacks = CallbackSet(summary_callback,
 # run the simulation
 sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
             maxiters = 1.0e7,
-            dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
+            dt = 1.0, 
             save_everystep = false, callback = callbacks);
 
 summary_callback()
