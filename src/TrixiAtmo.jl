@@ -21,5 +21,6 @@ bar() = false
 baz() = Trixi.examples_dir()
 
 include("equations/equations.jl")
+export CompressibleRainyEulerEquations2D
 
 end # module TrixiAtmo
