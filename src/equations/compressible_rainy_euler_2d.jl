@@ -7,7 +7,14 @@ import Trixi: varnames,
 
 
 
-#TODO add description of equations and idea + sources
+###  Implementation similar to:
+# Sabine Doppler, Philip L. Lederer, Joachim Schöberl, Henry von Wahl,
+# A discontinuous Galerkin approach for atmospheric flows with implicit condensation,
+# Journal of Computational Physics,
+# Volume 499,
+# 2024,
+# 112713,
+# ISSN 0021-9991
 
 
 
@@ -43,11 +50,11 @@ end
 
 function CompressibleRainyEulerEquations2D(; RealT = Float64)
     # Specific heat capacities:
-    c_liquid_water = 4186.0
+    c_liquid_water           = 4186.0
     c_dry_air_const_pressure = 1004.0
-    c_dry_air_const_volume = 717.0
-    c_vapour_const_pressure = 1885.0
-    c_vapour_const_volume = 1424.0
+    c_dry_air_const_volume   =  717.0
+    c_vapour_const_pressure  = 1885.0
+    c_vapour_const_volume    = 1424.0
 
     # Gas constants:
     R_dry_air = c_dry_air_const_pressure - c_dry_air_const_volume
@@ -56,14 +63,14 @@ function CompressibleRainyEulerEquations2D(; RealT = Float64)
 
     # Reference values:
     saturation_vapour_pressure = 610.7
-    ref_temperature = 273.15
-    latent_heat_vap_ref_temp = 2.5e6
-    ref_pressure  = 1e5
+    ref_temperature            = 273.15
+    latent_heat_vap_ref_temp   = 2.5e6
+    ref_pressure               = 1e5
 
     # Other:
-    gravity = 9.81
+    gravity          = 9.81
     rain_water_distr = 8e6
-    v_mean_rain = 130.0
+    v_mean_rain      = 130.0
 
     return CompressibleRainyEulerEquations2D{RealT}(c_liquid_water, c_dry_air_const_pressure, c_dry_air_const_volume, 
                           c_vapour_const_pressure, c_vapour_const_volume, R_dry_air, 
@@ -76,15 +83,15 @@ end
 
 ###  varnames  ###
 
-varnames(::typeof(cons2cons), ::CompressibleRainyEulerEquations2D) = ("_rho_dry", "_rho_moist", "_rho_rain",
+varnames(::typeof(cons2cons), ::CompressibleRainyEulerEquations2D) = ("rho_dry_", "rho_moist_", "rho_rain_",
                                                                       "rho_v1", "rho_v2",
-                                                                      "_energy",
-                                                                      "rho_vapour", "rho_cloud",
+                                                                      "energy_",
+                                                                      "rho_vapour_h", "rho_cloud_h",
                                                                       "temperature",
-                                                                      "rho_dry_hydrostatic", "rho_moist_hydrostatic", "rho_rain_hydrostatic",
-                                                                      "energy_hydrostatic",
-                                                                      "rho_vapour_hydrostatic",
-                                                                      "temperature_hydrostatic")
+                                                                      "rho_dry_h_0", "rho_moist_h_0", "rho_rain_h_0",
+                                                                      "energy_h_0",
+                                                                      "rho_vapour_h_0",
+                                                                      "temperature_0")
 
 
 varnames(::typeof(cons2prim), ::CompressibleRainyEulerEquations2D) = ("rho_dry", "rho_moist", "rho_rain",
@@ -92,10 +99,10 @@ varnames(::typeof(cons2prim), ::CompressibleRainyEulerEquations2D) = ("rho_dry",
                                                                       "energy",
                                                                       "rho_vapour", "rho_cloud",
                                                                       "temperature",
-                                                                      "rho_dry_hydrostatic", "rho_moist_hydrostatic", "rho_rain_hydrostatic",
-                                                                      "energy_hydrostatic",
-                                                                      "rho_vapour_hydrostatic",
-                                                                      "temperature_hydrostatic")
+                                                                      "rho_dry_h_0", "rho_moist_h_0", "rho_rain_h_0",
+                                                                      "energy_h_0",
+                                                                      "rho_vapour_h_0",
+                                                                      "temperature_0")
 
 
 
@@ -103,8 +110,30 @@ varnames(::typeof(cons2prim), ::CompressibleRainyEulerEquations2D) = ("rho_dry",
 ###  conversion  ###
 
 @inline function cons2prim(u, equations::CompressibleRainyEulerEquations2D)
-    #TODO
-    return SVector(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    # name needed variables
+    rho_dry_, rho_moist_, rho_rain_,
+    rho_v1, rho_v2,
+    energy_,
+    _, _, _,
+    rho_dry_h_0, rho_moist_h_0, rho_rain_h_0,
+    energy_h_0,
+    _, _      = u
+
+    # densities
+    rho_dry   = rho_dry_   + rho_dry_h_0
+    rho_moist = rho_moist_ + rho_moist_h_0
+    rho_rain  = rho_rain_  + rho_rain_h_0
+    rho_inv   = 1 / (rho_dry + rho_moist + rho_rain)
+
+    # velocity
+    v1        = rho_v1 * rho_inv
+    v2        = rho_v2 * rho_inv
+
+    # energy
+    energy    = energy_    + energy_h_0
+
+    return SVector(rho_dry, rho_moist, rho_rain, v1, v2, energy,
+                   u[7], u[8], u[9], u[10], u[11], u[12], u[13], u[14], u[15])
 end
 
 
@@ -118,19 +147,67 @@ end
 ###  physics variables  ###
 
 @inline function speed_of_sound(u, equations::CompressibleRainyEulerEquations2D)
-    #TODO
+    # constants
+    c_l      = equations.c_liquid_water
+    c_vd     = equations.c_dry_air_const_volume
+    c_vv     = equations.c_vapour_const_volume
+    R_d      = equations.R_dry_air
+    R_v      = equations.R_vapour
+
+    # name needed variables
+    rho_dry_, rho_moist_, rho_rain_,
+    _, _,
+    _,
+    rho_vapour_h, rho_cloud_h,
+    temperature,
+    rho_dry_h_0, rho_moist_h_0, rho_rain_h_0,
+    _,
+    _, _     = u
+
+    # densities
+    rho_dry    = rho_dry_   + rho_dry_h_0
+    rho_moist  = rho_moist_ + rho_moist_h_0
+    rho_rain   = rho_rain_  + rho_rain_h_0
+    rho_vapour = rho_vapour_h     #TODO double check formula because this seems weird at first
+    rho_cloud  = rho_cloud_h      #TODO ^
+    rho_inv   = 1 / (rho_dry + rho_moist + rho_rain)
+
+    # formula
+    p   = R_d * rho_dry * temperature + R_v * rho_vapour * temperature
+    q_v = rho_vapour / rho_dry
+    q_l = (rho_cloud + rho_rain) / rho_dry
+    gamma_m = 1 + (R_d + R_v * q_v) / (c_vd + c_vv * q_v + c_l * q_l)
+    v_sound = sqrt(gamma_m * p * rho_inv)
+    
     return v_sound
 end
 
 
-@inline function terminal_velocity_rain(u, equations::CompressibleRainyEulerEquations2D)
-    #TODO
+@inline function terminal_velocity_rain(rho_moist, rho_rain, equations::CompressibleRainyEulerEquations2D)
+    # constants
+    N_0 = equations.rain_water_distr
+    v_0 = equations.v_mean_rain
+
+    # formula ( gamma(4.5) / 6 ~= 1.9386213994279082 )
+    v_terminal_rain = v_0 * 1.9386213994279082 * (rho_rain / (pi * rho_moist * N_0))^(0.125)
+
     return v_terminal_rain
 end
 
 
-@inline function saturation_vapour_pressure(u, equations::CompressibleRainyEulerEquations2D)
-    #TODO
+@inline function saturation_vapour_pressure(temperature, equations::CompressibleRainyEulerEquations2D)
+    # constants
+    c_l      = equations.c_liquid_water
+    c_pv     = equations.c_vapour_const_pressure
+    R_v      = equations.R_vapour
+    ref_s_p  = equations.ref_saturation_pressure
+    ref_temp = equations.ref_temperature
+    ref_L    = equations.ref_latent_heat_vap_temp
+
+    # Clausius Clapeyron formula
+    p_vapour_saturation  = ref_s_p * (temperature / ref_temp)^((c_pv - c_l) / R_v)
+    p_vapour_saturation *= exp(((ref_L - (c_pv - c_l) * ref_temp) / R_v) * (1 / ref_temp - 1 / temperature))
+
     return p_vapour_saturation
 end
 
@@ -156,7 +233,7 @@ end
 end
 
 
-@inline function source_terms_no_rain(u, x, t, equations::CompressibleRainyEulerEquations2D)
+@inline function source_terms_no_phase_change(u, x, t, equations::CompressibleRainyEulerEquations2D)
     #TODO
     return SVector(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 end
