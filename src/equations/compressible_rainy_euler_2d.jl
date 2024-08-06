@@ -58,8 +58,8 @@ function CompressibleRainyEulerEquations2D(; RealT = Float64)
 
     # Gas constants:
     R_dry_air = c_dry_air_const_pressure - c_dry_air_const_volume
-    R_vapour = c_vapour_const_pressure - c_vapour_const_volume
-    eps = R_dry_air / R_vapour
+    R_vapour  = c_vapour_const_pressure  - c_vapour_const_volume
+    eps       = R_dry_air                / R_vapour
 
     # Reference values:
     saturation_vapour_pressure = 610.7
@@ -120,17 +120,17 @@ varnames(::typeof(cons2prim), ::CompressibleRainyEulerEquations2D) = ("rho_dry",
     _, _      = u
 
     # densities
-    rho_dry   = rho_dry_   + rho_dry_h_0
-    rho_moist = rho_moist_ + rho_moist_h_0
-    rho_rain  = rho_rain_  + rho_rain_h_0
+    rho_dry   = rho_dry_     + rho_dry_h_0
+    rho_moist = rho_moist_   + rho_moist_h_0
+    rho_rain  = rho_rain_    + rho_rain_h_0
     rho_inv   = 1 / (rho_dry + rho_moist + rho_rain)
 
     # velocity
-    v1        = rho_v1 * rho_inv
-    v2        = rho_v2 * rho_inv
+    v1        = rho_v1       * rho_inv
+    v2        = rho_v2       * rho_inv
 
     # energy
-    energy    = energy_    + energy_h_0
+    energy    = energy_      + energy_h_0
 
     return SVector(rho_dry, rho_moist, rho_rain, v1, v2, energy,
                    u[7], u[8], u[9], u[10], u[11], u[12], u[13], u[14], u[15])
@@ -162,15 +162,15 @@ end
     temperature,
     rho_dry_h_0, rho_moist_h_0, rho_rain_h_0,
     _,
-    _, _     = u
+    _, _       = u
 
     # densities
-    rho_dry    = rho_dry_   + rho_dry_h_0
-    rho_moist  = rho_moist_ + rho_moist_h_0
-    rho_rain   = rho_rain_  + rho_rain_h_0
+    rho_dry    = rho_dry_     + rho_dry_h_0
+    rho_moist  = rho_moist_   + rho_moist_h_0
+    rho_rain   = rho_rain_    + rho_rain_h_0
     rho_vapour = rho_vapour_h     #TODO double check formula because this seems weird at first
     rho_cloud  = rho_cloud_h      #TODO ^
-    rho_inv   = 1 / (rho_dry + rho_moist + rho_rain)
+    rho_inv    = 1 / (rho_dry + rho_moist + rho_rain)
 
     # formula
     p   = R_d * rho_dry * temperature + R_v * rho_vapour * temperature
@@ -189,7 +189,7 @@ end
     v_0 = equations.v_mean_rain
 
     # formula ( gamma(4.5) / 6 ~= 1.9386213994279082 )
-    v_terminal_rain = v_0 * 1.9386213994279082 * (rho_rain / (pi * rho_moist * N_0))^(0.125)
+    v_terminal_rain = v_0 * 1.9386213994279082 * (rho_rain / (pi * (rho_moist + rho_rain) * N_0))^(0.125)
 
     return v_terminal_rain
 end
@@ -216,26 +216,196 @@ end
 ###  pde discretization  ###
 
 @inline function flux(u, orientation::Integer, equations::CompressibleRainyEulerEquations2D)
-    #TODO
-    return SVector(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    # constants
+    c_l   = equations.c_liquid_water
+    R_d   = equations.R_dry_air
+    R_v   = equations.R_vapour
+    T_ref = equations.ref_temperature
+
+    # name needed variables
+    rho_dry_, rho_moist_, rho_rain_,
+    rho_v1, rho_v2,
+    energy_,
+    rho_vapour_h, _, 
+    temperature,
+    rho_dry_h_0, rho_moist_h_0, rho_rain_h_0,
+    energy_h_0,
+    rho_vapour_h_0, 
+    temperature_0  = u
+
+    # densities
+    rho_dry    = rho_dry_     + rho_dry_h_0
+    rho_moist  = rho_moist_   + rho_moist_h_0
+    rho_rain   = rho_rain_    + rho_rain_h_0
+    rho_vapour = rho_vapour_h                              #TODO ?
+    rho        = rho_dry      + rho_moist      + rho_rain
+    rho_inv    = 1 / (rho)
+
+    # velocity
+    v1         = rho_v1       * rho_inv
+    v2         = rho_v2       * rho_inv
+    v_r        = terminal_velocity_rain(rho_moist, rho_rain, equations)
+
+    # pressure
+    p   = R_d * rho_dry     * temperature   + R_v * rho_vapour     * temperature
+    p_0 = R_d * rho_dry_h_0 * temperature_0 + R_v * rho_vapour_h_0 * temperature_0
+    p_  = p   - p_0
+
+    # energy
+    energy = energy_ + energy_h_0
+
+    # flux for orientation cases 
+    if (orientation == 1)
+        # "mass"
+        f1 = rho_dry   * v1
+        f2 = rho_moist * v1
+        f3 = rho_rain  * v1
+
+        # "impulse"
+        f4 = rho       * v1 * v1 + p_
+        f5 = rho       * v1 * v2
+
+        # "energy"
+        f6 = (energy + p) * v1
+
+    else
+        # "mass"
+        f1 = rho_dry   *  v2
+        f2 = rho_moist *  v2
+        f3 = rho_rain  * (v2 - v_r)
+
+        # "impulse"
+        f4 = rho       * v1 * v2 - rho_rain * v_r * v1
+        f5 = rho       * v2 * v2 - rho_rain * v_r * v2 + p_
+
+        # "energy"
+        f6 = ((energy + p) * v2 - (c_l * (temperature - T_ref) + 0.5 * (v1^2 + v2^2))) * rho_rain * v_r
+    end
+
+    return SVector(f1, f2, f3, f4, f5, f6, 
+                   0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
 end
 
 
 @inline function flux(u, normal_direction::AbstractVector, equations::CompressibleRainyEulerEquations2D)
-    #TODO
-    return SVector(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    #TODO Double-check for mistakes in "impulse" and "energy"!
+    # constants
+    c_l   = equations.c_liquid_water
+    R_d   = equations.R_dry_air
+    R_v   = equations.R_vapour
+    T_ref = equations.ref_temperature
+
+    # name needed variables
+    rho_dry_, rho_moist_, rho_rain_,
+    rho_v1, rho_v2,
+    energy_,
+    rho_vapour_h, _, 
+    temperature,
+    rho_dry_h_0, rho_moist_h_0, rho_rain_h_0,
+    energy_h_0,
+    rho_vapour_h_0, 
+    temperature_0  = u
+
+    # densities
+    rho_dry    = rho_dry_     + rho_dry_h_0
+    rho_moist  = rho_moist_   + rho_moist_h_0
+    rho_rain   = rho_rain_    + rho_rain_h_0
+    rho_vapour = rho_vapour_h                              #TODO ?
+    rho        = rho_dry      + rho_moist      + rho_rain
+    rho_inv    = 1 / (rho)
+
+    # velocity
+    v1         = rho_v1       * rho_inv
+    v2         = rho_v2       * rho_inv
+    v_r        = terminal_velocity_rain(rho_moist, rho_rain, equations)
+
+    # normal velocities
+    v_normal   = v1  * normal_direction[1] +  v2 * normal_direction[2]
+    v_r_normal =                             v_r * normal_direction[2]    #TODO correct?
+
+    # pressure
+    p   = R_d * rho_dry     * temperature   + R_v * rho_vapour     * temperature
+    p_0 = R_d * rho_dry_h_0 * temperature_0 + R_v * rho_vapour_h_0 * temperature_0
+    p_  = p   - p_0
+
+    # energy
+    energy = energy_ + energy_h_0
+
+    # flux
+    # "mass"
+    f1 = rho_dry   *  v_normal
+    f2 = rho_moist *  v_normal
+    f3 = rho_rain  * (v_normal - v_r_normal)
+
+    # "impulse"
+    f4 = rho       * v_normal * v1 - rho_rain * v_r_normal * v1 + p_ * normal_direction[1]
+    f5 = rho       * v_normal * v2 - rho_rain * v_r_normal * v2 + p_ * normal_direction[2]
+
+    # "energy"
+    f6 = ((energy + p) * v_normal - (c_l * (temperature - T_ref) + 0.5 * (v_normal^2))) * rho_rain * v_r_normal
+
+    return SVector(f1, f2, f3, f4, f5, f6, 
+                   0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
 end
 
 
 @inline function source_terms_rainy(u, x, t, equations::CompressibleRainyEulerEquations2D)
-    #TODO
-    return SVector(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    #TODO implement conversion source terms
+    # constants
+    g = equations.gravity
+    
+    # name needed variables
+    rho_dry_, rho_moist_, rho_rain_,
+    _, rho_v2,
+    _,
+    rho_vapour_h, rho_cloud_h,
+    _,
+    rho_dry_h_0, rho_moist_h_0, rho_rain_h_0,
+    _,
+    _, _      = u
+
+    # densities
+    rho_dry   = rho_dry_    + rho_dry_h_0
+    rho_moist = rho_moist_  + rho_moist_h_0
+    rho_rain  = rho_rain_   + rho_rain_h_0
+    
+    rho       = rho_dry     + rho_moist     + rho_rain
+    rho_h_0   = rho_dry_h_0 + rho_moist_h_0 + rho_rain_h_0
+    rho_      = rho         - rho_h_0
+
+    #TODO non-linear solve for temperature, rho_vapour_h, rho_cloud_h
+
+    return SVector(0.0, 0.0, 0.0, 0.0,
+                   rho_ * g, 0.0, rho_v2 * g,     #TODO check signs
+                   0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
 end
 
 
+# no phase changes and no Coriolis term
+
 @inline function source_terms_no_phase_change(u, x, t, equations::CompressibleRainyEulerEquations2D)
-    #TODO
-    return SVector(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    # constants
+    g = equations.gravity
+    
+    # name needed variables
+    rho_dry_, rho_moist_, rho_rain_,
+    _, rho_v2,
+    _, _, _, _,
+    rho_dry_h_0, rho_moist_h_0, rho_rain_h_0,
+    _, _, _      = u
+
+    # densities
+    rho_dry   = rho_dry_    + rho_dry_h_0
+    rho_moist = rho_moist_  + rho_moist_h_0
+    rho_rain  = rho_rain_   + rho_rain_h_0
+    
+    rho       = rho_dry     + rho_moist     + rho_rain
+    rho_h_0   = rho_dry_h_0 + rho_moist_h_0 + rho_rain_h_0
+    rho_      = rho         - rho_h_0
+
+    return SVector(0.0, 0.0, 0.0, 0.0,
+                   rho_ * g, 0.0, rho_v2 * g,     #TODO check signs
+                   0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0) 
 end
 
 
