@@ -2,7 +2,7 @@ using OrdinaryDiffEq
 using Trixi, TrixiAtmo
 using TrixiAtmo: CompressibleMoistEulerEquations2D, source_terms_geopotential,
                  source_terms_phase_change,
-                 source_terms_nonhydrostatic_raylight_sponge,
+                 source_terms_nonhydrostatic_rayleigh_sponge,
                  cons2drypot, flux_LMARS
 
 ###############################################################################
@@ -10,7 +10,7 @@ using TrixiAtmo: CompressibleMoistEulerEquations2D, source_terms_geopotential,
 
 # Mountain Triggered Gravity Wave test from:
 # W. A. Gallus JR., J. B. Klemp, Behavior of Flow over Step Orography, Monthly Weather
-# Review Vol. 128.4, pages 1153–1164, 2000, 
+# Review Vol. 128.4, pages 1153–1164, 2000,
 # https://doi.org/10.1175/1520-0493(2000)128<1153:BOFOSO>2.0.CO;2.
 function initial_condition_nonhydrostatic_gravity_wave(x, t,
                                                        equations::CompressibleMoistEulerEquations2D)
@@ -42,7 +42,7 @@ initial_condition = initial_condition_nonhydrostatic_gravity_wave
 function source(u, x, t, equations::CompressibleMoistEulerEquations2D)
     return (source_terms_geopotential(u, equations) +
             source_terms_phase_change(u, equations::CompressibleMoistEulerEquations2D) +
-            source_terms_nonhydrostatic_raylight_sponge(u, x, t,
+            source_terms_nonhydrostatic_rayleigh_sponge(u, x, t,
                                                         equations::CompressibleMoistEulerEquations2D))
 end
 
@@ -62,7 +62,7 @@ volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
 solver = DGSEM(basis, surface_flux, volume_integral)
 
-# Deformed rectangle that has "witch of agnesi" as bottom 
+# Deformed rectangle that has "witch of agnesi" as bottom
 
 function bottom(x)
     h = 400.0
@@ -85,7 +85,7 @@ f4(s) = SVector(20000.0 * s, 16000.0)
 
 faces = (f1, f2, f3, f4)
 
-# dx = 0.2*a  dz = 10-200 m  für (40,16) km 
+# dx = 0.2*a  dz = 10-200 m  für (40,16) km
 cells_per_dimension = (100, 80)
 
 mesh = StructuredMesh(cells_per_dimension, faces, periodicity = (true, false))
