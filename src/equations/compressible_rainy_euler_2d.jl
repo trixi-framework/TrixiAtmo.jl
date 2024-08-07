@@ -143,6 +143,35 @@ end
 end
 
 
+# for convenience
+@inline function cons2speeds(u, equations::CompressibleRainyEulerEquations2D)
+    # name needed variables
+    rho_dry_, rho_moist_, rho_rain_,
+    rho_v1, rho_v2,
+    _, _, _, _,
+    rho_dry_h_0, rho_moist_h_0, rho_rain_h_0,
+    _, _, _   = u
+
+    # densities
+    rho_dry   = rho_dry_     + rho_dry_h_0
+    rho_moist = rho_moist_   + rho_moist_h_0
+    rho_rain  = rho_rain_    + rho_rain_h_0
+    rho_inv   = 1 / (rho_dry + rho_moist + rho_rain)
+
+    # velocity
+    v1        = rho_v1       * rho_inv
+    v2        = rho_v2       * rho_inv
+
+    # get speed of sound 
+    v_sound   = speed_of_sound(u, equations)
+
+    # get terminal velocity rain
+    v_r       = terminal_velocity_rain(rho_moist, rho_rain, equations)
+
+    return SVector(v1, v2, v_sound, v_r)
+end
+
+
 
 ###  physics variables  ###
 
@@ -410,14 +439,28 @@ end
 
 
 @inline function max_abs_speeds(u, equations::CompressibleRainyEulerEquations2D)
-    #TODO
-    return 0.0, 0.0
+    # name needed variables
+    v1, v2, v_sound, v_r = cons2speeds(u, equations)
+
+    return abs(v1) + v_sound, abs(v2) + v_sound + abs(v_r)
 end
 
 
 @inline function max_abs_speed_naive(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleRainyEulerEquations2D)
-    #TODO
-    return 0.0
+    # name needed variables
+    v1_ll, v2_ll, v_sound_ll, v_r_ll = cons2speeds(u_ll, equations)
+    v1_rr, v2_rr, v_sound_rr, v_r_rr = cons2speeds(u_rr, equations)
+
+    # calculate upper bounds for left and right speed
+    v_ll_max  = abs(v1_ll * normal_direction[1] +  v2_ll * normal_direction[2])
+    v_ll_max += abs(                              v_r_ll * normal_direction[2])
+    v_ll_max += v_sound_ll
+
+    v_rr_max  = abs(v1_rr * normal_direction[1] +  v2_rr * normal_direction[2])
+    v_rr_max += abs(                              v_r_rr * normal_direction[2])
+    v_rr_max += v_sound_rr
+
+    return max(v_ll_max, v_rr_max)
 end
 
 
