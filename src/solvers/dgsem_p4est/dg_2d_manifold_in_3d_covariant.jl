@@ -20,16 +20,18 @@ end
 """
 @inline function cartesian2contravariant(u_cartesian, ::AbstractCovariantEquations2D{3},
                                          i, j, element, cache)
-    Ja11, Ja12, Ja13, Ja21, Ja22, Ja23 = view(cache.elements.contravariant_vectors, :,
-                                              :, i, j, element)
 
-    invJ = cache.elements.inverse_jacobian[i, j, element]
+    (; contravariant_vectors, inverse_jacobian) = cache.elements
 
+    Ja11, Ja12, Ja13 = Trixi.get_contravariant_vector(1, contravariant_vectors, i, j,
+                                                      element)
+    Ja21, Ja22, Ja23 = Trixi.get_contravariant_vector(2, contravariant_vectors, i, j,
+                                                      element)
     return SVector(u_cartesian[1],
-                   invJ * (Ja11 * u_cartesian[2] +
+                   inverse_jacobian[i, j, element] * (Ja11 * u_cartesian[2] +
                     Ja12 * u_cartesian[3] +
                     Ja13 * u_cartesian[4]),
-                   invJ * (Ja21 * u_cartesian[2] +
+                   inverse_jacobian[i, j, element] * (Ja21 * u_cartesian[2] +
                     Ja22 * u_cartesian[3] +
                     Ja23 * u_cartesian[4]))
 end
@@ -39,9 +41,9 @@ end
 """
 @inline function contravariant2cartesian(u_node, ::AbstractCovariantEquations2D{3},
                                          i, j, element, cache)
+
     A11, A21, A31, A12, A22, A32 = view(cache.elements.jacobian_matrix, :, :, i, j,
                                         element)
-
     return SVector(u_node[1],
                    A11 * u_node[2] + A12 * u_node[3],
                    A21 * u_node[2] + A22 * u_node[3],
@@ -109,6 +111,51 @@ end
 end
 
 """
+    Weak form kernel for fluxes already in contravariant components
+"""
+@inline function Trixi.flux_differencing_kernel!(du, u,
+                                                 element,
+                                                 mesh::Union{StructuredMesh{2},
+                                                            StructuredMeshView{2},
+                                                            UnstructuredMesh2D, P4estMesh{2},
+                                                            T8codeMesh{2}},
+                                                 nonconservative_terms::False, equations,
+                                                 volume_flux, dg::DGSEM, cache, 
+                                                 alpha = true)
+    (; derivative_split) = dg.basis
+    (; inverse_jacobian) = cache.elements
+
+    for j in eachnode(dg), i in eachnode(dg)
+        u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
+        J_node = 1 / inverse_jacobian[i, j, element]
+
+        # x direction
+        for ii in (i + 1):nnodes(dg)
+            u_node_ii = Trixi.get_node_vars(u, equations, dg, ii, j, element)
+            J_avg = 0.5 * (J_node +  1 / inverse_jacobian[ii, j, element])
+            flux1 = J_avg * volume_flux(u_node, u_node_ii, 1, equations)
+            Trixi.multiply_add_to_node_vars!(du, alpha * derivative_split[i, ii], flux1,
+                                       equations, dg, i, j, element)
+            Trixi.multiply_add_to_node_vars!(du, alpha * derivative_split[ii, i], flux1,
+                                       equations, dg, ii, j, element)
+        end
+
+        # y direction
+        for jj in (j + 1):nnodes(dg)
+            u_node_jj = Trixi.get_node_vars(u, equations, dg, i, jj, element)
+            J_avg = 0.5 * (J_node +  1 / inverse_jacobian[i, jj, element])
+            flux2 = J_avg * volume_flux(u_node, u_node_jj, 2, equations)
+            Trixi.multiply_add_to_node_vars!(du, alpha * derivative_split[j, jj], flux2,
+                                       equations, dg, i, j, element)
+            Trixi.multiply_add_to_node_vars!(du, alpha * derivative_split[jj, j], flux2,
+                                       equations, dg, i, jj, element)
+        end
+    end
+
+    return nothing
+end
+
+"""
     Interface flux for the covariant form, where the numerical flux is computed in the direction of the 2D reference normal
 """
 function Trixi.calc_interface_flux!(surface_flux_values,
@@ -162,8 +209,7 @@ function Trixi.calc_interface_flux!(surface_flux_values,
 
         for node in eachnode(dg)
             Trixi.calc_interface_flux!(surface_flux_values, mesh, nonconservative_terms,
-                                       equations, surface_integral, dg, cache,
-                                       interface,
+                                       equations, surface_integral, dg, cache, interface,
                                        i_primary, j_primary, i_secondary, j_secondary,
                                        node, primary_direction, primary_element,
                                        node_secondary, secondary_direction,

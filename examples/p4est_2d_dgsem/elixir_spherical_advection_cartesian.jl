@@ -1,3 +1,6 @@
+###############################################################################
+# DGSEM for the linear advection equation on the cubed using Lagrange multiplier approach
+###############################################################################
 
 using OrdinaryDiffEq
 using Trixi
