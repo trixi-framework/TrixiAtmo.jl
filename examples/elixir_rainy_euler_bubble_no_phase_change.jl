@@ -14,7 +14,7 @@ using TrixiAtmo: source_terms_no_phase_change
 # 112713,
 # ISSN 0021-9991
 
-function initial_condition_bubble_bryan_fritsch(x, t, equations::CompressibleRainyEulerEquations2D) 
+function initial_condition_moist_bubble_bryan_fritsch(x, t, equations::CompressibleRainyEulerEquations2D) 
     # Position of the bubble defined by center and radius:
     x_center = 10_000.0
     z_center =  2_000.0
@@ -32,7 +32,7 @@ function initial_condition_bubble_bryan_fritsch(x, t, equations::CompressibleRai
 
     #TODO
 
-    return SVector(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    return SVector(0, 0, 0.0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0, 0, 0, 0)
 end
 
 
@@ -61,7 +61,7 @@ cells_per_dimension = (64, 32)
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = (true, false))
 
-semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_bubble_bryan_fritsch, solver,
+semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_moist_bubble_bryan_fritsch, solver,
                                     source_terms = source_terms_no_phase_change,
                                     boundary_conditions = boundary_conditions)
 
