@@ -1,4 +1,5 @@
 using Trixi
+using NLsolve
 import Trixi: varnames,
               cons2prim, cons2entropy,
               flux,
@@ -123,7 +124,7 @@ varnames(::typeof(cons2prim), ::CompressibleRainyEulerEquations2D) = ("rho_dry",
     rho_dry   = rho_dry_     + rho_dry_h_0
     rho_moist = rho_moist_   + rho_moist_h_0
     rho_rain  = rho_rain_    + rho_rain_h_0
-    rho_inv   = 1 / (rho_dry + rho_moist + rho_rain)
+    rho_inv   = inv(rho_dry + rho_moist + rho_rain)
 
     # velocity
     v1        = rho_v1       * rho_inv
@@ -156,7 +157,7 @@ end
     rho_dry   = rho_dry_     + rho_dry_h_0
     rho_moist = rho_moist_   + rho_moist_h_0
     rho_rain  = rho_rain_    + rho_rain_h_0
-    rho_inv   = 1 / (rho_dry + rho_moist + rho_rain)
+    rho_inv   = inv(rho_dry + rho_moist + rho_rain)
 
     # velocity
     v1        = rho_v1       * rho_inv
@@ -199,13 +200,14 @@ end
     rho_rain   = rho_rain_    + rho_rain_h_0
     rho_vapour = rho_vapour_h     #TODO double check formula because this seems weird at first
     rho_cloud  = rho_cloud_h      #TODO ^
-    rho_inv    = 1 / (rho_dry + rho_moist + rho_rain)
+    rho_inv    = inv(rho_dry + rho_moist + rho_rain)
 
     # formula
     p   = R_d * rho_dry * temperature + R_v * rho_vapour * temperature
     q_v = rho_vapour / rho_dry
     q_l = (rho_cloud + rho_rain) / rho_dry
     gamma_m = 1 + (R_d + R_v * q_v) / (c_vd + c_vv * q_v + c_l * q_l)
+
     v_sound = sqrt(gamma_m * p * rho_inv)
     
     return v_sound
@@ -218,7 +220,11 @@ end
     v_0 = equations.v_mean_rain
 
     # formula ( gamma(4.5) / 6 ~= 1.9386213994279082 )
-    v_terminal_rain = v_0 * 1.9386213994279082 * (rho_rain / (pi * (rho_moist + rho_rain) * N_0))^(0.125)
+    if ( rho_rain > 0.0)
+        v_terminal_rain = v_0 * 1.9386213994279082 * (rho_rain / (pi * (rho_moist + rho_rain) * N_0))^(0.125)
+    else
+        v_terminal_rain = 0.0
+    end
 
     return v_terminal_rain
 end
@@ -268,7 +274,7 @@ end
     rho_rain   = rho_rain_    + rho_rain_h_0
     rho_vapour = rho_vapour_h                              #TODO ?
     rho        = rho_dry      + rho_moist      + rho_rain
-    rho_inv    = 1 / (rho)
+    rho_inv    = inv(rho)
 
     # velocity
     v1         = rho_v1       * rho_inv
@@ -341,7 +347,7 @@ end
     rho_rain   = rho_rain_    + rho_rain_h_0
     rho_vapour = rho_vapour_h                              #TODO ?
     rho        = rho_dry      + rho_moist      + rho_rain
-    rho_inv    = 1 / (rho)
+    rho_inv    = inv(rho)
 
     # velocity
     v1         = rho_v1       * rho_inv
@@ -378,20 +384,23 @@ end
 end
 
 
+# no Coriolis term
 @inline function source_terms_rainy(u, x, t, equations::CompressibleRainyEulerEquations2D)
-    #TODO implement conversion source terms
     # constants
-    g = equations.gravity
+    R_v   = equations.R_vapour
+    T_ref = equations.ref_temperature
+    g     = equations.gravity
     
     # name needed variables
     rho_dry_, rho_moist_, rho_rain_,
     _, rho_v2,
     _,
     rho_vapour_h, rho_cloud_h,
-    _,
+    temperature,
     rho_dry_h_0, rho_moist_h_0, rho_rain_h_0,
     _,
     _, _      = u
+
 
     # densities
     rho_dry   = rho_dry_    + rho_dry_h_0
@@ -402,10 +411,21 @@ end
     rho_h_0   = rho_dry_h_0 + rho_moist_h_0 + rho_rain_h_0
     rho_      = rho         - rho_h_0
 
+    rho_v     = rho_vapour_h
+    rho_cloud = rho_cloud_h
+    rho_vs    = saturation_vapour_pressure(temperature, equations) / (R_v * temperature)
+
+    # source terms phase change
+    S_evaporation     = (3.86e-3 - 9.41e-5 * (temperature - T_ref)) * (1 + 9.1 * rho_rain^(0.1875))
+    S_evaporation    *= (rho_vs - rho_v) * rho_r^(0.5)
+    S_auto_conversion = 0.001 * rho_cloud
+    S_accretion       = 1.72 * rho_cloud * rho_rain^(0.875)
+    S_rain            = S_auto_conversion + S_accretion - S_evaporation
+
     #TODO non-linear solve for temperature, rho_vapour_h, rho_cloud_h
 
-    return SVector(0.0, 0.0, 0.0, 0.0,
-                   rho_ * g, 0.0, rho_v2 * g,     #TODO check signs
+    return SVector(0.0, S_rain, -S_rain, 0.0,
+                   -rho_ * g, -rho_v2 * g, 0.0,
                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
 end
 
@@ -432,8 +452,49 @@ end
     rho_h_0   = rho_dry_h_0 + rho_moist_h_0 + rho_rain_h_0
     rho_      = rho         - rho_h_0
 
+    #TODO non-linear solve for temperature, rho_vapour_h, rho_cloud_h
+
     return SVector(0.0, 0.0, 0.0, 0.0,
-                   rho_ * g, 0.0, rho_v2 * g,     #TODO check signs
+                   -rho_ * g, -rho_v2 * g, 0.0,
+                   0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0) 
+end
+
+
+@inline function source_terms_dry(u, x, t, equations::CompressibleRainyEulerEquations2D)
+    # constants
+    c_vd  = equations.c_dry_air_const_volume
+    T_ref = equations.ref_temperature
+    g     = equations.gravity
+    
+    # name needed variables
+    rho_dry_, rho_moist_, rho_rain_,
+    rho_v1, rho_v2,
+    _, _, energy_, _,
+    rho_dry_h_0, rho_moist_h_0, rho_rain_h_0,
+    energy_h_0, _, _      = u
+
+    # densities
+    rho_dry   = rho_dry_    + rho_dry_h_0
+    rho_moist = rho_moist_  + rho_moist_h_0
+    rho_rain  = rho_rain_   + rho_rain_h_0
+    
+    rho       = rho_dry     + rho_moist     + rho_rain
+    rho_inv   = inv(rho)
+    rho_h_0   = rho_dry_h_0 + rho_moist_h_0 + rho_rain_h_0
+    rho_      = rho         - rho_h_0
+
+    # velocities
+    v1 = rho_v1 * rho_inv
+    v2 = rho_v2 * rho_inv
+
+    # energy
+    energy    = energy_     + energy_h_0
+
+    # update temperature
+    u[9] = (energy - 0.5 * (v1^2 + v2^2) * rho) / (c_vd * rho) + T_ref
+
+    return SVector(0.0, 0.0, 0.0, 0.0,
+                   -rho_ * g, -rho_v2 * g, 0.0,
                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0) 
 end
 
@@ -465,8 +526,9 @@ end
 
 
 
-###  boundary conditions  ###
+###  boundary conditions  ### TODO: double check the idea of this boundary condition 
 
+# should probably be similar to the approach in compressible_euler_2d.jl
 @inline function boundary_condition_slip_wall(u_inner, normal_direction::AbstractVector, x, t, 
                                               surface_flux_function, equations::CompressibleRainyEulerEquations2D)
     #TODO
@@ -474,10 +536,22 @@ end
 end
 
 
+# same as in compressible_euler_2d.jl
 @inline function boundary_condition_slip_wall(u_inner, normal_direction::AbstractVector, direction, x, t,
                                               surface_flux_function, equations::CompressibleRainyEulerEquations2D)
-    #TODO
-    return SVector(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    # flip sign of normal to make it outward pointing, then flip the sign of the normal flux back
+    # to be inward pointing on the -x and -y sides due to the orientation convention used by StructuredMesh
+    if isodd(direction)
+        boundary_flux = -boundary_condition_slip_wall(u_inner, -normal_direction,
+                                                      x, t, surface_flux_function,
+                                                      equations)
+    else
+        boundary_flux = boundary_condition_slip_wall(u_inner, normal_direction,
+                                                     x, t, surface_flux_function,
+                                                     equations)
+    end
+
+    return boundary_flux
 end
 
 
