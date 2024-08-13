@@ -28,7 +28,7 @@ mutable struct P4estElementContainerPtrArray{NDIMS, RealT <: Real, uEltype <: Re
     _surface_flux_values::Vector{uEltype}
 end
 
-@inline function nelements(elements::P4estElementContainerPtrArray)
+@inline function Trixi.nelements(elements::P4estElementContainerPtrArray)
     size(elements.node_coordinates, ndims(elements) + 2)
 end
 @inline Base.ndims(::P4estElementContainerPtrArray{NDIMS}) where {NDIMS} = NDIMS
