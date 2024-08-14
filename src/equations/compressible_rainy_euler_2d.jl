@@ -1,10 +1,10 @@
 using Trixi
-using NLsolve
-import Trixi: varnames,
-              cons2prim, cons2entropy,
-              flux,
-              max_abs_speeds, max_abs_speed_naive,
-              boundary_condition_slip_wall
+using NLsolve: nlsolve
+import  Trixi: varnames,
+               cons2prim, cons2entropy,
+               flux,
+               max_abs_speeds, max_abs_speed_naive,
+               boundary_condition_slip_wall
 
 
 
@@ -401,7 +401,6 @@ end
     _,
     _, _      = u
 
-
     # densities
     rho_dry   = rho_dry_    + rho_dry_h_0
     rho_moist = rho_moist_  + rho_moist_h_0
@@ -411,13 +410,13 @@ end
     rho_h_0   = rho_dry_h_0 + rho_moist_h_0 + rho_rain_h_0
     rho_      = rho         - rho_h_0
 
-    rho_v     = rho_vapour_h
-    rho_cloud = rho_cloud_h
-    rho_vs    = saturation_vapour_pressure(temperature, equations) / (R_v * temperature)
+    rho_vapour = rho_vapour_h
+    rho_cloud  = rho_cloud_h
+    rho_vs     = saturation_vapour_pressure(temperature, equations) / (R_v * temperature)
 
     # source terms phase change
     S_evaporation     = (3.86e-3 - 9.41e-5 * (temperature - T_ref)) * (1 + 9.1 * rho_rain^(0.1875))
-    S_evaporation    *= (rho_vs - rho_v) * rho_r^(0.5)
+    S_evaporation    *= (rho_vs - rho_vapour) * rho_rain^(0.5)
     S_auto_conversion = 0.001 * rho_cloud
     S_accretion       = 1.72 * rho_cloud * rho_rain^(0.875)
     S_rain            = S_auto_conversion + S_accretion - S_evaporation
@@ -434,25 +433,52 @@ end
 
 @inline function source_terms_no_phase_change(u, x, t, equations::CompressibleRainyEulerEquations2D)
     # constants
-    g = equations.gravity
+    c_l   = equations.c_liquid_water
+    c_vd  = equations.c_dry_air_const_volume
+    c_vv  = equations.c_vapour_const_volume
+    R_v   = equations.R_vapour
+    L_ref = equations.ref_latent_heat_vap_temp
+    T_ref = equations.ref_temperature
+    g     = equations.gravity
     
     # name needed variables
     rho_dry_, rho_moist_, rho_rain_,
     _, rho_v2,
-    _, _, _, _,
+    _, 
+    rho_vapour_h, rho_cloud_h,
+    temperature,
     rho_dry_h_0, rho_moist_h_0, rho_rain_h_0,
     _, _, _      = u
 
     # densities
-    rho_dry   = rho_dry_    + rho_dry_h_0
-    rho_moist = rho_moist_  + rho_moist_h_0
-    rho_rain  = rho_rain_   + rho_rain_h_0
+    rho_dry    = rho_dry_    + rho_dry_h_0
+    rho_moist  = rho_moist_  + rho_moist_h_0
+    rho_rain   = rho_rain_   + rho_rain_h_0
+
+    rho_vapour = rho_vapour_h   #TODO ??
+    rho_cloud  = rho_cloud_h
     
     rho       = rho_dry     + rho_moist     + rho_rain
     rho_h_0   = rho_dry_h_0 + rho_moist_h_0 + rho_rain_h_0
     rho_      = rho         - rho_h_0
 
-    #TODO non-linear solve for temperature, rho_vapour_h, rho_cloud_h
+    #TODO test type stability
+    # non-linear solve for rho_vapour, rho_cloud, temperature
+    # guess = [rho_vapour; rho_cloud; temperature]
+
+    function f!(residual, guess)
+        residual[1]  = (c_vd * rho_dry + c_vv * guess[1] + c_l * (guess[2] + rho_rain))*(guess[3] - T_ref)
+        residual[1] += guess[1] * (L_ref - R_v * T_ref)
+        residual[2]  = min(saturation_vapour_pressure(guess[3], equations) / (R_v * guess[3]), rho_moist)
+        residual[3]  = rho_moist - guess[1] - guess[2]
+    end
+
+    nl_sol = nlsolve(f!, [rho_vapour, rho_cloud, temperature], ftol = 1e-14, iterations = 20)
+
+    # update entries of u
+    u = SVector(u[1], u[2], u[3], u[4], u[5], u[6],
+                nl_sol.zero[1], nl_sol.zero[2], nl_sol.zero[3],
+                u[10], u[11], u[12], u[13], u[14], u[15])
 
     return SVector(0.0, 0.0, 0.0, 0.0,
                    -rho_ * g, -rho_v2 * g, 0.0,
@@ -491,7 +517,9 @@ end
     energy    = energy_     + energy_h_0
 
     # update temperature
-    u[9] = (energy - 0.5 * (v1^2 + v2^2) * rho) / (c_vd * rho) + T_ref
+    u = SVector(u[1], u[2], u[3], u[4], u[5], u[6], u[7], u[8],
+                (energy - 0.5 * (v1^2 + v2^2) * rho) / (c_vd * rho) + T_ref,
+                u[10], u[11], u[12], u[13], u[14], u[15])
 
     return SVector(0.0, 0.0, 0.0, 0.0,
                    -rho_ * g, -rho_v2 * g, 0.0,
@@ -532,7 +560,7 @@ end
 @inline function boundary_condition_slip_wall(u_inner, normal_direction::AbstractVector, x, t, 
                                               surface_flux_function, equations::CompressibleRainyEulerEquations2D)
     #TODO
-    return SVector(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    return SVector(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
 end
 
 
