@@ -1,7 +1,7 @@
 using OrdinaryDiffEq
 using Trixi
 using TrixiAtmo
-using TrixiAtmo: source_terms_no_phase_change
+using TrixiAtmo: source_terms_dry
 
 
 
@@ -43,10 +43,11 @@ function initial_condition_bubble_dry(x, t, equations::CompressibleRainyEulerEqu
 
     v1 = 0.0
     v2 = 0.0
-    E = c_v * T + 0.5 * (v1^2 + v2^2)
+    E_0 = c_v * T 
+    E_  = 0.5 * (v1^2 + v2^2)
 
     # random experiments
-    return SVector(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, T, rho, 0.0, 0.0, E, 0.0, potential_temperature)
+    return SVector(0.0, 0.0, 0.0, 0.0, 0.0, E_, 0.0, 0.0, T, rho, 0.0, 0.0, E_0, 0.0, potential_temperature)
 end
 
 
@@ -76,7 +77,7 @@ mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = (true, false))
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_bubble_dry, solver,
-                                    source_terms = source_terms_no_phase_change,
+                                    source_terms = source_terms_dry,
                                     boundary_conditions = boundary_conditions)
 
 ###############################################################################
