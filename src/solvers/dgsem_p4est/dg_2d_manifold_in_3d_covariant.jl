@@ -16,41 +16,6 @@
 end
 
 """
-    Convert from 4-vector of scalar plus 3 Cartesian components to 3-vector of scalar plus 2 contravariant velocity/momentum components
-"""
-@inline function cartesian2contravariant(u_cartesian, ::AbstractCovariantEquations2D{3},
-                                         i, j, element, cache)
-
-    (; contravariant_vectors, inverse_jacobian) = cache.elements
-
-    Ja11, Ja12, Ja13 = Trixi.get_contravariant_vector(1, contravariant_vectors, i, j,
-                                                      element)
-    Ja21, Ja22, Ja23 = Trixi.get_contravariant_vector(2, contravariant_vectors, i, j,
-                                                      element)
-    return SVector(u_cartesian[1],
-                   inverse_jacobian[i, j, element] * (Ja11 * u_cartesian[2] +
-                    Ja12 * u_cartesian[3] +
-                    Ja13 * u_cartesian[4]),
-                   inverse_jacobian[i, j, element] * (Ja21 * u_cartesian[2] +
-                    Ja22 * u_cartesian[3] +
-                    Ja23 * u_cartesian[4]))
-end
-
-"""
-    Convert from 3-vector of scalar plus 2 contravariant velocity/momentum components to 4-vector of scalar plus 3 Cartesian components 
-"""
-@inline function contravariant2cartesian(u_node, ::AbstractCovariantEquations2D{3},
-                                         i, j, element, cache)
-
-    A11, A21, A31, A12, A22, A32 = view(cache.elements.jacobian_matrix, :, :, i, j,
-                                        element)
-    return SVector(u_node[1],
-                   A11 * u_node[2] + A12 * u_node[3],
-                   A21 * u_node[2] + A22 * u_node[3],
-                   A31 * u_node[2] + A32 * u_node[3])
-end
-
-"""
    Get Cartesian coordinates at a point on the manifold
 """
 @inline function Trixi.get_node_coords(x, ::AbstractCovariantEquations2D, ::DG,
@@ -89,10 +54,10 @@ end
 
     for j in eachnode(dg), i in eachnode(dg)
         u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
-        J = 1 / inverse_jacobian[i, j, element]
+        J_node = 1 / inverse_jacobian[i, j, element]
 
-        contravariant_flux1 = J * flux(u_node, 1, equations)
-        contravariant_flux2 = J * flux(u_node, 2, equations)
+        contravariant_flux1 = J_node * flux(u_node, 1, equations)
+        contravariant_flux2 = J_node * flux(u_node, 2, equations)
 
         for ii in eachnode(dg)
             Trixi.multiply_add_to_node_vars!(du, alpha * derivative_dhat[ii, i],
@@ -119,7 +84,8 @@ end
                                                             StructuredMeshView{2},
                                                             UnstructuredMesh2D, P4estMesh{2},
                                                             T8codeMesh{2}},
-                                                 nonconservative_terms::False, equations,
+                                                 nonconservative_terms::False, 
+                                                 equations::AbstractCovariantEquations2D,
                                                  volume_flux, dg::DGSEM, cache, 
                                                  alpha = true)
     (; derivative_split) = dg.basis

@@ -8,6 +8,7 @@ using OrdinaryDiffEq, Trixi, TrixiAtmo
 # Problem definition
 
 function initial_condition_advection_sphere(x, t, ::CovariantLinearAdvectionEquation2D)
+    
     # Gaussian density
     rho = 1.0 + exp(-20 * (x[1]^2 + x[3]^2))
 

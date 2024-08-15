@@ -9,6 +9,7 @@ using OrdinaryDiffEq, Trixi, TrixiAtmo
 
 function initial_condition_advection_sphere(x, t, ::CovariantLinearAdvectionEquation2D)
     # Gaussian density
+    
     rho = 1.0 + exp(-20 * (x[1]^2 + x[3]^2))
 
     # Spherical coordinates for the point x
@@ -76,7 +77,7 @@ summary_callback = SummaryCallback()
 # The AnalysisCallback allows to analyse the solution in regular intervals and prints the results
 analysis_callback = AnalysisCallback(semi, interval = 10,
                                      save_analysis = true,
-                                     extra_analysis_errors = (:conservation_error,),)
+                                     extra_analysis_errors = (:conservation_error,))
 
 # The SaveSolutionCallback allows to save the solution to a file in regular intervals
 save_solution = SaveSolutionCallback(interval = 10,

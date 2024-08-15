@@ -44,7 +44,7 @@ end
 # This function dispatches on the dimensions of the mesh and the equation (AbstractEquations{3})
 function Trixi.init_elements(mesh::Union{P4estMesh{2, RealT},
                                          T8codeMesh{2, RealT}},
-                             equations::AbstractEquations{3},
+                             equations::Union{AbstractEquations{3}, AbstractCovariantEquations2D},
                              basis,
                              ::Type{uEltype}) where {RealT <: Real,
                                                      uEltype <: Real}

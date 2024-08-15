@@ -6,6 +6,3 @@ static2val(::Trixi.StaticInt{N}) where {N} = Val{N}()
     SVector(ntuple(@inline(dim->contravariant_vectors[dim, index, indices...]),
                    static2val(static_size(contravariant_vectors, Trixi.StaticInt(1)))))
 end
-
-export cartesian2contravariant, covariant2cartesian
-include("dg_2d_manifold_in_3d_covariant.jl")
