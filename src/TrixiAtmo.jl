@@ -22,6 +22,7 @@ include("auxiliary/auxiliary.jl")
 include("equations/equations.jl")
 include("meshes/meshes.jl")
 include("solvers/solvers.jl")
+include("semidiscretization/semidiscretization_hyperbolic_2d_manifold_in_3d.jl")
 
 export CompressibleMoistEulerEquations2D
 
