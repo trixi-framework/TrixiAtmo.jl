@@ -99,7 +99,8 @@ end
 
 initial_condition = initial_condition_advection_sphere
 
-mesh = TrixiAtmo.P4estMeshCubedSphere2D(5, 1.0, polydeg = polydeg, initial_refinement_level = 0)
+mesh = TrixiAtmo.P4estMeshCubedSphere2D(5, 1.0, polydeg = polydeg,
+                                        initial_refinement_level = 0)
 
 # A semidiscretization collects data structures and functions for the spatial discretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver)
@@ -124,7 +125,7 @@ summary_callback = SummaryCallback()
 # The AnalysisCallback allows to analyse the solution in regular intervals and prints the results
 analysis_callback = AnalysisCallback(semi, interval = 10,
                                      save_analysis = true,
-                                     extra_analysis_errors = (:conservation_error, ),
+                                     extra_analysis_errors = (:conservation_error,),
                                      extra_analysis_integrals = (Trixi.density,))
 
 # The SaveSolutionCallback allows to save the solution to a file in regular intervals
