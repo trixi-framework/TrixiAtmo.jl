@@ -18,7 +18,6 @@ function Trixi.SemidiscretizationHyperbolic(mesh::P4estMesh{2},
     _boundary_conditions = Trixi.digest_boundary_conditions(boundary_conditions, mesh,
                                                             solver,
                                                             cache)
-    #performance_counter = Trixi.PerformanceCounter()
 
     SemidiscretizationHyperbolic{typeof(mesh), typeof(equations),
                                  typeof(initial_condition),
