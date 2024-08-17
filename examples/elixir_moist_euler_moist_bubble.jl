@@ -284,7 +284,6 @@ analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
 save_solution = SaveSolutionCallback(interval = 1000,
-                                     output_directory = "moist_bubble",
                                      save_initial_solution = true,
                                      save_final_solution = true,
                                      solution_variables = solution_variables)
