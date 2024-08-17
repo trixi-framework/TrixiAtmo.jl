@@ -15,7 +15,4 @@ abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:
 export CovariantLinearAdvectionEquation2D
 include("covariant_advection.jl")
 
-export CovariantShallowWaterEquations2D
-include("covariant_shallow_water.jl")
-
 include("compressible_moist_euler_2d_lucas.jl")
