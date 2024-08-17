@@ -16,4 +16,8 @@ const TRIXIATMO_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
     @time if TRIXIATMO_TEST == "all" || TRIXIATMO_TEST == "moist_euler"
         include("test_2d_moist_euler.jl")
     end
+
+    @time if TRIXIATMO_TEST == "all" || TRIXIATMO_TEST == "spherical_advection"
+        include("test_spherical_advection.jl")
+    end
 end

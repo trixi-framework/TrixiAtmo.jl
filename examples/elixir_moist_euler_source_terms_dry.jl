@@ -1,6 +1,3 @@
-# The same setup as tree_2d_dgsem/elixir_euler_source_terms.jl
-# to verify the StructuredMesh implementation against TreeMesh
-
 using OrdinaryDiffEq
 using Trixi, TrixiAtmo
 using TrixiAtmo: source_terms_convergence_test_dry, initial_condition_convergence_test_dry

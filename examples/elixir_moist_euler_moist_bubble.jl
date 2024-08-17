@@ -46,26 +46,26 @@ function generate_function_of_y(dz, y0, r_t0, theta_e0,
     end
 end
 
-struct AtmossphereLayers{RealT <: Real}
+struct AtmosphereLayers{RealT <: Real}
     equations::CompressibleMoistEulerEquations2D
     # structure:  1--> i-layer (z = total_height/precision *(i-1)),  2--> rho, rho_theta, rho_qv, rho_ql
-    LayerData::Matrix{RealT}
+    layer_data::Matrix{RealT}
     total_height::RealT
     preciseness::Int
     layers::Int
     ground_state::NTuple{2, RealT}
-    equivalentpotential_temperature::RealT
+    equivalent_potential_temperature::RealT
     mixing_ratios::NTuple{2, RealT}
 end
 
-function AtmossphereLayers(equations; total_height = 10010.0, preciseness = 10,
-                           ground_state = (1.4, 100000.0),
-                           equivalentpotential_temperature = 320,
-                           mixing_ratios = (0.02, 0.02), RealT = Float64)
+function AtmosphereLayers(equations; total_height = 10010.0, preciseness = 10,
+                          ground_state = (1.4, 100000.0),
+                          equivalent_potential_temperature = 320,
+                          mixing_ratios = (0.02, 0.02), RealT = Float64)
     @unpack kappa, p_0, c_pd, c_vd, c_pv, c_vv, R_d, R_v, c_pl = equations
     rho0, p0 = ground_state
     r_t0, r_v0 = mixing_ratios
-    theta_e0 = equivalentpotential_temperature
+    theta_e0 = equivalent_potential_temperature
 
     rho_qv0 = rho0 * r_v0
     T0 = theta_e0
@@ -73,7 +73,7 @@ function AtmossphereLayers(equations; total_height = 10010.0, preciseness = 10,
 
     n = convert(Int, total_height / preciseness)
     dz = 0.01
-    LayerData = zeros(RealT, n + 1, 4)
+    layer_data = zeros(RealT, n + 1, 4)
 
     F = generate_function_of_y(dz, y0, r_t0, theta_e0, equations)
     sol = nlsolve(F, y0)
@@ -84,7 +84,7 @@ function AtmossphereLayers(equations; total_height = 10010.0, preciseness = 10,
     kappa_M = (R_d * rho_d + R_v * rho_qv) / (c_pd * rho_d + c_pv * rho_qv + c_pl * rho_ql)
     rho_theta = rho * (p0 / p)^kappa_M * T * (1 + (R_v / R_d) * r_v) / (1 + r_t)
 
-    LayerData[1, :] = [rho, rho_theta, rho_qv, rho_ql]
+    layer_data[1, :] = [rho, rho_theta, rho_qv, rho_ql]
     for i in (1:n)
         y0 = deepcopy(sol.zero)
         dz = preciseness
@@ -98,11 +98,11 @@ function AtmossphereLayers(equations; total_height = 10010.0, preciseness = 10,
                   (c_pd * rho_d + c_pv * rho_qv + c_pl * rho_ql)
         rho_theta = rho * (p0 / p)^kappa_M * T * (1 + (R_v / R_d) * r_v) / (1 + r_t)
 
-        LayerData[i + 1, :] = [rho, rho_theta, rho_qv, rho_ql]
+        layer_data[i + 1, :] = [rho, rho_theta, rho_qv, rho_ql]
     end
 
-    return AtmossphereLayers{RealT}(equations, LayerData, total_height, dz, n, ground_state,
-                                    theta_e0, mixing_ratios)
+    return AtmosphereLayers{RealT}(equations, layer_data, total_height, dz, n, ground_state,
+                                   theta_e0, mixing_ratios)
 end
 
 # Moist bubble test case from paper:
@@ -110,30 +110,30 @@ end
 # Models, MonthlyWeather Review Vol.130, 2917–2928, 2002,
 # https://journals.ametsoc.org/view/journals/mwre/130/12/1520-0493_2002_130_2917_absfmn_2.0.co_2.xml.
 function initial_condition_moist_bubble(x, t, equations::CompressibleMoistEulerEquations2D,
-                                        AtmosphereLayers::AtmossphereLayers)
-    @unpack LayerData, preciseness, total_height = AtmosphereLayers
+                                        atmosphere_layers::AtmosphereLayers)
+    @unpack layer_data, preciseness, total_height = atmosphere_layers
     dz = preciseness
     z = x[2]
     if (z > total_height && !(isapprox(z, total_height)))
-        error("The atmossphere does not match the simulation domain")
+        error("The atmosphere does not match the simulation domain")
     end
     n = convert(Int, floor((z + eps()) / dz)) + 1
     z_l = (n - 1) * dz
-    (rho_l, rho_theta_l, rho_qv_l, rho_ql_l) = LayerData[n, :]
+    (rho_l, rho_theta_l, rho_qv_l, rho_ql_l) = layer_data[n, :]
     z_r = n * dz
     if (z_l == total_height)
         z_r = z_l + dz
         n = n - 1
     end
-    (rho_r, rho_theta_r, rho_qv_r, rho_ql_r) = LayerData[n + 1, :]
+    (rho_r, rho_theta_r, rho_qv_r, rho_ql_r) = layer_data[n + 1, :]
     rho = (rho_r * (z - z_l) + rho_l * (z_r - z)) / dz
     rho_theta = rho * (rho_theta_r / rho_r * (z - z_l) + rho_theta_l / rho_l * (z_r - z)) /
                 dz
     rho_qv = rho * (rho_qv_r / rho_r * (z - z_l) + rho_qv_l / rho_l * (z_r - z)) / dz
     rho_ql = rho * (rho_ql_r / rho_r * (z - z_l) + rho_ql_l / rho_l * (z_r - z)) / dz
 
-    rho, rho_e, rho_qv, rho_ql = PerturbMoistProfile(x, rho, rho_theta, rho_qv, rho_ql,
-                                                     equations::CompressibleMoistEulerEquations2D)
+    rho, rho_e, rho_qv, rho_ql = perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
+                                                        equations::CompressibleMoistEulerEquations2D)
 
     v1 = 0.0
     v2 = 0.0
@@ -144,8 +144,8 @@ function initial_condition_moist_bubble(x, t, equations::CompressibleMoistEulerE
     return SVector(rho, rho_v1, rho_v2, rho_E, rho_qv, rho_ql)
 end
 
-function PerturbMoistProfile(x, rho, rho_theta, rho_qv, rho_ql,
-                             equations::CompressibleMoistEulerEquations2D)
+function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
+                                equations::CompressibleMoistEulerEquations2D)
     @unpack kappa, p_0, c_pd, c_vd, c_pv, c_vv, R_d, R_v, c_pl, L_00 = equations
     xc = 10000.0
     zc = 2000.0
@@ -168,12 +168,12 @@ function PerturbMoistProfile(x, rho, rho_theta, rho_qv, rho_ql,
     r_l = rho_ql / rho_d
     r_t = r_v + r_l
 
-    # equivalentpotential temperature
+    # equivalent potential temperature
     a = T_loc * (p_0 / p_d)^(R_d / (c_pd + r_t * c_pl))
     b = H^(-r_v * R_v / c_pd)
     L_v = L_00 + (c_pv - c_pl) * T_loc
     c = exp(L_v * r_v / ((c_pd + r_t * c_pl) * T_loc))
-    aeq_pot = (a * b * c)
+    aeq_pot = (a * b * c) # TODO: this is not used. remove?
 
     # Assume pressure stays constant
     if (r < rc && Δθ > 0)
@@ -220,11 +220,11 @@ function PerturbMoistProfile(x, rho, rho_theta, rho_qv, rho_ql,
 end
 
 # Create background atmosphere data set
-AtmossphereData = AtmossphereLayers(equations)
+atmosphere_data = AtmosphereLayers(equations)
 
 # Create the initial condition with the initial data set
 function initial_condition_moist(x, t, equations)
-    return initial_condition_moist_bubble(x, t, equations, AtmossphereData)
+    return initial_condition_moist_bubble(x, t, equations, atmosphere_data)
 end
 
 initial_condition = initial_condition_moist

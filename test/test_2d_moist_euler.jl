@@ -7,7 +7,7 @@ include("test_trixiatmo.jl") # TODO - This is a repetition from Trixi.jl
 
 EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples") # TODO - Do we need a subdirectory for examples?
 
-@trixiatmo_testset "elixir_moist_euler_dry_bubble.jl" begin
+@trixiatmo_testset "elixir_moist_euler_dry_bubble" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_moist_euler_dry_bubble.jl"),
                         l2=[
