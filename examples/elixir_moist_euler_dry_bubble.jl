@@ -1,5 +1,5 @@
 using OrdinaryDiffEq
-using Trixi # TODO - Decide. This structure requires Trixi.jl to be in Project.toml of `Test`
+using Trixi
 using TrixiAtmo
 using TrixiAtmo: flux_LMARS, source_terms_geopotential, cons2drypot
 

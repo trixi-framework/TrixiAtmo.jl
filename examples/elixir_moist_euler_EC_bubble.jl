@@ -9,7 +9,6 @@ using NLsolve: nlsolve
 
 equations = CompressibleMoistEulerEquations2D()
 
-# TODO - Should the IC functions and struct be in the equation file?
 function moist_state(y, dz, y0, r_t0, theta_e0,
                      equations::CompressibleMoistEulerEquations2D)
     @unpack p_0, g, c_pd, c_pv, c_vd, c_vv, R_d, R_v, c_pl, L_00 = equations
@@ -108,8 +107,8 @@ end
 
 # Generate background state from the Layer data set by linearely interpolating the layers
 function initial_condition_moist_bubble(x, t, equations::CompressibleMoistEulerEquations2D,
-                                        AtmosphereLayers::AtmosphereLayers)
-    @unpack LayerData, preciseness, total_height = AtmosphereLayers
+                                        atmosphere_layers::AtmosphereLayers)
+    @unpack LayerData, preciseness, total_height = atmosphere_layers
     dz = preciseness
     z = x[2]
     if (z > total_height && !(isapprox(z, total_height)))
@@ -130,7 +129,7 @@ function initial_condition_moist_bubble(x, t, equations::CompressibleMoistEulerE
     rho_qv = rho * (rho_qv_r / rho_r * (z - z_l) + rho_qv_l / rho_l * (z_r - z)) / dz
     rho_ql = rho * (rho_ql_r / rho_r * (z - z_l) + rho_ql_l / rho_l * (z_r - z)) / dz
 
-    rho, rho_e, rho_qv, rho_ql = PerturbMoistProfile(x, rho, rho_theta, rho_qv, rho_ql,
+    rho, rho_e, rho_qv, rho_ql = perturb_moist_profile(x, rho, rho_theta, rho_qv, rho_ql,
                                                      equations::CompressibleMoistEulerEquations2D)
 
     v1 = 60.0
@@ -143,7 +142,7 @@ function initial_condition_moist_bubble(x, t, equations::CompressibleMoistEulerE
 end
 
 # Add perturbation to the profile
-function PerturbMoistProfile(x, rho, rho_theta, rho_qv, rho_ql,
+function perturb_moist_profile(x, rho, rho_theta, rho_qv, rho_ql,
                              equations::CompressibleMoistEulerEquations2D)
     @unpack kappa, p_0, c_pd, c_vd, c_pv, c_vv, R_d, R_v, c_pl, L_00 = equations
     xc = 2000
