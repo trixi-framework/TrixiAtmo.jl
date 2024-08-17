@@ -132,8 +132,8 @@ function initial_condition_moist_bubble(x, t, equations::CompressibleMoistEulerE
     rho_qv = rho * (rho_qv_r / rho_r * (z - z_l) + rho_qv_l / rho_l * (z_r - z)) / dz
     rho_ql = rho * (rho_ql_r / rho_r * (z - z_l) + rho_ql_l / rho_l * (z_r - z)) / dz
 
-    rho, rho_e, rho_qv, rho_ql = perturb_moist_profile(x, rho, rho_theta, rho_qv, rho_ql,
-                                                     equations::CompressibleMoistEulerEquations2D)
+    rho, rho_e, rho_qv, rho_ql = perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
+                                                        equations::CompressibleMoistEulerEquations2D)
 
     v1 = 0.0
     v2 = 0.0
@@ -144,8 +144,8 @@ function initial_condition_moist_bubble(x, t, equations::CompressibleMoistEulerE
     return SVector(rho, rho_v1, rho_v2, rho_E, rho_qv, rho_ql)
 end
 
-function perturb_moist_profile(x, rho, rho_theta, rho_qv, rho_ql,
-                             equations::CompressibleMoistEulerEquations2D)
+function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
+                                equations::CompressibleMoistEulerEquations2D)
     @unpack kappa, p_0, c_pd, c_vd, c_pv, c_vv, R_d, R_v, c_pl, L_00 = equations
     xc = 10000.0
     zc = 2000.0
@@ -168,12 +168,12 @@ function perturb_moist_profile(x, rho, rho_theta, rho_qv, rho_ql,
     r_l = rho_ql / rho_d
     r_t = r_v + r_l
 
-    # equivalentpotential temperature
+    # equivalent potential temperature
     a = T_loc * (p_0 / p_d)^(R_d / (c_pd + r_t * c_pl))
     b = H^(-r_v * R_v / c_pd)
     L_v = L_00 + (c_pv - c_pl) * T_loc
     c = exp(L_v * r_v / ((c_pd + r_t * c_pl) * T_loc))
-    aeq_pot = (a * b * c)
+    aeq_pot = (a * b * c) # TODO: this is not used. remove?
 
     # Assume pressure stays constant
     if (r < rc && Δθ > 0)
