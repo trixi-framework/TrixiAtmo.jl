@@ -10,7 +10,7 @@ const SECONDS_PER_DAY = 8.64f4
 
 abstract type AbstractCovariantEquations2D{NVARS} <: AbstractEquations{2, NVARS} end
 abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:
-    AbstractEquations{NDIMS, NVARS} end
+              AbstractEquations{NDIMS, NVARS} end
 
 export CovariantLinearAdvectionEquation2D
 include("covariant_advection.jl")

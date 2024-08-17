@@ -1,13 +1,13 @@
-###############################################################################
-# DGSEM for the linear advection equation on the cubed using Lagrange multiplier approach
-###############################################################################
 
 using OrdinaryDiffEq
 using Trixi
+using TrixiAtmo
 
 ###############################################################################
 # semidiscretization of the linear advection equation
 
+# We use the Euler equations structure but modify the rhs! function to convert it to a
+# variable-coefficient advection equation
 equations = CompressibleEulerEquations3D(1.4)
 
 # Create DG solver with polynomial degree = 3 and (local) Lax-Friedrichs/Rusanov flux as surface flux
@@ -101,7 +101,8 @@ end
 
 initial_condition = initial_condition_advection_sphere
 
-mesh = P4estMeshCubedSphere2D(5, 1.0, polydeg = polydeg, initial_refinement_level = 0)
+mesh = TrixiAtmo.P4estMeshCubedSphere2D(5, 1.0, polydeg = polydeg,
+                                        initial_refinement_level = 0)
 
 # A semidiscretization collects data structures and functions for the spatial discretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver)
@@ -126,6 +127,7 @@ summary_callback = SummaryCallback()
 # The AnalysisCallback allows to analyse the solution in regular intervals and prints the results
 analysis_callback = AnalysisCallback(semi, interval = 10,
                                      save_analysis = true,
+                                     extra_analysis_errors = (:conservation_error,),
                                      extra_analysis_integrals = (Trixi.density,))
 
 # The SaveSolutionCallback allows to save the solution to a file in regular intervals
@@ -133,17 +135,19 @@ save_solution = SaveSolutionCallback(interval = 10,
                                      solution_variables = cons2prim)
 
 # The StepsizeCallback handles the re-calculation of the maximum Δt after each time step
-# stepsize_callback = StepsizeCallback(cfl = 1.4)
+stepsize_callback = StepsizeCallback(cfl = 0.7)
 
 # Create a CallbackSet to collect all callbacks such that they can be passed to the ODE solver
-callbacks = CallbackSet(summary_callback, analysis_callback, save_solution)
+callbacks = CallbackSet(summary_callback, analysis_callback, save_solution,
+                        stepsize_callback)
 
 ###############################################################################
 # run the simulation
 
 # OrdinaryDiffEq's `solve` method evolves the solution in time and executes the passed callbacks
 sol = solve(ode_semi_custom, CarpenterKennedy2N54(williamson_condition = false),
-            dt = pi * 1e-3, adaptive = false, save_everystep = false, callback = callbacks);
+            dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
+            save_everystep = false, callback = callbacks);
 
 # Print the timer summary
 summary_callback()

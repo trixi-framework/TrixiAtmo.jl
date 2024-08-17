@@ -7,9 +7,9 @@ include("test_trixiatmo.jl")
 
 EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
 
-@trixiatmo_testset "elixir_euler_spherical_advection_cartesian" begin
+@trixiatmo_testset "elixir_spherical_advection_cartesian" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_spherical_advection_cartesian.jl"),
+                                 "elixir_spherical_advection_cartesian.jl"),
                         l2=[
                             8.44505073e-03,
                             8.23414117e-03,
@@ -23,6 +23,29 @@ EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
                             1.37453400e-02,
                             0.00000000e+00,
                             4.09322999e-01,
+                        ])
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    let
+        t = sol.t[end]
+        u_ode = sol.u[end]
+        du_ode = similar(u_ode)
+        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
+    end
+end
+
+@trixiatmo_testset "elixir_spherical_advection_covariant" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_spherical_advection_covariant.jl"),
+                        l2=[
+                            9.71730194e-03,
+                            0.00000000e+00,
+                            0.00000000e+00,
+                        ],
+                        linf=[
+                            6.98678150e-02,
+                            0.00000000e+00,
+                            0.00000000e+00,
                         ])
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)

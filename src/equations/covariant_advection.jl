@@ -30,7 +30,8 @@ end
 """
     Compute a given contravariant flux component
 """
-@inline function Trixi.flux(u, orientation::Integer, ::CovariantLinearAdvectionEquation2D)
+@inline function Trixi.flux(u, orientation::Integer,
+                            ::CovariantLinearAdvectionEquation2D)
     z = zero(eltype(u))
     return SVector(u[orientation + 1] * u[1], z, z)
 end
@@ -62,13 +63,12 @@ end
     return abs(u[2]), abs(u[3])
 end
 
-
 """
     Convert from 4-vector of scalar plus 3 Cartesian components to 3-vector of scalar plus 2 contravariant velocity/momentum components
 """
-@inline function cartesian2contravariant(u_cartesian, ::CovariantLinearAdvectionEquation2D,
+@inline function cartesian2contravariant(u_cartesian,
+                                         ::CovariantLinearAdvectionEquation2D,
                                          i, j, element, cache)
-
     (; contravariant_vectors, inverse_jacobian) = cache.elements
 
     Ja11, Ja12, Ja13 = Trixi.get_contravariant_vector(1, contravariant_vectors, i, j,
@@ -89,7 +89,6 @@ end
 """
 @inline function contravariant2cartesian(u_node, ::CovariantLinearAdvectionEquation2D,
                                          i, j, element, cache)
-
     A11, A21, A31, A12, A22, A32 = view(cache.elements.jacobian_matrix, :, :, i, j,
                                         element)
     return SVector(u_node[1],
@@ -97,5 +96,4 @@ end
                    A21 * u_node[2] + A22 * u_node[3],
                    A31 * u_node[2] + A32 * u_node[3])
 end
-
 end # @muladd
