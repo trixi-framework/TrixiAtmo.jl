@@ -47,7 +47,7 @@ function generate_function_of_y(dz, y0, r_t0, theta_e0,
     end
 end
 #Create Initial atmosphere by generating a layer data set
-struct AtmossphereLayers{RealT <: Real}
+struct atmosphereLayers{RealT <: Real}
     equations::CompressibleMoistEulerEquations2D
     # structure:  1--> i-layer (z = total_height/precision *(i-1)),  2--> rho, rho_theta, rho_qv, rho_ql
     LayerData::Matrix{RealT} # Contains the layer data for each height
@@ -59,10 +59,10 @@ struct AtmossphereLayers{RealT <: Real}
     mixing_ratios::NTuple{2, RealT} # Constant mixing ratio. Also defines initial guess for rho_qv0 = r_v0 * rho_0.
 end
 
-function AtmossphereLayers(equations; total_height = 10010.0, preciseness = 10,
-                           ground_state = (1.4, 100000.0),
-                           equivalentpotential_temperature = 320,
-                           mixing_ratios = (0.02, 0.02), RealT = Float64)
+function atmosphereLayers(equations; total_height = 10010.0, preciseness = 10,
+                          ground_state = (1.4, 100000.0),
+                          equivalentpotential_temperature = 320,
+                          mixing_ratios = (0.02, 0.02), RealT = Float64)
     @unpack kappa, p_0, c_pd, c_vd, c_pv, c_vv, R_d, R_v, c_pl = equations
     rho0, p0 = ground_state
     r_t0, r_v0 = mixing_ratios
@@ -102,18 +102,18 @@ function AtmossphereLayers(equations; total_height = 10010.0, preciseness = 10,
         LayerData[i + 1, :] = [rho, rho_theta, rho_qv, rho_ql]
     end
 
-    return AtmossphereLayers{RealT}(equations, LayerData, total_height, dz, n, ground_state,
-                                    theta_e0, mixing_ratios)
+    return atmosphereLayers{RealT}(equations, LayerData, total_height, dz, n, ground_state,
+                                   theta_e0, mixing_ratios)
 end
 
 # Generate background state from the Layer data set by linearely interpolating the layers
 function initial_condition_moist_bubble(x, t, equations::CompressibleMoistEulerEquations2D,
-                                        AtmosphereLayers::AtmossphereLayers)
+                                        AtmosphereLayers::atmosphereLayers)
     @unpack LayerData, preciseness, total_height = AtmosphereLayers
     dz = preciseness
     z = x[2]
     if (z > total_height && !(isapprox(z, total_height)))
-        error("The atmossphere does not match the simulation domain")
+        error("The atmosphere does not match the simulation domain")
     end
     n = convert(Int, floor(z / dz)) + 1
     z_l = (n - 1) * dz
@@ -200,10 +200,10 @@ function PerturbMoistProfile(x, rho, rho_theta, rho_qv, rho_ql,
     return SVector(rho, rho_e, rho_qv, rho_ql)
 end
 
-AtmossphereData = AtmossphereLayers(equations)
+atmosphereData = atmosphereLayers(equations)
 
 function initial_condition_moist(x, t, equations)
-    return initial_condition_moist_bubble(x, t, equations, AtmossphereData)
+    return initial_condition_moist_bubble(x, t, equations, atmosphereData)
 end
 
 initial_condition = initial_condition_moist
