@@ -12,7 +12,7 @@
     @unpack contravariant_vectors = cache.elements
 
     for j in eachnode(dg), i in eachnode(dg)
-        u_node = get_node_vars(u, equations, dg, i, j, element)
+        u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
 
         flux1 = flux(u_node, 1, equations)
         flux2 = flux(u_node, 2, equations)
@@ -20,7 +20,8 @@
 
         # Compute the contravariant flux by taking the scalar product of the
         # first contravariant vector Ja^1 and the flux vector
-        Ja11, Ja12, Ja13 = get_contravariant_vector(1, contravariant_vectors, i, j, element)
+        Ja11, Ja12, Ja13 = Trixi.get_contravariant_vector(1, contravariant_vectors, i, j,
+                                                          element)
         contravariant_flux1 = Ja11 * flux1 + Ja12 * flux2 + Ja13 * flux3
         for ii in eachnode(dg)
             Trixi.multiply_add_to_node_vars!(du, alpha * derivative_dhat[ii, i],
@@ -30,7 +31,8 @@
 
         # Compute the contravariant flux by taking the scalar product of the
         # second contravariant vector Ja^2 and the flux vector
-        Ja21, Ja22, Ja23 = get_contravariant_vector(2, contravariant_vectors, i, j, element)
+        Ja21, Ja22, Ja23 = Trixi.get_contravariant_vector(2, contravariant_vectors, i, j,
+                                                          element)
         contravariant_flux2 = Ja21 * flux1 + Ja22 * flux2 + Ja23 * flux3
         for jj in eachnode(dg)
             Trixi.multiply_add_to_node_vars!(du, alpha * derivative_dhat[jj, j],
