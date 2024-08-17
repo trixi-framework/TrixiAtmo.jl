@@ -143,7 +143,7 @@ end
 
 # Add perturbation to the profile
 function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
-                               equations::CompressibleMoistEulerEquations2D)
+                                equations::CompressibleMoistEulerEquations2D)
     @unpack kappa, p_0, c_pd, c_vd, c_pv, c_vv, R_d, R_v, c_pl, L_00 = equations
     xc = 2000
     zc = 2000
