@@ -6,6 +6,8 @@ using TrixiAtmo
 ###############################################################################
 # semidiscretization of the linear advection equation
 
+# We use the Euler equations structure but modify the rhs! function to convert it to a
+# variable-coefficient advection equation
 equations = CompressibleEulerEquations3D(1.4)
 
 # Create DG solver with polynomial degree = 3 and (local) Lax-Friedrichs/Rusanov flux as surface flux
