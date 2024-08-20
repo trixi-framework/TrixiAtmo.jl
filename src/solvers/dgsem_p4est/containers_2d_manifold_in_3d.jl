@@ -207,6 +207,7 @@ function calc_node_coordinates_2d_shell!(node_coordinates,
     return node_coordinates
 end
 
+# This only works for a sphere
 function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArray{<:Any,
                                                                                    5},
                                               element,
@@ -215,6 +216,10 @@ function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArr
     @unpack derivative_matrix = basis
 
     for j in eachnode(basis), i in eachnode(basis)
+        radius = sqrt(node_coordinates[1, i, j, element]^2 +
+                      node_coordinates[2, i, j, element]^2 +
+                      node_coordinates[3, i, j, element]^2)
+
         for n in 1:3
             # (n, m, l) cyclic
             m = (n % 3) + 1
@@ -228,7 +233,8 @@ function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArr
                                                           jacobian_matrix[l, 2, i, j,
                                                                           element] *
                                                           node_coordinates[m, i, j,
-                                                                           element])
+                                                                           element]) /
+                                                         radius
 
             contravariant_vectors[n, 2, i, j, element] = (jacobian_matrix[l, 1, i, j,
                                                                           element] *
@@ -238,7 +244,8 @@ function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArr
                                                           jacobian_matrix[m, 1, i, j,
                                                                           element] *
                                                           node_coordinates[l, i, j,
-                                                                           element])
+                                                                           element]) /
+                                                         radius
 
             contravariant_vectors[n, 3, i, j, element] = (jacobian_matrix[m, 1, i, j,
                                                                           element] *
@@ -248,7 +255,8 @@ function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArr
                                                           jacobian_matrix[m, 2, i, j,
                                                                           element] *
                                                           jacobian_matrix[l, 1, i, j,
-                                                                          element])
+                                                                          element]) /
+                                                         radius
         end
     end
 
