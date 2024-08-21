@@ -23,7 +23,7 @@ import  Trixi: varnames,
 
 ###  equation, parameters and constants  ###
 
-struct CompressibleRainyEulerEquations2D{RealT <: Real} <: AbstractCompressibleMoistEulerEquations{2, 15}
+struct CompressibleRainyEulerEquations2D{RealT <: Real} <: AbstractCompressibleRainyEulerEquations{2, 15}
     # Specific heat capacities:
     c_liquid_water             ::RealT
     c_dry_air_const_pressure   ::RealT
@@ -86,7 +86,7 @@ end
 
 varnames(::typeof(cons2cons), ::CompressibleRainyEulerEquations2D) = ("rho_dry_", "rho_moist_", "rho_rain_",
                                                                       "rho_v1", "rho_v2",
-                                                                      "energy_",
+                                                                      "energy",
                                                                       "rho_vapour_h", "rho_cloud_h",
                                                                       "temperature",
                                                                       "rho_dry_h_0", "rho_moist_h_0", "rho_rain_h_0",
@@ -144,6 +144,65 @@ end
 end
 
 
+@inline function cons2nonlinearsystemsol(u, equations::CompressibleRainyEulerEquations2D)
+    # constants
+    c_l   = equations.c_liquid_water
+    c_vd  = equations.c_dry_air_const_volume
+    c_vv  = equations.c_vapour_const_volume
+    R_v   = equations.R_vapour
+    L_ref = equations.ref_latent_heat_vap_temp
+    ref_temp = equations.ref_temperature
+    
+    # name needed variables
+    rho_dry_, rho_moist_, rho_rain_,
+    rho_v1, rho_v2,
+    energy_, 
+    rho_vapour_h, rho_cloud_h,
+    temperature,
+    rho_dry_h_0, rho_moist_h_0, rho_rain_h_0,
+    energy_h, _, _      = u
+
+    # densities
+    rho_dry    = rho_dry_    + rho_dry_h_0
+    rho_moist  = rho_moist_  + rho_moist_h_0
+    rho_rain   = rho_rain_   + rho_rain_h_0
+    
+    rho        = rho_dry     + rho_moist     + rho_rain
+    rho_inv    = inv(rho)
+
+    # for initial guess
+    rho_vapour = rho_vapour_h
+    rho_cloud  = rho_cloud_h
+
+    # velocity
+    v1         = rho_v1       * rho_inv
+    v2         = rho_v2       * rho_inv
+
+    # energy
+    energy     = energy_ + energy_h
+
+    #TODO test type stability
+    # non-linear solve for rho_vapour, rho_cloud, temperature
+    # guess = [rho_vapour; rho_cloud; temperature]
+
+    if (rho_moist == 0.0 && rho_rain == 0.0)
+        return SVector(0.0, 0.0, (energy - 0.5 * (v1^2 + v2^2) * rho) / (c_vd * rho) + ref_temp)
+    else    
+        error("wrong system")
+        function f!(residual, guess)
+            residual[1]  = (c_vd * rho_dry + c_vv * guess[1] + c_l * (guess[2] + rho_rain))*(guess[3] - ref_temp)
+            residual[1] += guess[1] * (L_ref - R_v * ref_temp) - (energy - rho * 0.5 * (v1^2 + v2^2))
+            residual[2]  = min(saturation_vapour_pressure(guess[3], equations) / (R_v * guess[3]), rho_moist) - guess[1]
+            residual[3]  = rho_moist - guess[1] - guess[2]
+        end
+
+        nl_sol = nlsolve(f!, [rho_vapour; rho_cloud; temperature], ftol = 1e-14, iterations = 20)
+
+        return SVector(nl_sol.zero[1], nl_sol.zero[2], nl_sol.zero[3])
+    end
+end
+
+
 # for convenience
 @inline function cons2speeds(u, equations::CompressibleRainyEulerEquations2D)
     # name needed variables
@@ -164,7 +223,7 @@ end
     v2        = rho_v2       * rho_inv
 
     # get speed of sound 
-    v_sound   = speed_of_sound(u, equations)
+    v_sound   = speed_of_sound(u, equations)[1]
 
     # get terminal velocity rain
     v_r       = terminal_velocity_rain(rho_moist, rho_rain, equations)
@@ -186,31 +245,51 @@ end
 
     # name needed variables
     rho_dry_, rho_moist_, rho_rain_,
-    _, _,
-    _,
-    rho_vapour_h, rho_cloud_h,
-    temperature,
+    _, _, _, _, _, _,
     rho_dry_h_0, rho_moist_h_0, rho_rain_h_0,
-    _,
-    _, _       = u
+    _, _, _    = u
 
     # densities
     rho_dry    = rho_dry_     + rho_dry_h_0
     rho_moist  = rho_moist_   + rho_moist_h_0
     rho_rain   = rho_rain_    + rho_rain_h_0
-    rho_vapour = rho_vapour_h     #TODO double check formula because this seems weird at first
-    rho_cloud  = rho_cloud_h      #TODO ^
     rho_inv    = inv(rho_dry + rho_moist + rho_rain)
 
+    # recover rho_vapour, rho_cloud, temperature from nonlinear system
+    rho_vapour, rho_cloud, temperature = cons2nonlinearsystemsol(u, equations)
+
     # formula
-    p   = R_d * rho_dry * temperature + R_v * rho_vapour * temperature
-    q_v = rho_vapour / rho_dry
-    q_l = (rho_cloud + rho_rain) / rho_dry
+    p       = R_d * rho_dry * temperature + R_v * rho_vapour * temperature
+    q_v     = rho_vapour / rho_dry
+    q_l     = (rho_cloud + rho_rain) / rho_dry
     gamma_m = 1 + (R_d + R_v * q_v) / (c_vd + c_vv * q_v + c_l * q_l)
+
+    # debugging
+    if (gamma_m < 0.0)
+        error("gamma_m kleiner Null")
+    elseif (p < 0.0)
+        println("p kleiner Null")
+        if (rho_dry < 0.0)
+            error("rho_dry kleiner Null")
+        elseif (temperature < 0.0)
+            # velocity
+            v1         = u[4]       * rho_inv
+            v2         = u[5]       * rho_inv
+
+            display(u[6])
+            display(u[13])
+            display(0.5 * (v1^2 + v2^2) * inv(rho_inv))
+            error("temperature kleiner Null")
+        end
+    elseif (rho_inv < 0.0)
+        display(rho_dry_)
+        display(rho_dry_h_0)
+        error("rho kleiner Null")
+    end
 
     v_sound = sqrt(gamma_m * p * rho_inv)
     
-    return v_sound
+    return SVector(v_sound, gamma_m)
 end
 
 
@@ -219,7 +298,7 @@ end
     N_0 = equations.rain_water_distr
     v_0 = equations.v_mean_rain
 
-    # formula ( gamma(4.5) / 6 ~= 1.9386213994279082 )
+    # formula ( \Gamma(4.5) / 6 ~= 1.9386213994279082 )
     if ( rho_rain > 0.0)
         v_terminal_rain = v_0 * 1.9386213994279082 * (rho_rain / (pi * (rho_moist + rho_rain) * N_0))^(0.125)
     else
@@ -230,6 +309,7 @@ end
 end
 
 
+#TODO name change
 @inline function saturation_vapour_pressure(temperature, equations::CompressibleRainyEulerEquations2D)
     # constants
     c_l      = equations.c_liquid_water
@@ -252,17 +332,16 @@ end
 
 @inline function flux(u, orientation::Integer, equations::CompressibleRainyEulerEquations2D)
     # constants
-    c_l   = equations.c_liquid_water
-    R_d   = equations.R_dry_air
-    R_v   = equations.R_vapour
-    T_ref = equations.ref_temperature
+    c_l      = equations.c_liquid_water
+    R_d      = equations.R_dry_air
+    R_v      = equations.R_vapour
+    ref_temp = equations.ref_temperature
 
     # name needed variables
     rho_dry_, rho_moist_, rho_rain_,
     rho_v1, rho_v2,
     energy_,
-    rho_vapour_h, _, 
-    temperature,
+    _, _, _,
     rho_dry_h_0, rho_moist_h_0, rho_rain_h_0,
     energy_h_0,
     rho_vapour_h_0, 
@@ -272,9 +351,11 @@ end
     rho_dry    = rho_dry_     + rho_dry_h_0
     rho_moist  = rho_moist_   + rho_moist_h_0
     rho_rain   = rho_rain_    + rho_rain_h_0
-    rho_vapour = rho_vapour_h                              #TODO ?
     rho        = rho_dry      + rho_moist      + rho_rain
     rho_inv    = inv(rho)
+
+    # recover rho_vapour, rho_cloud, temperature from nonlinear system
+    rho_vapour, _, temperature = cons2nonlinearsystemsol(u, equations)
 
     # velocity
     v1         = rho_v1       * rho_inv
@@ -314,7 +395,7 @@ end
         f5 = rho       * v2 * v2 - rho_rain * v_r * v2 + p_
 
         # "energy"
-        f6 = ((energy + p) * v2 - (c_l * (temperature - T_ref) + 0.5 * (v1^2 + v2^2))) * rho_rain * v_r
+        f6 = (energy + p) * v2 - (c_l * (temperature - ref_temp) + 0.5 * (v1^2 + v2^2)) * rho_rain * v_r
     end
 
     return SVector(f1, f2, f3, f4, f5, f6, 
@@ -325,17 +406,16 @@ end
 @inline function flux(u, normal_direction::AbstractVector, equations::CompressibleRainyEulerEquations2D)
     #TODO Double-check for mistakes in "impulse" and "energy"!
     # constants
-    c_l   = equations.c_liquid_water
-    R_d   = equations.R_dry_air
-    R_v   = equations.R_vapour
-    T_ref = equations.ref_temperature
+    c_l      = equations.c_liquid_water
+    R_d      = equations.R_dry_air
+    R_v      = equations.R_vapour
+    ref_temp = equations.ref_temperature
 
     # name needed variables
     rho_dry_, rho_moist_, rho_rain_,
     rho_v1, rho_v2,
     energy_,
-    rho_vapour_h, _, 
-    temperature,
+    _, _, _,
     rho_dry_h_0, rho_moist_h_0, rho_rain_h_0,
     energy_h_0,
     rho_vapour_h_0, 
@@ -345,9 +425,11 @@ end
     rho_dry    = rho_dry_     + rho_dry_h_0
     rho_moist  = rho_moist_   + rho_moist_h_0
     rho_rain   = rho_rain_    + rho_rain_h_0
-    rho_vapour = rho_vapour_h                              #TODO ?
     rho        = rho_dry      + rho_moist      + rho_rain
     rho_inv    = inv(rho)
+
+    # recover rho_vapour, rho_cloud, temperature from nonlinear system
+    rho_vapour, _, temperature = cons2nonlinearsystemsol(u, equations)
 
     # velocity
     v1         = rho_v1       * rho_inv
@@ -357,6 +439,7 @@ end
     # normal velocities
     v_normal   = v1  * normal_direction[1] +  v2 * normal_direction[2]
     v_r_normal =                             v_r * normal_direction[2]    #TODO correct?
+    #norm_vn    = norm(normal_direction)
 
     # pressure
     p   = R_d * rho_dry     * temperature   + R_v * rho_vapour     * temperature
@@ -377,7 +460,7 @@ end
     f5 = rho       * v_normal * v2 - rho_rain * v_r_normal * v2 + p_ * normal_direction[2]
 
     # "energy"
-    f6 = ((energy + p) * v_normal - (c_l * (temperature - T_ref) + 0.5 * (v_normal^2))) * rho_rain * v_r_normal
+    f6 = (energy + p) * v_normal - (c_l * (temperature - ref_temp) + 0.5 * (v1^2 + v2^2)) * rho_rain * v_r_normal
 
     return SVector(f1, f2, f3, f4, f5, f6, 
                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
@@ -387,43 +470,39 @@ end
 # no Coriolis term
 @inline function source_terms_rainy(u, x, t, equations::CompressibleRainyEulerEquations2D)
     # constants
-    R_v   = equations.R_vapour
-    T_ref = equations.ref_temperature
-    g     = equations.gravity
+    R_v      = equations.R_vapour
+    ref_temp = equations.ref_temperature
+    g        = equations.gravity
     
     # name needed variables
     rho_dry_, rho_moist_, rho_rain_,
     _, rho_v2,
-    _,
-    rho_vapour_h, rho_cloud_h,
-    temperature,
+    _, _, _, _,
     rho_dry_h_0, rho_moist_h_0, rho_rain_h_0,
-    _,
-    _, _      = u
+    _, _, _    = u
 
     # densities
-    rho_dry   = rho_dry_    + rho_dry_h_0
-    rho_moist = rho_moist_  + rho_moist_h_0
-    rho_rain  = rho_rain_   + rho_rain_h_0
+    rho_dry    = rho_dry_    + rho_dry_h_0
+    rho_moist  = rho_moist_  + rho_moist_h_0
+    rho_rain   = rho_rain_   + rho_rain_h_0
     
-    rho       = rho_dry     + rho_moist     + rho_rain
-    rho_h_0   = rho_dry_h_0 + rho_moist_h_0 + rho_rain_h_0
-    rho_      = rho         - rho_h_0
+    rho        = rho_dry     + rho_moist     + rho_rain
+    rho_h_0    = rho_dry_h_0 + rho_moist_h_0 + rho_rain_h_0
+    rho_       = rho         - rho_h_0
 
-    rho_vapour = rho_vapour_h
-    rho_cloud  = rho_cloud_h
+    # recover rho_vapour, rho_cloud, temperature from nonlinear system
+    rho_vapour, rho_cloud, temperature = cons2nonlinearsystemsol(u, equations)
+
     rho_vs     = saturation_vapour_pressure(temperature, equations) / (R_v * temperature)
 
     # source terms phase change
-    S_evaporation     = (3.86e-3 - 9.41e-5 * (temperature - T_ref)) * (1 + 9.1 * rho_rain^(0.1875))
+    S_evaporation     = (3.86e-3 - 9.41e-5 * (temperature - ref_temp)) * (1 + 9.1 * rho_rain^(0.1875))
     S_evaporation    *= (rho_vs - rho_vapour) * rho_rain^(0.5)
     S_auto_conversion = 0.001 * rho_cloud
     S_accretion       = 1.72 * rho_cloud * rho_rain^(0.875)
     S_rain            = S_auto_conversion + S_accretion - S_evaporation
 
-    #TODO non-linear solve for temperature, rho_vapour_h, rho_cloud_h
-
-    return SVector(0.0, S_rain, -S_rain, 0.0,
+    return SVector(0.0, -S_rain, S_rain, 0.0,
                    -rho_ * g, -rho_v2 * g, 0.0,
                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
 end
@@ -433,93 +512,23 @@ end
 
 @inline function source_terms_no_phase_change(u, x, t, equations::CompressibleRainyEulerEquations2D)
     # constants
-    c_l   = equations.c_liquid_water
-    c_vd  = equations.c_dry_air_const_volume
-    c_vv  = equations.c_vapour_const_volume
-    R_v   = equations.R_vapour
-    L_ref = equations.ref_latent_heat_vap_temp
-    T_ref = equations.ref_temperature
-    g     = equations.gravity
+    g = equations.gravity
     
     # name needed variables
     rho_dry_, rho_moist_, rho_rain_,
     _, rho_v2,
-    _, 
-    rho_vapour_h, rho_cloud_h,
-    temperature,
+    _, _, _, _,
     rho_dry_h_0, rho_moist_h_0, rho_rain_h_0,
-    _, _, _      = u
+    _, _, _    = u
 
     # densities
     rho_dry    = rho_dry_    + rho_dry_h_0
     rho_moist  = rho_moist_  + rho_moist_h_0
     rho_rain   = rho_rain_   + rho_rain_h_0
-
-    rho_vapour = rho_vapour_h   #TODO ??
-    rho_cloud  = rho_cloud_h
     
-    rho       = rho_dry     + rho_moist     + rho_rain
-    rho_h_0   = rho_dry_h_0 + rho_moist_h_0 + rho_rain_h_0
-    rho_      = rho         - rho_h_0
-
-    #TODO test type stability
-    # non-linear solve for rho_vapour, rho_cloud, temperature
-    # guess = [rho_vapour; rho_cloud; temperature]
-
-    function f!(residual, guess)
-        residual[1]  = (c_vd * rho_dry + c_vv * guess[1] + c_l * (guess[2] + rho_rain))*(guess[3] - T_ref)
-        residual[1] += guess[1] * (L_ref - R_v * T_ref)
-        residual[2]  = min(saturation_vapour_pressure(guess[3], equations) / (R_v * guess[3]), rho_moist)
-        residual[3]  = rho_moist - guess[1] - guess[2]
-    end
-
-    nl_sol = nlsolve(f!, [rho_vapour, rho_cloud, temperature], ftol = 1e-14, iterations = 20)
-
-    # update entries of u
-    u = SVector(u[1], u[2], u[3], u[4], u[5], u[6],
-                nl_sol.zero[1], nl_sol.zero[2], nl_sol.zero[3],
-                u[10], u[11], u[12], u[13], u[14], u[15])
-
-    return SVector(0.0, 0.0, 0.0, 0.0,
-                   -rho_ * g, -rho_v2 * g, 0.0,
-                   0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0) 
-end
-
-
-@inline function source_terms_dry(u, x, t, equations::CompressibleRainyEulerEquations2D)
-    # constants
-    c_vd  = equations.c_dry_air_const_volume
-    T_ref = equations.ref_temperature
-    g     = equations.gravity
-    
-    # name needed variables
-    rho_dry_, rho_moist_, rho_rain_,
-    rho_v1, rho_v2,
-    _, _, energy_, _,
-    rho_dry_h_0, rho_moist_h_0, rho_rain_h_0,
-    energy_h_0, _, _      = u
-
-    # densities
-    rho_dry   = rho_dry_    + rho_dry_h_0
-    rho_moist = rho_moist_  + rho_moist_h_0
-    rho_rain  = rho_rain_   + rho_rain_h_0
-    
-    rho       = rho_dry     + rho_moist     + rho_rain
-    rho_inv   = inv(rho)
-    rho_h_0   = rho_dry_h_0 + rho_moist_h_0 + rho_rain_h_0
-    rho_      = rho         - rho_h_0
-
-    # velocities
-    v1 = rho_v1 * rho_inv
-    v2 = rho_v2 * rho_inv
-
-    # energy
-    energy    = energy_     + energy_h_0
-
-    # update temperature
-    u = SVector(u[1], u[2], u[3], u[4], u[5], u[6], u[7], u[8],
-                (energy - 0.5 * (v1^2 + v2^2) * rho) / (c_vd * rho) + T_ref,
-                u[10], u[11], u[12], u[13], u[14], u[15])
+    rho        = rho_dry     + rho_moist     + rho_rain
+    rho_h_0    = rho_dry_h_0 + rho_moist_h_0 + rho_rain_h_0
+    rho_       = rho         - rho_h_0 
 
     return SVector(0.0, 0.0, 0.0, 0.0,
                    -rho_ * g, -rho_v2 * g, 0.0,
@@ -556,11 +565,79 @@ end
 
 ###  boundary conditions  ### TODO: double check the idea of this boundary condition 
 
-# should probably be similar to the approach in compressible_euler_2d.jl
+# adapted from compressible_moist_euler_2d.jl which was probably adapted from compressible_euler_2d.jl
 @inline function boundary_condition_slip_wall(u_inner, normal_direction::AbstractVector, x, t, 
                                               surface_flux_function, equations::CompressibleRainyEulerEquations2D)
-    #TODO
-    return SVector(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+
+    norm_ = norm(normal_direction)
+    # Normalize the vector without using `normalize` since we need to multiply by the `norm_` later
+    normal = normal_direction / norm_
+
+    # rotate the internal solution state
+    @inline function rotate_to_x(u, normal_vector, equations::CompressibleRainyEulerEquations2D)
+        # cos and sin of the angle between the x-axis and the normalized normal_vector are
+        # the normalized vector's x and y coordinates respectively (see unit circle).
+        c = normal_vector[1]
+        s = normal_vector[2]
+    
+        return SVector(u[1], u[2], u[3],
+                       c * u[4] + s * u[5],
+                       -s * u[4] + c * u[5],
+                       u[6], u[7], u[8], u[9], u[10], u[11], u[12], u[13], u[14], u[15])
+    end
+
+    u_local = rotate_to_x(u_inner, normal, equations)
+    
+    # name needed variables
+    rho_dry_, rho_moist_, rho_rain_,
+    rho_v1, _,
+    _, _, _, _,
+    rho_dry_h_0, rho_moist_h_0, rho_rain_h_0,
+    _, _, _    = u_local
+
+    # densities
+    rho_dry    = rho_dry_    + rho_dry_h_0
+    rho_moist  = rho_moist_  + rho_moist_h_0
+    rho_rain   = rho_rain_   + rho_rain_h_0
+
+    rho_local  = rho_dry     + rho_moist     + rho_rain
+
+    # velocities
+    v_normal   = rho_v1       * inv(rho_local)
+    v_sound, gamma = speed_of_sound(u_local, equations)
+    
+    # pressure
+    _, rho_vapour, temperature = cons2nonlinearsystemsol(u_local, equations)
+    p_local = (rho_dry * equations.R_dry_air + rho_vapour * equations.R_vapour) * temperature
+
+    #=qd_local = 1 - qv_local - ql_local
+    gamma = (qd_local * c_pd + qv_local * c_pv + ql_local * c_l) *
+            inv(qd_local * c_vd + qv_local * c_vv + ql_local * c_l)=#
+    # Get the solution of the pressure Riemann problem
+    # See Section 6.3.3 of
+    # Eleuterio F. Toro (2009)
+    # Riemann Solvers and Numerical Methods for Fluid Dynamics: A Practical Introduction
+    # [DOI: 10.1007/b79761](https://doi.org/10.1007/b79761)
+    if v_normal <= 0.0
+        p_star = p_local *
+                 (1.0 + 0.5 * (gamma - 1) * v_normal / v_sound)^(2.0 * gamma *
+                                                                     inv(gamma - 1))
+    else # v_normal > 0.0
+        A = 2.0 / ((gamma + 1) * rho_local)
+        B = p_local * (gamma - 1) / (gamma + 1)
+        p_star = p_local +
+                 0.5 * v_normal / A *
+                 (v_normal + sqrt(v_normal^2 + 4.0 * A * (p_local + B)))
+    end
+
+    # For the slip wall we directly set the flux as the normal velocity is zero
+    return SVector(zero(eltype(u_inner)), 0.0, 0.0,
+                   p_star * normal[1] * norm_,
+                   p_star * normal[2] * norm_,
+                   zero(eltype(u_inner)),
+                   zero(eltype(u_inner)),
+                   zero(eltype(u_inner)), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0) 
+
 end
 
 
