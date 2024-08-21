@@ -29,5 +29,8 @@ export CompressibleMoistEulerEquations2D, CovariantLinearAdvectionEquation2D
 
 export flux_chandrashekar, flux_LMARS
 
+export EARTH_RADIUS, EARTH_GRAVITATIONAL_ACCELERATION,
+       EARTH_ROTATION_RATE, SECONDS_PER_DAY
+
 export examples_dir
 end # module TrixiAtmo
