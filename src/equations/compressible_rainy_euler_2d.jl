@@ -146,11 +146,11 @@ end
 
 @inline function cons2nonlinearsystemsol(u, equations::CompressibleRainyEulerEquations2D)
     # constants
-    c_l   = equations.c_liquid_water
-    c_vd  = equations.c_dry_air_const_volume
-    c_vv  = equations.c_vapour_const_volume
-    R_v   = equations.R_vapour
-    L_ref = equations.ref_latent_heat_vap_temp
+    c_l      = equations.c_liquid_water
+    c_vd     = equations.c_dry_air_const_volume
+    c_vv     = equations.c_vapour_const_volume
+    R_v      = equations.R_vapour
+    L_ref    = equations.ref_latent_heat_vap_temp
     ref_temp = equations.ref_temperature
     
     # name needed variables
@@ -266,11 +266,11 @@ end
 
     # debugging
     if (gamma_m < 0.0)
-        error("gamma_m kleiner Null")
+        error("gamma_m less than zero")
     elseif (p < 0.0)
-        println("p kleiner Null")
+        println("p less than zero")
         if (rho_dry < 0.0)
-            error("rho_dry kleiner Null")
+            error("rho_dry less than zero")
         elseif (temperature < 0.0)
             # velocity
             v1         = u[4]       * rho_inv
@@ -279,12 +279,11 @@ end
             display(u[6])
             display(u[13])
             display(0.5 * (v1^2 + v2^2) * inv(rho_inv))
-            error("temperature kleiner Null")
+            error("temperature less than zero")
         end
     elseif (rho_inv < 0.0)
-        display(rho_dry_)
-        display(rho_dry_h_0)
-        error("rho kleiner Null")
+        println(u)
+        error("rho less than zero")
     end
 
     v_sound = sqrt(gamma_m * p * rho_inv)
@@ -607,7 +606,7 @@ end
     v_sound, gamma = speed_of_sound(u_local, equations)
     
     # pressure
-    _, rho_vapour, temperature = cons2nonlinearsystemsol(u_local, equations)
+    rho_vapour, _, temperature = cons2nonlinearsystemsol(u_local, equations)
     p_local = (rho_dry * equations.R_dry_air + rho_vapour * equations.R_vapour) * temperature
 
     #=qd_local = 1 - qv_local - ql_local
@@ -636,8 +635,7 @@ end
                    p_star * normal[2] * norm_,
                    zero(eltype(u_inner)),
                    zero(eltype(u_inner)),
-                   zero(eltype(u_inner)), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0) 
-
+                   zero(eltype(u_inner)), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
 end
 
 

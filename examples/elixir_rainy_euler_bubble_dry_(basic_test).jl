@@ -20,7 +20,7 @@ function initial_condition_bubble_dry(x, t, equations::CompressibleRainyEulerEqu
     r = sqrt((x[1] - center_x)^2 + (x[2] - center_z)^2)
 
     # perturbation in potential temperature
-    potential_temperature_ref = 273.15
+    potential_temperature_ref = 300.0
     potential_temperature_perturbation = 0.0
     if r <= radius
         potential_temperature_perturbation = 2 * cospi(0.5 * r / radius)^2
@@ -102,7 +102,7 @@ save_solution = SaveSolutionCallback(interval = analysis_interval,
                                      output_directory = "out",
                                      solution_variables = cons2prim)
 
-stepsize_callback = StepsizeCallback(cfl = 1.0)
+stepsize_callback = StepsizeCallback(cfl = 0.1)
 
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,
