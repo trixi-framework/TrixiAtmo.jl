@@ -7,9 +7,9 @@ include("test_trixiatmo.jl")
 
 EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
 
-@trixiatmo_testset "elixir_euler_spherical_advection_cartesian" begin
+@trixiatmo_testset "elixir_spherical_advection_cartesian" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_spherical_advection_cartesian.jl"),
+                                 "elixir_spherical_advection_cartesian.jl"),
                         l2=[
                             8.44505073e-03,
                             8.23414117e-03,

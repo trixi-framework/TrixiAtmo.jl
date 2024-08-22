@@ -1,10 +1,9 @@
-###############################################################################
-# Linear advection equation in covariant form
-###############################################################################
-
 @muladd begin
 #! format: noindent
 
+"""
+    Variable-coefficient linear advection equation in covariant form
+"""
 struct CovariantLinearAdvectionEquation2D <: AbstractCovariantEquations2D{3} end
 
 """
