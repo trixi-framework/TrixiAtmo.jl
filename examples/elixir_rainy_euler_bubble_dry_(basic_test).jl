@@ -8,8 +8,8 @@ using TrixiAtmo: source_terms_no_phase_change
 # copied from elixir_euler_warm_bubble.jl for quick tests
 function initial_condition_bubble_dry(x, t, equations::CompressibleRainyEulerEquations2D)
     g   = equations.gravity
-    c_v = equations.c_dry_air_const_volume
     c_p = equations.c_dry_air_const_pressure
+    c_v = equations.c_dry_air_const_volume
 
     # center of perturbation
     center_x = 10000.0
@@ -20,7 +20,7 @@ function initial_condition_bubble_dry(x, t, equations::CompressibleRainyEulerEqu
     r = sqrt((x[1] - center_x)^2 + (x[2] - center_z)^2)
 
     # perturbation in potential temperature
-    potential_temperature_ref = 273.15
+    potential_temperature_ref = 300.0
     potential_temperature_perturbation = 0.0
     if r <= radius
         potential_temperature_perturbation = 2 * cospi(0.5 * r / radius)^2
@@ -43,10 +43,10 @@ function initial_condition_bubble_dry(x, t, equations::CompressibleRainyEulerEqu
 
     v1 = 20.0
     v2 = 0.0
-    E  = (c_v * T + 0.5 * (v1^2 + v2^2))
+    E  = c_v * T + 0.5 * (v1^2 + v2^2)
 
     # random experiments
-    return SVector(0.0, 0.0, 0.0, rho * v1, rho * v2, E * rho, 0.0, 0.0, T, rho, 0.0, 0.0, 0.0, 0.0, potential_temperature)
+    return SVector(rho, 0.0, 0.0, rho * v1, rho * v2, rho * E, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
 end
 
 
