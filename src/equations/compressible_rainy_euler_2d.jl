@@ -265,8 +265,8 @@ end
     gamma_m = 1 + (R_d + R_v * q_v) / (c_vd + c_vv * q_v + c_l * q_l)
 
     # debugging
-    if (gamma_m < 0.0)
-        error("gamma_m less than zero")
+    if (gamma_m != 1 + R_d / c_vd)
+        error("gamma_m wrong")
     elseif (p < 0.0)
         println("p less than zero")
         if (rho_dry < 0.0)
@@ -377,7 +377,7 @@ end
         f3 = rho_rain  * v1
 
         # "impulse"
-        f4 = rho       * v1 * v1 + p_
+        f4 = rho       * v1 * v1 + p
         f5 = rho       * v1 * v2
 
         # "energy"
@@ -391,7 +391,7 @@ end
 
         # "impulse"
         f4 = rho       * v1 * v2 - rho_rain * v_r * v1
-        f5 = rho       * v2 * v2 - rho_rain * v_r * v2 + p_
+        f5 = rho       * v2 * v2 - rho_rain * v_r * v2 + p
 
         # "energy"
         f6 = (energy + p) * v2 - (c_l * (temperature - ref_temp) + 0.5 * (v1^2 + v2^2)) * rho_rain * v_r
@@ -455,8 +455,8 @@ end
     f3 = rho_rain  * (v_normal - v_r_normal)
 
     # "impulse"
-    f4 = rho       * v_normal * v1 - rho_rain * v_r_normal * v1 + p_ * normal_direction[1]
-    f5 = rho       * v_normal * v2 - rho_rain * v_r_normal * v2 + p_ * normal_direction[2]
+    f4 = rho       * v_normal * v1 - rho_rain * v_r_normal * v1 + p * normal_direction[1]
+    f5 = rho       * v_normal * v2 - rho_rain * v_r_normal * v2 + p * normal_direction[2]
 
     # "energy"
     f6 = (energy + p) * v_normal - (c_l * (temperature - ref_temp) + 0.5 * (v1^2 + v2^2)) * rho_rain * v_r_normal
@@ -530,7 +530,7 @@ end
     rho_       = rho         - rho_h_0 
 
     return SVector(0.0, 0.0, 0.0, 0.0,
-                   -rho_ * g, -rho_v2 * g, 0.0,
+                   -rho * g, -rho_v2 * g, 0.0,
                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0) 
 end
 
