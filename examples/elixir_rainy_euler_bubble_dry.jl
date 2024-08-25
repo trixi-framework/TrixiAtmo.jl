@@ -46,7 +46,7 @@ function initial_condition_bubble_dry(x, t, equations::CompressibleRainyEulerEqu
     E  = c_v * T + 0.5 * (v1^2 + v2^2)
 
     # random experiments
-    return SVector(rho, 0.0, 0.0, rho * v1, rho * v2, rho * E, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+    return SVector(rho, 0.0, 0.0, rho * v1, rho * v2, rho * E, 0.0, 0.0, 0.0)
 end
 
 
@@ -61,7 +61,7 @@ boundary_conditions = (x_neg = boundary_condition_periodic,
                        y_neg = boundary_condition_slip_wall,
                        y_pos = boundary_condition_slip_wall)
 
-polydeg = 1
+polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
 
 surface_flux = flux_lax_friedrichs
