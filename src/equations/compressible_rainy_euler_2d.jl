@@ -148,7 +148,15 @@ end
 
     # recover temperature explicitly from inner energy when other variables are zero
     if (rho_moist == 0.0 && rho_rain == 0.0)
-        return SVector(0.0, 0.0, (energy - 0.5 * (v1^2 + v2^2) * rho) / (c_vd * rho))
+        energy_kinetic = 0.5 * (v1^2 + v2^2) * rho
+        temperature = (energy - energy_kinetic) / (c_vd * rho)
+
+        if (temperature < 0.0)
+            display(energy-energy_kinetic)
+            error("temp negative")
+        end
+
+        return SVector(0.0, 0.0, temperature)
     else    
         error("wrong system")
         function f!(residual, guess)
@@ -174,10 +182,10 @@ end
     v1, v2 = velocities(u, rho_inv, equations)
 
     # get speed of sound 
-    v_sound   = speed_of_sound(u, equations)[1]
+    v_sound = speed_of_sound(u, equations)[1]
 
     # get terminal velocity rain
-    v_r       = terminal_velocity_rain(rho_moist, rho_rain, equations)
+    v_r = terminal_velocity_rain(rho_moist, rho_rain, equations)
 
     return SVector(v1, v2, v_sound, v_r)
 end
@@ -219,6 +227,8 @@ end
     rho_vapour, _, temperature = cons2nonlinearsystemsol(u, equations)
     
     p = (R_d * rho_dry + R_v * rho_vapour) * temperature
+    #v1, v2 = velocities(u, rho_inv, equations)
+    #p = (equations.c_dry_air_const_pressure / equations.c_dry_air_const_volume - 1) * (energy_density(u, equations) - 0.5f0 * (u[4] * v1 + u[5] * v2))
 
     return p
 end
@@ -239,11 +249,16 @@ end
     rho_vapour, rho_cloud, temperature = cons2nonlinearsystemsol(u, equations)
 
     # formula
-    #p       = R_d * rho_dry * temperature + R_v * rho_vapour * temperature
     p       = pressure(u, equations)
     q_v     = rho_vapour / rho_dry
     q_l     = (rho_cloud + rho_rain) / rho_dry
     gamma_m = 1 + (R_d + R_v * q_v) / (c_vd + c_vv * q_v + c_l * q_l)
+
+    if (rho_inv < 0.0)
+        error("rho less than zero")
+    elseif (p < 0.0)
+        error("pressure less than zero")
+    end
 
     v_sound = sqrt(gamma_m * p * rho_inv)
     
@@ -267,7 +282,6 @@ end
 end
 
 
-#TODO name change
 @inline function saturation_vapour_pressure(temperature, equations::CompressibleRainyEulerEquations2D)
     # constants
     c_l      = equations.c_liquid_water
@@ -330,8 +344,8 @@ end
         f3 = rho_rain  * (v2 - v_r)
 
         # "impulse"
-        f4 = rho       * v1 * v2 - rho_rain * v_r * v1
-        f5 = rho       * v2 * v2 - rho_rain * v_r * v2 + p
+        f4 = rho       * v1 * v2      - rho_rain * v_r * v1
+        f5 = rho       * v2 * v2  + p - rho_rain * v_r * v2
 
         # "energy"
         f6 = (energy + p) * v2 - (c_l * (temperature - ref_temp) + 0.5 * (v1^2 + v2^2)) * rho_rain * v_r
@@ -343,7 +357,7 @@ end
 
 
 @inline function flux(u, normal_direction::AbstractVector, equations::CompressibleRainyEulerEquations2D)
-    #TODO Double-check for mistakes in "impulse" and "energy"!
+    #TODO Double-check for mistakes in "impulse" and "energy"
     # constants
     c_l      = equations.c_liquid_water
     ref_temp = equations.ref_temperature
@@ -375,8 +389,8 @@ end
     f3 = rho_rain  * (v_normal - v_r_normal)
 
     # "impulse"
-    f4 = rho       * v_normal * v1 - rho_rain * v_r_normal * v1 + p * normal_direction[1]
-    f5 = rho       * v_normal * v2 - rho_rain * v_r_normal * v2 + p * normal_direction[2]
+    f4 = rho       * v_normal * v1 + p * normal_direction[1] - rho_rain * v_r_normal * v1
+    f5 = rho       * v_normal * v2 + p * normal_direction[2] - rho_rain * v_r_normal * v2 
 
     # "energy"
     f6 = (energy + p) * v_normal - (c_l * (temperature - ref_temp) + 0.5 * (v1^2 + v2^2)) * rho_rain * v_r_normal
@@ -448,13 +462,11 @@ end
     # calculate upper bounds for left and right speed
     v_ll_max  = abs(v1_ll * normal_direction[1] +  v2_ll * normal_direction[2])
     v_ll_max += abs(                              v_r_ll * normal_direction[2])
-    v_ll_max += v_sound_ll
 
     v_rr_max  = abs(v1_rr * normal_direction[1] +  v2_rr * normal_direction[2])
     v_rr_max += abs(                              v_r_rr * normal_direction[2])
-    v_rr_max += v_sound_rr
 
-    return max(v_ll_max, v_rr_max)
+    return max(v_ll_max, v_rr_max) + max(v_sound_ll, v_sound_rr) * norm(normal_direction)
 end
 
 
@@ -538,7 +550,7 @@ end
 
     return SVector(u[1], u[2], u[3],
                    c * u[4] + s * u[5],
-                   -s * u[4] + c * u[5],
+                  -s * u[4] + c * u[5],
                    u[6], u[7], u[8], u[9])
 end
 
