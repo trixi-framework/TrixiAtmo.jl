@@ -72,11 +72,17 @@ coordinates_min = (     0.0,      0.0)
 coordinates_max = (20_000.0, 10_000.0)
 
 cells_per_dimension = (64, 32)
-mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
-                      periodicity = (true, false))
 
-semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_bubble_dry, solver,
-                                    source_terms = source_terms_no_phase_change,
+periodicity = (true, false)
+
+mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
+                      periodicity = periodicity)
+
+initial_condition = initial_condition_bubble_dry
+source_terms      = source_terms_no_phase_change
+
+semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
+                                    source_terms = source_terms,
                                     boundary_conditions = boundary_conditions)
 
 ###############################################################################
