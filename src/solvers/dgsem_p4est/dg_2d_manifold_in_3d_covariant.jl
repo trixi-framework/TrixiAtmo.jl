@@ -111,7 +111,6 @@ function Trixi.calc_interface_flux!(surface_flux_values,
                                     mesh::P4estMesh{2}, nonconservative_terms,
                                     equations::AbstractCovariantEquations2D,
                                     surface_integral, dg::DG, cache)
-
     (; neighbor_ids, node_indices) = cache.interfaces
 
     index_range = eachnode(dg)

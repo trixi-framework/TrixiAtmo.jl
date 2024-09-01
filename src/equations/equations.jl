@@ -22,9 +22,9 @@ end
 
 @inline function Trixi.flux_central(u_ll, u_rr,
                                     orientation_or_normal_direction,
-                                    equations::AbstractCovariantEquations2D, 
+                                    equations::AbstractCovariantEquations2D,
                                     i_ll, j_ll, i_rr, j_rr, element, cache)
-    flux_ll = Trixi.flux(u_ll, orientation_or_normal_direction, equations, 
+    flux_ll = Trixi.flux(u_ll, orientation_or_normal_direction, equations,
                          i_ll, j_ll, element, cache)
     flux_rr = Trixi.flux(u_rr, orientation_or_normal_direction, equations,
                          i_rr, j_rr, element, cache)

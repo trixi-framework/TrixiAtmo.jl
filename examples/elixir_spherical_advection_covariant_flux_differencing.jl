@@ -51,7 +51,7 @@ equations = CovariantLinearAdvectionEquation2D()
 initial_condition = initial_condition_advection_earth
 
 # Create DG solver with polynomial degree = p and a local Lax-Friedrichs flux
-solver = DGSEM(polydeg = polydeg, surface_flux = flux_lax_friedrichs, 
+solver = DGSEM(polydeg = polydeg, surface_flux = flux_lax_friedrichs,
                volume_integral = VolumeIntegralFluxDifferencing(flux_central))
 
 # A semidiscretization collects data structures and functions for the spatial discretization

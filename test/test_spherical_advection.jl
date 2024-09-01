@@ -57,4 +57,27 @@ end
     end
 end
 
+@trixiatmo_testset "elixir_spherical_advection_covariant_flux_differencing" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_spherical_advection_covariant_flux_differencing.jl"),
+                        l2=[
+                            8.75840159e-01,
+                            0.00000000e+00,
+                            0.00000000e+00,
+                        ],
+                        linf=[
+                            1.08867209e+01,
+                            0.00000000e+00,
+                            0.00000000e+00,
+                        ])
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    let
+        t = sol.t[end]
+        u_ode = sol.u[end]
+        du_ode = similar(u_ode)
+        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
+    end
+end
+
 end # module

@@ -21,7 +21,8 @@ Trixi.cons2entropy(u, ::CovariantLinearAdvectionEquation2D) = u
                                                               i, j, element, cache)
     z = zero(eltype(u_ll))
     J = 1 / cache.elements.inverse_jacobian[i, j, element]
-    λ = dissipation.max_abs_speed(u_ll, u_rr, normal_direction, equations, i, j, element, cache)
+    λ = dissipation.max_abs_speed(u_ll, u_rr, normal_direction, equations, i, j,
+                                  element, cache)
     return -0.5f0 * J * λ * SVector(u_rr[1] - u_ll[1], z, z)
 end
 
