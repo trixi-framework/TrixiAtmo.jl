@@ -7,6 +7,7 @@ read-only and should *not* be modified.
 To find out which files are available, use, e.g., `readdir`:
 
 # Examples
+
 ```@example
 readdir(examples_dir())
 ```

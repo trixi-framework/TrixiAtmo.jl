@@ -51,7 +51,7 @@ function Trixi.init_elements(mesh::Union{P4estMesh{2, RealT},
                                                      uEltype <: Real}
     nelements = Trixi.ncells(mesh)
 
-    NDIMS = 2 #Dimension of the manifold
+    NDIMS = 2 # Dimension of the manifold
     ndims_spa = size(mesh.tree_node_coordinates, 1)
 
     _node_coordinates = Vector{RealT}(undef,

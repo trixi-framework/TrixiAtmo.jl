@@ -1,9 +1,6 @@
 @muladd begin
 #! format: noindent
 
-"""
-    Get the normal vector to the reference quadrilateral at a given node
-"""
 @inline function reference_normal_vector(direction)
     orientation = (direction + 1) >> 1
     sign = isodd(direction) ? -1 : 1
@@ -15,33 +12,28 @@
     end
 end
 
-"""
-   Get Cartesian coordinates at a point on the manifold
-"""
 @inline function Trixi.get_node_coords(x, ::AbstractCovariantEquations2D, ::DG,
                                        indices...)
     return SVector(ntuple(@inline(idx->x[idx, indices...]), 3))
 end
 
-"""
-    Evaluate the state with Cartesian vector components, then transform to contravariant components for use within the solver.
-"""
 function Trixi.compute_coefficients!(u, func, t, mesh::Trixi.AbstractMesh{2},
                                      equations::AbstractCovariantEquations2D, dg::DG,
                                      cache)
     for element in eachelement(dg, cache)
         for j in eachnode(dg), i in eachnode(dg)
             x_node = view(cache.elements.node_coordinates, :, i, j, element)
+
+            # Evaluate the state with Cartesian vector components
             u_car = func(x_node, t, equations)
+
+            # transform to contravariant components for use within the solver.
             u_node = cartesian2contravariant(u_car, equations, i, j, element, cache)
             Trixi.set_node_vars!(u, u_node, equations, dg, i, j, element)
         end
     end
 end
 
-"""
-    Weak form kernel for fluxes already in contravariant components
-"""
 @inline function Trixi.weak_form_kernel!(du, u, element,
                                          mesh::Union{P4estMesh{2},
                                                      StructuredMesh{2}, T8codeMesh{2},
@@ -50,14 +42,12 @@ end
                                          equations::AbstractCovariantEquations2D,
                                          dg::DGSEM, cache, alpha = true)
     (; derivative_dhat) = dg.basis
-    (; inverse_jacobian) = cache.elements
 
     for j in eachnode(dg), i in eachnode(dg)
         u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
-        J_node = 1 / inverse_jacobian[i, j, element]
 
-        contravariant_flux1 = J_node * flux(u_node, 1, equations)
-        contravariant_flux2 = J_node * flux(u_node, 2, equations)
+        contravariant_flux1 = flux(u_node, 1, equations, i, j, element, cache)
+        contravariant_flux2 = flux(u_node, 2, equations, i, j, element, cache)
 
         for ii in eachnode(dg)
             Trixi.multiply_add_to_node_vars!(du, alpha * derivative_dhat[ii, i],
@@ -75,13 +65,53 @@ end
     return nothing
 end
 
-"""
-    Interface flux for the covariant form, where the numerical flux is computed in the direction of the 2D reference normal
-"""
+@inline function Trixi.flux_differencing_kernel!(du, u,
+                                                 element,
+                                                 mesh::Union{StructuredMesh{2},
+                                                             StructuredMeshView{2},
+                                                             UnstructuredMesh2D,
+                                                             P4estMesh{2},
+                                                             T8codeMesh{2}},
+                                                 nonconservative_terms::False,
+                                                 equations::AbstractCovariantEquations2D,
+                                                 volume_flux, dg::DGSEM, cache,
+                                                 alpha = true)
+    (; derivative_split) = dg.basis
+
+    for j in eachnode(dg), i in eachnode(dg)
+        u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
+
+        # x direction
+        for ii in (i + 1):nnodes(dg)
+            u_node_ii = Trixi.get_node_vars(u, equations, dg, ii, j, element)
+            flux1 = volume_flux(u_node, u_node_ii, 1, equations, i, j, ii, j, element,
+                                cache)
+            Trixi.multiply_add_to_node_vars!(du, alpha * derivative_split[i, ii], flux1,
+                                             equations, dg, i, j, element)
+            Trixi.multiply_add_to_node_vars!(du, alpha * derivative_split[ii, i], flux1,
+                                             equations, dg, ii, j, element)
+        end
+
+        # y direction
+        for jj in (j + 1):nnodes(dg)
+            u_node_jj = Trixi.get_node_vars(u, equations, dg, i, jj, element)
+            flux2 = volume_flux(u_node, u_node_jj, 2, equations, i, j, i, jj, element,
+                                cache)
+            Trixi.multiply_add_to_node_vars!(du, alpha * derivative_split[j, jj], flux2,
+                                             equations, dg, i, j, element)
+            Trixi.multiply_add_to_node_vars!(du, alpha * derivative_split[jj, j], flux2,
+                                             equations, dg, i, jj, element)
+        end
+    end
+
+    return nothing
+end
+
 function Trixi.calc_interface_flux!(surface_flux_values,
                                     mesh::P4estMesh{2}, nonconservative_terms,
                                     equations::AbstractCovariantEquations2D,
                                     surface_integral, dg::DG, cache)
+
     (; neighbor_ids, node_indices) = cache.interfaces
 
     index_range = eachnode(dg)
@@ -130,8 +160,8 @@ function Trixi.calc_interface_flux!(surface_flux_values,
         for node in eachnode(dg)
             Trixi.calc_interface_flux!(surface_flux_values, mesh, nonconservative_terms,
                                        equations, surface_integral, dg, cache,
-                                       interface,
-                                       i_primary, j_primary, i_secondary, j_secondary,
+                                       interface, i_primary, j_primary, i_secondary,
+                                       j_secondary,
                                        node, primary_direction, primary_element,
                                        node_secondary, secondary_direction,
                                        secondary_element)
@@ -151,9 +181,6 @@ function Trixi.calc_interface_flux!(surface_flux_values,
     return nothing
 end
 
-"""
-    Pointwise computation of the interface flux for the covariant form
-"""
 @inline function Trixi.calc_interface_flux!(surface_flux_values, mesh::P4estMesh{2},
                                             nonconservative_terms::False, equations,
                                             surface_integral, dg::DG, cache,
@@ -166,7 +193,6 @@ end
                                             secondary_node_index,
                                             secondary_direction_index,
                                             secondary_element_index)
-    (; inverse_jacobian) = cache.elements
     (; u) = cache.interfaces
     (; surface_flux) = surface_integral
 
@@ -183,16 +209,15 @@ end
     u_ll_rr = cartesian2contravariant(u_ll_car, equations, i_secondary, j_secondary,
                                       secondary_element_index, cache)
 
-    # Get the normal vector in reference space to each element
-    reference_normal_primary = reference_normal_vector(primary_direction_index)
-    reference_normal_secondary = reference_normal_vector(secondary_direction_index)
-
     # Since the flux is computed in reference space, we do it separately for each element
-    flux_primary = surface_flux(u_ll, u_rr_ll, reference_normal_primary, equations) /
-                   inverse_jacobian[i_primary, j_primary, primary_element_index]
-    flux_secondary = surface_flux(u_rr, u_ll_rr, reference_normal_secondary,
-                                  equations) /
-                     inverse_jacobian[i_secondary, j_secondary, secondary_element_index]
+    flux_primary = surface_flux(u_ll, u_rr_ll,
+                                reference_normal_vector(primary_direction_index),
+                                equations, i_primary, j_primary, primary_element_index,
+                                cache)
+    flux_secondary = surface_flux(u_rr, u_ll_rr,
+                                  reference_normal_vector(secondary_direction_index),
+                                  equations, i_secondary, j_secondary,
+                                  secondary_element_index, cache)
 
     for v in eachvariable(equations)
         surface_flux_values[v, primary_node_index, primary_direction_index,
@@ -202,9 +227,6 @@ end
     end
 end
 
-"""
-    Max time step for wave speeds given directly in contravariant components
-"""
 function Trixi.max_dt(u, t,
                       mesh::Union{P4estMesh{2}, StructuredMesh{2}, T8codeMesh{2},
                                   UnstructuredMesh2D},
@@ -221,7 +243,8 @@ function Trixi.max_dt(u, t,
         max_lambda1 = max_lambda2 = zero(max_scaled_speed)
         for j in eachnode(dg), i in eachnode(dg)
             u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
-            lambda1, lambda2 = Trixi.max_abs_speeds(u_node, equations)
+            lambda1, lambda2 = Trixi.max_abs_speeds(u_node, equations, i, j, element,
+                                                    cache)
 
             max_lambda1 = max(max_lambda1, lambda1)
             max_lambda2 = max(max_lambda2, lambda2)
@@ -233,9 +256,6 @@ function Trixi.max_dt(u, t,
     return 2 / (nnodes(dg) * max_scaled_speed)
 end
 
-"""
-    Specialize create_cache_analysis for 3D vector of node coordinates with a 2D equation
-"""
 function Trixi.create_cache_analysis(analyzer,
                                      mesh::Union{StructuredMesh{2}, UnstructuredMesh2D,
                                                  P4estMesh{2}, T8codeMesh{2}},
@@ -268,9 +288,6 @@ function Trixi.create_cache_analysis(analyzer,
     return (; u_local, u_tmp1, x_local, x_tmp1, jacobian_local, jacobian_tmp1)
 end
 
-"""
-    Calculate error norms for systems on manifolds
-"""
 function Trixi.calc_error_norms(func, u, t, analyzer,
                                 mesh::Union{StructuredMesh{2}, UnstructuredMesh2D,
                                             P4estMesh{2},
