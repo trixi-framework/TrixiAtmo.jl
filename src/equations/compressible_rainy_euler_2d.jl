@@ -158,15 +158,19 @@ end
 
         return SVector(0.0, 0.0, temperature)
     else    
-        error("wrong system")
+        # experiment with ref_temp = 0
         function f!(residual, guess)
-            residual[1]  = (c_vd * rho_dry + c_vv * guess[1] + c_l * (guess[2] + rho_rain))*(guess[3] - ref_temp)
-            residual[1] += guess[1] * (L_ref - R_v * ref_temp) - (energy - rho * 0.5 * (v1^2 + v2^2))
+            residual[1]  = (c_vd * rho_dry + c_vv * guess[1] + c_l * (guess[2] + rho_rain)) * guess[3]
+            residual[1] += guess[1] * L_ref - (energy - rho * 0.5 * (v1^2 + v2^2))
+
             residual[2]  = min(saturation_vapour_pressure(guess[3], equations) / (R_v * guess[3]), rho_moist) - guess[1]
+
             residual[3]  = rho_moist - guess[1] - guess[2]
         end
 
-        nl_sol = nlsolve(f!, [rho_vapour_h; rho_cloud_h; temperature_h], ftol = 1e-14, iterations = 20)
+        nl_sol = nlsolve(f!, [rho_vapour_h; rho_cloud_h; temperature_h], ftol = 1e-9)#, iterations = 10)
+
+        #display([nl_sol.zero[1] - u[7], nl_sol.zero[2] - u[8], nl_sol.zero[3] - u[9]])
 
         return SVector(nl_sol.zero[1], nl_sol.zero[2], nl_sol.zero[3])
     end
@@ -291,6 +295,11 @@ end
     ref_temp = equations.ref_temperature
     ref_L    = equations.ref_latent_heat_vap_temp
 
+    # testing 
+    if (temperature < 0.0)
+        error("temp less than zero")
+    end
+
     # Clausius Clapeyron formula
     p_vapour_saturation  = ref_s_p * (temperature / ref_temp)^((c_pv - c_l) / R_v)
     p_vapour_saturation *= exp(((ref_L - (c_pv - c_l) * ref_temp) / R_v) * (1 / ref_temp - 1 / temperature))
@@ -347,7 +356,7 @@ end
         f4 = rho       * v1 * v2      - rho_rain * v_r * v1
         f5 = rho       * v2 * v2  + p - rho_rain * v_r * v2
 
-        # "energy"
+        # "energy" TODO correct the ref_temp term if it proves to be wrong here!!!
         f6 = (energy + p) * v2 - (c_l * (temperature - ref_temp) + 0.5 * (v1^2 + v2^2)) * rho_rain * v_r
     end
 
@@ -392,7 +401,7 @@ end
     f4 = rho       * v_normal * v1 + p * normal_direction[1] - rho_rain * v_r_normal * v1
     f5 = rho       * v_normal * v2 + p * normal_direction[2] - rho_rain * v_r_normal * v2 
 
-    # "energy"
+    # "energy" TODO correct the ref_temp term if it proves to be wrong here!!!
     f6 = (energy + p) * v_normal - (c_l * (temperature - ref_temp) + 0.5 * (v1^2 + v2^2)) * rho_rain * v_r_normal
 
     return SVector(f1, f2, f3, f4, f5, f6, 
@@ -418,7 +427,7 @@ end
 
     rho_vs = saturation_vapour_pressure(temperature, equations) / (R_v * temperature)
 
-    # source terms phase change
+    # source terms phase change TODO correct the ref_temp term if it proves to be wrong here!!!
     S_evaporation     = (3.86e-3 - 9.41e-5 * (temperature - ref_temp)) * (1 + 9.1 * rho_rain^(0.1875))
     S_evaporation    *= (rho_vs - rho_vapour) * rho_rain^(0.5)
     S_auto_conversion = 0.001 * rho_cloud
