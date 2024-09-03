@@ -150,7 +150,7 @@ function calc_node_coordinates_2d_shell!(node_coordinates,
     # Hanging nodes will cause holes in the mesh if its polydeg is higher
     # than the polydeg of the solver.
     @assert length(basis.nodes)>=length(mesh.nodes) "The solver can't have a lower polydeg than the mesh"
-
+    @assert size(mesh.tree_node_coordinates, 1)==3 "Shell must use 3D node coordinates"
     calc_node_coordinates_2d_shell!(node_coordinates, mesh, basis.nodes)
 end
 
@@ -162,7 +162,7 @@ function calc_node_coordinates_2d_shell!(node_coordinates,
     # places and the additional information passed to the compiler makes them faster
     # than native `Array`s.
     tmp1 = Trixi.StrideArray(undef, real(mesh),
-                             Trixi.StaticInt(size(mesh.tree_node_coordinates, 1)),
+                             Trixi.StaticInt(3),
                              Trixi.static_length(nodes),
                              Trixi.static_length(mesh.nodes))
     matrix1 = Trixi.StrideArray(undef, real(mesh),
@@ -172,7 +172,6 @@ function calc_node_coordinates_2d_shell!(node_coordinates,
     baryweights_in = Trixi.barycentric_weights(mesh.nodes)
 
     # Macros from `p4est`
-    p4est_root_len = 1 << Trixi.P4EST_MAXLEVEL
     p4est_root_len = 1 << Trixi.P4EST_MAXLEVEL
     p4est_quadrant_len(l) = 1 << (Trixi.P4EST_MAXLEVEL - l)
 
@@ -208,6 +207,7 @@ function calc_node_coordinates_2d_shell!(node_coordinates,
     return node_coordinates
 end
 
+# This only works for a sphere
 function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArray{<:Any,
                                                                                    5},
                                               element,
@@ -216,6 +216,10 @@ function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArr
     @unpack derivative_matrix = basis
 
     for j in eachnode(basis), i in eachnode(basis)
+        radius = sqrt(node_coordinates[1, i, j, element]^2 +
+                      node_coordinates[2, i, j, element]^2 +
+                      node_coordinates[3, i, j, element]^2)
+
         for n in 1:3
             # (n, m, l) cyclic
             m = (n % 3) + 1
@@ -229,7 +233,8 @@ function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArr
                                                           jacobian_matrix[l, 2, i, j,
                                                                           element] *
                                                           node_coordinates[m, i, j,
-                                                                           element])
+                                                                           element]) /
+                                                         radius
 
             contravariant_vectors[n, 2, i, j, element] = (jacobian_matrix[l, 1, i, j,
                                                                           element] *
@@ -239,7 +244,8 @@ function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArr
                                                           jacobian_matrix[m, 1, i, j,
                                                                           element] *
                                                           node_coordinates[l, i, j,
-                                                                           element])
+                                                                           element]) /
+                                                         radius
 
             contravariant_vectors[n, 3, i, j, element] = (jacobian_matrix[m, 1, i, j,
                                                                           element] *
@@ -249,7 +255,8 @@ function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArr
                                                           jacobian_matrix[m, 2, i, j,
                                                                           element] *
                                                           jacobian_matrix[l, 1, i, j,
-                                                                          element])
+                                                                          element]) /
+                                                         radius
         end
     end
 
