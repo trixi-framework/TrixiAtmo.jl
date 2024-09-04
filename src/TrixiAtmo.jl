@@ -17,7 +17,7 @@ using StrideArrays: StrideArray, StaticInt, PtrArray
 using LinearAlgebra: norm, dot
 using DiffEqCallbacks: PeriodicCallback, PeriodicCallbackAffect
 
-@reexport using StaticArrays: SVector
+@reexport using StaticArrays: SVector, SMatrix
 
 include("auxiliary/auxiliary.jl")
 include("equations/equations.jl")

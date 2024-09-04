@@ -24,12 +24,12 @@ function Trixi.compute_coefficients!(u, func, t, mesh::Trixi.AbstractMesh{2},
         for j in eachnode(dg), i in eachnode(dg)
             x_node = view(cache.elements.node_coordinates, :, i, j, element)
 
-            # Evaluate the state with Cartesian vector components
-            u_car = func(x_node, t, equations)
+            # Evaluate the state with spherical vector components
+            u_pol = func(x_node, t, equations)
 
-            # transform to contravariant components for use within the solver.
-            u_node = cartesian2contravariant(u_car, equations, i, j, element, cache)
-            Trixi.set_node_vars!(u, u_node, equations, dg, i, j, element)
+            # transform to contravariant components for use within the solver
+            u_con = pol2con(u_pol, equations, i, j, element, cache)
+            Trixi.set_node_vars!(u, u_con, equations, dg, i, j, element)
         end
     end
 end
@@ -198,15 +198,19 @@ end
     u_ll, u_rr = Trixi.get_surface_node_vars(u, equations, dg, primary_node_index,
                                              interface_index)
 
-    # Convert to contravariant components on each element
-    u_ll_car = contravariant2cartesian(u_ll, equations, i_primary, j_primary,
-                                       primary_element_index, cache)
-    u_rr_car = contravariant2cartesian(u_rr, equations, i_secondary, j_secondary,
-                                       secondary_element_index, cache)
-    u_rr_ll = cartesian2contravariant(u_rr_car, equations, i_primary, j_primary,
-                                      primary_element_index, cache)
-    u_ll_rr = cartesian2contravariant(u_ll_car, equations, i_secondary, j_secondary,
-                                      secondary_element_index, cache)
+    # Convert to spherical polar components on each element
+    u_ll_pol = con2pol(u_ll, equations, i_primary, j_primary, primary_element_index,
+                       cache)
+    u_rr_pol = con2pol(u_rr, equations, i_secondary, j_secondary,
+                       secondary_element_index, cache)
+
+    # evaluate u_rr in secondary coordinate system 
+    u_rr_ll = pol2con(u_rr_pol, equations, i_primary, j_primary, primary_element_index,
+                      cache)
+
+    # evaluate u_ll in primary coordinate system
+    u_ll_rr = pol2con(u_ll_pol, equations, i_secondary, j_secondary,
+                      secondary_element_index, cache)
 
     # Since the flux is computed in reference space, we do it separately for each element
     flux_primary = surface_flux(u_ll, u_rr_ll,
@@ -218,6 +222,8 @@ end
                                   equations, i_secondary, j_secondary,
                                   secondary_element_index, cache)
 
+    # Now we can update the surface flux values, where all vector variables are stored 
+    # as contravariant components
     for v in eachvariable(equations)
         surface_flux_values[v, primary_node_index, primary_direction_index,
         primary_element_index] = flux_primary[v]
@@ -308,8 +314,7 @@ function Trixi.calc_error_norms(func, u, t, analyzer,
             x = Trixi.get_node_coords(node_coordinates, equations, dg, i, j, element)
             u_exact = initial_condition(x, t, equations)
 
-            diff = cartesian2contravariant(func(u_exact, equations),
-                                           equations, i, j, element, cache) -
+            diff = pol2con(func(u_exact, equations), equations, i, j, element, cache) -
                    func(Trixi.get_node_vars(u, equations, dg, i, j, element), equations)
 
             J = inv(abs(inverse_jacobian[i, j, element]))

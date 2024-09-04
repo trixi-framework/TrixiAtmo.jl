@@ -29,12 +29,7 @@ function initial_condition_advection_earth(x, t, ::CovariantLinearAdvectionEquat
     v_lon = V * (cos(lat) * cos(alpha) + sin(lat) * cos(lon) * sin(alpha))
     v_lat = -V * sin(lon) * sin(alpha)
 
-    # transform velocity to Cartesian coordinate system
-    v_car_1 = -sin(lon) * v_lon - cos(lon) * sin(lat) * v_lat
-    v_car_2 = cos(lon) * v_lon - sin(lat) * sin(lon) * v_lat
-    v_car_3 = cos(lat) * v_lat
-
-    return SVector(h, v_car_1, v_car_2, v_car_3)
+    return SVector(h, v_lon, v_lat)
 end
 
 ###############################################################################
