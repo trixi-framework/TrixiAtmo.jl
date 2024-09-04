@@ -156,7 +156,7 @@ function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
     kappa_M = (R_d * rho_d + R_v * rho_qv) / (c_pd * rho_d + c_pv * rho_qv + c_pl * rho_ql)
     p_loc = p_0 * (R_d * rho_theta / p_0)^(1 / (1 - kappa_M))
     T_loc = p_loc / (R_d * rho_d + R_v * rho_qv)
-    rho_e = (c_vd * rho_d + c_vv * rho_qv + c_pl * rho_ql) * T_loc + L_00 * rho_qv
+    rho_e = (c_vd * rho_d + c_vv * rho_qv + c_pl * rho_ql) * (T_loc - 273.15) + (L_00 - R_v * 273.15) * rho_qv
 
     p_v = rho_qv * R_v * T_loc
     p_d = p_loc - p_v
@@ -213,7 +213,7 @@ function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
         kappa_M = (R_d * rho_d + R_v * rho_qv) /
                   (c_pd * rho_d + c_pv * rho_qv + c_pl * rho_ql)
         rho_theta = rho * θ_dens_new * (p_loc / p_0)^(kappa - kappa_M)
-        rho_e = (c_vd * rho_d + c_vv * rho_qv + c_pl * rho_ql) * T_loc + L_00 * rho_qv
+        rho_e = (c_vd * rho_d + c_vv * rho_qv + c_pl * rho_ql) * (T_loc - 273.15) + (L_00 - R_v * 273.15) * rho_qv
     end
     return SVector(rho, rho_e, rho_qv, rho_ql)
 end
@@ -248,7 +248,7 @@ solver = DGSEM(basis, surface_flux)
 coordinates_min = (     0.0,      0.0)
 coordinates_max = (20_000.0, 10_000.0)
 
-cells_per_dimension = (32, 16)
+cells_per_dimension = (64, 32)
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = (false, false))
 
@@ -260,7 +260,7 @@ semi = SemidiscretizationHyperbolic(mesh, equations,
 ###############################################################################
 # ODE solvers, callbacks etc.
 
-tspan = (0.0, 1000.0)
+tspan = (0.0, 100.0)
 
 ode = semidiscretize(semi, tspan)
 

@@ -65,7 +65,7 @@ function CompressibleRainyEulerEquations2D(; RealT = Float64)
     # Reference values:
     ref_saturation_pressure  = 610.7
     ref_temperature          = 273.15
-    ref_latent_heat_vap_temp = 2.5e6
+    ref_latent_heat_vap_temp = 3147620.0#2.5e6
     ref_pressure             = 1e5
 
     # Other:
@@ -147,7 +147,9 @@ end
     energy = energy_density(u, equations)
 
     # recover temperature explicitly from inner energy when other variables are zero
+    # energy density definition without ref_temp for dry case
     if (rho_moist == 0.0 && rho_rain == 0.0)
+        error("wrong system")
         energy_kinetic = 0.5 * (v1^2 + v2^2) * rho
         temperature = (energy - energy_kinetic) / (c_vd * rho)
 
@@ -160,12 +162,15 @@ end
     else    
         # experiment with ref_temp = 0
         function f!(residual, guess)
-            residual[1]  = (c_vd * rho_dry + c_vv * guess[1] + c_l * (guess[2] + rho_rain)) * guess[3]
-            residual[1] += guess[1] * L_ref - (energy - rho * 0.5 * (v1^2 + v2^2))
+            residual[1]  = (c_vd * rho_dry + c_vv * guess[1] + c_l * (guess[2] + rho_rain)) * (guess[3] - ref_temp)
+            residual[1] += guess[1] * (L_ref - R_v * ref_temp)
+            residual[1] -= (energy - rho * 0.5 * (v1^2 + v2^2))
 
-            residual[2]  = min(saturation_vapour_pressure(guess[3], equations) / (R_v * guess[3]), rho_moist) - guess[1]
+            residual[2]  = min(saturation_vapour_pressure(guess[3], equations) / (R_v * guess[3]), rho_moist)
+            residual[2] -= guess[1]
 
-            residual[3]  = rho_moist - guess[1] - guess[2]
+            residual[3]  = rho_moist 
+            residual[3] -= guess[1] + guess[2]
         end
 
         nl_sol = nlsolve(f!, [rho_vapour_h; rho_cloud_h; temperature_h], ftol = 1e-9)#, iterations = 10)
@@ -203,7 +208,7 @@ end
     rho_dry    = u[1]
     rho_moist  = u[2]
     rho_rain   = u[3]
-    rho        = rho_dry      + rho_moist      + rho_rain
+    rho        = rho_dry + rho_moist + rho_rain
     rho_inv    = inv(rho)
 
     return SVector(rho_dry, rho_moist, rho_rain, rho, rho_inv)
@@ -356,7 +361,7 @@ end
         f4 = rho       * v1 * v2      - rho_rain * v_r * v1
         f5 = rho       * v2 * v2  + p - rho_rain * v_r * v2
 
-        # "energy" TODO correct the ref_temp term if it proves to be wrong here!!!
+        # "energy"
         f6 = (energy + p) * v2 - (c_l * (temperature - ref_temp) + 0.5 * (v1^2 + v2^2)) * rho_rain * v_r
     end
 
@@ -401,7 +406,7 @@ end
     f4 = rho       * v_normal * v1 + p * normal_direction[1] - rho_rain * v_r_normal * v1
     f5 = rho       * v_normal * v2 + p * normal_direction[2] - rho_rain * v_r_normal * v2 
 
-    # "energy" TODO correct the ref_temp term if it proves to be wrong here!!!
+    # "energy"
     f6 = (energy + p) * v_normal - (c_l * (temperature - ref_temp) + 0.5 * (v1^2 + v2^2)) * rho_rain * v_r_normal
 
     return SVector(f1, f2, f3, f4, f5, f6, 
@@ -427,7 +432,7 @@ end
 
     rho_vs = saturation_vapour_pressure(temperature, equations) / (R_v * temperature)
 
-    # source terms phase change TODO correct the ref_temp term if it proves to be wrong here!!!
+    # source terms phase change
     S_evaporation     = (3.86e-3 - 9.41e-5 * (temperature - ref_temp)) * (1 + 9.1 * rho_rain^(0.1875))
     S_evaporation    *= (rho_vs - rho_vapour) * rho_rain^(0.5)
     S_auto_conversion = 0.001 * rho_cloud
