@@ -290,9 +290,9 @@ function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArr
                                               jacobian_matrix, node_coordinates,
                                               basis::LobattoLegendreBasis)
     for j in eachnode(basis), i in eachnode(basis)
-        radius = sqrt(node_coordinates[1, i, j, element]^2 +
-                      node_coordinates[2, i, j, element]^2 +
-                      node_coordinates[3, i, j, element]^2)
+        r = sqrt(node_coordinates[1, i, j, element]^2 +
+                 node_coordinates[2, i, j, element]^2 +
+                 node_coordinates[3, i, j, element]^2)
 
         for n in 1:3
             # (n, m, l) cyclic
@@ -307,8 +307,7 @@ function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArr
                                                           jacobian_matrix[l, 2, i, j,
                                                                           element] *
                                                           node_coordinates[m, i, j,
-                                                                           element]) /
-                                                         radius
+                                                                           element]) / r
 
             contravariant_vectors[n, 2, i, j, element] = (jacobian_matrix[l, 1, i, j,
                                                                           element] *
@@ -318,8 +317,7 @@ function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArr
                                                           jacobian_matrix[m, 1, i, j,
                                                                           element] *
                                                           node_coordinates[l, i, j,
-                                                                           element]) /
-                                                         radius
+                                                                           element]) / r
 
             contravariant_vectors[n, 3, i, j, element] = (jacobian_matrix[m, 1, i, j,
                                                                           element] *
@@ -329,8 +327,6 @@ function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArr
                                                           jacobian_matrix[m, 2, i, j,
                                                                           element] *
                                                           jacobian_matrix[l, 1, i, j,
-                                                                          element]) /
-                                                         radius
                                                                           element]) / r
         end
     end
