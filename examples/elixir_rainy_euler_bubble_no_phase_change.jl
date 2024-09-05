@@ -158,7 +158,7 @@ function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
     T_loc = p_loc / (R_d * rho_d + R_v * rho_qv)
     rho_e = (c_vd * rho_d + c_vv * rho_qv + c_pl * rho_ql) * (T_loc - 273.15) + (L_00 - R_v * 273.15) * rho_qv
 
-    p_v = rho_qv * R_v * T_loc
+    #=p_v = rho_qv * R_v * T_loc
     p_d = p_loc - p_v
     T_C = T_loc - 273.15
     p_vs = 611.2 * exp(17.62 * T_C / (243.12 + T_C))
@@ -170,9 +170,9 @@ function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
     # equivalent potential temperature
     a = T_loc * (p_0 / p_d)^(R_d / (c_pd + r_t * c_pl))
     b = H^(-r_v * R_v / c_pd)
-    L_v = L_00 + (c_pv - c_pl) * T_loc
+    L_v = L_00 + (c_pv - c_pl) * (T_loc - 273.15)
     c = exp(L_v * r_v / ((c_pd + r_t * c_pl) * T_loc))
-    aeq_pot = (a * b * c) # TODO: this is not used. remove?
+    aeq_pot = (a * b * c) # TODO: this is not used. remove? =#
 
     # Assume pressure stays constant
     if (r < rc && Δθ > 0)

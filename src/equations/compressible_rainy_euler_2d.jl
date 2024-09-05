@@ -34,7 +34,7 @@ struct CompressibleRainyEulerEquations2D{RealT <: Real} <: AbstractCompressibleR
     # Gas constants:
     R_dry_air                  ::RealT
     R_vapour                   ::RealT
-    eps                        ::RealT
+    eps                        ::RealT        #TODO not used?
 
     # Reference values:
     ref_saturation_pressure    ::RealT
@@ -256,6 +256,12 @@ end
 
     # recover rho_vapour, rho_cloud, temperature from nonlinear system
     rho_vapour, rho_cloud, temperature = cons2nonlinearsystemsol(u, equations)
+    if ( rho_vapour < 0.0 )
+        error("rho vapour less than zero")
+    end
+    if ( rho_cloud < 0.0 )
+        error("rho cloud less than zero")
+    end
 
     # formula
     p       = pressure(u, equations)
