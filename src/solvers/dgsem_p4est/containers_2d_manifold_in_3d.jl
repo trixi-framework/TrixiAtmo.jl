@@ -45,17 +45,17 @@ end
 
 # Create element container and initialize element data.
 # This function dispatches on the dimensions of the mesh and the equation (AbstractEquations{3})
-function Trixi.init_elements(mesh::Union{P4estMesh{2, RealT},
-                                         T8codeMesh{2, RealT}},
+function Trixi.init_elements(mesh::Union{P4estMesh{2},
+                                         T8codeMesh{2}},
                              equations::Union{AbstractEquations{3},
                                               AbstractCovariantEquations2D},
                              basis,
-                             ::Type{uEltype}) where {RealT <: Real,
-                                                     uEltype <: Real}
+                             ::Type{uEltype}) where {uEltype <: Real}
     nelements = Trixi.ncells(mesh)
 
     NDIMS = 2 # Dimension of the manifold
     ndims_spa = size(mesh.tree_node_coordinates, 1)
+    RealT = real(mesh)
 
     _node_coordinates = Vector{RealT}(undef,
                                       ndims_spa * nnodes(basis)^NDIMS * nelements)
