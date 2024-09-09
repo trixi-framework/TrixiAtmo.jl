@@ -1,6 +1,68 @@
 @muladd begin
 #! format: noindent
 
+# Custom rhs! for the covariant form. Note that the mortar flux is not included, as we do
+# not yet support non-conforming meshes for the covariant solver.
+function Trixi.rhs!(du, u, t,
+                    mesh::P4estMesh{2}, equations::AbstractCovariantEquations{2},
+                    initial_condition, boundary_conditions, source_terms::Source,
+                    dg::DG, cache) where {Source}
+    # Reset du
+    Trixi.@trixi_timeit Trixi.timer() "reset ∂u/∂t" Trixi.reset_du!(du, dg, cache)
+
+    # Calculate volume integral
+    Trixi.@trixi_timeit Trixi.timer() "volume integral" begin
+        Trixi.calc_volume_integral!(du, u, mesh,
+                                    Trixi.have_nonconservative_terms(equations),
+                                    equations,
+                                    dg.volume_integral, dg, cache)
+    end
+
+    # Prolong solution to interfaces
+    Trixi.@trixi_timeit Trixi.timer() "prolong2interfaces" begin
+        Trixi.prolong2interfaces!(cache, u, mesh, equations,
+                                  dg.surface_integral, dg)
+    end
+
+    # Calculate interface fluxes
+    Trixi.@trixi_timeit Trixi.timer() "interface flux" begin
+        Trixi.calc_interface_flux!(cache.elements.surface_flux_values, mesh,
+                                   Trixi.have_nonconservative_terms(equations),
+                                   equations,
+                                   dg.surface_integral, dg, cache)
+    end
+
+    # Prolong solution to boundaries
+    Trixi.@trixi_timeit Trixi.timer() "prolong2boundaries" begin
+        Trixi.prolong2boundaries!(cache, u, mesh, equations,
+                                  dg.surface_integral, dg)
+    end
+
+    # Calculate boundary fluxes
+    Trixi.@trixi_timeit Trixi.timer() "boundary flux" begin
+        Trixi.calc_boundary_flux!(cache, t, boundary_conditions, mesh, equations,
+                                  dg.surface_integral, dg)
+    end
+
+    # Calculate surface integrals
+    Trixi.@trixi_timeit Trixi.timer() "surface integral" begin
+        Trixi.calc_surface_integral!(du, u, mesh, equations,
+                                     dg.surface_integral, dg, cache)
+    end
+
+    # Apply Jacobian from mapping to reference element
+    Trixi.@trixi_timeit Trixi.timer() "Jacobian" Trixi.apply_jacobian!(du, mesh,
+                                                                       equations, dg,
+                                                                       cache)
+
+    # Calculate source terms
+    Trixi.@trixi_timeit Trixi.timer() "source terms" begin
+        Trixi.calc_sources!(du, u, t, source_terms, equations, dg, cache)
+    end
+
+    return nothing
+end
+
 @inline function reference_normal_vector(direction)
     orientation = (direction + 1) >> 1
     sign = isodd(direction) ? -1 : 1
@@ -12,34 +74,33 @@
     end
 end
 
-@inline function Trixi.get_node_coords(x, ::AbstractCovariantEquations2D, ::DG,
+@inline function Trixi.get_node_coords(x, ::AbstractCovariantEquations{2}, ::DG,
                                        indices...)
     return SVector(ntuple(@inline(idx->x[idx, indices...]), 3))
 end
 
 function Trixi.compute_coefficients!(u, func, t, mesh::Trixi.AbstractMesh{2},
-                                     equations::AbstractCovariantEquations2D, dg::DG,
+                                     equations::AbstractCovariantEquations{2}, dg::DG,
                                      cache)
     for element in eachelement(dg, cache)
         for j in eachnode(dg), i in eachnode(dg)
             x_node = view(cache.elements.node_coordinates, :, i, j, element)
 
-            # Evaluate the state with spherical vector components
-            u_pol = func(x_node, t, equations)
+            # Evaluate the state with spherical vector components 
+            # (i.e. all winds are zonal and meridional components)
+            u_spherical = func(x_node, t, equations)
 
             # transform to contravariant components for use within the solver
-            u_con = pol2con(u_pol, equations, i, j, element, cache)
+            u_con = spherical2contravariant(u_spherical, equations, i, j, element,
+                                            cache)
             Trixi.set_node_vars!(u, u_con, equations, dg, i, j, element)
         end
     end
 end
 
-@inline function Trixi.weak_form_kernel!(du, u, element,
-                                         mesh::Union{P4estMesh{2},
-                                                     StructuredMesh{2}, T8codeMesh{2},
-                                                     UnstructuredMesh2D},
+@inline function Trixi.weak_form_kernel!(du, u, element, mesh::P4estMesh{2},
                                          nonconservative_terms::False,
-                                         equations::AbstractCovariantEquations2D,
+                                         equations::AbstractCovariantEquations{2},
                                          dg::DGSEM, cache, alpha = true)
     (; derivative_dhat) = dg.basis
 
@@ -67,13 +128,9 @@ end
 
 @inline function Trixi.flux_differencing_kernel!(du, u,
                                                  element,
-                                                 mesh::Union{StructuredMesh{2},
-                                                             StructuredMeshView{2},
-                                                             UnstructuredMesh2D,
-                                                             P4estMesh{2},
-                                                             T8codeMesh{2}},
+                                                 mesh::P4estMesh{2},
                                                  nonconservative_terms::False,
-                                                 equations::AbstractCovariantEquations2D,
+                                                 equations::AbstractCovariantEquations{2},
                                                  volume_flux, dg::DGSEM, cache,
                                                  alpha = true)
     (; derivative_split) = dg.basis
@@ -108,8 +165,9 @@ end
 end
 
 function Trixi.calc_interface_flux!(surface_flux_values,
-                                    mesh::P4estMesh{2}, nonconservative_terms,
-                                    equations::AbstractCovariantEquations2D,
+                                    mesh::Union{P4estMesh{2}, T8codeMesh{2}},
+                                    nonconservative_terms,
+                                    equations::AbstractCovariantEquations{2},
                                     surface_integral, dg::DG, cache)
     (; neighbor_ids, node_indices) = cache.interfaces
 
@@ -141,7 +199,6 @@ function Trixi.calc_interface_flux!(surface_flux_values,
                                                                            index_range)
         j_secondary_start, j_secondary_step = Trixi.index_to_start_step_2d(secondary_indices[2],
                                                                            index_range)
-
         i_secondary = i_secondary_start
         j_secondary = j_secondary_start
 
@@ -199,18 +256,20 @@ end
                                              interface_index)
 
     # Convert to spherical polar components on each element
-    u_ll_pol = con2pol(u_ll, equations, i_primary, j_primary, primary_element_index,
-                       cache)
-    u_rr_pol = con2pol(u_rr, equations, i_secondary, j_secondary,
-                       secondary_element_index, cache)
+    u_ll_pol = contravariant2spherical(u_ll, equations, i_primary, j_primary,
+                                       primary_element_index,
+                                       cache)
+    u_rr_pol = contravariant2spherical(u_rr, equations, i_secondary, j_secondary,
+                                       secondary_element_index, cache)
 
     # evaluate u_rr in secondary coordinate system 
-    u_rr_ll = pol2con(u_rr_pol, equations, i_primary, j_primary, primary_element_index,
-                      cache)
+    u_rr_ll = spherical2contravariant(u_rr_pol, equations, i_primary, j_primary,
+                                      primary_element_index,
+                                      cache)
 
     # evaluate u_ll in primary coordinate system
-    u_ll_rr = pol2con(u_ll_pol, equations, i_secondary, j_secondary,
-                      secondary_element_index, cache)
+    u_ll_rr = spherical2contravariant(u_ll_pol, equations, i_secondary, j_secondary,
+                                      secondary_element_index, cache)
 
     # Since the flux is computed in reference space, we do it separately for each element
     flux_primary = surface_flux(u_ll, u_rr_ll,
@@ -232,11 +291,9 @@ end
     end
 end
 
-function Trixi.max_dt(u, t,
-                      mesh::Union{P4estMesh{2}, StructuredMesh{2}, T8codeMesh{2},
-                                  UnstructuredMesh2D},
-                      constant_speed::False,
-                      equations::AbstractCovariantEquations2D, dg::DG, cache)
+function Trixi.max_dt(u, t, mesh::P4estMesh{2}, constant_speed::False,
+                      equations::AbstractCovariantEquations{2},
+                      dg::DG, cache)
 
     # to avoid a division by zero if the speed vanishes everywhere,
     # e.g. for steady-state linear advection
@@ -250,7 +307,6 @@ function Trixi.max_dt(u, t,
             u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
             lambda1, lambda2 = Trixi.max_abs_speeds(u_node, equations, i, j, element,
                                                     cache)
-
             max_lambda1 = max(max_lambda1, lambda1)
             max_lambda2 = max(max_lambda2, lambda2)
         end
@@ -261,12 +317,9 @@ function Trixi.max_dt(u, t,
     return 2 / (nnodes(dg) * max_scaled_speed)
 end
 
-function Trixi.create_cache_analysis(analyzer,
-                                     mesh::Union{StructuredMesh{2}, UnstructuredMesh2D,
-                                                 P4estMesh{2}, T8codeMesh{2}},
-                                     equations::AbstractCovariantEquations2D, dg::DG,
-                                     cache,
-                                     RealT, uEltype)
+function Trixi.create_cache_analysis(analyzer, mesh::P4estMesh{2},
+                                     equations::AbstractCovariantEquations{2}, dg::DG,
+                                     cache, RealT, uEltype)
 
     # pre-allocate buffers
     # We use `StrideArray`s here since these buffers are used in performance-critical
@@ -293,11 +346,8 @@ function Trixi.create_cache_analysis(analyzer,
     return (; u_local, u_tmp1, x_local, x_tmp1, jacobian_local, jacobian_tmp1)
 end
 
-function Trixi.calc_error_norms(func, u, t, analyzer,
-                                mesh::Union{StructuredMesh{2}, UnstructuredMesh2D,
-                                            P4estMesh{2},
-                                            T8codeMesh{2}},
-                                equations::AbstractCovariantEquations2D,
+function Trixi.calc_error_norms(func, u, t, analyzer, mesh::P4estMesh{2},
+                                equations::AbstractCovariantEquations{2},
                                 initial_condition, dg::DGSEM, cache, cache_analysis)
     (; weights) = dg.basis
     (; node_coordinates, inverse_jacobian) = cache.elements
@@ -314,7 +364,8 @@ function Trixi.calc_error_norms(func, u, t, analyzer,
             x = Trixi.get_node_coords(node_coordinates, equations, dg, i, j, element)
             u_exact = initial_condition(x, t, equations)
 
-            diff = pol2con(func(u_exact, equations), equations, i, j, element, cache) -
+            diff = spherical2contravariant(func(u_exact, equations), equations, i, j,
+                                           element, cache) -
                    func(Trixi.get_node_vars(u, equations, dg, i, j, element), equations)
 
             J = inv(abs(inverse_jacobian[i, j, element]))

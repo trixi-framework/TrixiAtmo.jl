@@ -13,8 +13,6 @@ mutable struct P4estElementContainerPtrArray{NDIMS, RealT <: Real, uEltype <: Re
     # Jacobian matrix of the transformation
     # [jacobian_i, jacobian_j, node_i, node_j, node_k, element] where jacobian_i is the first index of the Jacobian matrix,...
     jacobian_matrix::Array{RealT, NDIMSP3}
-    # Transformation matrix from contravariant to spherical polar coordinates
-    polar_transform_matrix::Array{RealT, NDIMSP3}
     # Contravariant vectors, scaled by J, in Kopriva's blue book called Ja^i_n (i index, n dimension)
     contravariant_vectors::ContravariantVectors  # [dimension, index, node_i, node_j, node_k, element]
     # 1/J where J is the Jacobian determinant (determinant of Jacobian matrix)
@@ -25,32 +23,40 @@ mutable struct P4estElementContainerPtrArray{NDIMS, RealT <: Real, uEltype <: Re
     # internal `resize!`able storage
     _node_coordinates::Vector{RealT}
     _jacobian_matrix::Vector{RealT}
-    _polar_transform_matrix::Vector{RealT}
     _contravariant_vectors::Vector{RealT}
     _inverse_jacobian::Vector{RealT}
     _surface_flux_values::Vector{uEltype}
 end
 
 @inline function Trixi.nelements(elements::P4estElementContainerPtrArray)
-    size(elements.node_coordinates, ndims(elements) + 2)
+    return size(elements.node_coordinates, ndims(elements) + 2)
 end
 @inline Base.ndims(::P4estElementContainerPtrArray{NDIMS}) where {NDIMS} = NDIMS
-@inline function Base.eltype(::P4estElementContainerPtrArray{NDIMS, RealT, uEltype}) where {
-                                                                                            NDIMS,
-                                                                                            RealT,
-                                                                                            uEltype
-                                                                                            }
-    uEltype
+@inline function Base.eltype(::P4estElementContainerPtrArray{NDIMS,
+                                                             RealT, uEltype}) where {
+                                                                                     NDIMS,
+                                                                                     RealT,
+                                                                                     uEltype
+                                                                                     }
+    return uEltype
+end
+
+# Extract contravariant vector Ja^i (i = index) as SVector
+# This function dispatches on the type of contravariant_vectors
+static2val(::Trixi.StaticInt{N}) where {N} = Val{N}()
+@inline function Trixi.get_contravariant_vector(index, contravariant_vectors::PtrArray,
+                                                indices...)
+    return SVector(ntuple(@inline(dim->contravariant_vectors[dim, index, indices...]),
+                          static2val(static_size(contravariant_vectors,
+                                                 Trixi.StaticInt(1)))))
 end
 
 # Create element container and initialize element data.
 # This function dispatches on the dimensions of the mesh and the equation (AbstractEquations{3})
 function Trixi.init_elements(mesh::Union{P4estMesh{2},
                                          T8codeMesh{2}},
-                             equations::Union{AbstractEquations{3},
-                                              AbstractCovariantEquations2D},
-                             basis,
-                             ::Type{uEltype}) where {uEltype <: Real}
+                             equations::AbstractEquations{3},
+                             basis, ::Type{uEltype}) where {uEltype <: Real}
     nelements = Trixi.ncells(mesh)
 
     NDIMS = 2 # Dimension of the manifold
@@ -71,14 +77,6 @@ function Trixi.init_elements(mesh::Union{P4estMesh{2},
                                         (ndims_spa, NDIMS,
                                          ntuple(_ -> nnodes(basis), NDIMS)...,
                                          nelements))
-
-    _polar_transform_matrix = Vector{RealT}(undef,
-                                            NDIMS * NDIMS * nnodes(basis)^NDIMS *
-                                            nelements)
-    polar_transform_matrix = Trixi.unsafe_wrap(Array, pointer(_polar_transform_matrix),
-                                               (NDIMS, NDIMS,
-                                                ntuple(_ -> nnodes(basis), NDIMS)...,
-                                                nelements))
 
     _contravariant_vectors = Vector{RealT}(undef,
                                            ndims_spa^2 * nnodes(basis)^NDIMS *
@@ -102,22 +100,22 @@ function Trixi.init_elements(mesh::Union{P4estMesh{2},
                                              ntuple(_ -> nnodes(basis), NDIMS - 1)...,
                                              NDIMS * 2, nelements))
 
+    ContravariantVectors = typeof(contravariant_vectors)
     elements = P4estElementContainerPtrArray{NDIMS, RealT, uEltype, NDIMS + 1,
                                              NDIMS + 2,
-                                             NDIMS + 3, typeof(contravariant_vectors)}(node_coordinates,
-                                                                                       jacobian_matrix,
-                                                                                       polar_transform_matrix,
-                                                                                       contravariant_vectors,
-                                                                                       inverse_jacobian,
-                                                                                       surface_flux_values,
-                                                                                       _node_coordinates,
-                                                                                       _jacobian_matrix,
-                                                                                       _polar_transform_matrix,
-                                                                                       _contravariant_vectors,
-                                                                                       _inverse_jacobian,
-                                                                                       _surface_flux_values)
+                                             NDIMS + 3,
+                                             ContravariantVectors}(node_coordinates,
+                                                                   jacobian_matrix,
+                                                                   contravariant_vectors,
+                                                                   inverse_jacobian,
+                                                                   surface_flux_values,
+                                                                   _node_coordinates,
+                                                                   _jacobian_matrix,
+                                                                   _contravariant_vectors,
+                                                                   _inverse_jacobian,
+                                                                   _surface_flux_values)
 
-    init_elements_2d_manifold_in_3d!(elements, mesh, basis)
+    init_elements_2d_manifold_in_3d!(elements, mesh, equations, basis)
 
     return elements
 end
@@ -125,24 +123,16 @@ end
 # This assumes a sphere, although the radius can be arbitrary, and general mesh topologies are supported.
 function init_elements_2d_manifold_in_3d!(elements,
                                           mesh::Union{P4estMesh{2}, T8codeMesh{2}},
+                                          equations::AbstractEquations{3},
                                           basis::LobattoLegendreBasis)
-    (; node_coordinates, jacobian_matrix, polar_transform_matrix,
-    contravariant_vectors, inverse_jacobian) = elements
+    (; node_coordinates, jacobian_matrix, contravariant_vectors, inverse_jacobian) = elements
 
     calc_node_coordinates_2d_shell!(node_coordinates, mesh, basis)
 
     for element in 1:Trixi.ncells(mesh)
 
-        # Compute Jacobian matrix as usual
+        # Compute Jacobian matrix as usual using Giraldo's cross-product form
         Trixi.calc_jacobian_matrix!(jacobian_matrix, element, node_coordinates, basis)
-
-        # Calculate the transform matrix which maps contravariant wind components to
-        # zonal and meridional wind components
-        calc_polar_transform_matrix!(polar_transform_matrix,
-                                     element,
-                                     jacobian_matrix,
-                                     node_coordinates,
-                                     basis)
 
         # Compute contravariant vectors
         calc_contravariant_vectors_2d_shell!(contravariant_vectors,
@@ -152,7 +142,6 @@ function init_elements_2d_manifold_in_3d!(elements,
                                              basis)
 
         # Compute the inverse Jacobian as the norm of the cross product of the covariant vectors
-        # This is very slightly different from taking the determinant of the polar transform matrix
         for j in eachnode(basis), i in eachnode(basis)
             inverse_jacobian[i, j, element] = 1 /
                                               norm(Trixi.cross(jacobian_matrix[:, 1, i,
@@ -228,54 +217,6 @@ function calc_node_coordinates_2d_shell!(node_coordinates,
     end
 
     return node_coordinates
-end
-
-# This only works for a sphere
-# Calculate the transformation matrix from contravariant to spherical polar coordinates.
-# This works for any quadrilateral grid on the sphere, generalizing the formulation for the cubed
-# sphere described in Appendix B of:
-#   Nair, R. D., Thomas, S. J., and Loft, R. D. (2005). 
-#   A discontinuous Galerkin transport scheme on the cubed sphere. 
-#   Monthly Weather Review 133, 814-828.
-function calc_polar_transform_matrix!(polar_transform_matrix::AbstractArray{<:Any, 5},
-                                      element,
-                                      jacobian_matrix, node_coordinates,
-                                      basis::LobattoLegendreBasis)
-    for j in eachnode(basis), i in eachnode(basis)
-        r = sqrt(node_coordinates[1, i, j, element]^2 +
-                 node_coordinates[2, i, j, element]^2 +
-                 node_coordinates[3, i, j, element]^2)
-        lon = atan(node_coordinates[2, i, j, element],
-                   node_coordinates[1, i, j, element])
-        lat = asin(node_coordinates[3, i, j, element] / r)
-
-        jac_cartesian_wrt_spherical = SMatrix{3, 3}(-r * sin(lon) * cos(lat), # dlat/dx1
-                                                    r * cos(lon) * cos(lat), # dlon/dx1
-                                                    0, # dr/dx1
-                                                    -r * cos(lon) * sin(lat), # dlat/dx2
-                                                    -r * sin(lon) * sin(lat), # dlon/dx2
-                                                    r * cos(lat), # dr/dx2
-                                                    cos(lon) * cos(lat),  # dlat/dx3
-                                                    sin(lon) * cos(lat),  # dlon/dx3
-                                                    sin(lat))  # dr/dx3
-
-        # Jacobian of spherical coordinates with respect to xi1 and xi2 
-        # [dlat/dxi1 dlat/dxi2 
-        #  dlon/dxi1 dlon/dxi2
-        #  dr/dxi1   dr/dxi2]
-        jac_spherical_wrt_reference = jac_cartesian_wrt_spherical \
-                                      SMatrix{3, 2}(jacobian_matrix[:, :, i, j,
-                                                                    element])
-
-        polar_transform_matrix[1, 1, i, j, element] = r * cos(lat) *
-                                                      jac_spherical_wrt_reference[1, 1]
-        polar_transform_matrix[2, 1, i, j, element] = r *
-                                                      jac_spherical_wrt_reference[2, 1]
-        polar_transform_matrix[1, 2, i, j, element] = r * cos(lat) *
-                                                      jac_spherical_wrt_reference[1, 2]
-        polar_transform_matrix[2, 2, i, j, element] = r *
-                                                      jac_spherical_wrt_reference[2, 2]
-    end
 end
 
 # Calculate contravariant vectors, multiplied by the Jacobian determinant J of the transformation mapping,

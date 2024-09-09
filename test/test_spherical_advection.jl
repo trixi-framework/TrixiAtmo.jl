@@ -38,12 +38,12 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_spherical_advection_covariant.jl"),
                         l2=[
-                            8.75812663e-01,
+                            8.75812332e-01,
                             0.00000000e+00,
                             0.00000000e+00,
                         ],
                         linf=[
-                            1.08874135e+01,
+                            1.08873856e+01,
                             0.00000000e+00,
                             0.00000000e+00,
                         ])
@@ -61,12 +61,12 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_spherical_advection_covariant_flux_differencing.jl"),
                         l2=[
-                            8.75812663e-01,
+                            8.75812332e-01,
                             0.00000000e+00,
                             0.00000000e+00,
                         ],
                         linf=[
-                            1.08874135e+01,
+                            1.08873856e+01,
                             0.00000000e+00,
                             0.00000000e+00,
                         ])
