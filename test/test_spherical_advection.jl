@@ -23,7 +23,7 @@ EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
                             1.37453400e-02,
                             0.00000000e+00,
                             4.09322999e-01,
-                        ], element_local_mapping=false)
+                        ])
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let
@@ -33,7 +33,6 @@ EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
         @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
     end
 end
-
 
 @trixiatmo_testset "Spherical advection, covariant weak form" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
@@ -58,9 +57,11 @@ end
     end
 end
 
-@trixiatmo_testset "Spherical advection, covariant flux-differencing form" begin
+# The covariant flux-differencing form should be equivalent to the weak form when the 
+# arithmetic mean is used as the two-point flux
+@trixiatmo_testset "Spherical advection, covariant flux-differencing, arithmetic mean" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_spherical_advection_covariant_flux_differencing.jl"),
+                                 "elixir_spherical_advection_covariant.jl"),
                         l2=[
                             1.00016205e+00,
                             0.00000000e+00,
@@ -70,7 +71,7 @@ end
                             1.42451839e+01,
                             0.00000000e+00,
                             0.00000000e+00,
-                        ])
+                        ], volume_integral=VolumeIntegralFluxDifferencing(flux_central))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let

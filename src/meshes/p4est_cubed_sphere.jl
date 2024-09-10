@@ -2,31 +2,32 @@
 #! format: noindent
 
 """
-        P4estMeshCubedSphere2D(trees_per_face_dimension, radius;
-                                polydeg, RealT=Float64,
-                                initial_refinement_level=0, unsaved_changes=true,
-                                p4est_partition_allow_for_coarsening=true)
+    P4estMeshCubedSphere2D(trees_per_face_dimension, radius;
+                            polydeg, RealT=Float64,
+                            initial_refinement_level=0, unsaved_changes=true,
+                            p4est_partition_allow_for_coarsening=true,
+                            element_local_mapping=false)
 
-    Build a "Cubed Sphere" mesh as a 2D `P4estMesh` with
-    `6 * trees_per_face_dimension^2` trees.
+Build a "Cubed Sphere" mesh as a 2D `P4estMesh` with
+`6 * trees_per_face_dimension^2` trees.
 
-    The mesh will have no boundaries.
+The mesh will have no boundaries.
 
-    # Arguments
-
-      - `trees_per_face_dimension::Integer`: the number of trees in the two local dimensions of
-        each face.
-      - `radius::Integer`: the radius of the sphere.
-      - `polydeg::Integer`: polynomial degree used to store the geometry of the mesh.
-        The mapping will be approximated by an interpolation polynomial
-        of the specified degree for each tree.
-      - `RealT::Type`: the type that should be used for coordinates.
-      - `initial_refinement_level::Integer`: refine the mesh uniformly to this level before the simulation starts.
-      - `unsaved_changes::Bool`: if set to `true`, the mesh will be saved to a mesh file.
-      - `p4est_partition_allow_for_coarsening::Bool`: Must be `true` when using AMR to make mesh adaptivity
-        independent of domain partitioning. Should be `false` for static meshes
-        to permit more fine-grained partitioning.
-    """
+# Arguments
+- `trees_per_face_dimension::Integer`: the number of trees in the two local dimensions of
+                                       each face.
+- `radius::Integer`: the radius of the sphere.
+- `polydeg::Integer`: polynomial degree used to store the geometry of the mesh.
+                      The mapping will be approximated by an interpolation polynomial
+                      of the specified degree for each tree.
+- `RealT::Type`: the type that should be used for coordinates.
+- `initial_refinement_level::Integer`: refine the mesh uniformly to this level before the simulation starts.
+- `unsaved_changes::Bool`: if set to `true`, the mesh will be saved to a mesh file.
+- `p4est_partition_allow_for_coarsening::Bool`: Must be `true` when using AMR to make mesh adaptivity
+                                                independent of domain partitioning. Should be `false` for static meshes
+                                                to permit more fine-grained partitioning.
+- `element_local_mapping::Bool`: option to use the element-local mapping from Guba et al. (see https://doi.org/10.5194/gmd-7-2803-2014, Appendix A).
+"""
 function P4estMeshCubedSphere2D(trees_per_face_dimension, radius;
                                 polydeg, RealT = Float64,
                                 initial_refinement_level = 0,
