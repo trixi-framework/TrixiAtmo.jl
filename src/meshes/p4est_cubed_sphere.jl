@@ -5,7 +5,8 @@
     P4estMeshCubedSphere2D(trees_per_face_dimension, radius;
                             polydeg, RealT=Float64,
                             initial_refinement_level=0, unsaved_changes=true,
-                            p4est_partition_allow_for_coarsening=true)
+                            p4est_partition_allow_for_coarsening=true,
+                            element_local_mapping=false)
 
 Build a "Cubed Sphere" mesh as a 2D `P4estMesh` with
 `6 * trees_per_face_dimension^2` trees.
@@ -25,6 +26,7 @@ The mesh will have no boundaries.
 - `p4est_partition_allow_for_coarsening::Bool`: Must be `true` when using AMR to make mesh adaptivity
                                                 independent of domain partitioning. Should be `false` for static meshes
                                                 to permit more fine-grained partitioning.
+- `element_local_mapping::Bool`: option to use the element-local mapping from Guba et al. (see https://doi.org/10.5194/gmd-7-2803-2014, Appendix A).
 """
 function P4estMeshCubedSphere2D(trees_per_face_dimension, radius;
                                 polydeg, RealT = Float64,
