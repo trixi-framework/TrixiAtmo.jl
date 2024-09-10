@@ -7,27 +7,21 @@ mutable struct P4estElementContainerCovariant{NDIMS, RealT <: Real, uEltype <: R
                                               NDIMSP3} <: Trixi.AbstractContainer
     # Physical Cartesian coordinates at each node
     node_coordinates::Array{RealT, NDIMSP2}  # [orientation, node_i, node_j, node_k, element]
-    # Jacobian matrix of the transformation
-    # [jacobian_i, jacobian_j, node_i, node_j, node_k, element] where jacobian_i is the first index of the Jacobian matrix,...
-    jacobian_matrix::Array{RealT, NDIMSP3}
-    # Transformation matrix from contravariant to zonal/meridional velocity or momentum
-    transform_matrix::Array{RealT, NDIMSP3} # indexed same way as Jacobian matrix
-    # Inverse of the transformation matrix
-    inverse_transform_matrix::Array{RealT, NDIMSP3} # indexed same way as Jacobian matrix
-    # Determinant of transformation matrix
+    # Transformation matrix from contravariant to zonal/meridional vector components
+    transform_matrix::Array{RealT, NDIMSP3}  # [:, :, i, node_i, node_j, node_k, element]
+    # Determinant of the transform matrix
     jacobian::Array{RealT, NDIMSP1} # [node_i, node_j, node_k, element]
-    # Determinant of inverse transformation matrix
     inverse_jacobian::Array{RealT, NDIMSP1}  # [node_i, node_j, node_k, element]
+    inverse_transform::Array{RealT, NDIMSP3}  # [:, :, i, node_i, node_j, node_k, element]
     # Buffer for calculated surface flux
     surface_flux_values::Array{uEltype, NDIMSP2} # [variable, i, j, direction, element]
 
     # internal `resize!`able storage
     _node_coordinates::Vector{RealT}
-    _jacobian_matrix::Vector{RealT}
     _transform_matrix::Vector{RealT}
-    _inverse_transform_matrix::Vector{RealT}
     _jacobian::Vector{RealT}
     _inverse_jacobian::Vector{RealT}
+    _inverse_transform::Vector{RealT}
     _surface_flux_values::Vector{uEltype}
 end
 
@@ -40,6 +34,11 @@ end
                                                                                RealT,
                                                                                uEltype}
     return uEltype
+end
+
+@inline function Trixi.get_node_coords(x, ::AbstractCovariantEquations{2}, ::DG,
+                                       indices...)
+    return SVector(ntuple(@inline(idx->x[idx, indices...]), 3))
 end
 
 # Create element container and initialize element data.
@@ -58,13 +57,6 @@ function Trixi.init_elements(mesh::P4estMesh{NDIMS},
                                          (NDIMS_AMBIENT,
                                           ntuple(_ -> nnodes(basis), NDIMS)...,
                                           nelements))
-    _jacobian_matrix = Vector{RealT}(undef,
-                                     NDIMS_AMBIENT * NDIMS * nnodes(basis)^NDIMS *
-                                     nelements)
-    jacobian_matrix = Trixi.unsafe_wrap(Array, pointer(_jacobian_matrix),
-                                        (NDIMS_AMBIENT, NDIMS,
-                                         ntuple(_ -> nnodes(basis), NDIMS)...,
-                                         nelements))
 
     _transform_matrix = Vector{RealT}(undef,
                                       NDIMS * NDIMS * nnodes(basis)^NDIMS *
@@ -73,16 +65,6 @@ function Trixi.init_elements(mesh::P4estMesh{NDIMS},
                                          (NDIMS, NDIMS,
                                           ntuple(_ -> nnodes(basis), NDIMS)...,
                                           nelements))
-
-    _inverse_transform_matrix = Vector{RealT}(undef,
-                                              NDIMS * NDIMS * nnodes(basis)^NDIMS *
-                                              nelements)
-    inverse_transform_matrix = Trixi.unsafe_wrap(Array,
-                                                 pointer(_inverse_transform_matrix),
-                                                 (NDIMS, NDIMS,
-                                                  ntuple(_ -> nnodes(basis),
-                                                         NDIMS)...,
-                                                  nelements))
 
     _jacobian = Vector{RealT}(undef, nnodes(basis)^NDIMS * nelements)
     jacobian = Trixi.unsafe_wrap(Array, pointer(_jacobian),
@@ -94,6 +76,15 @@ function Trixi.init_elements(mesh::P4estMesh{NDIMS},
                                          (ntuple(_ -> nnodes(basis), NDIMS)...,
                                           nelements))
 
+    _inverse_transform = Vector{RealT}(undef,
+                                       NDIMS * NDIMS * nnodes(basis)^NDIMS *
+                                       nelements)
+    inverse_transform = Trixi.unsafe_wrap(Array,
+                                          pointer(_inverse_transform),
+                                          (NDIMS, NDIMS,
+                                           ntuple(_ -> nnodes(basis),
+                                                  NDIMS)...,
+                                           nelements))
     _surface_flux_values = Vector{uEltype}(undef,
                                            nvariables(equations) *
                                            nnodes(basis)^(NDIMS - 1) * (NDIMS * 2) *
@@ -106,18 +97,16 @@ function Trixi.init_elements(mesh::P4estMesh{NDIMS},
     elements = P4estElementContainerCovariant{NDIMS, RealT, uEltype, NDIMS + 1,
                                               NDIMS + 2,
                                               NDIMS + 3}(node_coordinates,
-                                                         jacobian_matrix,
                                                          transform_matrix,
-                                                         inverse_transform_matrix,
                                                          jacobian,
                                                          inverse_jacobian,
+                                                         inverse_transform,
                                                          surface_flux_values,
                                                          _node_coordinates,
-                                                         _jacobian_matrix,
                                                          _transform_matrix,
-                                                         _inverse_transform_matrix,
                                                          _jacobian,
                                                          _inverse_jacobian,
+                                                         _inverse_transform,
                                                          _surface_flux_values)
 
     init_elements_2d_manifold_in_3d!(elements, mesh, equations, basis)
@@ -126,98 +115,96 @@ function Trixi.init_elements(mesh::P4estMesh{NDIMS},
 end
 
 # Compute the node positions and metric terms for the covariant form, assuming that the
-# domain is a spherical shell. We do not make any assumptions on the mesh topology (can be # any quadrilateral mesh) and make no approximations aside from the initial polynomial
-# interpolation to get the mapping from reference LGL nodes to Cartesian coordinates.
+# domain is a spherical shell. We do not make any assumptions on the mesh topology.
 function init_elements_2d_manifold_in_3d!(elements, mesh::P4estMesh{2},
-                                          ::AbstractCovariantEquations{2},
+                                          equations::AbstractCovariantEquations{2},
                                           basis::LobattoLegendreBasis)
-    (; node_coordinates, jacobian_matrix, transform_matrix, inverse_transform_matrix,
+    (; node_coordinates, transform_matrix, inverse_transform,
     jacobian, inverse_jacobian) = elements
 
-    # Place LGL nodes on the mesh according to the polynomial mapping from reference
-    # coordinates (xi1, xi2) to Cartesian coordinates (x1, x2, x3) 
-    calc_node_coordinates_2d_shell!(node_coordinates, mesh, basis)
+    # The tree node coordinates are assumed to be on the spherical shell centred around the # origin. Therefore, we can compute the radius once and use it throughout.
+    radius = sqrt(mesh.tree_node_coordinates[1, 1, 1, 1]^2 +
+                  mesh.tree_node_coordinates[2, 1, 1, 1]^2 +
+                  mesh.tree_node_coordinates[3, 1, 1, 1]^2)
 
     for element in 1:Trixi.ncells(mesh)
 
-        # Differentiate Cartesian components (x1, x2, x3) with respect to reference 
-        # coordinates (xi1, xi2) using the polynomial derivative operator.
-        Trixi.calc_jacobian_matrix!(jacobian_matrix, element, node_coordinates, basis)
+        # For now, we will only use the corner nodes from the P4estMesh, and construct the
+        # mapping analytically without any polynomial approximation. If the option 
+        # "element_local_mapping = true" is used when constructing the mesh using
+        # P4estMeshCubedSphere2D and the polynomial degree of the mesh is the same as that 
+        # of the solver, the node positions are equal to those obtained using the standard
+        # calc_node_coordinates! function.
+
+        # Extract the corner vertex positions from the P4estMesh
+        nnodes = length(mesh.nodes)
+        v1 = SVector{3}(view(mesh.tree_node_coordinates, :, 1, 1, element))
+        v2 = SVector{3}(view(mesh.tree_node_coordinates, :, nnodes, 1, element))
+        v3 = SVector{3}(view(mesh.tree_node_coordinates, :, nnodes, nnodes, element))
+        v4 = SVector{3}(view(mesh.tree_node_coordinates, :, 1, nnodes, element))
 
         for j in eachnode(basis), i in eachnode(basis)
 
-            # Convert from Cartesian components (x1, x2, x3) to spherical coordinates
-            # (longitude, latitude, radius), with latitude and longitude in radians
-            r = sqrt(node_coordinates[1, i, j, element]^2 +
-                     node_coordinates[2, i, j, element]^2 +
-                     node_coordinates[3, i, j, element]^2)
-            lon = atan(node_coordinates[2, i, j, element],
-                       node_coordinates[1, i, j, element])
-            lat = asin(node_coordinates[3, i, j, element] / r)
+            # get reference node coordinates
+            xi1, xi2 = basis.nodes[i], basis.nodes[j]
 
-            # Precompute trigonometric terms
+            # Construct a bilinear mapping based on the four corner vertices
+            x_bilinear = 0.25f0 *
+                         ((1 - xi1) * (1 - xi2) * v1 + (1 + xi1) * (1 - xi2) * v2 +
+                          (1 + xi1) * (1 + xi2) * v3 + (1 - xi1) * (1 + xi2) * v4)
+
+            # Project the mapped local coordinates onto the sphere 
+            scaling_factor = radius / norm(x_bilinear)
+            x = scaling_factor * x_bilinear
+
+            # Convert to longitude and latitude
+            lon, lat = atan(x[2], x[1]), asin(x[3] / radius)
+
+            # Compute trigonometric terms needed for analytical metrics
             sinlon, coslon = sincos(lon)
             sinlat, coslat = sincos(lat)
+            a11 = sinlon * sinlon * coslat * coslat + sinlat * sinlat
+            a12 = -sinlon * coslon * coslat * coslat
+            a13 = -coslon * sinlat * coslat
+            a21 = a12
+            a22 = coslon * coslon * coslat * coslat + sinlat * sinlat
+            a23 = -sinlon * sinlat * coslat
+            a31 = -coslon * sinlat
+            a32 = -sinlon * sinlat
+            a33 = coslat
 
-            # Differentiate (x1, x2, x3) with respect to (longitude, latitude, radius)
-            jacobian_cartesian_wrt_spherical = SMatrix{3, 3}(-r * sinlon * coslat,
-                                                             r * coslon * coslat, 0,
-                                                             -r * coslon * sinlat,
-                                                             -r * sinlon * sinlat,
-                                                             r * coslat,
-                                                             coslon * coslat,
-                                                             sinlon * coslat, sinlat)
+            # Analytically compute the transformation matrix A, such that G = AᵀA is the 
+            # covariant metric tensor and aᵢ = A[1,i] * e_lon + A[2,i] * e_lat denotes 
+            # the covariant tangent basis, where e_lon and e_lat are the unit basis vectors
+            # in the longitudinal and latitudinal directions, respectively.
+            A = 0.25f0 * scaling_factor * SMatrix{2, 3}(-sinlon, 0, coslon, 0, 0, 1) *
+                SMatrix{3, 3}(a11, a21, a31, a12, a22, a32, a13, a23, a33) *
+                SMatrix{3, 4}(v1[1], v1[2], v1[3], v2[1], v2[2], v2[3],
+                              v3[1], v3[2], v3[3], v4[1], v4[2], v4[3]) *
+                SMatrix{4, 2}(-1 + xi2, 1 - xi2, 1 + xi2, -1 - xi2,
+                              -1 + xi1, -1 - xi1, 1 + xi1, 1 - xi1)
 
-            # Use the chain rule to compute the Jacobian matrix of 
-            # (longitude, latitude, radius) with respect to (xi1, xi2)
-            jacobian_spherical_wrt_reference = jacobian_cartesian_wrt_spherical \
-                                               SMatrix{3, 2}(jacobian_matrix[:, :, i, j,
-                                                                             element])
+            # Set variables in the cache
+            node_coordinates[1, i, j, element] = x[1]
+            node_coordinates[2, i, j, element] = x[2]
+            node_coordinates[3, i, j, element] = x[3]
 
-            # Calculate the transformation matrix A such that G = AᵀA is the matrix of 
-            # covariant metric tensor components. This can also be interpreted as the 
-            # components of the covariant basis vectors with respect to the spherical 
-            # coordinate system. For details, see Appendix B of the following paper:
-            #   Nair, R. D., Thomas, S. J., and Loft, R. D. (2005). 
-            #   A discontinuous Galerkin transport scheme on the cubed sphere. 
-            #   Monthly Weather Review 133, 814-828.
-            transform_matrix[1, 1, i, j, element] = r * coslat *
-                                                    jacobian_spherical_wrt_reference[1,
-                                                                                     1]
-            transform_matrix[2, 1, i, j, element] = r *
-                                                    jacobian_spherical_wrt_reference[2,
-                                                                                     1]
-            transform_matrix[1, 2, i, j, element] = r * coslat *
-                                                    jacobian_spherical_wrt_reference[1,
-                                                                                     2]
-            transform_matrix[2, 2, i, j, element] = r *
-                                                    jacobian_spherical_wrt_reference[2,
-                                                                                     2]
+            transform_matrix[1, 1, i, j, element] = A[1, 1]
+            transform_matrix[2, 1, i, j, element] = A[2, 1]
+            transform_matrix[1, 2, i, j, element] = A[1, 2]
+            transform_matrix[2, 2, i, j, element] = A[2, 2]
 
-            # Analytically compute the scalar factor (det(GᵀG)) = det(A)
-            jacobian[i, j, element] = transform_matrix[1, 1, i, j, element] *
-                                      transform_matrix[2, 2, i, j, element] -
-                                      transform_matrix[1, 2, i, j, element] *
-                                      transform_matrix[2, 1, i, j, element]
+            jacobian[i, j, element] = A[1, 1] * A[2, 2] - A[1, 2] * A[2, 1]
             inverse_jacobian[i, j, element] = 1 / jacobian[i, j, element]
 
-            # Analytically invert the transformation matrix
-            inverse_transform_matrix[1, 1, i, j, element] = inverse_jacobian[i, j,
-                                                                             element] *
-                                                            transform_matrix[2, 2, i, j,
-                                                                             element]
-            inverse_transform_matrix[1, 2, i, j, element] = -inverse_jacobian[i, j,
-                                                                              element] *
-                                                            transform_matrix[1, 2, i, j,
-                                                                             element]
-            inverse_transform_matrix[2, 1, i, j, element] = -inverse_jacobian[i, j,
-                                                                              element] *
-                                                            transform_matrix[2, 1, i, j,
-                                                                             element]
-            inverse_transform_matrix[2, 2, i, j, element] = inverse_jacobian[i, j,
-                                                                             element] *
-                                                            transform_matrix[1, 1, i, j,
-                                                                             element]
+            inverse_transform[1, 1, i, j, element] = inverse_jacobian[i, j, element] *
+                                                     A[2, 2]
+            inverse_transform[1, 2, i, j, element] = -inverse_jacobian[i, j, element] *
+                                                     A[1, 2]
+            inverse_transform[2, 1, i, j, element] = -inverse_jacobian[i, j, element] *
+                                                     A[2, 1]
+            inverse_transform[2, 2, i, j, element] = inverse_jacobian[i, j, element] *
+                                                     A[1, 1]
         end
     end
 

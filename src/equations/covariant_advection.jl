@@ -72,13 +72,13 @@ end
                                          ::CovariantLinearAdvectionEquation2D,
                                          i, j, element, cache)
     return SVector(u_spherical[1],
-                   cache.elements.inverse_transform_matrix[1, 1, i, j, element] *
+                   cache.elements.inverse_transform[1, 1, i, j, element] *
                    u_spherical[2] +
-                   cache.elements.inverse_transform_matrix[1, 2, i, j, element] *
+                   cache.elements.inverse_transform[1, 2, i, j, element] *
                    u_spherical[3],
-                   cache.elements.inverse_transform_matrix[2, 1, i, j, element] *
+                   cache.elements.inverse_transform[2, 1, i, j, element] *
                    u_spherical[2] +
-                   cache.elements.inverse_transform_matrix[2, 2, i, j, element] *
+                   cache.elements.inverse_transform[2, 2, i, j, element] *
                    u_spherical[3])
 end
 end # @muladd

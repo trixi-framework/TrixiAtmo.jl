@@ -74,11 +74,6 @@ end
     end
 end
 
-@inline function Trixi.get_node_coords(x, ::AbstractCovariantEquations{2}, ::DG,
-                                       indices...)
-    return SVector(ntuple(@inline(idx->x[idx, indices...]), 3))
-end
-
 function Trixi.compute_coefficients!(u, func, t, mesh::Trixi.AbstractMesh{2},
                                      equations::AbstractCovariantEquations{2}, dg::DG,
                                      cache)

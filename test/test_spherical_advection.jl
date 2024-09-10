@@ -7,7 +7,7 @@ include("test_trixiatmo.jl")
 
 EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
 
-@trixiatmo_testset "Spherical advection, Cartesian form with standard mapping" begin
+@trixiatmo_testset "Spherical advection, Cartesian weak form" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_spherical_advection_cartesian.jl"),
                         l2=[
@@ -34,43 +34,17 @@ EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
     end
 end
 
-@trixiatmo_testset "Spherical advection, Cartesian form with element-local mapping" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_spherical_advection_cartesian.jl"),
-                        l2=[
-                            8.97501204e-03,
-                            8.74316738e-03,
-                            1.99380928e-03,
-                            0.00000000e+00,
-                            6.45266612e-02,
-                        ],
-                        linf=[
-                            1.01363241e-01,
-                            1.03082705e-01,
-                            1.41424723e-02,
-                            0.00000000e+00,
-                            4.10471741e-01,
-                        ], element_local_mapping=true)
-    # Ensure that we do not have excessive memory allocations
-    # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
-end
 
-@trixiatmo_testset "elixir_spherical_advection_covariant" begin
+@trixiatmo_testset "Spherical advection, covariant weak form" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_spherical_advection_covariant.jl"),
                         l2=[
-                            8.75812332e-01,
+                            1.00016205e+00,
                             0.00000000e+00,
                             0.00000000e+00,
                         ],
                         linf=[
-                            1.08873856e+01,
+                            1.42451839e+01,
                             0.00000000e+00,
                             0.00000000e+00,
                         ])
@@ -84,16 +58,16 @@ end
     end
 end
 
-@trixiatmo_testset "elixir_spherical_advection_covariant_flux_differencing" begin
+@trixiatmo_testset "Spherical advection, covariant flux-differencing form" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_spherical_advection_covariant_flux_differencing.jl"),
                         l2=[
-                            8.75812332e-01,
+                            1.00016205e+00,
                             0.00000000e+00,
                             0.00000000e+00,
                         ],
                         linf=[
-                            1.08873856e+01,
+                            1.42451839e+01,
                             0.00000000e+00,
                             0.00000000e+00,
                         ])

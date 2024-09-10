@@ -39,14 +39,19 @@ polydeg = 3
 cells_per_dimension = 2
 
 mesh = P4estMeshCubedSphere2D(5, EARTH_RADIUS, polydeg = polydeg,
-                              initial_refinement_level = 0)
+                              initial_refinement_level = 0,
+                              element_local_mapping = true)
 
 equations = CovariantLinearAdvectionEquation2D()
 
 initial_condition = initial_condition_advection_earth
 
+# Standard weak-form volume integral
+volume_integral = VolumeIntegralWeakForm()
+
 # Create DG solver with polynomial degree = p and a local Lax-Friedrichs flux
-solver = DGSEM(polydeg = polydeg, surface_flux = flux_lax_friedrichs)
+solver = DGSEM(polydeg = polydeg, surface_flux = flux_lax_friedrichs, 
+               volume_integral = volume_integral)
 
 # A semidiscretization collects data structures and functions for the spatial discretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver)
