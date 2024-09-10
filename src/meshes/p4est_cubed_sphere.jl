@@ -48,9 +48,9 @@ function P4estMeshCubedSphere2D(trees_per_face_dimension, radius;
         calc_tree_node_coordinates_cubed_sphere_local!(tree_node_coordinates, nodes,
                                                        trees_per_face_dimension, radius)
     else
-        calc_tree_node_coordinates_cubed_sphere_cartesian!(tree_node_coordinates, nodes,
-                                                           trees_per_face_dimension,
-                                                           radius)
+        calc_tree_node_coordinates_cubed_sphere_standard!(tree_node_coordinates, nodes,
+                                                          trees_per_face_dimension,
+                                                          radius)
     end
 
     p4est = Trixi.new_p4est(connectivity, initial_refinement_level)
@@ -283,11 +283,11 @@ function connectivity_cubed_sphere_2D(trees_per_face_dimension)
 end
 
 # Calculate physical coordinates of each node of a 2D cubed sphere mesh.
-function calc_tree_node_coordinates_cubed_sphere_cartesian!(node_coordinates::AbstractArray{<:Any,
-                                                                                            4},
-                                                            nodes,
-                                                            trees_per_face_dimension,
-                                                            radius)
+function calc_tree_node_coordinates_cubed_sphere_standard!(node_coordinates::AbstractArray{<:Any,
+                                                                                           4},
+                                                           nodes,
+                                                           trees_per_face_dimension,
+                                                           radius)
     n_cells_x = n_cells_y = trees_per_face_dimension
 
     linear_indices = LinearIndices((n_cells_x, n_cells_y, 6))
