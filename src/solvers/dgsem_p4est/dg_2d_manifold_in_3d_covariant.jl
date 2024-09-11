@@ -312,40 +312,12 @@ function Trixi.max_dt(u, t, mesh::P4estMesh{2}, constant_speed::False,
     return 2 / (nnodes(dg) * max_scaled_speed)
 end
 
-function Trixi.create_cache_analysis(analyzer, mesh::P4estMesh{2},
-                                     equations::AbstractCovariantEquations{2}, dg::DG,
-                                     cache, RealT, uEltype)
-
-    # pre-allocate buffers
-    # We use `StrideArray`s here since these buffers are used in performance-critical
-    # places and the additional information passed to the compiler makes them faster
-    # than native `Array`s.
-    u_local = StrideArray(undef, uEltype,
-                          StaticInt(nvariables(equations)), StaticInt(nnodes(analyzer)),
-                          StaticInt(nnodes(analyzer)))
-    u_tmp1 = StrideArray(undef, uEltype,
-                         StaticInt(nvariables(equations)), StaticInt(nnodes(analyzer)),
-                         StaticInt(nnodes(dg)))
-    x_local = StrideArray(undef, RealT,
-                          StaticInt(3), StaticInt(nnodes(analyzer)),
-                          StaticInt(nnodes(analyzer)))
-    x_tmp1 = StrideArray(undef, RealT,
-                         StaticInt(3), StaticInt(nnodes(analyzer)),
-                         StaticInt(nnodes(dg)))
-    jacobian_local = StrideArray(undef, RealT,
-                                 StaticInt(nnodes(analyzer)),
-                                 StaticInt(nnodes(analyzer)))
-    jacobian_tmp1 = StrideArray(undef, RealT,
-                                StaticInt(nnodes(analyzer)), StaticInt(nnodes(dg)))
-
-    return (; u_local, u_tmp1, x_local, x_tmp1, jacobian_local, jacobian_tmp1)
-end
 
 function Trixi.calc_error_norms(func, u, t, analyzer, mesh::P4estMesh{2},
                                 equations::AbstractCovariantEquations{2},
                                 initial_condition, dg::DGSEM, cache, cache_analysis)
     (; weights) = dg.basis
-    (; node_coordinates, inverse_jacobian) = cache.elements
+    (; node_coordinates, jacobian) = cache.elements
 
     # Set up data structures
     l2_error = zero(func(Trixi.get_node_vars(u, equations, dg, 1, 1, 1), equations))
@@ -354,20 +326,21 @@ function Trixi.calc_error_norms(func, u, t, analyzer, mesh::P4estMesh{2},
 
     # Iterate over all elements for error calculations
     for element in eachelement(dg, cache)
+        
         # Calculate errors at each volume quadrature node
         for j in eachnode(dg), i in eachnode(dg)
             x = Trixi.get_node_coords(node_coordinates, equations, dg, i, j, element)
-            u_exact = initial_condition(x, t, equations)
 
-            diff = spherical2contravariant(func(u_exact, equations), equations, i, j,
-                                           element, cache) -
-                   func(Trixi.get_node_vars(u, equations, dg, i, j, element), equations)
+            u_exact = spherical2contravariant(initial_condition(x, t, equations),
+                equations, i, j, element, cache)
 
-            J = inv(abs(inverse_jacobian[i, j, element]))
+            u_numerical = Trixi.get_node_vars(u, equations, dg, i, j, element)
 
-            l2_error += diff .^ 2 * (weights[i] * weights[j] * J)
+            diff = func(u_exact, equations) - func(u_numerical, equations)
+
+            l2_error += diff .^ 2 * (weights[i] * weights[j] * jacobian[i, j, element])
             linf_error = @. max(linf_error, abs(diff))
-            total_volume += weights[i] * weights[j] * J
+            total_volume += weights[i] * weights[j] * jacobian[i, j, element]
         end
     end
 
