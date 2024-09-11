@@ -130,7 +130,9 @@ function init_elements_2d_manifold_in_3d!(elements, mesh::P4estMesh{2},
     for element in 1:Trixi.ncells(mesh)
 
         # For now, we will only use the corner nodes from the P4estMesh, and construct the
-        # mapping analytically without any polynomial approximation. If the option 
+        # mapping and its associated metric terms analytically without any polynomial 
+        # approximation following the approach described in by Guba et al. (see 
+        # https://doi.org/10.5194/gmd-7-2803-2014, Appendix A). If the option 
         # "element_local_mapping = true" is used when constructing the mesh using
         # P4estMeshCubedSphere2D and the polynomial degree of the mesh is the same as that 
         # of the solver, the node positions are equal to those obtained using the standard
@@ -174,7 +176,7 @@ function init_elements_2d_manifold_in_3d!(elements, mesh::P4estMesh{2},
             a33 = coslat
 
             # Analytically compute the transformation matrix A, such that G = AᵀA is the 
-            # covariant metric tensor and aᵢ = A[1,i] * e_lon + A[2,i] * e_lat denotes 
+            # covariant metric tensor and a_i = A[1,i] * e_lon + A[2,i] * e_lat denotes 
             # the covariant tangent basis, where e_lon and e_lat are the unit basis vectors
             # in the longitudinal and latitudinal directions, respectively.
             A = 0.25f0 * scaling_factor * SMatrix{2, 3}(-sinlon, 0, coslon, 0, 0, 1) *

@@ -312,7 +312,6 @@ function Trixi.max_dt(u, t, mesh::P4estMesh{2}, constant_speed::False,
     return 2 / (nnodes(dg) * max_scaled_speed)
 end
 
-
 function Trixi.calc_error_norms(func, u, t, analyzer, mesh::P4estMesh{2},
                                 equations::AbstractCovariantEquations{2},
                                 initial_condition, dg::DGSEM, cache, cache_analysis)
@@ -326,13 +325,13 @@ function Trixi.calc_error_norms(func, u, t, analyzer, mesh::P4estMesh{2},
 
     # Iterate over all elements for error calculations
     for element in eachelement(dg, cache)
-        
+
         # Calculate errors at each volume quadrature node
         for j in eachnode(dg), i in eachnode(dg)
             x = Trixi.get_node_coords(node_coordinates, equations, dg, i, j, element)
 
             u_exact = spherical2contravariant(initial_condition(x, t, equations),
-                equations, i, j, element, cache)
+                                              equations, i, j, element, cache)
 
             u_numerical = Trixi.get_node_vars(u, equations, dg, i, j, element)
 
