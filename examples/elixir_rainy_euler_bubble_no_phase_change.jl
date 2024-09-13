@@ -1,7 +1,7 @@
 using OrdinaryDiffEq
 using Trixi
 using TrixiAtmo
-using TrixiAtmo: source_terms_no_phase_change
+using TrixiAtmo: source_terms_no_phase_change, saturation_residual, NonlinearSolver
 using NLsolve: nlsolve
 
 
@@ -131,7 +131,7 @@ function initial_condition_moist_bubble(x, t, equations::CompressibleMoistEulerE
     rho_qv = rho * (rho_qv_r / rho_r * (z - z_l) + rho_qv_l / rho_l * (z_r - z)) / dz
     rho_ql = rho * (rho_ql_r / rho_r * (z - z_l) + rho_ql_l / rho_l * (z_r - z)) / dz
 
-    rho, rho_e, rho_qv, rho_ql = perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
+    rho, rho_e, rho_qv, rho_ql, T_loc = perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
                                                         equations::CompressibleMoistEulerEquations2D)
 
     v1 = 0.0
@@ -140,7 +140,7 @@ function initial_condition_moist_bubble(x, t, equations::CompressibleMoistEulerE
     rho_v2 = rho * v2
     rho_E = rho_e + 1 / 2 * rho * (v1^2 + v2^2)
 
-    return SVector(rho, rho_qv + rho_ql, 0.0, rho_v1, rho_v2, rho_E, rho_qv, rho_ql, 300.0)
+    return SVector(rho, rho_qv + rho_ql, 0.0, rho_v1, rho_v2, rho_E, rho_qv, rho_ql, T_loc)
 end
 
 function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
@@ -215,7 +215,7 @@ function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
         rho_theta = rho * θ_dens_new * (p_loc / p_0)^(kappa - kappa_M)
         rho_e = (c_vd * rho_d + c_vv * rho_qv + c_pl * rho_ql) * (T_loc - 273.15) + (L_00 - R_v * 273.15) * rho_qv
     end
-    return SVector(rho, rho_e, rho_qv, rho_ql)
+    return SVector(rho, rho_e, rho_qv, rho_ql, T_loc)
 end
 
 # Create background atmosphere data set
@@ -238,7 +238,7 @@ boundary_conditions = (x_neg = boundary_condition_slip_wall,
                        y_neg = boundary_condition_slip_wall,
                        y_pos = boundary_condition_slip_wall)
 
-polydeg = 1
+polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
 
 surface_flux = flux_lax_friedrichs
@@ -260,13 +260,13 @@ semi = SemidiscretizationHyperbolic(mesh, equations,
 ###############################################################################
 # ODE solvers, callbacks etc.
 
-tspan = (0.0, 100.0)
+tspan = (0.0, 10.0)
 
 ode = semidiscretize(semi, tspan)
 
 summary_callback = SummaryCallback()
 
-analysis_interval = 10
+analysis_interval = 1000
 
 # entropy?
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
@@ -288,9 +288,11 @@ callbacks = CallbackSet(summary_callback,
                         save_solution,
                         stepsize_callback)
 
+stage_limiter! = NonlinearSolver(saturation_residual, 1e-9, SVector(7, 8, 9))
+
 ###############################################################################
 # run the simulation
-sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
+sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false, stage_limiter!),
             maxiters = 1.0e7,
             dt = 1.0,
             save_everystep = false, callback = callbacks);

@@ -23,4 +23,7 @@ baz() = Trixi.examples_dir()
 include("equations/equations.jl")
 export CompressibleMoistEulerEquations2D, CompressibleRainyEulerEquations2D
 
+include("callbacks_stage/callbacks_stage.jl")
+export NonlinearSolver
+
 end # module TrixiAtmo

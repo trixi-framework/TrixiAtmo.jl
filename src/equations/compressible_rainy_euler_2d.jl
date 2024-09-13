@@ -94,8 +94,8 @@ varnames(::typeof(cons2cons), ::CompressibleRainyEulerEquations2D) = ("rho_dry",
 varnames(::typeof(cons2prim), ::CompressibleRainyEulerEquations2D) = ("rho_dry", "rho_moist", "rho_rain",
                                                                       "v1", "v2",
                                                                       "energy_density",
-                                                                      "rho_vapour_h", "rho_cloud_h",
-                                                                      "temperature_h")
+                                                                      "rho_vapour", "rho_cloud",
+                                                                      "temperature")
 
 
 
@@ -112,33 +112,25 @@ varnames(::typeof(cons2prim), ::CompressibleRainyEulerEquations2D) = ("rho_dry",
     # energy density
     energy = energy_density(u, equations)
 
-    return SVector(rho_dry, rho_moist, rho_rain, v1, v2, energy,
-                   u[7], u[8], u[9])
+    # nonlinear system
+    rho_vapour, rho_cloud, temperature = cons2nonlinearsystemsol(u, equations)
+
+    return SVector(rho_dry, rho_moist, rho_rain, v1, v2, energy, rho_vapour, rho_cloud, temperature)
 end
 
 
 @inline function cons2entropy(u, equations::CompressibleRainyEulerEquations2D)
     #TODO
-    return SVector(0, 0, 0, 0, 0, 0, 0, 0, 0)
+    return SVector(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
 end
 
 
 @inline function cons2nonlinearsystemsol(u, equations::CompressibleRainyEulerEquations2D)
     # constants
-    c_l      = equations.c_liquid_water
     c_vd     = equations.c_dry_air_const_volume
-    c_vv     = equations.c_vapour_const_volume
-    R_v      = equations.R_vapour
-    L_ref    = equations.ref_latent_heat_vap_temp
-    ref_temp = equations.ref_temperature
 
     # densities
     rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
-
-    # for initial guess
-    rho_vapour_h  = u[7]
-    rho_cloud_h   = u[8]
-    temperature_h = u[9]
 
     # velocity
     v1, v2 = velocities(u, rho_inv, equations)
@@ -146,38 +138,21 @@ end
     # energy density
     energy = energy_density(u, equations)
 
-    # recover temperature explicitly from inner energy when other variables are zero
+    # recover temperature explicitly from energy when other variables are zero
     # energy density definition without ref_temp for dry case
     if (rho_moist == 0.0 && rho_rain == 0.0)
-        error("wrong system")
+        #error("wrong system")
         energy_kinetic = 0.5 * (v1^2 + v2^2) * rho
         temperature = (energy - energy_kinetic) / (c_vd * rho)
 
         if (temperature < 0.0)
-            display(energy-energy_kinetic)
+            #display(energy - energy_kinetic)
             error("temp negative")
         end
 
         return SVector(0.0, 0.0, temperature)
-    else    
-        # experiment with ref_temp = 0
-        function f!(residual, guess)
-            residual[1]  = (c_vd * rho_dry + c_vv * guess[1] + c_l * (guess[2] + rho_rain)) * (guess[3] - ref_temp)
-            residual[1] += guess[1] * (L_ref - R_v * ref_temp)
-            residual[1] -= (energy - rho * 0.5 * (v1^2 + v2^2))
-
-            residual[2]  = min(saturation_vapour_pressure(guess[3], equations) / (R_v * guess[3]), rho_moist)
-            residual[2] -= guess[1]
-
-            residual[3]  = rho_moist 
-            residual[3] -= guess[1] + guess[2]
-        end
-
-        nl_sol = nlsolve(f!, [rho_vapour_h; rho_cloud_h; temperature_h], ftol = 1e-9)#, iterations = 10)
-
-        #display([nl_sol.zero[1] - u[7], nl_sol.zero[2] - u[8], nl_sol.zero[3] - u[9]])
-
-        return SVector(nl_sol.zero[1], nl_sol.zero[2], nl_sol.zero[3])
+    else
+        return SVector(u[7], u[8], u[9])
     end
 end
 
@@ -234,7 +209,12 @@ end
     rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
 
     rho_vapour, _, temperature = cons2nonlinearsystemsol(u, equations)
-    
+    #=
+    if (temperature > 333.15)
+        display(temperature - 273.15)
+        error("temp high")
+    end
+    =#
     p = (R_d * rho_dry + R_v * rho_vapour) * temperature
     #v1, v2 = velocities(u, rho_inv, equations)
     #p = (equations.c_dry_air_const_pressure / equations.c_dry_air_const_volume - 1) * (energy_density(u, equations) - 0.5f0 * (u[4] * v1 + u[5] * v2))
@@ -575,5 +555,41 @@ end
 end
 
 
+
+###  Nonlinear System Residual  ###
+
+# in preparation for a callback to solve the nonlinear system
+@inline function saturation_residual(u, equations::CompressibleRainyEulerEquations2D)
+    # constants
+    c_l      = equations.c_liquid_water
+    c_vd     = equations.c_dry_air_const_volume
+    c_vv     = equations.c_vapour_const_volume
+    R_v      = equations.R_vapour
+    L_ref    = equations.ref_latent_heat_vap_temp
+    ref_temp = equations.ref_temperature
+
+    # densities
+    rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
+
+    # velocity
+    v1, v2 = velocities(u, rho_inv, equations)
+
+    # energy density
+    energy = energy_density(u, equations)
+
+    function saturation_residual!(residual, guess)
+        residual[1]  = (c_vd * rho_dry + c_vv * guess[1] + c_l * (guess[2] + rho_rain)) * (guess[3] - ref_temp)
+        residual[1] += guess[1] * (L_ref - R_v * ref_temp)
+        residual[1] -= (energy - rho * 0.5 * (v1^2 + v2^2))
+
+        residual[2]  = min(saturation_vapour_pressure(guess[3], equations) / (R_v * guess[3]), rho_moist)
+        residual[2] -= guess[1]
+
+        residual[3]  = rho_moist
+        residual[3] -= guess[1] + guess[2]
+    end
+
+    return saturation_residual!
+end
 
 end  # muladd end
