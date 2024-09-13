@@ -86,8 +86,8 @@ function Trixi.compute_coefficients!(u, func, t, mesh::Trixi.AbstractMesh{2},
             u_spherical = func(x_node, t, equations)
 
             # transform to contravariant components for use within the solver
-            u_con = spherical2contravariant(u_spherical, equations, i, j, element,
-                                            cache)
+            u_con = spherical2contravariant(u_spherical, equations,
+                                            cache.elements, i, j, element)
             Trixi.set_node_vars!(u, u_con, equations, dg, i, j, element)
         end
     end
@@ -102,8 +102,8 @@ end
     for j in eachnode(dg), i in eachnode(dg)
         u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
 
-        contravariant_flux1 = flux(u_node, 1, equations, i, j, element, cache)
-        contravariant_flux2 = flux(u_node, 2, equations, i, j, element, cache)
+        contravariant_flux1 = flux(u_node, 1, equations, cache.elements, i, j, element)
+        contravariant_flux2 = flux(u_node, 2, equations, cache.elements, i, j, element)
 
         for ii in eachnode(dg)
             Trixi.multiply_add_to_node_vars!(du, alpha * derivative_dhat[ii, i],
@@ -121,9 +121,7 @@ end
     return nothing
 end
 
-@inline function Trixi.flux_differencing_kernel!(du, u,
-                                                 element,
-                                                 mesh::P4estMesh{2},
+@inline function Trixi.flux_differencing_kernel!(du, u, element, mesh::P4estMesh{2},
                                                  nonconservative_terms::False,
                                                  equations::AbstractCovariantEquations{2},
                                                  volume_flux, dg::DGSEM, cache,
@@ -136,8 +134,8 @@ end
         # x direction
         for ii in (i + 1):nnodes(dg)
             u_node_ii = Trixi.get_node_vars(u, equations, dg, ii, j, element)
-            flux1 = volume_flux(u_node, u_node_ii, 1, equations, i, j, ii, j, element,
-                                cache)
+            flux1 = volume_flux(u_node, u_node_ii, 1, equations,
+                                cache.elements, i, j, ii, j, element)
             Trixi.multiply_add_to_node_vars!(du, alpha * derivative_split[i, ii], flux1,
                                              equations, dg, i, j, element)
             Trixi.multiply_add_to_node_vars!(du, alpha * derivative_split[ii, i], flux1,
@@ -147,8 +145,8 @@ end
         # y direction
         for jj in (j + 1):nnodes(dg)
             u_node_jj = Trixi.get_node_vars(u, equations, dg, i, jj, element)
-            flux2 = volume_flux(u_node, u_node_jj, 2, equations, i, j, i, jj, element,
-                                cache)
+            flux2 = volume_flux(u_node, u_node_jj, 2, equations,
+                                cache.elements, i, j, i, jj, element)
             Trixi.multiply_add_to_node_vars!(du, alpha * derivative_split[j, jj], flux2,
                                              equations, dg, i, j, element)
             Trixi.multiply_add_to_node_vars!(du, alpha * derivative_split[jj, j], flux2,
@@ -250,31 +248,30 @@ end
     u_ll, u_rr = Trixi.get_surface_node_vars(u, equations, dg, primary_node_index,
                                              interface_index)
 
-    # Convert to spherical polar components on each element
-    u_ll_pol = contravariant2spherical(u_ll, equations, i_primary, j_primary,
-                                       primary_element_index,
-                                       cache)
-    u_rr_pol = contravariant2spherical(u_rr, equations, i_secondary, j_secondary,
-                                       secondary_element_index, cache)
+    # Convert to spherical components on each element
+    u_ll_pol = contravariant2spherical(u_ll, equations, cache.elements,
+                                       i_primary, j_primary, primary_element_index)
+    u_rr_pol = contravariant2spherical(u_rr, equations, cache.elements,
+                                       i_secondary, j_secondary,
+                                       secondary_element_index)
 
     # evaluate u_rr in secondary coordinate system 
-    u_rr_ll = spherical2contravariant(u_rr_pol, equations, i_primary, j_primary,
-                                      primary_element_index,
-                                      cache)
+    u_rr_ll = spherical2contravariant(u_rr_pol, equations, cache.elements,
+                                      i_primary, j_primary, primary_element_index)
 
     # evaluate u_ll in primary coordinate system
-    u_ll_rr = spherical2contravariant(u_ll_pol, equations, i_secondary, j_secondary,
-                                      secondary_element_index, cache)
+    u_ll_rr = spherical2contravariant(u_ll_pol, equations, cache.elements,
+                                      i_secondary, j_secondary, secondary_element_index)
 
     # Since the flux is computed in reference space, we do it separately for each element
     flux_primary = surface_flux(u_ll, u_rr_ll,
                                 reference_normal_vector(primary_direction_index),
-                                equations, i_primary, j_primary, primary_element_index,
-                                cache)
+                                equations, cache.elements,
+                                i_primary, j_primary, primary_element_index)
     flux_secondary = surface_flux(u_rr, u_ll_rr,
                                   reference_normal_vector(secondary_direction_index),
-                                  equations, i_secondary, j_secondary,
-                                  secondary_element_index, cache)
+                                  equations, cache.elements,
+                                  i_secondary, j_secondary, secondary_element_index)
 
     # Now we can update the surface flux values, where all vector variables are stored 
     # as contravariant components
@@ -300,8 +297,8 @@ function Trixi.max_dt(u, t, mesh::P4estMesh{2}, constant_speed::False,
         max_lambda1 = max_lambda2 = zero(max_scaled_speed)
         for j in eachnode(dg), i in eachnode(dg)
             u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
-            lambda1, lambda2 = Trixi.max_abs_speeds(u_node, equations, i, j, element,
-                                                    cache)
+            lambda1, lambda2 = Trixi.max_abs_speeds(u_node, equations, cache.elements,
+                                                    i, j, element)
             max_lambda1 = max(max_lambda1, lambda1)
             max_lambda2 = max(max_lambda2, lambda2)
         end
@@ -316,7 +313,7 @@ function Trixi.calc_error_norms(func, u, t, analyzer, mesh::P4estMesh{2},
                                 equations::AbstractCovariantEquations{2},
                                 initial_condition, dg::DGSEM, cache, cache_analysis)
     (; weights) = dg.basis
-    (; node_coordinates, jacobian) = cache.elements
+    (; node_coordinates) = cache.elements
 
     # Set up data structures
     l2_error = zero(func(Trixi.get_node_vars(u, equations, dg, 1, 1, 1), equations))
@@ -331,15 +328,17 @@ function Trixi.calc_error_norms(func, u, t, analyzer, mesh::P4estMesh{2},
             x = Trixi.get_node_coords(node_coordinates, equations, dg, i, j, element)
 
             u_exact = spherical2contravariant(initial_condition(x, t, equations),
-                                              equations, i, j, element, cache)
+                                              equations, cache.elements, i, j, element)
 
             u_numerical = Trixi.get_node_vars(u, equations, dg, i, j, element)
 
             diff = func(u_exact, equations) - func(u_numerical, equations)
 
-            l2_error += diff .^ 2 * (weights[i] * weights[j] * jacobian[i, j, element])
+            J = volume_element(cache.elements, i, j, element)
+
+            l2_error += diff .^ 2 * (weights[i] * weights[j] * J)
             linf_error = @. max(linf_error, abs(diff))
-            total_volume += weights[i] * weights[j] * jacobian[i, j, element]
+            total_volume += weights[i] * weights[j] * J
         end
     end
 

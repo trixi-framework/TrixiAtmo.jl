@@ -14,13 +14,13 @@ abstract type AbstractCovariantEquations{NDIMS, NVARS} <: AbstractEquations{NDIM
 @inline function (numflux::Trixi.FluxPlusDissipation)(u_ll, u_rr,
                                                       orientation_or_normal_direction,
                                                       equations::AbstractCovariantEquations,
-                                                      i, j, element, cache)
+                                                      elements, i, j, element)
 
     # The flux and dissipation need to be defined for the specific equation set
     flux = numflux.numerical_flux(u_ll, u_rr, orientation_or_normal_direction, equations,
-                                  i, j, i, j, element, cache)
+                                  elements, i, j, i, j, element)
     diss = numflux.dissipation(u_ll, u_rr, orientation_or_normal_direction, equations,
-                               i, j, element, cache)
+                               elements, i, j, element)
     return flux + diss
 end
 
@@ -28,11 +28,11 @@ end
 @inline function Trixi.flux_central(u_ll, u_rr,
                                     orientation_or_normal_direction,
                                     equations::AbstractCovariantEquations,
-                                    i_ll, j_ll, i_rr, j_rr, element, cache)
+                                    elements, i_ll, j_ll, i_rr, j_rr, element)
     flux_ll = Trixi.flux(u_ll, orientation_or_normal_direction, equations,
-                         i_ll, j_ll, element, cache)
+                         elements, i_ll, j_ll, element)
     flux_rr = Trixi.flux(u_rr, orientation_or_normal_direction, equations,
-                         i_rr, j_rr, element, cache)
+                         elements, i_rr, j_rr, element)
 
     return 0.5f0 * (flux_ll + flux_rr)
 end
