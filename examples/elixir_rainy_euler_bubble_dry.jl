@@ -41,11 +41,10 @@ function initial_condition_bubble_dry(x, t, equations::CompressibleRainyEulerEqu
     # density
     rho = p / (R * T)
 
-    v1 = 20.0
+    v1 = 0.0
     v2 = 0.0
     E  = c_v * T + 0.5 * (v1^2 + v2^2)
 
-    # random experiments
     return SVector(rho, 0.0, 0.0, rho * v1, rho * v2, rho * E, 0.0, 0.0, 0.0)
 end
 
@@ -61,7 +60,7 @@ boundary_conditions = (x_neg = boundary_condition_periodic,
                        y_neg = boundary_condition_slip_wall,
                        y_pos = boundary_condition_slip_wall)
 
-polydeg = 3
+polydeg = 1
 basis = LobattoLegendreBasis(polydeg)
 
 surface_flux = flux_lax_friedrichs
@@ -88,7 +87,7 @@ semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
 ###############################################################################
 # ODE solvers, callbacks etc.
 
-tspan = (0.0, 1000.0)
+tspan = (0.0, 1100.0)
 
 ode = semidiscretize(semi, tspan)
 
@@ -102,7 +101,7 @@ analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
-save_solution = SaveSolutionCallback(interval = analysis_interval,
+save_solution = SaveSolutionCallback(interval = 100,
                                      save_initial_solution = true,
                                      save_final_solution = true,
                                      output_directory = "out",
