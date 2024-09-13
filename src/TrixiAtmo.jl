@@ -15,7 +15,6 @@ using Static: True, False
 using StaticArrayInterface: static_size
 using StrideArrays: StrideArray, StaticInt, PtrArray
 using LinearAlgebra: norm, dot
-using DiffEqCallbacks: PeriodicCallback, PeriodicCallbackAffect
 
 @reexport using StaticArrays: SVector, SMatrix
 
