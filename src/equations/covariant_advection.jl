@@ -1,9 +1,7 @@
 @muladd begin
 #! format: noindent
 
-"""
-    Variable-coefficient linear advection equation in covariant form
-"""
+# Variable-coefficient linear advection equation in covariant form
 struct CovariantLinearAdvectionEquation2D <: AbstractCovariantEquations{2, 3} end
 
 function Trixi.varnames(::typeof(cons2cons), ::CovariantLinearAdvectionEquation2D)
@@ -15,6 +13,8 @@ end
 
 Trixi.cons2entropy(u, ::CovariantLinearAdvectionEquation2D) = u
 
+# The flux for the covariant form takes in the element container and node/element indices
+# in order to give the flux access to the geometric information
 @inline function Trixi.flux(u, orientation::Integer,
                             ::CovariantLinearAdvectionEquation2D,
                             elements, i, j, element)
@@ -23,8 +23,7 @@ Trixi.cons2entropy(u, ::CovariantLinearAdvectionEquation2D) = u
     return SVector(J * u[1] * u[orientation + 1], z, z)
 end
 
-# The flux for the covariant form takes in the element container and node/element indices
-# in order to give the flux access to the geometric information
+# Directional form takes in the normal components in reference space
 @inline function Trixi.flux(u, normal_direction::AbstractVector,
                             ::CovariantLinearAdvectionEquation2D,
                             elements, i, j, element)
@@ -34,6 +33,8 @@ end
     return SVector(J * u[1] * v_n, z, z)
 end
 
+# The dissipation is not applied to the contravariant velocity components, which should 
+# remain unchanged in time
 @inline function (dissipation::DissipationLocalLaxFriedrichs)(u_ll, u_rr,
                                                               normal_direction::AbstractVector,
                                                               equations::CovariantLinearAdvectionEquation2D,
@@ -45,6 +46,7 @@ end
     return -0.5f0 * J * λ * SVector(u_rr[1] - u_ll[1], z, z)
 end
 
+# Maximum wave speed in the normal direction
 @inline function Trixi.max_abs_speed_naive(u_ll, u_rr, normal_direction,
                                            ::CovariantLinearAdvectionEquation2D,
                                            elements, i, j, element)
