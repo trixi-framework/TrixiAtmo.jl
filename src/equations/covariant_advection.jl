@@ -4,10 +4,9 @@
 # Variable-coefficient linear advection equation in covariant form
 struct CovariantLinearAdvectionEquation2D <: AbstractCovariantEquations{2, 3} end
 
+# The first variable is the scalar conserved quantity, and the second two are the 
+# contravariant velocity components, which are spatially varying but constant in time.
 function Trixi.varnames(::typeof(cons2cons), ::CovariantLinearAdvectionEquation2D)
-    # The first variable is the scalar conserved quantity. 
-    # The second two are the contravariant velocity components, 
-    # which are spatially varying but remain constant in time.
     return ("scalar", "v_con_1", "v_con_2")
 end
 
@@ -23,7 +22,7 @@ Trixi.cons2entropy(u, ::CovariantLinearAdvectionEquation2D) = u
     return SVector(J * u[1] * u[orientation + 1], z, z)
 end
 
-# Directional form takes in the normal components in reference space
+# Directional flux that takes in the normal components in reference space
 @inline function Trixi.flux(u, normal_direction::AbstractVector,
                             ::CovariantLinearAdvectionEquation2D,
                             elements, i, j, element)
@@ -33,8 +32,8 @@ end
     return SVector(J * u[1] * v_n, z, z)
 end
 
-# The dissipation is not applied to the contravariant velocity components, which should 
-# remain unchanged in time
+# Local Lax-Friedrichs dissipation which is not applied to the contravariant velocity 
+# components, as they should remain unchanged in time
 @inline function (dissipation::DissipationLocalLaxFriedrichs)(u_ll, u_rr,
                                                               normal_direction::AbstractVector,
                                                               equations::CovariantLinearAdvectionEquation2D,

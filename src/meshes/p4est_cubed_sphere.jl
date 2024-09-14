@@ -284,7 +284,7 @@ end
 
 # Calculate physical coordinates of each node of a 2D cubed sphere mesh using the
 # element-local mapping from Guba et al. (see https://doi.org/10.5194/gmd-7-2803-2014,
-# Appendix A).
+# Appendix A). We thank Oswald Knoth for bringing this paper to our attention.
 function calc_tree_node_coordinates_cubed_sphere_standard!(node_coordinates::AbstractArray{<:Any,
                                                                                            4},
                                                            nodes,

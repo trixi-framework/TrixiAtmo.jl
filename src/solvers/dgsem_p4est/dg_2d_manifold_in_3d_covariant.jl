@@ -63,29 +63,15 @@ function Trixi.rhs!(du, u, t,
     return nothing
 end
 
-@inline function reference_normal_vector(direction)
-    orientation = (direction + 1) >> 1
-    sign = isodd(direction) ? -1 : 1
-
-    if orientation == 1
-        return SVector(sign, 0.0f0, 0.0f0)
-    else
-        return SVector(0.0f0, sign, 0.0f0)
-    end
-end
-
+# Evaluate the initial condition in spherical vector components, then 
+# transform to contravariant components for use as prognostic variables
 function Trixi.compute_coefficients!(u, func, t, mesh::Trixi.AbstractMesh{2},
                                      equations::AbstractCovariantEquations{2}, dg::DG,
                                      cache)
     for element in eachelement(dg, cache)
         for j in eachnode(dg), i in eachnode(dg)
-            x_node = view(cache.elements.node_coordinates, :, i, j, element)
-
-            # Evaluate the state with spherical vector components 
-            # (i.e. all winds are zonal and meridional components)
+            x_node = Trixi.get_node_coords(node_coordinates, equations, dg, i, j, element)
             u_spherical = func(x_node, t, equations)
-
-            # transform to contravariant components for use within the solver
             u_con = spherical2contravariant(u_spherical, equations,
                                             cache.elements, i, j, element)
             Trixi.set_node_vars!(u, u_con, equations, dg, i, j, element)
@@ -93,6 +79,9 @@ function Trixi.compute_coefficients!(u, func, t, mesh::Trixi.AbstractMesh{2},
     end
 end
 
+# Weak form kernel which uses contravariant flux components, passing the element container 
+# and node/element indices into the flux function to give the flux access to geometric 
+# quantities
 @inline function Trixi.weak_form_kernel!(du, u, element, mesh::P4estMesh{2},
                                          nonconservative_terms::False,
                                          equations::AbstractCovariantEquations{2},
@@ -121,6 +110,9 @@ end
     return nothing
 end
 
+# Flux differencing kernel which uses contravariant flux components, passing the element
+# container and node/element indices into the two-point volume flux function to give the 
+# flux access to geometric quantities
 @inline function Trixi.flux_differencing_kernel!(du, u, element, mesh::P4estMesh{2},
                                                  nonconservative_terms::False,
                                                  equations::AbstractCovariantEquations{2},
@@ -157,6 +149,9 @@ end
     return nothing
 end
 
+# Interface flux which transforms the contravariant prognostic variables into the same 
+# reference coordinate system on each side of the interface, then applies the numerical 
+# flux in reference space, taking in the reference normal vector
 function Trixi.calc_interface_flux!(surface_flux_values,
                                     mesh::Union{P4estMesh{2}, T8codeMesh{2}},
                                     nonconservative_terms,
@@ -230,6 +225,8 @@ function Trixi.calc_interface_flux!(surface_flux_values,
     return nothing
 end
 
+# Pointwise interface flux, transforming the contravariant prognostic variables into the 
+# local coordinate system
 @inline function Trixi.calc_interface_flux!(surface_flux_values, mesh::P4estMesh{2},
                                             nonconservative_terms::False, equations,
                                             surface_integral, dg::DG, cache,
