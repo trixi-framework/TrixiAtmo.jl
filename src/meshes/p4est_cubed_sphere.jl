@@ -282,7 +282,9 @@ function connectivity_cubed_sphere_2D(trees_per_face_dimension)
     return connectivity
 end
 
-# Calculate physical coordinates of each node of a 2D cubed sphere mesh.
+# Calculate physical coordinates of each node of a 2D cubed sphere mesh by mapping 
+# the LGL quadrature nodes onto a Cartesian element grid, then using the equiangular 
+# gnomonic mapping to place the nodes on the spherical surface
 function calc_tree_node_coordinates_cubed_sphere_standard!(node_coordinates::AbstractArray{<:Any,
                                                                                            4},
                                                            nodes,
@@ -321,7 +323,9 @@ function calc_tree_node_coordinates_cubed_sphere_standard!(node_coordinates::Abs
     end
 end
 
-# Calculate physical coordinates of each node of a 2D cubed sphere mesh.
+# Calculate physical coordinates of each node of a 2D cubed sphere mesh using the
+# element-local mapping from Guba et al. (see https://doi.org/10.5194/gmd-7-2803-2014,
+# Appendix A). We thank Oswald Knoth for bringing this paper to our attention.
 function calc_tree_node_coordinates_cubed_sphere_local!(node_coordinates::AbstractArray{<:Any,
                                                                                         4},
                                                         nodes, trees_per_face_dimension,
@@ -342,7 +346,7 @@ function calc_tree_node_coordinates_cubed_sphere_local!(node_coordinates::Abstra
             y_offset = -1 + (cell_y - 1) * dy + dy / 2
             z_offset = 0
 
-            # Vertices for bilinear planar mapping
+            # Vertices for bilinear mapping
             v1 = Trixi.cubed_sphere_mapping(x_offset - dx / 2,
                                             y_offset - dx / 2,
                                             z_offset, radius, 0, direction)
@@ -368,6 +372,8 @@ function calc_tree_node_coordinates_cubed_sphere_local!(node_coordinates::Abstra
     end
 end
 
+# Local mapping from the reference quadrilateral to a spherical patch based on four vertex
+# positions on the sphere, provided in Cartesian coordinates
 @inline function local_mapping(xi1, xi2, v1, v2, v3, v4, radius)
 
     # Construct a bilinear mapping based on the four corner vertices
