@@ -65,7 +65,7 @@ function CompressibleRainyEulerEquations2D(; RealT = Float64)
     # Reference values:
     ref_saturation_pressure  = 610.7
     ref_temperature          = 273.15
-    ref_latent_heat_vap_temp = 3147620.0#2.5e6
+    ref_latent_heat_vap_temp = 2.5e6#3147620.0
     ref_pressure             = 1e5
 
     # Other:
@@ -152,7 +152,24 @@ end
 
         return SVector(0.0, 0.0, temperature)
     else
-        return SVector(u[7], u[8], u[9])
+        # experimental and overly simple positivity check
+        rho_vapour  = u[7]
+        rho_cloud   = u[8]
+        temperature = u[9]
+        #=
+        if (rho_vapour < 0.0 && isapprox(rho_vapour, 0.0, atol = 1e-15))
+            rho_vapour = 0.0
+        end
+
+        if (rho_cloud < 0.0 && isapprox(rho_cloud, 0.0, atol = 1e-15))
+            rho_cloud = 0.0
+        end
+
+        if (temperature < 0.0 && isapprox(temperature, 0.0, atol = 1e-15))
+            temperature = 0.0
+        end
+        =#
+        return SVector(rho_vapour, rho_cloud, temperature)
     end
 end
 
@@ -240,6 +257,7 @@ end
         error("rho vapour less than zero")
     end
     if ( rho_cloud < 0.0 )
+        display(rho_cloud)
         error("rho cloud less than zero")
     end
 
@@ -288,6 +306,7 @@ end
 
     # testing 
     if (temperature < 0.0)
+        display(temp)
         error("temp less than zero")
     end
 
@@ -584,9 +603,11 @@ end
 
         residual[2]  = min(saturation_vapour_pressure(guess[3], equations) / (R_v * guess[3]), rho_moist)
         residual[2] -= guess[1]
+        residual[2] *= 1e7
 
         residual[3]  = rho_moist
         residual[3] -= guess[1] + guess[2]
+        residual[3] *= 1e7
     end
 
     return saturation_residual!
