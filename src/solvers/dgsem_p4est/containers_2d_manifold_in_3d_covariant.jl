@@ -10,12 +10,16 @@ mutable struct P4estElementContainerCovariant{NDIMS, RealT <: Real, uEltype <: R
     node_coordinates::Array{RealT, NDIMSP2}
     # Covariant basis for the tangent space, expanded with respect to the spherical basis
     covariant_basis::Array{RealT, NDIMSP3}  # [:, :, i, node_i, node_j, node_k, element]
+    covariant_metric::Array{RealT, NDIMSP3}
+    contravariant_metric::Array{RealT, NDIMSP3}
     inverse_jacobian::Array{RealT, NDIMSP1}  # [node_i, node_j, node_k, element]
     surface_flux_values::Array{uEltype, NDIMSP2} # [variable, i, j, direction, element]
 
     # internal `resize!`able storage
     _node_coordinates::Vector{RealT}
     _covariant_basis::Vector{RealT}
+    _covariant_metric::Vector{RealT}
+    _contravariant_metric::Vector{RealT}
     _inverse_jacobian::Vector{RealT}
     _surface_flux_values::Vector{uEltype}
 end
@@ -91,6 +95,23 @@ function Trixi.init_elements(mesh::P4estMesh{NDIMS, NDIMS_AMBIENT, RealT},
                                          ntuple(_ -> nnodes(basis), NDIMS)...,
                                          nelements))
 
+    _covariant_metric = Vector{RealT}(undef,
+                                      NDIMS * NDIMS * nnodes(basis)^NDIMS *
+                                      nelements)
+    covariant_metric = Trixi.unsafe_wrap(Array, pointer(_covariant_metric),
+                                         (NDIMS, NDIMS,
+                                          ntuple(_ -> nnodes(basis), NDIMS)...,
+                                          nelements))
+
+    _contravariant_metric = Vector{RealT}(undef,
+                                          NDIMS * NDIMS * nnodes(basis)^NDIMS *
+                                          nelements)
+
+    contravariant_metric = Trixi.unsafe_wrap(Array, pointer(_contravariant_metric),
+                                             (NDIMS, NDIMS,
+                                              ntuple(_ -> nnodes(basis), NDIMS)...,
+                                              nelements))
+
     _inverse_jacobian = Vector{RealT}(undef, nnodes(basis)^NDIMS * nelements)
     inverse_jacobian = Trixi.unsafe_wrap(Array, pointer(_inverse_jacobian),
                                          (ntuple(_ -> nnodes(basis), NDIMS)...,
@@ -109,10 +130,14 @@ function Trixi.init_elements(mesh::P4estMesh{NDIMS, NDIMS_AMBIENT, RealT},
                                               NDIMS + 2,
                                               NDIMS + 3}(node_coordinates,
                                                          covariant_basis,
+                                                         covariant_metric,
+                                                         contravariant_metric,
                                                          inverse_jacobian,
                                                          surface_flux_values,
                                                          _node_coordinates,
                                                          _covariant_basis,
+                                                         _covariant_metric,
+                                                         _contravariant_metric,
                                                          _inverse_jacobian,
                                                          _surface_flux_values)
 
@@ -126,7 +151,8 @@ end
 function Trixi.init_elements!(elements, mesh::P4estMesh{2, 3},
                               equations::AbstractCovariantEquations{2, 3},
                               basis::LobattoLegendreBasis)
-    (; node_coordinates, covariant_basis, inverse_jacobian) = elements
+    (; node_coordinates, covariant_basis,
+    covariant_metric, contravariant_metric, inverse_jacobian) = elements
 
     # The tree node coordinates are assumed to be on the spherical shell centred around the # origin. Therefore, we can compute the radius once and use it throughout.
     radius = sqrt(mesh.tree_node_coordinates[1, 1, 1, 1]^2 +
@@ -185,25 +211,32 @@ function Trixi.init_elements!(elements, mesh::P4estMesh{2, 3},
             # covariant metric tensor and a_i = A[1,i] * e_lon + A[2,i] * e_lat denotes 
             # the covariant tangent basis, where e_lon and e_lat are the unit basis vectors
             # in the longitudinal and latitudinal directions, respectively.
-            A = 0.25f0 * scaling_factor * SMatrix{2, 3}(-sinlon, 0, coslon, 0, 0, 1) *
-                SMatrix{3, 3}(a11, a21, a31, a12, a22, a32, a13, a23, a33) *
-                SMatrix{3, 4}(v1[1], v1[2], v1[3], v2[1], v2[2], v2[3],
-                              v3[1], v3[2], v3[3], v4[1], v4[2], v4[3]) *
-                SMatrix{4, 2}(-1 + xi2, 1 - xi2, 1 + xi2, -1 - xi2,
-                              -1 + xi1, -1 - xi1, 1 + xi1, 1 - xi1)
+            A_cov = 0.25f0 * scaling_factor *
+                    SMatrix{2, 3}(-sinlon, 0, coslon, 0, 0, 1) *
+                    SMatrix{3, 3}(a11, a21, a31, a12, a22, a32, a13, a23, a33) *
+                    SMatrix{3, 4}(v1[1], v1[2], v1[3], v2[1], v2[2], v2[3],
+                                  v3[1], v3[2], v3[3], v4[1], v4[2], v4[3]) *
+                    SMatrix{4, 2}(-1 + xi2, 1 - xi2, 1 + xi2, -1 - xi2,
+                                  -1 + xi1, -1 - xi1, 1 + xi1, 1 - xi1)
+
+            # Covariant and contravariant metric tensor components
+            G_cov = A_cov' * A_cov
+            G_con = inv(G_cov)
 
             # Set variables in the cache
             node_coordinates[1, i, j, element] = x[1]
             node_coordinates[2, i, j, element] = x[2]
             node_coordinates[3, i, j, element] = x[3]
 
-            covariant_basis[1, 1, i, j, element] = A[1, 1]
-            covariant_basis[2, 1, i, j, element] = A[2, 1]
-            covariant_basis[1, 2, i, j, element] = A[1, 2]
-            covariant_basis[2, 2, i, j, element] = A[2, 2]
+            for l in 1:2, m in 1:2
+                covariant_basis[l, m, i, j, element] = A_cov[l, m]
+                covariant_metric[l, m, i, j, element] = G_cov[l, m]
+                contravariant_metric[l, m, i, j, element] = G_con[l, m]
+            end
 
             inverse_jacobian[i, j, element] = 1 /
-                                              (A[1, 1] * A[2, 2] - A[1, 2] * A[2, 1])
+                                              sqrt(G_cov[1, 1] * G_cov[2, 2] -
+                                                   G_cov[1, 2] * G_cov[2, 1])
         end
     end
 
