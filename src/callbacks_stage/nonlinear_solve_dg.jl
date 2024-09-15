@@ -5,7 +5,7 @@ using Trixi: wrap_array, AbstractSemidiscretization#, TimerOutputs
 @muladd begin
 
     
-struct NonlinearSolver
+struct NonlinearSolveDG
     residual
     tolerance             ::Real
     variables_index_vector::Vector{Int}
@@ -17,7 +17,7 @@ function NonlinearSolver(residual!, variables_index_vector; tolerance)
 end
 =#
 
-function (limiter!::NonlinearSolver)(u_ode, integrator, semi::AbstractSemidiscretization, t)
+function (limiter!::NonlinearSolveDG)(u_ode, integrator, semi::AbstractSemidiscretization, t)
     u = wrap_array(u_ode, semi)
     
     #@trixi_timeit timer() "nonlinear system solver" begin

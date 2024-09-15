@@ -24,6 +24,6 @@ include("equations/equations.jl")
 export CompressibleMoistEulerEquations2D, CompressibleRainyEulerEquations2D
 
 include("callbacks_stage/callbacks_stage.jl")
-export NonlinearSolver
+export NonlinearSolveDG
 
 end # module TrixiAtmo

@@ -1,7 +1,7 @@
 using OrdinaryDiffEq
 using Trixi
 using TrixiAtmo
-using TrixiAtmo: source_terms_no_phase_change, saturation_residual, NonlinearSolver
+using TrixiAtmo: source_terms_no_phase_change, saturation_residual, NonlinearSolveDG
 using NLsolve: nlsolve
 
 
@@ -260,7 +260,7 @@ semi = SemidiscretizationHyperbolic(mesh, equations,
 ###############################################################################
 # ODE solvers, callbacks etc.
 
-tspan = (0.0, 10.0)
+tspan = (0.0, 1000.0)
 
 ode = semidiscretize(semi, tspan)
 
@@ -272,9 +272,9 @@ analysis_interval = 1000
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
                                      extra_analysis_errors = (:entropy_conservation_error,))
 
-alive_callback = AliveCallback(analysis_interval = analysis_interval)
+alive_callback = AliveCallback(analysis_interval = 100)
 
-save_solution = SaveSolutionCallback(interval = analysis_interval,
+save_solution = SaveSolutionCallback(interval = 100,
                                      save_initial_solution = true,
                                      save_final_solution = true,
                                      output_directory = "out",
@@ -288,7 +288,7 @@ callbacks = CallbackSet(summary_callback,
                         save_solution,
                         stepsize_callback)
 
-stage_limiter! = NonlinearSolver(saturation_residual, 1e-9, SVector(7, 8, 9))
+stage_limiter! = NonlinearSolveDG(saturation_residual, 1e-9, SVector(7, 8, 9))
 
 ###############################################################################
 # run the simulation

@@ -13,7 +13,7 @@ function nonlinear_solve_dg_2d!(u, residual, tolerance, variables_index_vector, 
     #TODO @threaded not defined
     for element in eachelement(dg, cache)
         
-        initial_guess = similar(variables_index_vector)
+        initial_guess = Vector{eltype(u)}(undef, length(variables_index_vector))
 
         for j in eachnode(dg), i in eachnode(dg)
 
