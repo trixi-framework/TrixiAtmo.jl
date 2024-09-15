@@ -379,4 +379,45 @@ end
     # Project the mapped local coordinates onto the sphere
     return radius * x_bilinear / norm(x_bilinear)
 end
+
+@inline function local_covariant_basis(xi1, xi2, v1, v2, v3, v4, radius)
+
+    # Construct a bilinear mapping based on the four corner vertices
+    x_bilinear = 0.25f0 * ((1 - xi1) * (1 - xi2) * v1 + (1 + xi1) * (1 - xi2) * v2 +
+                  (1 + xi1) * (1 + xi2) * v3 + (1 - xi1) * (1 + xi2) * v4)
+
+    # Project the mapped local coordinates onto the sphere
+    scaling_factor = radius / norm(x_bilinear)
+
+    # Cartesian coordinates
+    x = x_bilinear * scaling_factor
+
+    # Convert to longitude and latitude
+    lon, lat = atan(x[2], x[1]), asin(x[3] / radius)
+
+    # Compute trigonometric terms needed for analytical metrics
+    sinlon, coslon = sincos(lon)
+    sinlat, coslat = sincos(lat)
+    a11 = sinlon * sinlon * coslat * coslat + sinlat * sinlat
+    a12 = -sinlon * coslon * coslat * coslat
+    a13 = -coslon * sinlat * coslat
+    a21 = a12
+    a22 = coslon * coslon * coslat * coslat + sinlat * sinlat
+    a23 = -sinlon * sinlat * coslat
+    a31 = -coslon * sinlat
+    a32 = -sinlon * sinlat
+    a33 = coslat
+
+    # Analytically compute the transformation matrix A, such that G = AᵀA is the 
+    # covariant metric tensor and a_i = A[1,i] * e_lon + A[2,i] * e_lat denotes 
+    # the covariant tangent basis, where e_lon and e_lat are the unit basis vectors
+    # in the longitudinal and latitudinal directions, respectively.
+    return 0.25f0 * scaling_factor *
+           SMatrix{2, 3}(-sinlon, 0, coslon, 0, 0, 1) *
+           SMatrix{3, 3}(a11, a21, a31, a12, a22, a32, a13, a23, a33) *
+           SMatrix{3, 4}(v1[1], v1[2], v1[3], v2[1], v2[2], v2[3],
+                         v3[1], v3[2], v3[3], v4[1], v4[2], v4[3]) *
+           SMatrix{4, 2}(-1 + xi2, 1 - xi2, 1 + xi2, -1 - xi2,
+                         -1 + xi1, -1 - xi1, 1 + xi1, 1 - xi1)
+end
 end # @muladd
