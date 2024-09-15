@@ -7,8 +7,9 @@ const EARTH_ROTATION_RATE = 7.292f-5  # rad/s
 const SECONDS_PER_DAY = 8.64f4
 
 # Abstract type used to dispatch specialized solvers for the covariant form
-abstract type AbstractCovariantEquations{NDIMS, NVARS} <: AbstractEquations{NDIMS, 
-                                                                            NVARS} end
+abstract type AbstractCovariantEquations{NDIMS,
+                                         NDIMS_AMBIENT,
+                                         NVARS} <: AbstractEquations{NDIMS, NVARS} end
 
 # Numerical flux plus dissipation which passes node/element indices and cache. 
 # We assume that u_ll and u_rr have been transformed into the same local coordinate system.

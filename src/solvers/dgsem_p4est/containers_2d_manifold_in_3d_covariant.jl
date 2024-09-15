@@ -31,11 +31,16 @@ end
     return uEltype
 end
 
-@inline function Trixi.get_node_coords(x, ::AbstractCovariantEquations{2}, ::DG,
-                                       indices...)
-    return SVector(ntuple(@inline(idx->x[idx, indices...]), 3))
+# Get Cartesian node positions, dispatching on the dimension of the equation system
+@inline function Trixi.get_node_coords(x,
+                                       ::AbstractCovariantEquations{NDIMS,
+                                                                    NDIMS_AMBIENT},
+                                       ::DG,
+                                       indices...) where {NDIMS, NDIMS_AMBIENT}
+    return SVector(ntuple(@inline(idx->x[idx, indices...]), NDIMS_AMBIENT))
 end
 
+# Volume element J = sqrt(det(G)), where G is the matrix of covariant metric components
 @inline function volume_element(elements, i, j, element)
     return 1 / elements.inverse_jacobian[i, j, element]
 end
@@ -58,14 +63,17 @@ end
            Jv_con_2 * elements.inverse_jacobian[i, j, element]
 end
 
-# Create element container and initialize element data.
-# This function dispatches on the dimensions of the mesh and the equation type 
-function Trixi.init_elements(mesh::P4estMesh{NDIMS},
-                             equations::AbstractCovariantEquations{NDIMS},
-                             basis, ::Type{uEltype}) where {NDIMS, uEltype <: Real}
-    RealT = real(mesh)
-    NDIMS_AMBIENT = size(mesh.tree_node_coordinates, 1)
-
+# Create element container and initialize element data for a mesh of dimension NDIMS in 
+# an ambient space of dimension NDIMS_AMBIENT, with the equations expressed in covariant 
+# form
+function Trixi.init_elements(mesh::P4estMesh{NDIMS, NDIMS_AMBIENT, RealT},
+                             equations::AbstractCovariantEquations{NDIMS,
+                                                                   NDIMS_AMBIENT},
+                             basis,
+                             ::Type{uEltype}) where {NDIMS,
+                                                     NDIMS_AMBIENT,
+                                                     RealT <: Real,
+                                                     uEltype <: Real}
     nelements = Trixi.ncells(mesh)
 
     _node_coordinates = Vector{RealT}(undef,
@@ -116,7 +124,7 @@ end
 # Compute the node positions and metric terms for the covariant form, assuming that the
 # domain is a spherical shell. We do not make any assumptions on the mesh topology.
 function Trixi.init_elements!(elements, mesh::P4estMesh{2, 3},
-                              equations::AbstractCovariantEquations{2},
+                              equations::AbstractCovariantEquations{2, 3},
                               basis::LobattoLegendreBasis)
     (; node_coordinates, covariant_basis, inverse_jacobian) = elements
 

@@ -3,8 +3,8 @@
 
 # Custom rhs! for the covariant form. Note that the mortar flux is not included, as we do
 # not yet support non-conforming meshes for the covariant solver.
-function Trixi.rhs!(du, u, t,
-                    mesh::P4estMesh{2}, equations::AbstractCovariantEquations{2},
+function Trixi.rhs!(du, u, t, mesh::P4estMesh{2},
+                    equations::AbstractCovariantEquations{2},
                     initial_condition, boundary_conditions, source_terms::Source,
                     dg::DG, cache) where {Source}
     # Reset du
@@ -65,12 +65,13 @@ end
 
 # Evaluate the initial condition in spherical vector components, then 
 # transform to contravariant components for use as prognostic variables
-function Trixi.compute_coefficients!(u, func, t, mesh::Trixi.AbstractMesh{2},
-                                     equations::AbstractCovariantEquations{2}, dg::DG,
+function Trixi.compute_coefficients!(u, func, t, mesh::P4estMesh,
+                                     equations::AbstractCovariantEquations, dg::DG,
                                      cache)
     for element in eachelement(dg, cache)
         for j in eachnode(dg), i in eachnode(dg)
-            x_node = Trixi.get_node_coords(node_coordinates, equations, dg, i, j, element)
+            x_node = Trixi.get_node_coords(cache.elements.node_coordinates,
+                                           equations, dg, i, j, element)
             u_spherical = func(x_node, t, equations)
             u_con = spherical2contravariant(u_spherical, equations,
                                             cache.elements, i, j, element)
@@ -149,11 +150,23 @@ end
     return nothing
 end
 
+# Outward unit normal vector in reference coordinates for a quadrilateral element
+@inline function reference_normal_vector(direction)
+    orientation = (direction + 1) >> 1
+    sign = isodd(direction) ? -1 : 1
+
+    if orientation == 1
+        return SVector(sign, 0.0f0, 0.0f0)
+    else
+        return SVector(0.0f0, sign, 0.0f0)
+    end
+end
+
 # Interface flux which transforms the contravariant prognostic variables into the same 
 # reference coordinate system on each side of the interface, then applies the numerical 
 # flux in reference space, taking in the reference normal vector
 function Trixi.calc_interface_flux!(surface_flux_values,
-                                    mesh::Union{P4estMesh{2}, T8codeMesh{2}},
+                                    mesh::P4estMesh{2},
                                     nonconservative_terms,
                                     equations::AbstractCovariantEquations{2},
                                     surface_integral, dg::DG, cache)

@@ -1,8 +1,9 @@
 @muladd begin
 #! format: noindent
 
-# Variable-coefficient linear advection equation in covariant form
-struct CovariantLinearAdvectionEquation2D <: AbstractCovariantEquations{2, 3} end
+# Variable-coefficient linear advection equation in covariant form on a two-dimensional
+# surface in three-dimensional space
+struct CovariantLinearAdvectionEquation2D <: AbstractCovariantEquations{2, 3, 3} end
 
 # The first variable is the scalar conserved quantity, and the second two are the 
 # contravariant velocity components, which are spatially varying but constant in time.
@@ -10,7 +11,10 @@ function Trixi.varnames(::typeof(cons2cons), ::CovariantLinearAdvectionEquation2
     return ("scalar", "v_con_1", "v_con_2")
 end
 
-Trixi.cons2entropy(u, ::CovariantLinearAdvectionEquation2D) = u
+# We will measure the entropy/energy simply as half of the square of the scalar variable
+Trixi.cons2entropy(u, ::CovariantLinearAdvectionEquation2D) = SVector{3}(u[1],
+                                                                         zero(eltype(u)),
+                                                                         zero(eltype(u)))
 
 # The flux for the covariant form takes in the element container and node/element indices
 # in order to give the flux access to the geometric information
