@@ -15,11 +15,13 @@ using StrideArrays: PtrArray
 using StaticArrayInterface: static_size
 using LinearAlgebra: norm
 using Reexport: @reexport
+using LoopVectorization: @turbo
 @reexport using StaticArrays: SVector
 
 include("auxiliary/auxiliary.jl")
 include("equations/equations.jl")
 include("meshes/meshes.jl")
+include("semidiscretization/semidiscretization.jl")
 include("solvers/solvers.jl")
 include("semidiscretization/semidiscretization_hyperbolic_2d_manifold_in_3d.jl")
 
