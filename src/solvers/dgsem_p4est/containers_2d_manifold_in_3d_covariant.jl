@@ -4,14 +4,20 @@
 # Specialized element container for partial differential equations in covariant form
 mutable struct P4estElementContainerCovariant{NDIMS, RealT <: Real, uEltype <: Real,
                                               NDIMSP1, NDIMSP2,
-                                              NDIMSP3} <: Trixi.AbstractContainer
+                                              NDIMSP3, NDIMSP4} <:
+               Trixi.AbstractContainer
     # Physical Cartesian coordinates at each node
     # [orientation, node_i, node_j, node_k, element]
     node_coordinates::Array{RealT, NDIMSP2}
     # Covariant basis for the tangent space, expanded with respect to the spherical basis
-    covariant_basis::Array{RealT, NDIMSP3}  # [:, :, i, node_i, node_j, node_k, element]
-    covariant_metric::Array{RealT, NDIMSP3}
-    contravariant_metric::Array{RealT, NDIMSP3}
+    # [component index, basis vector index, i, node_i, node_j, node_k, element]
+    covariant_basis::Array{RealT, NDIMSP3}
+    # Covariant components of the metric tensor G_{lm}
+    covariant_metric::Array{RealT, NDIMSP3}  # [l, m, node_i, node_j, node_k, element]
+    # Contravariant components of the metric tensor G^{lm}
+    contravariant_metric::Array{RealT, NDIMSP3}  # [l, m, node_i, node_j, node_k, element]
+    # Christoffel symbols of the second kind Γ_{lm}^k
+    christoffel_symbols::Array{RealT, NDIMSP4}  # [k, l, m, node_i, node_j, node_k, element]
     inverse_jacobian::Array{RealT, NDIMSP1}  # [node_i, node_j, node_k, element]
     surface_flux_values::Array{uEltype, NDIMSP2} # [variable, i, j, direction, element]
 
@@ -20,6 +26,7 @@ mutable struct P4estElementContainerCovariant{NDIMS, RealT <: Real, uEltype <: R
     _covariant_basis::Vector{RealT}
     _covariant_metric::Vector{RealT}
     _contravariant_metric::Vector{RealT}
+    _christoffel_symbols::Vector{RealT}
     _inverse_jacobian::Vector{RealT}
     _surface_flux_values::Vector{uEltype}
 end
@@ -112,6 +119,15 @@ function Trixi.init_elements(mesh::P4estMesh{NDIMS, NDIMS_AMBIENT, RealT},
                                               ntuple(_ -> nnodes(basis), NDIMS)...,
                                               nelements))
 
+    _christoffel_symbols = Vector{RealT}(undef,
+                                         NDIMS * NDIMS * NDIMS *
+                                         nnodes(basis)^NDIMS * nelements)
+
+    christoffel_symbols = Trixi.unsafe_wrap(Array, pointer(_christoffel_symbols),
+                                            (NDIMS, NDIMS, NDIMS,
+                                             ntuple(_ -> nnodes(basis), NDIMS)...,
+                                             nelements))
+
     _inverse_jacobian = Vector{RealT}(undef, nnodes(basis)^NDIMS * nelements)
     inverse_jacobian = Trixi.unsafe_wrap(Array, pointer(_inverse_jacobian),
                                          (ntuple(_ -> nnodes(basis), NDIMS)...,
@@ -128,16 +144,19 @@ function Trixi.init_elements(mesh::P4estMesh{NDIMS, NDIMS_AMBIENT, RealT},
 
     elements = P4estElementContainerCovariant{NDIMS, RealT, uEltype, NDIMS + 1,
                                               NDIMS + 2,
-                                              NDIMS + 3}(node_coordinates,
+                                              NDIMS + 3,
+                                              NDIMS + 4}(node_coordinates,
                                                          covariant_basis,
                                                          covariant_metric,
                                                          contravariant_metric,
+                                                         christoffel_symbols,
                                                          inverse_jacobian,
                                                          surface_flux_values,
                                                          _node_coordinates,
                                                          _covariant_basis,
                                                          _covariant_metric,
                                                          _contravariant_metric,
+                                                         _christoffel_symbols,
                                                          _inverse_jacobian,
                                                          _surface_flux_values)
 
@@ -151,10 +170,11 @@ end
 function Trixi.init_elements!(elements, mesh::P4estMesh{2, 3},
                               equations::AbstractCovariantEquations{2, 3},
                               basis::LobattoLegendreBasis)
-    (; node_coordinates, covariant_basis,
-    covariant_metric, contravariant_metric, inverse_jacobian) = elements
+    (; node_coordinates, covariant_basis, covariant_metric, contravariant_metric,
+    christoffel_symbols, inverse_jacobian) = elements
 
-    # The tree node coordinates are assumed to be on the spherical shell centred around the # origin. Therefore, we can compute the radius once and use it throughout.
+    # The tree node coordinates are assumed to be on the spherical shell centred around the
+    # origin. Therefore, we can compute the radius once and use it throughout.
     radius = sqrt(mesh.tree_node_coordinates[1, 1, 1, 1]^2 +
                   mesh.tree_node_coordinates[2, 1, 1, 1]^2 +
                   mesh.tree_node_coordinates[3, 1, 1, 1]^2)
@@ -204,8 +224,69 @@ function Trixi.init_elements!(elements, mesh::P4estMesh{2, 3},
             inverse_jacobian[i, j, element] = 1 / sqrt(G_cov[1, 1] * G_cov[2, 2] -
                                                    G_cov[1, 2] * G_cov[2, 1])
         end
+
+        calc_christoffel_symbols!(christoffel_symbols, covariant_basis,
+                                  contravariant_metric,
+                                  mesh, basis)
     end
 
     return nothing
+end
+
+# Approximate the Christoffel symbols by differentiating the (orthonormal) 
+# spherical components of the covariant basis vectors with respect to the reference 
+# coordinates (using the discrete derivative operator) and taking the dot product with the 
+# contravariant basis to obtain Γ_{l,m}^k = Γ_{m,l}^k ≈ (aᵏ)ₙ⋅∂Iᴺ(aₘ)ₙ/∂ξˡ 
+function calc_christoffel_symbols!(christoffel_symbols, covariant_basis,
+                                   contravariant_metric, mesh::P4estMesh{2},
+                                   basis::LobattoLegendreBasis)
+    (; derivative_matrix) = basis
+
+    for element in 1:Trixi.ncells(mesh)
+        for j in eachnode(basis), i in eachnode(basis)
+            for k in 1:2
+                # Raise indices of the covariant basis to obtain contravariant basis
+                a_con_1 = contravariant_metric[k, 1, i, j, element] *   # (aᵏ)₁
+                          covariant_basis[1, 1, i, j, element] +
+                          contravariant_metric[k, 2, i, j, element] *
+                          covariant_basis[1, 2, i, j, element]
+                a_con_2 = contravariant_metric[k, 1, i, j, element] *  # (aᵏ)₂
+                          covariant_basis[2, 1, i, j, element] +
+                          contravariant_metric[k, 2, i, j, element] *
+                          covariant_basis[2, 2, i, j, element]
+                for m in 1:2
+                    # Discretely differentiate covariant basis components with respect to ξ¹
+                    da1dxi1 = zero(eltype(christoffel_symbols))  # ∂Iᴺ(aₘ)₁/∂ξ¹
+                    da2dxi1 = zero(eltype(christoffel_symbols))  # ∂Iᴺ(aₘ)₂/∂ξ¹
+                    for ii in eachnode(basis)
+                        da1dxi1 = da1dxi1 +
+                                  derivative_matrix[ii, j] *
+                                  covariant_basis[1, m, ii, j, element]
+                        da2dxi1 = da2dxi1 +
+                                  derivative_matrix[ii, j] *
+                                  covariant_basis[2, m, ii, j, element]
+                    end
+                    # Discretely differentiate covariant basis components with respect to ξ²
+                    da1dxi2 = zero(eltype(christoffel_symbols))  # ∂Iᴺ(aₘ)₁/∂ξ²
+                    da2dxi2 = zero(eltype(christoffel_symbols))  # ∂Iᴺ(aₘ)₂/∂ξ²
+                    for jj in eachnode(basis)
+                        da1dxi2 = da1dxi2 +
+                                  derivative_matrix[i, jj] *
+                                  covariant_basis[1, m, i, jj, element]
+                        da2dxi2 = da2dxi2 +
+                                  derivative_matrix[i, jj] *
+                                  covariant_basis[2, m, i, jj, element]
+                    end
+                    # Take the dot product (assuming an orthonormal basis)
+                    # Γ_{m,1}^k = (aᵏ)₁⋅∂Iᴺ(aₘ)₁/∂ξ¹ + (aᵏ)₂⋅∂Iᴺ(aₘ)₂/∂ξ¹
+                    christoffel_symbols[k, m, 1, i, j, element] = a_con_1 * da1dxi1 +
+                                                                  a_con_2 * da2dxi1
+                    # Γ_{m,2}^k = (aᵏ)₁⋅∂Iᴺ(aₘ)₁/∂ξ² + (aᵏ)₂⋅∂Iᴺ(aₘ)₂/∂ξ²
+                    christoffel_symbols[k, m, 2, i, j, element] = a_con_1 * da1dxi2 +
+                                                                  a_con_2 * da2dxi2
+                end
+            end
+        end
+    end
 end
 end # @muladd
