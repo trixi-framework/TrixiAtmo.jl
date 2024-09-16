@@ -52,7 +52,8 @@ solver = DGSEM(polydeg = polydeg, surface_flux = flux_lax_friedrichs,
                volume_integral = volume_integral)
 
 # A semidiscretization collects data structures and functions for the spatial discretization
-semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver)
+semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
+                                    source_terms = source_terms)
 
 ###############################################################################
 # ODE solvers, callbacks etc.
@@ -85,7 +86,7 @@ callbacks = CallbackSet(summary_callback, analysis_callback, save_solution,
 
 # OrdinaryDiffEq's `solve` method evolves the solution in time and executes the passed callbacks
 sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
-            dt = 1.0, save_everystep = false, callback = callbacks);
+            dt = 100.0, save_everystep = false, callback = callbacks);
 
 # Print the timer summary
 summary_callback()

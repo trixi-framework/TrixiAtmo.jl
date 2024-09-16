@@ -252,7 +252,7 @@ function calc_christoffel_symbols!(christoffel_symbols, covariant_metric,
                 dG12dxi1 = dG12dxi1 +
                            derivative_matrix[i, ii] *
                            covariant_metric[1, 2, ii, j, element]
-                dG12dxi1 = dG22dxi1 +
+                dG22dxi1 = dG22dxi1 +
                            derivative_matrix[i, ii] *
                            covariant_metric[2, 2, ii, j, element]
             end
@@ -262,13 +262,13 @@ function calc_christoffel_symbols!(christoffel_symbols, covariant_metric,
             dG12dxi2 = zero(eltype(christoffel_symbols))
             dG22dxi2 = zero(eltype(christoffel_symbols))
             for jj in eachnode(basis)
-                dG11dxi2 = dG12dxi2 +
+                dG11dxi2 = dG11dxi2 +
                            derivative_matrix[j, jj] *
                            covariant_metric[1, 1, i, jj, element]
                 dG12dxi2 = dG12dxi2 +
                            derivative_matrix[j, jj] *
                            covariant_metric[1, 2, i, jj, element]
-                dG22dxi2 = dG12dxi2 +
+                dG22dxi2 = dG22dxi2 +
                            derivative_matrix[j, jj] *
                            covariant_metric[2, 2, i, jj, element]
             end

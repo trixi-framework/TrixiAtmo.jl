@@ -46,31 +46,21 @@ end
     G_con_1 = elements.contravariant_metric[1, orientation, i, j, element]
     G_con_2 = elements.contravariant_metric[2, orientation, i, j, element]
 
-    v = u[1 + orientation] / h
+    hv = u[1 + orientation]
+    v = hv / h
     T_con_1 = hv_con_1 * v + G_con_1 * gravitational_term
     T_con_2 = hv_con_2 * v + G_con_2 * gravitational_term
 
-    return volume_element(elements, i, j, element) * SVector(hv_con_1, T_con_1, T_con_2)
+    return volume_element(elements, i, j, element) * SVector(hv, T_con_1, T_con_2)
 end
 
 # Directional flux that takes in the normal components in reference space
 @inline function Trixi.flux(u, normal_direction::AbstractVector,
                             equations::CovariantShallowWaterEquations2D,
                             elements, i, j, element)
-    h, hv_con_1, hv_con_2 = u
-
-    gravitational_term = 0.5f0 * equations.gravitational_acceleration * h^2
-
-    G_con_1 = elements.contravariant_metric[1, 1, i, j, element] * normal_direction[1] +
-              elements.contravariant_metric[1, 2, i, j, element] * normal_direction[2]
-    G_con_2 = elements.contravariant_metric[2, 1, i, j, element] * normal_direction[1] +
-              elements.contravariant_metric[2, 2, i, j, element] * normal_direction[2]
-
-    v = (hv_con_1 * normal_direction[1] + hv_con_2 * normal_direction[2]) / h
-    T_con_1 = hv_con_1 * v + G_con_1 * gravitational_term
-    T_con_2 = hv_con_2 * v + G_con_2 * gravitational_term
-
-    return volume_element(elements, i, j, element) * SVector(hv_con_1, T_con_1, T_con_2)
+    F_con_1 = Trixi.flux(u, 1, equations, elements, i, j, element)
+    F_con_2 = Trixi.flux(u, 2, equations, elements, i, j, element)
+    return F_con_1 * normal_direction[1] + F_con_2 * normal_direction[2]
 end
 
 @inline function (dissipation::DissipationLocalLaxFriedrichs)(u_ll, u_rr,
@@ -83,9 +73,9 @@ end
 end
 
 # Geometric and Coriolis source terms for a rotating sphere
-@inline function source_terms_convergence_test(u, x, t,
-                                               equations::CovariantShallowWaterEquations2D,
-                                               elements, i, j, element)
+@inline function Trixi.source_terms_convergence_test(u, x, t,
+                                                     equations::CovariantShallowWaterEquations2D,
+                                                     elements, i, j, element)
     h, hv_con_1, hv_con_2 = u
 
     # Geometric variables
@@ -108,8 +98,8 @@ end
     source_2 = sum(Gamma2 .* T) +
                f * J * (G_con[2, 2] * hv_con_1 - G_con[2, 1] * hv_con_2)
 
-    # Scale by negative Jacobian
-    return SVector(zero(eltype(u)), -J * source_1, -J * source_2)
+    # Do not scale by Jacobian since apply_jacobian! is called before this
+    return SVector(zero(eltype(u)), -source_1, -source_2)
 end
 
 # Maximum wave speed along the normal direction in reference space
