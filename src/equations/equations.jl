@@ -41,6 +41,7 @@ end
 end
 
 include("covariant_advection.jl")
+include("covariant_shallow_water.jl")
 abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:
               AbstractEquations{NDIMS, NVARS} end
 include("compressible_moist_euler_2d_lucas.jl")

@@ -293,6 +293,25 @@ end
     end
 end
 
+# This function passes the element container and node/element indices into the source term
+function calc_sources!(du, u, t, source_terms,
+                       equations::AbstractCovariantEquations{2}, dg::DG, cache)
+    @unpack node_coordinates = cache.elements
+
+    @threaded for element in eachelement(dg, cache)
+        for j in eachnode(dg), i in eachnode(dg)
+            u_local = Trixi.get_node_vars(u, equations, dg, i, j, element)
+            x_local = Trixi.get_node_coords(node_coordinates, equations, dg,
+                                            i, j, element)
+            du_local = Trixi.source_terms(u_local, x_local, t, equations,
+                                          cache.elements, i, j, element)
+            Trixi.add_to_node_vars!(du, du_local, equations, dg, i, j, element)
+        end
+    end
+
+    return nothing
+end
+
 function Trixi.max_dt(u, t, mesh::P4estMesh{2}, constant_speed::False,
                       equations::AbstractCovariantEquations{2},
                       dg::DG, cache)
