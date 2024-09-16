@@ -17,7 +17,7 @@ mutable struct P4estElementContainerCovariant{NDIMS, RealT <: Real, uEltype <: R
     # Contravariant components of the metric tensor G^{lm}
     contravariant_metric::Array{RealT, NDIMSP3}  # [l, m, node_i, node_j, node_k, element]
     # Christoffel symbols of the second kind Γ_{lm}^k
-    christoffel_symbols::Array{RealT, NDIMSP4}  # [k, l, m, node_i, node_j, node_k, element]
+    christoffel_symbols::Array{RealT, NDIMSP4}  # [l, m, k, node_i, node_j, node_k, element]
     inverse_jacobian::Array{RealT, NDIMSP1}  # [node_i, node_j, node_k, element]
     surface_flux_values::Array{uEltype, NDIMSP2} # [variable, i, j, direction, element]
 
@@ -225,66 +225,78 @@ function Trixi.init_elements!(elements, mesh::P4estMesh{2, 3},
                                                    G_cov[1, 2] * G_cov[2, 1])
         end
 
-        calc_christoffel_symbols!(christoffel_symbols, covariant_basis,
-                                  contravariant_metric,
-                                  mesh, basis)
+        calc_christoffel_symbols!(christoffel_symbols, covariant_metric,
+                                  contravariant_metric, mesh, basis)
     end
 
     return nothing
 end
 
-# Approximate the Christoffel symbols by differentiating the (orthonormal) 
-# spherical components of the covariant basis vectors with respect to the reference 
-# coordinates (using the discrete derivative operator) and taking the dot product with the 
-# contravariant basis to obtain Γ_{l,m}^k = Γ_{m,l}^k ≈ (aᵏ)ₙ⋅∂Iᴺ(aₘ)ₙ/∂ξˡ 
-function calc_christoffel_symbols!(christoffel_symbols, covariant_basis,
+# Calculate Christoffel symbols
+function calc_christoffel_symbols!(christoffel_symbols, covariant_metric,
                                    contravariant_metric, mesh::P4estMesh{2},
                                    basis::LobattoLegendreBasis)
     (; derivative_matrix) = basis
 
     for element in 1:Trixi.ncells(mesh)
         for j in eachnode(basis), i in eachnode(basis)
-            for k in 1:2
-                # Raise indices of the covariant basis to obtain contravariant basis
-                a_con_1 = contravariant_metric[k, 1, i, j, element] *   # (aᵏ)₁
-                          covariant_basis[1, 1, i, j, element] +
-                          contravariant_metric[k, 2, i, j, element] *
-                          covariant_basis[1, 2, i, j, element]
-                a_con_2 = contravariant_metric[k, 1, i, j, element] *  # (aᵏ)₂
-                          covariant_basis[2, 1, i, j, element] +
-                          contravariant_metric[k, 2, i, j, element] *
-                          covariant_basis[2, 2, i, j, element]
-                for m in 1:2
-                    # Discretely differentiate covariant basis components with respect to ξ¹
-                    da1dxi1 = zero(eltype(christoffel_symbols))  # ∂Iᴺ(aₘ)₁/∂ξ¹
-                    da2dxi1 = zero(eltype(christoffel_symbols))  # ∂Iᴺ(aₘ)₂/∂ξ¹
-                    for ii in eachnode(basis)
-                        da1dxi1 = da1dxi1 +
-                                  derivative_matrix[ii, j] *
-                                  covariant_basis[1, m, ii, j, element]
-                        da2dxi1 = da2dxi1 +
-                                  derivative_matrix[ii, j] *
-                                  covariant_basis[2, m, ii, j, element]
-                    end
-                    # Discretely differentiate covariant basis components with respect to ξ²
-                    da1dxi2 = zero(eltype(christoffel_symbols))  # ∂Iᴺ(aₘ)₁/∂ξ²
-                    da2dxi2 = zero(eltype(christoffel_symbols))  # ∂Iᴺ(aₘ)₂/∂ξ²
-                    for jj in eachnode(basis)
-                        da1dxi2 = da1dxi2 +
-                                  derivative_matrix[i, jj] *
-                                  covariant_basis[1, m, i, jj, element]
-                        da2dxi2 = da2dxi2 +
-                                  derivative_matrix[i, jj] *
-                                  covariant_basis[2, m, i, jj, element]
-                    end
-                    # Take the dot product (assuming an orthonormal basis)
-                    # Γ_{m,1}^k = (aᵏ)₁⋅∂Iᴺ(aₘ)₁/∂ξ¹ + (aᵏ)₂⋅∂Iᴺ(aₘ)₂/∂ξ¹
-                    christoffel_symbols[k, m, 1, i, j, element] = a_con_1 * da1dxi1 +
-                                                                  a_con_2 * da2dxi1
-                    # Γ_{m,2}^k = (aᵏ)₁⋅∂Iᴺ(aₘ)₁/∂ξ² + (aᵏ)₂⋅∂Iᴺ(aₘ)₂/∂ξ²
-                    christoffel_symbols[k, m, 2, i, j, element] = a_con_1 * da1dxi2 +
-                                                                  a_con_2 * da2dxi2
-                end
+
+            # Differentiate covariant metric components with respect to ξ¹
+            dG11dxi1 = zero(eltype(christoffel_symbols))
+            dG12dxi1 = zero(eltype(christoffel_symbols))
+            dG22dxi1 = zero(eltype(christoffel_symbols))
+            for ii in eachnode(basis)
+                dG11dxi1 = dG11dxi1 +
+                           derivative_matrix[i, ii] *
+                           covariant_metric[1, 1, ii, j, element]
+                dG12dxi1 = dG12dxi1 +
+                           derivative_matrix[i, ii] *
+                           covariant_metric[1, 2, ii, j, element]
+                dG12dxi1 = dG22dxi1 +
+                           derivative_matrix[i, ii] *
+                           covariant_metric[2, 2, ii, j, element]
+            end
+
+            # Differentiate covariant metric components with respect to ξ²
+            dG11dxi2 = zero(eltype(christoffel_symbols))
+            dG12dxi2 = zero(eltype(christoffel_symbols))
+            dG22dxi2 = zero(eltype(christoffel_symbols))
+            for jj in eachnode(basis)
+                dG11dxi2 = dG12dxi2 +
+                           derivative_matrix[j, jj] *
+                           covariant_metric[1, 1, i, jj, element]
+                dG12dxi2 = dG12dxi2 +
+                           derivative_matrix[j, jj] *
+                           covariant_metric[1, 2, i, jj, element]
+                dG22dxi2 = dG12dxi2 +
+                           derivative_matrix[j, jj] *
+                           covariant_metric[2, 2, i, jj, element]
+            end
+
+            # Compute Christoffel symbols of the first kind
+            Gamma_1 = SMatrix{2, 2}(0.5f0 * dG11dxi1, 0.5f0 * dG11dxi2,
+                                    0.5f0 * dG11dxi2, dG12dxi2 - 0.5f0 * dG22dxi1)
+            Gamma_2 = SMatrix{2, 2}(dG12dxi1 - 0.5f0 * dG11dxi2, 0.5f0 * dG22dxi1,
+                                    0.5f0 * dG22dxi1, 0.5f0 * dG22dxi2)
+
+            # Raise indices to get Christoffel symbols of the second kind
+            for l in 1:2, m in 1:2
+                christoffel_symbols[l, m, 1, i, j, element] = contravariant_metric[1, 1,
+                                                                                   i, j,
+                                                                                   element] *
+                                                              Gamma_1[l, m] +
+                                                              contravariant_metric[1, 2,
+                                                                                   i, j,
+                                                                                   element] *
+                                                              Gamma_2[l, m]
+                christoffel_symbols[l, m, 2, i, j, element] = contravariant_metric[2, 1,
+                                                                                   i, j,
+                                                                                   element] *
+                                                              Gamma_1[l, m] +
+                                                              contravariant_metric[2, 2,
+                                                                                   i, j,
+                                                                                   element] *
+                                                              Gamma_2[l, m]
             end
         end
     end
