@@ -55,7 +55,7 @@ end
 
 # Directional flux that takes in the normal components in reference space
 @inline function Trixi.flux(u, normal_direction::AbstractVector,
-                            ::CovariantShallowWaterEquations2D,
+                            equations::CovariantShallowWaterEquations2D,
                             elements, i, j, element)
     h, hv_con_1, hv_con_2 = u
 
@@ -83,9 +83,9 @@ end
 end
 
 # Geometric and Coriolis source terms for a rotating sphere
-@inline function source_terms_spherical(u, x, t,
-                                        equations::CovariantShallowWaterEquations2D,
-                                        elements, i, j, element)
+@inline function source_terms_convergence_test(u, x, t,
+                                               equations::CovariantShallowWaterEquations2D,
+                                               elements, i, j, element)
     h, hv_con_1, hv_con_2 = u
 
     # Geometric variables
@@ -114,7 +114,7 @@ end
 
 # Maximum wave speed along the normal direction in reference space
 @inline function Trixi.max_abs_speed_naive(u_ll, u_rr, normal_direction,
-                                           ::CovariantShallowWaterEquations2D,
+                                           equations::CovariantShallowWaterEquations2D,
                                            elements, i, j, element)
     h_ll, hv_con_1_ll, hv_con_2_ll = u_ll
     h_rr, hv_con_1_rr, hv_con_2_rr = u_rr
@@ -134,7 +134,7 @@ end
 end
 
 # Maximum wave speeds with respect to the covariant basis
-@inline function Trixi.max_abs_speeds(u, ::CovariantShallowWaterEquations2D,
+@inline function Trixi.max_abs_speeds(u, equations::CovariantShallowWaterEquations2D,
                                       elements, i, j, element)
     h, hv_con_1, hv_con_2 = u
 
@@ -142,7 +142,7 @@ end
     G_con_22 = elements.contravariant_metric[2, 2, i, j, element]
     v_con_1 = hv_con_1 / h
     v_con_2 = hv_con_2 / h
-    phi = max(h_ll * equations.gravitational_acceleration, 0)
+    phi = max(h * equations.gravitational_acceleration, 0)
     return abs(v_con_1) + sqrt(G_con_11 * phi), abs(v_con_2) + sqrt(G_con_22 * phi)
 end
 end # @muladd

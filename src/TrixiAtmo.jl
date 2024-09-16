@@ -24,7 +24,8 @@ include("meshes/meshes.jl")
 include("solvers/solvers.jl")
 include("semidiscretization/semidiscretization_hyperbolic_2d_manifold_in_3d.jl")
 
-export CompressibleMoistEulerEquations2D, CovariantLinearAdvectionEquation2D
+export CompressibleMoistEulerEquations2D, CovariantLinearAdvectionEquation2D,
+       CovariantShallowWaterEquations2D
 
 export flux_chandrashekar, flux_LMARS
 

@@ -156,9 +156,9 @@ end
     sign = isodd(direction) ? -1 : 1
 
     if orientation == 1
-        return SVector(sign, 0.0f0, 0.0f0)
+        return SVector(sign, 0.0f0)
     else
-        return SVector(0.0f0, sign, 0.0f0)
+        return SVector(0.0f0, sign)
     end
 end
 
@@ -296,12 +296,11 @@ end
 # This function passes the element container and node/element indices into the source term
 function calc_sources!(du, u, t, source_terms,
                        equations::AbstractCovariantEquations{2}, dg::DG, cache)
-    @unpack node_coordinates = cache.elements
-
-    @threaded for element in eachelement(dg, cache)
+    for element in eachelement(dg, cache)
         for j in eachnode(dg), i in eachnode(dg)
             u_local = Trixi.get_node_vars(u, equations, dg, i, j, element)
-            x_local = Trixi.get_node_coords(node_coordinates, equations, dg,
+            x_local = Trixi.get_node_coords(cache.elements.node_coordinates, equations,
+                                            dg,
                                             i, j, element)
             du_local = Trixi.source_terms(u_local, x_local, t, equations,
                                           cache.elements, i, j, element)
