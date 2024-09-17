@@ -280,6 +280,10 @@ end
 #    xₗ(ξ, η, ζ) = ζ * xₗ(ξ, η) with ζ = 1 at the sphere surface.
 # 
 # As a result, the covariant vectors with respect to ζ are xₗ_ζ = xₗ
+#
+# We compute the metric terms in two steps
+# 1. Compute the 3D contravariant vectors, Jaⁱ=J*grad(ξⁱ), using the curl invariant form and xₗ_ζ = xₗ
+# 2. Convert the 3D mapping Jacobian determinant J:=a_k.(a_i x a_j) to 2D J_2D=||a_i x a_j||
 function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArray{<:Any,
                                                                                    5},
                                               element,
@@ -288,6 +292,7 @@ function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArr
                                               metric_terms::MetricTermsCurlInvariant)
     @unpack derivative_matrix = basis
 
+    # 1. Compute the 3D contravariant vectors, Jaⁱₙ=J*grad(ξ), using the curl invariant form and xₗ_ζ = xₗ
     # The general form is
     # Jaⁱₙ = 0.5 * ( ∇ × (Xₘ ∇ Xₗ - Xₗ ∇ Xₘ) )ᵢ  where (n, m, l) cyclic and ∇ = (∂/∂ξ, ∂/∂η, ∂/∂ζ)ᵀ
 
@@ -392,6 +397,14 @@ function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArr
             end
 
             contravariant_vectors[n, 3, i, j, element] -= result
+        end
+    end
+
+    # 2. Convert the 3D mapping Jacobian determinant J:=a_k.(a_i x a_j) to 2D J_2D=||a_i x a_j||
+    for j in eachnode(basis), i in eachnode(basis)
+        factor = 1 / norm(node_coordinates[:, i, j, element]) # = 1 / norm(jacobian_matrix[:, 3, i, j, element])
+        for n in 1:3, m in 1:3
+            contravariant_vectors[m, n, i, j, element] *= factor
         end
     end
 
