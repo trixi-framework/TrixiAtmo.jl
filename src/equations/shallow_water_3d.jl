@@ -6,7 +6,7 @@
 #! format: noindent
 
 @doc raw"""
-    ShallowWaterEquations3D(; gravity, H0 = 0, threshold_limiter = nothing, threshold_wet = nothing)
+    ShallowWaterEquations3D(; gravity, H0 = 0)
 
 Shallow water equations (SWE) in three space dimensions in conservation form (with constant bottom topography). 
 The equations are given by
@@ -28,12 +28,6 @@ The gravitational constant is denoted by `g`.
 The additional quantity ``H_0`` is also available to store a reference value for the total water height that
 is useful to set initial conditions or test the "lake-at-rest" well-balancedness.
 
-Also, there are two thresholds which prevent numerical problems as well as instabilities. Both of them do not
-have to be passed, as default values are defined within the struct. The first one, `threshold_limiter`, is
-used in [`PositivityPreservingLimiterShallowWater`](@ref) on the water height, as a (small) shift on the initial
-condition and cutoff before the next time step. The second one, `threshold_wet`, is applied on the water height to
-define when the flow is "wet" before calculating the numerical flux.
-
 In addition to the unknowns, Trixi.jl currently stores the bottom topography values at the approximation points
 despite being fixed in time. This is done for convenience of computing the bottom topography gradients
 on the fly during the approximation as well as computing auxiliary quantities like the total water height ``H``
@@ -42,7 +36,7 @@ This affects the implementation and use of these equations in various ways:
 * The flux values corresponding to the bottom topography must be zero.
 * The bottom topography values must be included when defining initial conditions, boundary conditions or
   source terms.
-* [`AnalysisCallback`](@ref) analyzes this variable.
+* [`AnalysisCallback`](https://trixi-framework.github.io/Trixi.jl/stable/reference-trixi/#Trixi.AnalysisCallback) analyzes this variable.
 * Trixi.jl's visualization tools will visualize the bottom topography by default.
 
 References for the SWE are many but a good introduction is available in Chapter 13 of the book:
@@ -52,35 +46,17 @@ References for the SWE are many but a good introduction is available in Chapter 
 """
 struct ShallowWaterEquations3D{RealT <: Real} <:
        Trixi.AbstractShallowWaterEquations{3, 5}
-    # TODO: TrixiShallowWater: where should the `threshold_limiter` and `threshold_wet` live?
-    # how to "properly" export these constants across the two packages?
     gravity::RealT # gravitational constant
     H0::RealT      # constant "lake-at-rest" total water height
-    # `threshold_limiter` used in `PositivityPreservingLimiterShallowWater` on water height,
-    # as a (small) shift on the initial condition and cutoff before the next time step.
-    # Default is 500*eps() which in double precision is ≈1e-13.
-    threshold_limiter::RealT
-    # `threshold_wet` applied on water height to define when the flow is "wet"
-    # before calculating the numerical flux.
-    # Default is 5*eps() which in double precision is ≈1e-15.
-    threshold_wet::RealT
 end
 
 # Allow for flexibility to set the gravitational constant within an elixir depending on the
 # application where `gravity_constant=1.0` or `gravity_constant=9.81` are common values.
 # The reference total water height H0 defaults to 0.0 but is used for the "lake-at-rest"
 # well-balancedness test cases.
-# Strict default values for thresholds that performed well in many numerical experiments
-function ShallowWaterEquations3D(; gravity_constant, H0 = zero(gravity_constant),
-                                 threshold_limiter = nothing, threshold_wet = nothing)
+function ShallowWaterEquations3D(; gravity_constant, H0 = zero(gravity_constant))
     T = promote_type(typeof(gravity_constant), typeof(H0))
-    if threshold_limiter === nothing
-        threshold_limiter = 500 * eps(T)
-    end
-    if threshold_wet === nothing
-        threshold_wet = 5 * eps(T)
-    end
-    ShallowWaterEquations3D(gravity_constant, H0, threshold_limiter, threshold_wet)
+    ShallowWaterEquations3D(gravity_constant, H0)
 end
 
 Trixi.have_nonconservative_terms(::ShallowWaterEquations3D) = False() # Deactivate non-conservative terms for the moment...
@@ -142,7 +118,8 @@ end
 
 Total energy conservative (mathematical entropy for shallow water equations) split form.
 When the bottom topography is nonzero this scheme will be well-balanced when used as a `volume_flux`.
-The `surface_flux` should still use, e.g., [`flux_fjordholm_etal`](@ref).
+For the `surface_flux` either [`flux_wintermeyer_etal`](@ref) or [`flux_fjordholm_etal`](@ref) can
+be used to ensure well-balancedness and entropy conservation.
 
 Further details are available in Theorem 1 of the paper:
 - Niklas Wintermeyer, Andrew R. Winters, Gregor J. Gassner and David A. Kopriva (2017)
@@ -180,6 +157,19 @@ Further details are available in Theorem 1 of the paper:
     return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
 end
 
+"""
+    flux_fjordholm_etal(u_ll, u_rr, orientation,
+                        equations::ShallowWaterEquations1D)
+
+Total energy conservative (mathematical entropy for shallow water equations). When the bottom topography
+is nonzero this should only be used as a surface flux otherwise the scheme will not be well-balanced.
+For well-balancedness in the volume flux use [`flux_wintermeyer_etal`](@ref).
+
+Details are available in Eq. (4.1) in the paper:
+- Ulrik S. Fjordholm, Siddhartha Mishr and Eitan Tadmor (2011)
+  Well-balanced and energy stable schemes for the shallow water equations with discontinuous topography
+  [DOI: 10.1016/j.jcp.2011.03.042](https://doi.org/10.1016/j.jcp.2011.03.042)
+"""
 @inline function Trixi.flux_fjordholm_etal(u_ll, u_rr, normal_direction::AbstractVector,
                                            equations::ShallowWaterEquations3D)
     # Unpack left and right state
@@ -364,23 +354,5 @@ end
 # Calculate potential energy for a conservative state `cons`
 @inline function energy_internal(cons, equations::ShallowWaterEquations3D)
     return energy_total(cons, equations) - energy_kinetic(cons, equations)
-end
-
-# Calculate the error for the "lake-at-rest" test case where H = h+b should
-# be a constant value over time. Note, assumes there is a single reference
-# water height `H0` with which to compare.
-#
-# TODO: TrixiShallowWater: where should `threshold_limiter` live? May need
-# to modify or have different versions of the `lake_at_rest_error` function
-@inline function lake_at_rest_error(u, equations::ShallowWaterEquations3D)
-    h, _, _, _, b = u
-
-    # For well-balancedness testing with possible wet/dry regions the reference
-    # water height `H0` accounts for the possibility that the bottom topography
-    # can emerge out of the water as well as for the threshold offset to avoid
-    # division by a "hard" zero water heights as well.
-    H0_wet_dry = max(equations.H0, b + equations.threshold_limiter)
-
-    return abs(H0_wet_dry - (h + b))
 end
 end # @muladd
