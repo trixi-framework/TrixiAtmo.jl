@@ -19,7 +19,7 @@ The equations are given by
     \frac{\partial}{\partial t}(h v_2) + \frac{\partial}{\partial x}(h v_1 v_2)
     + \frac{\partial}{\partial y}\left(h v_2^2 + \frac{g}{2}h^2\right) + \frac{\partial}{\partial z}(h v_2 v_3) &= 0 \\
     \frac{\partial}{\partial t}(h v_3) + \frac{\partial}{\partial x}(h v_1 v_3)
-    + \frac{\partial}{\partial y}(h v_2 v_3) + \frac{\partial}{\partial z}\left(h v_3^2 + \frac{g}{2}h^2) &= 0.
+    + \frac{\partial}{\partial y}(h v_2 v_3) + \frac{\partial}{\partial z}\left(h v_3^2 + \frac{g}{2}h^2\right) &= 0.
 \end{aligned}
 ```
 The unknown quantities of the SWE are the water height ``h`` and the velocities ``\mathbf{v} = (v_1, v_2, v_3)^T``.
@@ -199,31 +199,6 @@ Details are available in Eq. (4.1) in the paper:
     f4 = f1 * v3_avg + p_avg * normal_direction[3]
 
     return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
-end
-
-# Calculate maximum wave speed for local Lax-Friedrichs-type dissipation as the
-# maximum velocity magnitude plus the maximum speed of sound
-@inline function Trixi.max_abs_speed_naive(u_ll, u_rr, orientation::Integer,
-                                           equations::ShallowWaterEquations3D)
-    # Get the velocity quantities in the appropriate direction
-    if orientation == 1
-        v_ll, _, _ = velocity(u_ll, equations)
-        v_rr, _, _ = velocity(u_rr, equations)
-    elseif orientation == 2
-        _, v_ll, _ = velocity(u_ll, equations)
-        _, v_rr, _ = velocity(u_rr, equations)
-    else #if orientation == 3
-        _, _, v_ll = velocity(u_ll, equations)
-        _, _, v_rr = velocity(u_rr, equations)
-    end
-
-    # Calculate the wave celerity on the left and right
-    h_ll = waterheight(u_ll, equations)
-    h_rr = waterheight(u_rr, equations)
-    c_ll = sqrt(equations.gravity * h_ll)
-    c_rr = sqrt(equations.gravity * h_rr)
-
-    return max(abs(v_ll), abs(v_rr)) + max(c_ll, c_rr)
 end
 
 @inline function Trixi.max_abs_speed_naive(u_ll, u_rr, normal_direction::AbstractVector,
