@@ -28,7 +28,7 @@ include("callbacks_step/stepsize_dg2d.jl")
 
 export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D
 
-export flux_chandrashekar, flux_LMARS, flux_wintermeyer_etal, flux_fjordholm_etal
+export flux_chandrashekar, flux_LMARS
 
 export velocity, waterheight, pressure, energy_total, energy_kinetic, energy_internal,
        lake_at_rest_error

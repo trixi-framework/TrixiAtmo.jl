@@ -11,17 +11,17 @@ EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_cubed_sphere_shell_EC_correction.jl"),
                         l2=[
-                            7.25124927e-02,
-                            1.01024488e-01,
-                            4.39466797e-02,
-                            3.08930133e-02,
+                            7.23800458e-02,
+                            9.98871590e-02,
+                            4.55606969e-02,
+                            3.17422064e-02,
                             0.00000000e+00,
                         ],
                         linf=[
-                            1.06007924e+00,
-                            1.05794674e+00,
-                            3.90548004e-01,
-                            2.35864897e-01,
+                            1.05686060e+00,
+                            1.04413842e+00,
+                            3.12374228e-01,
+                            3.19064636e-01,
                             0.00000000e+00,
                         ])
     # Ensure that we do not have excessive memory allocations

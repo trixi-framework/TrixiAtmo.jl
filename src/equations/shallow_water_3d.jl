@@ -180,8 +180,8 @@ Further details are available in Theorem 1 of the paper:
     return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
 end
 
-@inline function flux_fjordholm_etal(u_ll, u_rr, normal_direction::AbstractVector,
-                                     equations::ShallowWaterEquations3D)
+@inline function Trixi.flux_fjordholm_etal(u_ll, u_rr, normal_direction::AbstractVector,
+                                           equations::ShallowWaterEquations3D)
     # Unpack left and right state
     h_ll = waterheight(u_ll, equations)
     v1_ll, v2_ll, v3_ll = velocity(u_ll, equations)

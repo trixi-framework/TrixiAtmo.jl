@@ -10,8 +10,8 @@ equations = ShallowWaterEquations3D(gravity_constant = 9.81)
 
 # Create DG solver with polynomial degree = 3 and Wintemeyer et al.'s flux as surface flux
 polydeg = 3
-volume_flux = flux_wintermeyer_etal # flux_fjordholm_etal 
-surface_flux = flux_wintermeyer_etal # flux_fjordholm_etal #flux_lax_friedrichs
+volume_flux = flux_fjordholm_etal #flux_wintermeyer_etal
+surface_flux = flux_fjordholm_etal #flux_wintermeyer_etal  #flux_lax_friedrichs
 solver = DGSEM(polydeg = polydeg,
                surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
