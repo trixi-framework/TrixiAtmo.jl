@@ -311,6 +311,13 @@ function Trixi.calc_sources!(du, u, t, source_terms,
     return nothing
 end
 
+# Version for no sources
+function Trixi.calc_sources!(du, u, t, source_terms::Nothing,
+                             equations::AbstractCovariantEquations{2}, dg::DG, cache)
+    return nothing
+end
+
+# Calculate time step based on maximum wave speeds for the covariant form
 function Trixi.max_dt(u, t, mesh::P4estMesh{2}, constant_speed::False,
                       equations::AbstractCovariantEquations{2},
                       dg::DG, cache)
