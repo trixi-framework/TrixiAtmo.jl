@@ -46,7 +46,7 @@ function Trixi.init_elements(mesh::Union{P4estMesh{2, 3, RealT},
                                          T8codeMesh{2}},
                              equations::AbstractEquations{3},
                              basis,
-                             metric_terms
+                             metric_terms,
                              ::Type{uEltype}) where {RealT <: Real, uEltype <: Real}
     nelements = Trixi.ncells(mesh)
 
