@@ -156,7 +156,7 @@ end
         rho_vapour  = u[7]
         rho_cloud   = u[8]
         temperature = u[9]
-        #=
+        
         if (rho_vapour < 0.0 && isapprox(rho_vapour, 0.0, atol = 1e-15))
             rho_vapour = 0.0
         end
@@ -164,7 +164,7 @@ end
         if (rho_cloud < 0.0 && isapprox(rho_cloud, 0.0, atol = 1e-15))
             rho_cloud = 0.0
         end
-
+        #=
         if (temperature < 0.0 && isapprox(temperature, 0.0, atol = 1e-15))
             temperature = 0.0
         end
@@ -306,7 +306,7 @@ end
 
     # testing 
     if (temperature < 0.0)
-        display(temp)
+        display(temperature)
         error("temp less than zero")
     end
 
