@@ -382,3 +382,4 @@ function Trixi.calc_error_norms(func, u, t, analyzer, mesh::P4estMesh{2},
     return l2_error, linf_error
 end
 end # @muladd
+

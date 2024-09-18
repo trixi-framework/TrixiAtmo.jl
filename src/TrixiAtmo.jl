@@ -11,6 +11,8 @@ module TrixiAtmo
 using Reexport: @reexport
 using Trixi
 using MuladdMacro: @muladd
+using HDF5: HDF5, h5open, attributes
+using Printf: @sprintf
 using Static: True, False
 using StaticArrayInterface: static_size
 using StrideArrays: StrideArray, StaticInt, PtrArray
@@ -23,6 +25,7 @@ include("equations/equations.jl")
 include("meshes/meshes.jl")
 include("solvers/solvers.jl")
 include("semidiscretization/semidiscretization_hyperbolic_2d_manifold_in_3d.jl")
+include("callbacks_step/callbacks_step.jl")
 
 export CompressibleMoistEulerEquations2D, CovariantLinearAdvectionEquation2D,
        CovariantShallowWaterEquations2D
