@@ -179,7 +179,7 @@ function Trixi.init_elements!(elements, mesh::P4estMesh{2, 3},
                   mesh.tree_node_coordinates[2, 1, 1, 1]^2 +
                   mesh.tree_node_coordinates[3, 1, 1, 1]^2)
 
-    for element in 1:Trixi.ncells(mesh)
+    Trixi.@threaded for element in 1:Trixi.ncells(mesh)
 
         # For now, we will only use the corner nodes from the P4estMesh, and construct the
         # mapping and its associated metric terms analytically without any polynomial 
@@ -238,7 +238,7 @@ function calc_christoffel_symbols!(christoffel_symbols, covariant_metric,
                                    basis::LobattoLegendreBasis)
     (; derivative_matrix) = basis
 
-    for element in 1:Trixi.ncells(mesh)
+    Trixi.@threaded for element in 1:Trixi.ncells(mesh)
         for j in eachnode(basis), i in eachnode(basis)
 
             # Differentiate covariant metric components with respect to ξ¹

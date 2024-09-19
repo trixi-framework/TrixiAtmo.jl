@@ -175,7 +175,7 @@ function Trixi.calc_interface_flux!(surface_flux_values,
     index_range = eachnode(dg)
     index_end = last(index_range)
 
-    for interface in Trixi.eachinterface(dg, cache)
+    Trixi.@threaded for interface in Trixi.eachinterface(dg, cache)
 
         # Get element and side index information on the primary element
         primary_element = neighbor_ids[1, interface]
@@ -296,7 +296,7 @@ end
 # This function passes the element container and node/element indices into the source term
 function Trixi.calc_sources!(du, u, t, source_terms,
                              equations::AbstractCovariantEquations{2}, dg::DG, cache)
-    for element in eachelement(dg, cache)
+    Trixi.@threaded for element in eachelement(dg, cache)
         for j in eachnode(dg), i in eachnode(dg)
             u_local = Trixi.get_node_vars(u, equations, dg, i, j, element)
             x_local = Trixi.get_node_coords(cache.elements.node_coordinates, equations,
@@ -382,4 +382,3 @@ function Trixi.calc_error_norms(func, u, t, analyzer, mesh::P4estMesh{2},
     return l2_error, linf_error
 end
 end # @muladd
-

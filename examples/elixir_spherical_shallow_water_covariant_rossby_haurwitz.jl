@@ -5,9 +5,45 @@
 using OrdinaryDiffEq, Trixi, TrixiAtmo
 
 ###############################################################################
+# Problem definition
+
+function initial_condition_rossby_haurwitz(x, t,
+                                           equations::CovariantShallowWaterEquations2D)
+    (; gravitational_acceleration, rotation_rate) = equations
+
+    radius = sqrt(x[1]^2 + x[2]^2 + x[3]^2)
+    lon = atan(x[2], x[1])
+    lat = asin(x[3] / radius)
+
+    h_0 = 8.0f3
+    K = 7.848f-6
+    R = 4.0f0
+
+    A = 0.5f0 * K * (2 * rotation_rate + K) * (cos(lat))^2 +
+        0.25f0 * K^2 * (cos(lat))^(2 * R) *
+        ((R + 1) * (cos(lat))^2 +
+         (2 * R^2 - R - 2) - 2 * R^2 / ((cos(lat))^2))
+    B = 2 * (rotation_rate + K) * K / ((R + 1) * (R + 2)) * (cos(lat))^R *
+        ((R^2 + 2R + 2) - (R + 1)^2 * (cos(lat))^2)
+    C = 0.25f0 * K^2 * (cos(lat))^(2 * R) * ((R + 1) * (cos(lat))^2 - (R + 2))
+
+    h = h_0 +
+        (1 / gravitational_acceleration) *
+        (radius^2 * A + radius^2 * B * cos(R * lon) + radius^2 * C * cos(2 * R * lon))
+
+    v_lon = radius * K * cos(lat) +
+            radius * K * (cos(lat))^(R - 1) * (R * (sin(lat))^2 - (cos(lat))^2) *
+            cos(R * lon)
+    v_lat = -radius * K * R * (cos(lat))^(R - 1) * sin(lat) * sin(R * lon)
+
+    # convert to conservative variables
+    return SVector(h, h * v_lon, h * v_lat)
+end
+
+###############################################################################
 # Spatial discretization
 
-polydeg = 3
+polydeg = 5
 cells_per_dimension = 5
 element_local_mapping = true
 
@@ -18,7 +54,7 @@ mesh = P4estMeshCubedSphere2D(cells_per_dimension, EARTH_RADIUS, polydeg = polyd
 equations = CovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION,
                                              EARTH_ROTATION_RATE)
 
-initial_condition = initial_condition_convergence_test
+initial_condition = initial_condition_rossby_haurwitz
 source_terms = source_terms_convergence_test
 tspan = (0.0, 7 * SECONDS_PER_DAY)
 
@@ -63,8 +99,9 @@ callbacks = CallbackSet(summary_callback, analysis_callback, save_solution,
 # run the simulation
 
 # OrdinaryDiffEq's `solve` method evolves the solution in time and executes the passed callbacks
+tsave = LinRange(tspan..., 100)
 sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
-            dt = 100.0, save_everystep = false, callback = callbacks);
+            dt = 100.0, save_everystep = false, saveat = tsave, callback = callbacks);
 
 # Print the timer summary
 summary_callback()

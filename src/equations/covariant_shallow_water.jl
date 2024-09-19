@@ -135,4 +135,24 @@ end
     phi = max(h * equations.gravitational_acceleration, 0)
     return abs(v_con_1) + sqrt(G_con_11 * phi), abs(v_con_2) + sqrt(G_con_22 * phi)
 end
+
+# Steady geostrophically balanzed zonal flow
+function Trixi.initial_condition_convergence_test(x, t,
+                                                  equations::CovariantShallowWaterEquations2D)
+    (; gravitational_acceleration, rotation_rate) = equations
+
+    radius = sqrt(x[1]^2 + x[2]^2 + x[3]^2)
+    lat = asin(x[3] / radius)
+
+    # compute zonal and meridional components of the velocity
+    V = convert(eltype(x), 2π) * radius / (12 * SECONDS_PER_DAY)
+    v_lon, v_lat = V * cos(lat), zero(eltype(x))
+
+    # compute geopotential height 
+    h = 1 / gravitational_acceleration *
+        (2.94f4 - (radius * rotation_rate * V + 0.5f0 * V^2) * (sin(lat))^2)
+
+    # convert to conservative variables
+    return SVector(h, h * v_lon, h * v_lat)
+end
 end # @muladd
