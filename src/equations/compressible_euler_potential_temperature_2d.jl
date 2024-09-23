@@ -22,15 +22,19 @@ function CompressibleEulerPotentialTemperatureEquations2D(; g = 9.81, RealT = Fl
     R = c_p - c_v
     gamma = c_p / c_v
     a = 340.0
-    return CompressibleEulerPotentialTemperatureEquations2D{RealT}(p_0, c_p, c_v, g, R, gamma, a)
+    return CompressibleEulerPotentialTemperatureEquations2D{RealT}(p_0, c_p, c_v, g, R,
+                                                                   gamma, a)
 end
 
-function varnames(::typeof(cons2cons), ::CompressibleEulerPotentialTemperatureEquations2D)
+function varnames(::typeof(cons2cons),
+                  ::CompressibleEulerPotentialTemperatureEquations2D)
     ("rho", "rho_v1", "rho_v2", "rho_theta")
 end
 
-varnames(::typeof(cons2prim), ::CompressibleEulerPotentialTemperatureEquations2D) = ("rho", "v1",
-                                                                          "v2", "p1")
+varnames(::typeof(cons2prim), ::CompressibleEulerPotentialTemperatureEquations2D) = ("rho",
+                                                                                     "v1",
+                                                                                     "v2",
+                                                                                     "p1")
 
 # Calculate 1D flux for a single point in the normal direction.
 # Note, this directional vector is not normalized.
@@ -133,7 +137,7 @@ end
 end
 
 @inline function source_terms_gravity(u, x, t,
-                                     equations::CompressibleEulerPotentialTemperatureEquations2D)
+                                      equations::CompressibleEulerPotentialTemperatureEquations2D)
     rho, _, _, _ = u
     return SVector(zero(eltype(u)), zero(eltype(u)), -equations.g * rho,
                    zero(eltype(u)))
@@ -224,7 +228,8 @@ end
     return SVector(f1, f2, f3, f4)
 end
 
-@inline function prim2cons(prim, equations::CompressibleEulerPotentialTemperatureEquations2D)
+@inline function prim2cons(prim,
+                           equations::CompressibleEulerPotentialTemperatureEquations2D)
     rho, v1, v2, p = prim
     rho_v1 = rho * v1
     rho_v2 = rho * v2
@@ -232,7 +237,8 @@ end
     return SVector(rho, rho_v1, rho_v2, rho_theta)
 end
 
-@inline function cons2prim(u, equations::CompressibleEulerPotentialTemperatureEquations2D)
+@inline function cons2prim(u,
+                           equations::CompressibleEulerPotentialTemperatureEquations2D)
     rho, rho_v1, rho_v2, rho_theta = u
     v1 = rho_v1 / rho
     v2 = rho_v2 / rho
@@ -241,11 +247,13 @@ end
     return SVector(rho, v1, v2, p)
 end
 
-@inline function cons2cons(u, equations::CompressibleEulerPotentialTemperatureEquations2D)
+@inline function cons2cons(u,
+                           equations::CompressibleEulerPotentialTemperatureEquations2D)
     return u
 end
 
-@inline function cons2entropy(u, equations::CompressibleEulerPotentialTemperatureEquations2D)
+@inline function cons2entropy(u,
+                              equations::CompressibleEulerPotentialTemperatureEquations2D)
     rho, rho_v1, rho_v2, rho_theta = u
 
     k = equations.p_0 * (equations.R / equations.p_0)^equations.gamma
@@ -257,7 +265,8 @@ end
     return SVector(w1, w2, w3, w4)
 end
 
-@inline function entropy_math(cons, equations::CompressibleEulerPotentialTemperatureEquations2D)
+@inline function entropy_math(cons,
+                              equations::CompressibleEulerPotentialTemperatureEquations2D)
     # Mathematical entropy
     p = equations.p_0 * (equations.R * cons[4] / equations.p_0)^equations.gamma
 
@@ -267,19 +276,23 @@ end
 end
 
 # Default entropy is the mathematical entropy
-@inline function entropy(cons, equations::CompressibleEulerPotentialTemperatureEquations2D)
+@inline function entropy(cons,
+                         equations::CompressibleEulerPotentialTemperatureEquations2D)
     entropy_math(cons, equations)
 end
 
-@inline function energy_total(cons, equations::CompressibleEulerPotentialTemperatureEquations2D)
+@inline function energy_total(cons,
+                              equations::CompressibleEulerPotentialTemperatureEquations2D)
     entropy(cons, equations)
 end
 
-@inline function energy_kinetic(cons, equations::CompressibleEulerPotentialTemperatureEquations2D)
+@inline function energy_kinetic(cons,
+                                equations::CompressibleEulerPotentialTemperatureEquations2D)
     return 0.5 * (cons[2]^2 + cons[3]^2) / (cons[1])
 end
 
-@inline function max_abs_speeds(u, equations::CompressibleEulerPotentialTemperatureEquations2D)
+@inline function max_abs_speeds(u,
+                                equations::CompressibleEulerPotentialTemperatureEquations2D)
     rho, v1, v2, p = cons2prim(u, equations)
     c = sqrt(equations.gamma * p / rho)
 

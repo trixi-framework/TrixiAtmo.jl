@@ -1,8 +1,7 @@
 using OrdinaryDiffEq
 using Trixi
 using TrixiAtmo
-using TrixiAtmo: flux_LMARS, source_terms_bubble, flux_theta
-using Plots
+using TrixiAtmo: flux_LMARS, source_terms_gravity, flux_theta
 
 function initial_condition_warm_bubble(x, t,
                                        equations::CompressibleEulerPotentialTemperatureEquations2D)

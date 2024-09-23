@@ -1,0 +1,37 @@
+module TestExamples2DEulerPotentialTemperature
+
+using Test
+using TrixiAtmo
+
+include("test_trixiatmo.jl") # TODO - This is a repetition from Trixi.jl
+
+EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples") # TODO - Do we need a subdirectory for examples?
+
+@trixiatmo_testset "elixir_euler_potential_temperature_dry_bubble" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_euler_potential_temperature_dry_bubble.jl"),
+                        l2=[
+                            1.300427456987984e-6,
+                            2.6010873806861595e-5,
+                            0.0006660120005093007,
+                            9.51074191163579e-6,
+                        ],
+                        linf=[
+                            1.031131432183141e-5,
+                            0.00020623855042956052,
+                            0.006392070867001616,
+                            7.841424786647622e-5,
+                        ],
+                        polydeg=3,
+                        tspan=(0.0, 0.1))
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    let
+        t = sol.t[end]
+        u_ode = sol.u[end]
+        du_ode = similar(u_ode)
+        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
+    end
+end
+
+end # module
