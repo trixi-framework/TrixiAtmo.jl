@@ -23,7 +23,6 @@ struct CompressibleMoistEulerEquations2D{RealT <: Real} <:
     kappa::RealT # ratio of the gas constant R_d
     gamma::RealT # = inv(kappa- 1); can be used to write slow divisions as fast multiplications
     L_00::RealT # latent heat of evaporation  at 0 K
-    a::RealT
 end
 
 function CompressibleMoistEulerEquations2D(; g = 9.81, RealT = Float64)
@@ -452,9 +451,11 @@ end
 # Lin, A Control-Volume Model of the Compressible Euler Equations with a Vertical Lagrangian
 # Coordinate Monthly Weather Review Vol. 141.7, pages 2526–2544, 2013,
 # https://journals.ametsoc.org/view/journals/mwre/141/7/mwr-d-12-00129.1.xml.
-@inline function flux_LMARS(u_ll, u_rr, normal_direction::AbstractVector,
+
+@inline function (flux_lmars::flux_LMARS)(u_ll, u_rr, normal_direction::AbstractVector,
                             equations::CompressibleMoistEulerEquations2D)
-    @unpack a = equations
+    
+    a = flux_lmars.speed_of_sound
     # Unpack left and right state
     rho_ll, rho_v1_ll, rho_v2_ll, rho_e_ll, rho_qv_ll, rho_ql_ll = u_ll
     rho_rr, rho_v1_rr, rho_v2_rr, rho_e_rr, rho_qv_rr, rho_ql_rr = u_rr

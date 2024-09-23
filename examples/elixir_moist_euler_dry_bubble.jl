@@ -61,7 +61,7 @@ source_term = source_terms_geopotential
 polydeg = 4
 basis = LobattoLegendreBasis(polydeg)
 
-surface_flux = flux_LMARS
+surface_flux = flux_LMARS(340.0)
 volume_flux = flux_chandrashekar
 
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)

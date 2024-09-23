@@ -12,7 +12,6 @@ struct CompressibleEulerPotentialTemperatureEquations2D{RealT <: Real} <:
     g::RealT
     R::RealT
     gamma::RealT
-    a::RealT
 end
 
 function CompressibleEulerPotentialTemperatureEquations2D(; g = 9.81, RealT = Float64)
@@ -21,9 +20,8 @@ function CompressibleEulerPotentialTemperatureEquations2D(; g = 9.81, RealT = Fl
     c_v = 717.0
     R = c_p - c_v
     gamma = c_p / c_v
-    a = 340.0
     return CompressibleEulerPotentialTemperatureEquations2D{RealT}(p_0, c_p, c_v, g, R,
-                                                                   gamma, a)
+                                                                   gamma)
 end
 
 function varnames(::typeof(cons2cons),
@@ -99,13 +97,13 @@ end
     if v_normal <= 0.0
         sound_speed = sqrt(gamma * p_local / rho_local) # local sound speed
         p_star = p_local *
-                 (1.0 + 0.5 * (gamma - 1) * v_normal / sound_speed)^(2.0 * gamma *
+                 (1.0 + 0.5f0 * (gamma - 1) * v_normal / sound_speed)^(2.0 * gamma *
                                                                      inv(gamma - 1))
     else # v_normal > 0.0
         A = 2.0 / ((gamma + 1) * rho_local)
         B = p_local * (gamma - 1) / (gamma + 1)
         p_star = p_local +
-                 0.5 * v_normal / A *
+                 0.5f0 * v_normal / A *
                  (v_normal + sqrt(v_normal^2 + 4.0 * A * (p_local + B)))
     end
 
@@ -169,9 +167,11 @@ end
 # Lin, A Control-Volume Model of the Compressible Euler Equations with a Vertical Lagrangian
 # Coordinate Monthly Weather Review Vol. 141.7, pages 2526–2544, 2013,
 # https://journals.ametsoc.org/view/journals/mwre/141/7/mwr-d-12-00129.1.xml.
-@inline function flux_LMARS(u_ll, u_rr, normal_direction::AbstractVector,
+
+
+@inline function (flux_lmars::flux_LMARS)(u_ll, u_rr, normal_direction::AbstractVector,
                             equations::CompressibleEulerPotentialTemperatureEquations2D)
-    @unpack a = equations
+    a = flux_lmars.speed_of_sound
     # Unpack left and right state
     rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
     rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
@@ -179,13 +179,12 @@ end
     v_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2]
     v_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2]
 
-    # Compute the necessary interface flux components
     norm_ = norm(normal_direction)
 
-    rho = 0.5 * (rho_ll + rho_rr)
+    rho = 0.5f0 * (rho_ll + rho_rr)
 
-    p_interface = 0.5 * (p_ll + p_rr) - 0.5 * a * rho * (v_rr - v_ll) / norm_
-    v_interface = 0.5 * (v_ll + v_rr) - 1 / (2 * a * rho) * (p_rr - p_ll) * norm_
+    p_interface = 0.5f0 * (p_ll + p_rr) - 0.5f0 * a * rho * (v_rr - v_ll) / norm_
+    v_interface = 0.5f0 * (v_ll + v_rr) - 1 / (2 * a * rho) * (p_rr - p_ll) * norm_
 
     if (v_interface > 0)
         f1, f2, f3, f4 = u_ll * v_interface
@@ -200,6 +199,7 @@ end
 end
 
 ## Entropy (total energy) conservative flux for the Compressible Euler with the Potential Formulation
+
 @inline function flux_theta(u_ll, u_rr, normal_direction::AbstractVector,
                             equations::CompressibleEulerPotentialTemperatureEquations2D)
     # Unpack left and right state
@@ -211,20 +211,18 @@ end
     _, _, _, rho_theta_rr = u_rr
     # Compute the necessary mean values
     rho_mean = ln_mean(rho_ll, rho_rr)
+
     gammamean = stolarsky_mean(rho_theta_ll, rho_theta_rr, equations.gamma)
-    # Algebraically equivalent to `inv_ln_mean(rho_ll / p_ll, rho_rr / p_rr)`
-    # in exact arithmetic since
-    #     log((ϱₗ/pₗ) / (ϱᵣ/pᵣ)) / (ϱₗ/pₗ - ϱᵣ/pᵣ)
-    #   = pₗ pᵣ log((ϱₗ pᵣ) / (ϱᵣ pₗ)) / (ϱₗ pᵣ - ϱᵣ pₗ)
-    v1_avg = 0.5 * (v1_ll + v1_rr)
-    v2_avg = 0.5 * (v2_ll + v2_rr)
-    p_avg = 0.5 * (p_ll + p_rr)
+
+    v1_avg = 0.5f0 * (v1_ll + v1_rr)
+    v2_avg = 0.5f0 * (v2_ll + v2_rr)
+    p_avg = 0.5f0 * (p_ll + p_rr)
 
     # Calculate fluxes depending on normal_direction
-    f1 = rho_mean * 0.5 * (v_dot_n_ll + v_dot_n_rr)
+    f1 = rho_mean * 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
     f2 = f1 * v1_avg + p_avg * normal_direction[1]
     f3 = f1 * v2_avg + p_avg * normal_direction[2]
-    f4 = gammamean * 0.5 * (v_dot_n_ll + v_dot_n_rr)
+    f4 = gammamean * 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
     return SVector(f1, f2, f3, f4)
 end
 
@@ -257,7 +255,7 @@ end
     rho, rho_v1, rho_v2, rho_theta = u
 
     k = equations.p_0 * (equations.R / equations.p_0)^equations.gamma
-    w1 = -0.5 * rho_v1^2 / (rho)^2 - 0.5 * rho_v2^2 / (rho)^2
+    w1 = -0.5f0 * rho_v1^2 / (rho)^2 - 0.5f0 * rho_v2^2 / (rho)^2
     w2 = rho_v1 / rho
     w3 = rho_v2 / rho
     w4 = equations.gamma / (equations.gamma - 1) * k * (rho_theta)^(equations.gamma - 1)
@@ -288,7 +286,7 @@ end
 
 @inline function energy_kinetic(cons,
                                 equations::CompressibleEulerPotentialTemperatureEquations2D)
-    return 0.5 * (cons[2]^2 + cons[3]^2) / (cons[1])
+    return 0.5f0 * (cons[2]^2 + cons[3]^2) / (cons[1])
 end
 
 @inline function max_abs_speeds(u,
