@@ -453,8 +453,7 @@ end
 # https://journals.ametsoc.org/view/journals/mwre/141/7/mwr-d-12-00129.1.xml.
 
 @inline function (flux_lmars::flux_LMARS)(u_ll, u_rr, normal_direction::AbstractVector,
-                            equations::CompressibleMoistEulerEquations2D)
-    
+                                          equations::CompressibleMoistEulerEquations2D)
     a = flux_lmars.speed_of_sound
     # Unpack left and right state
     rho_ll, rho_v1_ll, rho_v2_ll, rho_e_ll, rho_qv_ll, rho_ql_ll = u_ll

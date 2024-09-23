@@ -98,7 +98,7 @@ end
         sound_speed = sqrt(gamma * p_local / rho_local) # local sound speed
         p_star = p_local *
                  (1.0 + 0.5f0 * (gamma - 1) * v_normal / sound_speed)^(2.0 * gamma *
-                                                                     inv(gamma - 1))
+                                                                       inv(gamma - 1))
     else # v_normal > 0.0
         A = 2.0 / ((gamma + 1) * rho_local)
         B = p_local * (gamma - 1) / (gamma + 1)
@@ -168,9 +168,8 @@ end
 # Coordinate Monthly Weather Review Vol. 141.7, pages 2526–2544, 2013,
 # https://journals.ametsoc.org/view/journals/mwre/141/7/mwr-d-12-00129.1.xml.
 
-
 @inline function (flux_lmars::flux_LMARS)(u_ll, u_rr, normal_direction::AbstractVector,
-                            equations::CompressibleEulerPotentialTemperatureEquations2D)
+                                          equations::CompressibleEulerPotentialTemperatureEquations2D)
     a = flux_lmars.speed_of_sound
     # Unpack left and right state
     rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
