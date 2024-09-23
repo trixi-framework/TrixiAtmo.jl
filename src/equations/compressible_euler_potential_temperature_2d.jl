@@ -4,8 +4,8 @@ import Trixi: varnames, cons2cons, cons2prim, cons2entropy, entropy
 
 @muladd begin
 #! format: noindent
-struct CompressiblePotentialEulerEquations2D{RealT <: Real} <:
-       AbstractCompressiblePotentialEulerEquations{2, 4}
+struct CompressibleEulerPotentialTemperatureEquations2D{RealT <: Real} <:
+       AbstractCompressibleEulerPotentialTemperatureEquations{2, 4}
     p_0::RealT
     c_p::RealT
     c_v::RealT
@@ -15,27 +15,27 @@ struct CompressiblePotentialEulerEquations2D{RealT <: Real} <:
     a::RealT
 end
 
-function CompressiblePotentialEulerEquations2D(; g = 9.81, RealT = Float64)
+function CompressibleEulerPotentialTemperatureEquations2D(; g = 9.81, RealT = Float64)
     p_0 = 100_000.0
     c_p = 1004.0
     c_v = 717.0
     R = c_p - c_v
     gamma = c_p / c_v
     a = 340.0
-    return CompressiblePotentialEulerEquations2D{RealT}(p_0, c_p, c_v, g, R, gamma, a)
+    return CompressibleEulerPotentialTemperatureEquations2D{RealT}(p_0, c_p, c_v, g, R, gamma, a)
 end
 
-function varnames(::typeof(cons2cons), ::CompressiblePotentialEulerEquations2D)
+function varnames(::typeof(cons2cons), ::CompressibleEulerPotentialTemperatureEquations2D)
     ("rho", "rho_v1", "rho_v2", "rho_theta")
 end
 
-varnames(::typeof(cons2prim), ::CompressiblePotentialEulerEquations2D) = ("rho", "v1",
+varnames(::typeof(cons2prim), ::CompressibleEulerPotentialTemperatureEquations2D) = ("rho", "v1",
                                                                           "v2", "p1")
 
 # Calculate 1D flux for a single point in the normal direction.
 # Note, this directional vector is not normalized.
 @inline function flux(u, normal_direction::AbstractVector,
-                      equations::CompressiblePotentialEulerEquations2D)
+                      equations::CompressibleEulerPotentialTemperatureEquations2D)
     rho, rho_v1, rho_v2, rho_theta = u
     v1 = rho_v1 / rho
     v2 = rho_v2 / rho
@@ -49,7 +49,7 @@ varnames(::typeof(cons2prim), ::CompressiblePotentialEulerEquations2D) = ("rho",
 end
 
 @inline function flux(u, orientation::Integer,
-                      equations::CompressiblePotentialEulerEquations2D)
+                      equations::CompressibleEulerPotentialTemperatureEquations2D)
     rho, rho_v1, rho_v2, rho_theta = u
     v1 = rho_v1 / rho
     v2 = rho_v2 / rho
@@ -76,7 +76,7 @@ end
 @inline function boundary_condition_slip_wall(u_inner, normal_direction::AbstractVector,
                                               x, t,
                                               surface_flux_function,
-                                              equations::CompressiblePotentialEulerEquations2D)
+                                              equations::CompressibleEulerPotentialTemperatureEquations2D)
     @unpack gamma = equations
     norm_ = norm(normal_direction)
     # Normalize the vector without using `normalize` since we need to multiply by the `norm_` later
@@ -116,7 +116,7 @@ end
 @inline function boundary_condition_slip_wall(u_inner, normal_direction::AbstractVector,
                                               direction, x, t,
                                               surface_flux_function,
-                                              equations::CompressiblePotentialEulerEquations2D)
+                                              equations::CompressibleEulerPotentialTemperatureEquations2D)
     # flip sign of normal to make it outward pointing, then flip the sign of the normal flux back
     # to be inward pointing on the -x and -y sides due to the orientation convention used by StructuredMesh
     if isodd(direction)
@@ -133,7 +133,7 @@ end
 end
 
 @inline function source_terms_bubble(u, x, t,
-                                     equations::CompressiblePotentialEulerEquations2D)
+                                     equations::CompressibleEulerPotentialTemperatureEquations2D)
     rho, _, _, _ = u
     return SVector(zero(eltype(u)), zero(eltype(u)), -equations.g * rho,
                    zero(eltype(u)))
@@ -141,7 +141,7 @@ end
 
 # Rotate momentum flux. The same as in compressible Euler.
 @inline function rotate_to_x(u, normal_vector::AbstractVector,
-                             equations::CompressiblePotentialEulerEquations2D)
+                             equations::CompressibleEulerPotentialTemperatureEquations2D)
     # cos and sin of the angle between the x-axis and the normalized normal_vector are
     # the normalized vector's x and y coordinates respectively (see unit circle).
     c = normal_vector[1]
@@ -166,7 +166,7 @@ end
 # Coordinate Monthly Weather Review Vol. 141.7, pages 2526–2544, 2013,
 # https://journals.ametsoc.org/view/journals/mwre/141/7/mwr-d-12-00129.1.xml.
 @inline function flux_LMARS(u_ll, u_rr, normal_direction::AbstractVector,
-                            equations::CompressiblePotentialEulerEquations2D)
+                            equations::CompressibleEulerPotentialTemperatureEquations2D)
     @unpack a = equations
     # Unpack left and right state
     rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
@@ -197,7 +197,7 @@ end
 
 ## Entropy (total energy) conservative flux for the Compressible Euler with the Potential Formulation
 @inline function flux_theta(u_ll, u_rr, normal_direction::AbstractVector,
-                            equations::CompressiblePotentialEulerEquations2D)
+                            equations::CompressibleEulerPotentialTemperatureEquations2D)
     # Unpack left and right state
     rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
     rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
@@ -224,7 +224,7 @@ end
     return SVector(f1, f2, f3, f4)
 end
 
-@inline function prim2cons(prim, equations::CompressiblePotentialEulerEquations2D)
+@inline function prim2cons(prim, equations::CompressibleEulerPotentialTemperatureEquations2D)
     rho, v1, v2, p = prim
     rho_v1 = rho * v1
     rho_v2 = rho * v2
@@ -232,7 +232,7 @@ end
     return SVector(rho, rho_v1, rho_v2, rho_theta)
 end
 
-@inline function cons2prim(u, equations::CompressiblePotentialEulerEquations2D)
+@inline function cons2prim(u, equations::CompressibleEulerPotentialTemperatureEquations2D)
     rho, rho_v1, rho_v2, rho_theta = u
     v1 = rho_v1 / rho
     v2 = rho_v2 / rho
@@ -241,11 +241,11 @@ end
     return SVector(rho, v1, v2, p)
 end
 
-@inline function cons2cons(u, equations::CompressiblePotentialEulerEquations2D)
+@inline function cons2cons(u, equations::CompressibleEulerPotentialTemperatureEquations2D)
     return u
 end
 
-@inline function cons2entropy(u, equations::CompressiblePotentialEulerEquations2D)
+@inline function cons2entropy(u, equations::CompressibleEulerPotentialTemperatureEquations2D)
     rho, rho_v1, rho_v2, rho_theta = u
 
     k = equations.p_0 * (equations.R / equations.p_0)^equations.gamma
@@ -257,7 +257,7 @@ end
     return SVector(w1, w2, w3, w4)
 end
 
-@inline function entropy_math(cons, equations::CompressiblePotentialEulerEquations2D)
+@inline function entropy_math(cons, equations::CompressibleEulerPotentialTemperatureEquations2D)
     # Mathematical entropy
     p = equations.p_0 * (equations.R * cons[4] / equations.p_0)^equations.gamma
 
@@ -267,19 +267,19 @@ end
 end
 
 # Default entropy is the mathematical entropy
-@inline function entropy(cons, equations::CompressiblePotentialEulerEquations2D)
+@inline function entropy(cons, equations::CompressibleEulerPotentialTemperatureEquations2D)
     entropy_math(cons, equations)
 end
 
-@inline function energy_total(cons, equations::CompressiblePotentialEulerEquations2D)
+@inline function energy_total(cons, equations::CompressibleEulerPotentialTemperatureEquations2D)
     entropy(cons, equations)
 end
 
-@inline function energy_kinetic(cons, equations::CompressiblePotentialEulerEquations2D)
+@inline function energy_kinetic(cons, equations::CompressibleEulerPotentialTemperatureEquations2D)
     return 0.5 * (cons[2]^2 + cons[3]^2) / (cons[1])
 end
 
-@inline function max_abs_speeds(u, equations::CompressiblePotentialEulerEquations2D)
+@inline function max_abs_speeds(u, equations::CompressibleEulerPotentialTemperatureEquations2D)
     rho, v1, v2, p = cons2prim(u, equations)
     c = sqrt(equations.gamma * p / rho)
 

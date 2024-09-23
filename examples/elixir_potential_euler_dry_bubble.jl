@@ -5,7 +5,7 @@ using TrixiAtmo: flux_LMARS, source_terms_bubble, flux_theta
 using Plots
 
 function initial_condition_warm_bubble(x, t,
-                                       equations::CompressiblePotentialEulerEquations2D)
+                                       equations::CompressibleEulerPotentialTemperatureEquations2D)
     g = equations.g
     c_p = equations.c_p
     c_v = equations.c_v
@@ -45,7 +45,7 @@ end
 ###############################################################################
 # semidiscretization of the compressible Euler equations
 
-equations = CompressiblePotentialEulerEquations2D()
+equations = CompressibleEulerPotentialTemperatureEquations2D()
 
 boundary_conditions = (x_neg = boundary_condition_periodic,
                        x_pos = boundary_condition_periodic,
@@ -65,7 +65,7 @@ solver = DGSEM(basis, surface_flux, volume_integral)
 coordinates_min = (0.0, 0.0)
 coordinates_max = (20_000.0, 10_000.0)
 
-cells_per_dimension = (32, 16)
+cells_per_dimension = (64, 32)
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = (true, false))
 initial_condition = initial_condition_warm_bubble

@@ -24,7 +24,7 @@ include("solvers/solvers.jl")
 include("semidiscretization/semidiscretization_hyperbolic_2d_manifold_in_3d.jl")
 
 export CompressibleMoistEulerEquations2D
-export CompressiblePotentialEulerEquations2D
+export CompressibleEulerPotentialTemperatureEquations2D
 
 export flux_chandrashekar, flux_LMARS, flux_theta
 

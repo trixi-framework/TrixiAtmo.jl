@@ -5,4 +5,4 @@ abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:
 abstract type AbstractCompressiblePotentialEulerEquations{NDIMS, NVARS} <:
               AbstractEquations{NDIMS, NVARS} end
 include("compressible_moist_euler_2d_lucas.jl")
-include("compressible_potential_euler_2d.jl")
+include("compressible_euler_potential_temperature_2d.jl")
