@@ -1,7 +1,7 @@
 using OrdinaryDiffEq
 using Trixi
 using TrixiAtmo
-using TrixiAtmo: flux_theta, prim2cons
+using TrixiAtmo: flux_theta
 ###############################################################################
 # semidiscretization of the compressible Euler equations
 equations = CompressibleEulerPotentialTemperatureEquations2D()
@@ -24,7 +24,7 @@ function initial_condition_weak_blast_wave(x, t,
     v2 = r > 0.5f0 ? zero(RealT) : convert(RealT, 0.1882) * sin_phi
     p = r > 0.5f0 ? one(RealT) : convert(RealT, 1.245)
 
-    return prim2cons(SVector(rho, v1, v2, p), equations)
+    return TrixiAtmo.prim2cons(SVector(rho, v1, v2, p), equations)
 end
 
 initial_condition = initial_condition_weak_blast_wave
