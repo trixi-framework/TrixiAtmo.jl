@@ -6,8 +6,9 @@ using Trixi: wrap_array, AbstractSemidiscretization, TimerOutputs, @trixi_timeit
  
 struct NonlinearSolveDG
     residual
-    tolerance             ::Real
+    jacobian
     variables_index_vector::Vector{Int}
+    tolerance             ::Real
 end
 
 
@@ -15,8 +16,8 @@ function (limiter!::NonlinearSolveDG)(u_ode, integrator, semi::AbstractSemidiscr
     u = wrap_array(u_ode, semi)
     
     @trixi_timeit timer() "nonlinear system solver" begin
-        nonlinear_solve_dg_2d!(u, limiter!.residual, limiter!.tolerance, limiter!.variables_index_vector,
-                               semi.equations, semi.solver, semi.cache)
+        nonlinear_solve_dg_2d!(u, limiter!.residual, limiter!.jacobian, limiter!.variables_index_vector,
+                               limiter!.tolerance, semi.equations, semi.solver, semi.cache)
     end
 end
 

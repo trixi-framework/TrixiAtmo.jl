@@ -139,14 +139,12 @@ end
     energy = energy_density(u, equations)
 
     # recover temperature explicitly from energy when other variables are zero
-    # energy density definition without ref_temp for dry case
     if (rho_moist == 0.0 && rho_rain == 0.0)
-        #error("wrong system")
+        # energy density definition without ref_temp for dry case
         energy_kinetic = 0.5 * (v1^2 + v2^2) * rho
         temperature = (energy - energy_kinetic) / (c_vd * rho)
 
         if (temperature < 0.0)
-            #display(energy - energy_kinetic)
             error("temp negative")
         end
 
@@ -164,11 +162,7 @@ end
         if (rho_cloud < 0.0 && isapprox(rho_cloud, 0.0, atol = 1e-15))
             rho_cloud = 0.0
         end
-        #=
-        if (temperature < 0.0 && isapprox(temperature, 0.0, atol = 1e-15))
-            temperature = 0.0
-        end
-        =#
+
         return SVector(rho_vapour, rho_cloud, temperature)
     end
 end
@@ -226,15 +220,8 @@ end
     rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
 
     rho_vapour, _, temperature = cons2nonlinearsystemsol(u, equations)
-    #=
-    if (temperature > 333.15)
-        display(temperature - 273.15)
-        error("temp high")
-    end
-    =#
+  
     p = (R_d * rho_dry + R_v * rho_vapour) * temperature
-    #v1, v2 = velocities(u, rho_inv, equations)
-    #p = (equations.c_dry_air_const_pressure / equations.c_dry_air_const_volume - 1) * (energy_density(u, equations) - 0.5f0 * (u[4] * v1 + u[5] * v2))
 
     return p
 end
@@ -315,6 +302,32 @@ end
     p_vapour_saturation *= exp(((ref_L - (c_pv - c_l) * ref_temp) / R_v) * (1 / ref_temp - 1 / temperature))
 
     return p_vapour_saturation
+end
+
+
+@inline function saturation_vapour_pressure_derivative(temperature, equations::CompressibleRainyEulerEquations2D)
+    # constants
+    c_l      = equations.c_liquid_water
+    c_pv     = equations.c_vapour_const_pressure
+    R_v      = equations.R_vapour
+    ref_s_p  = equations.ref_saturation_pressure
+    ref_temp = equations.ref_temperature
+    ref_L    = equations.ref_latent_heat_vap_temp
+
+    # testing 
+    if (temperature < 0.0)
+        display(temperature)
+        error("temp less than zero")
+    end
+
+    const_1 = (c_pv - c_l) / R_v
+    const_2 = (ref_L - (c_pv - c_l) * ref_temp) / R_v
+
+    p_vapour_saturation_derivative  = ref_s_p / (ref_temp^const_1)
+    p_vapour_saturation_derivative *= (const_1 * temperature^(const_1 - 1) + const_2 * temperature^(const_1 - 2))
+    p_vapour_saturation_derivative *= exp(const_2 * (1 / ref_temp - 1 / temperature))
+
+    return p_vapour_saturation_derivative
 end
 
 
@@ -612,5 +625,44 @@ end
 
     return saturation_residual!
 end
+
+
+@inline function saturation_residual_jacobian(u, equations::CompressibleRainyEulerEquations2D)
+    # constants
+    c_l      = equations.c_liquid_water
+    c_vd     = equations.c_dry_air_const_volume
+    c_vv     = equations.c_vapour_const_volume
+    R_v      = equations.R_vapour
+    L_ref    = equations.ref_latent_heat_vap_temp
+    ref_temp = equations.ref_temperature
+
+    # densities
+    rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
+
+    function jacobian!(J, guess)
+        svp         = saturation_vapour_pressure(guess[3], equations)
+        d_dtemp_svp = saturation_vapour_pressure_derivative(guess[3], equations)
+
+        J[1, 1] = c_vv * (guess[3] - ref_temp) + L_ref - R_v * ref_temp
+        J[1, 2] = c_l  * (guess[3] - ref_temp)
+        J[1, 3] = c_vd * rho_dry + c_vv * guess[1] + c_l * (guess[2] + rho_rain)
+
+        J[2, 1] = -1e7
+        J[2, 2] =  0.0
+        
+        if (svp / (R_v * guess[3]) < rho_moist)
+            J[2, 3] = (d_dtemp_svp * guess[3] - svp) / (R_v * guess[3]^2) * 1e7
+        else
+            J[2, 3] = 0.0
+        end
+
+        J[3, 1] = -1e7
+        J[3, 2] = -1e7
+        J[3, 3] =  0.0
+    end
+
+    return jacobian!
+end
+
 
 end  # muladd end
