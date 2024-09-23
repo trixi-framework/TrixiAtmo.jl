@@ -132,7 +132,7 @@ end
     return boundary_flux
 end
 
-@inline function source_terms_bubble(u, x, t,
+@inline function source_terms_gravity(u, x, t,
                                      equations::CompressibleEulerPotentialTemperatureEquations2D)
     rho, _, _, _ = u
     return SVector(zero(eltype(u)), zero(eltype(u)), -equations.g * rho,

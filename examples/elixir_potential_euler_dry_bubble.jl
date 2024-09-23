@@ -71,7 +71,7 @@ mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
 initial_condition = initial_condition_warm_bubble
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
-                                    source_terms = source_terms_bubble,
+                                    source_terms = source_terms_gravity,
                                     boundary_conditions = boundary_conditions)
 
 ###############################################################################
