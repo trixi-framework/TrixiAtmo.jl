@@ -3,7 +3,7 @@ using Trixi, TrixiAtmo
 using TrixiAtmo: CompressibleMoistEulerEquations2D, source_terms_geopotential,
                  source_terms_phase_change,
                  source_terms_nonhydrostatic_rayleigh_sponge,
-                 cons2drypot, flux_LMARS
+                 cons2drypot, FluxLMARS
 
 ###############################################################################
 # semidiscretization of the compressible moist Euler equation
@@ -55,7 +55,7 @@ boundary_conditions = (x_neg = boundary_condition_periodic,
 
 polydeg = 4
 basis = LobattoLegendreBasis(polydeg)
-surface_flux = flux_LMARS(360.0)
+surface_flux = FluxLMARS(360.0)
 volume_flux = flux_chandrashekar
 
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)

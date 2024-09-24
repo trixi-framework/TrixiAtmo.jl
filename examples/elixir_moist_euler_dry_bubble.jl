@@ -1,7 +1,7 @@
 using OrdinaryDiffEq
 using Trixi
 using TrixiAtmo
-using TrixiAtmo: flux_LMARS, source_terms_geopotential, cons2drypot
+using TrixiAtmo: FluxLMARS, source_terms_geopotential, cons2drypot
 
 ###############################################################################
 # semidiscretization of the compressible moist Euler equations
@@ -61,7 +61,7 @@ source_term = source_terms_geopotential
 polydeg = 4
 basis = LobattoLegendreBasis(polydeg)
 
-surface_flux = flux_LMARS(360.0)
+surface_flux = FluxLMARS(360.0)
 volume_flux = flux_chandrashekar
 
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)

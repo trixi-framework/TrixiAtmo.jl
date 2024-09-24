@@ -1,7 +1,7 @@
 using OrdinaryDiffEq
 using Trixi, TrixiAtmo
 using TrixiAtmo: cons2aeqpot, saturation_pressure, source_terms_moist_bubble,
-                 flux_LMARS
+                 FluxLMARS
 using NLsolve: nlsolve
 
 ###############################################################################
@@ -242,7 +242,7 @@ source_term = source_terms_moist_bubble
 polydeg = 4
 basis = LobattoLegendreBasis(polydeg)
 
-surface_flux = flux_LMARS(360.0)
+surface_flux = FluxLMARS(360.0)
 volume_flux = flux_chandrashekar
 
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)

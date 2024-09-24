@@ -1,6 +1,6 @@
 using Trixi
 using Trixi: ln_mean, stolarsky_mean
-import Trixi: varnames, cons2cons, cons2prim, cons2entropy, entropy
+import Trixi: varnames, cons2cons, cons2prim, cons2entropy, entropy, FluxLMARS
 
 @muladd begin
 #! format: noindent
@@ -168,7 +168,7 @@ end
 # Coordinate Monthly Weather Review Vol. 141.7, pages 2526–2544, 2013,
 # https://journals.ametsoc.org/view/journals/mwre/141/7/mwr-d-12-00129.1.xml.
 
-@inline function (flux_lmars::flux_LMARS)(u_ll, u_rr, normal_direction::AbstractVector,
+@inline function (flux_lmars::FluxLMARS)(u_ll, u_rr, normal_direction::AbstractVector,
                                           equations::CompressibleEulerPotentialTemperatureEquations2D)
     a = flux_lmars.speed_of_sound
     # Unpack left and right state

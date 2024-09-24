@@ -49,7 +49,7 @@ isdir(outdir) && rm(outdir, recursive = true)
     trixi_include(trixi_elixir,
                   equations = equations_moist,
                   volume_flux = flux_chandrashekar,
-                  surface_flux = flux_LMARS(360.0),
+                  surface_flux = FluxLMARS(360.0),
                   maxiters = maxiters)
 
     errors_atmo = Main.analysis_callback(Main.sol)

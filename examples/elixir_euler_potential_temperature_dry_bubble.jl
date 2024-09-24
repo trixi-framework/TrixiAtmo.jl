@@ -1,7 +1,7 @@
 using OrdinaryDiffEq
 using Trixi
 using TrixiAtmo
-using TrixiAtmo: flux_LMARS, source_terms_gravity, flux_theta
+using TrixiAtmo: FluxLMARS, source_terms_gravity, flux_theta
 
 function initial_condition_warm_bubble(x, t,
                                        equations::CompressibleEulerPotentialTemperatureEquations2D)
@@ -54,7 +54,7 @@ boundary_conditions = (x_neg = boundary_condition_periodic,
 polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
 
-surface_flux = flux_LMARS(340.0)
+surface_flux = FluxLMARS(340.0)
 
 volume_flux = flux_theta
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
