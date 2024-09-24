@@ -119,7 +119,7 @@ end
         sound_speed = sqrt(gamma * p_local / rho_local) # local sound speed
         p_star = p_local *
                  (1.0 + 0.5f0 * (gamma - 1) * v_normal / sound_speed)^(2.0 * gamma *
-                                                                     inv(gamma - 1))
+                                                                       inv(gamma - 1))
     else # v_normal > 0.0
         A = 2.0 / ((gamma + 1) * rho_local)
         B = p_local * (gamma - 1) / (gamma + 1)
@@ -452,7 +452,7 @@ end
 # https://journals.ametsoc.org/view/journals/mwre/141/7/mwr-d-12-00129.1.xml.
 
 @inline function (flux_lmars::FluxLMARS)(u_ll, u_rr, normal_direction::AbstractVector,
-                                          equations::CompressibleMoistEulerEquations2D)
+                                         equations::CompressibleMoistEulerEquations2D)
     a = flux_lmars.speed_of_sound
     # Unpack left and right state
     rho_ll, rho_v1_ll, rho_v2_ll, rho_e_ll, rho_qv_ll, rho_ql_ll = u_ll
@@ -475,7 +475,8 @@ end
 
     rho = 0.5f0 * (rho_ll + rho_rr)
     p_interface = 0.5f0 * (p_ll + p_rr) - beta * 0.5f0 * a * rho * (v_rr - v_ll) / norm_
-    v_interface = 0.5f0 * (v_ll + v_rr) - beta * 1 / (2 * a * rho) * (p_rr - p_ll) * norm_
+    v_interface = 0.5f0 * (v_ll + v_rr) -
+                  beta * 1 / (2 * a * rho) * (p_rr - p_ll) * norm_
 
     if (v_interface > 0)
         f1, f2, f3, f4, f5, f6 = u_ll * v_interface

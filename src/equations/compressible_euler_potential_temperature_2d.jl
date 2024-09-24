@@ -169,7 +169,7 @@ end
 # https://journals.ametsoc.org/view/journals/mwre/141/7/mwr-d-12-00129.1.xml.
 
 @inline function (flux_lmars::FluxLMARS)(u_ll, u_rr, normal_direction::AbstractVector,
-                                          equations::CompressibleEulerPotentialTemperatureEquations2D)
+                                         equations::CompressibleEulerPotentialTemperatureEquations2D)
     a = flux_lmars.speed_of_sound
     # Unpack left and right state
     rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
