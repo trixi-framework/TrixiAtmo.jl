@@ -2,29 +2,22 @@ using OrdinaryDiffEq
 using Trixi
 using TrixiAtmo
 
-function initial_condition_warm_bubble(x, t,
-                                       equations::CompressibleEulerPotentialTemperatureEquations2D)
+function initial_condition_gravity_wave(x, t,
+                                        equations::CompressibleEulerPotentialTemperatureEquations2D)
     g = equations.g
     c_p = equations.c_p
     c_v = equations.c_v
     # center of perturbation
-    center_x = 10000.0
-    center_z = 2000.0
-    # radius of perturbation
-    radius = 2000.0
-    # distance of current x to center of perturbation
-    r = sqrt((x[1] - center_x)^2 + (x[2] - center_z)^2)
-
+    x_c = 100_000.0
+    a = 5_000
+    H = 10_000
     # perturbation in potential temperature
-    potential_temperature_ref = 300.0
-    potential_temperature_perturbation = 0.0
-    if r <= radius
-        potential_temperature_perturbation = 2 * cospi(0.5 * r / radius)^2
-    end
+    potential_temperature_ref = 300.0 * exp(0.01^2 / g * x[2])
+    potential_temperature_perturbation = 0.01 * sinpi(x[2] / H) / (1 + (x[1] - x_c)^2 / a^2)
     potential_temperature = potential_temperature_ref + potential_temperature_perturbation
 
     # Exner pressure, solves hydrostatic equation for x[2]
-    exner = 1 - g / (c_p * potential_temperature_ref) * x[2]
+    exner = 1 + g^2 / (c_p * 300.0 * 0.01^2) * (exp(-0.01^2 / g * x[2]) - 1)
 
     # pressure
     p_0 = 100_000.0  # reference pressure
@@ -55,18 +48,15 @@ basis = LobattoLegendreBasis(polydeg)
 
 surface_flux = FluxLMARS(340.0)
 
-volume_flux = flux_theta
-volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
-
-solver = DGSEM(basis, surface_flux, volume_integral)
+solver = DGSEM(basis, surface_flux)
 
 coordinates_min = (0.0, 0.0)
-coordinates_max = (20_000.0, 10_000.0)
+coordinates_max = (300_000.0, 10_000.0)
 
-cells_per_dimension = (64, 32)
+cells_per_dimension = (600, 20) # Delta x = Delta z = 1 km
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = (true, false))
-initial_condition = initial_condition_warm_bubble
+initial_condition = initial_condition_gravity_wave
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_terms_gravity,
@@ -75,7 +65,7 @@ semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
 ###############################################################################
 # ODE solvers, callbacks etc.
 
-tspan = (0.0, 1000.0)  # 1000 seconds final time
+tspan = (0.0, 3000.0)  # 1000 seconds final time
 
 ode = semidiscretize(semi, tspan)
 
@@ -106,7 +96,7 @@ callbacks = CallbackSet(summary_callback,
 # run the simulation
 sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
             maxiters = 1.0e7,
-            dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
+            dt = 1e-1, # solve needs some value here but it will be overwritten by the stepsize_callback
             save_everystep = false, callback = callbacks);
 
 summary_callback()

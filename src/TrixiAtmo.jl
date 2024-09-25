@@ -26,7 +26,8 @@ include("semidiscretization/semidiscretization_hyperbolic_2d_manifold_in_3d.jl")
 export CompressibleMoistEulerEquations2D
 export CompressibleEulerPotentialTemperatureEquations2D
 
-export flux_chandrashekar, FluxLMARS, flux_theta
+export flux_chandrashekar, flux_theta, flux_theta_rhoAM, flux_theta_physentropy,
+       flux_theta_physentropy2
 
 export examples_dir
 

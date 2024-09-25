@@ -1,7 +1,7 @@
 using OrdinaryDiffEq
 using Trixi
 using TrixiAtmo
-using TrixiAtmo: FluxLMARS, source_terms_geopotential, cons2drypot
+using TrixiAtmo: source_terms_geopotential, cons2drypot
 
 ###############################################################################
 # semidiscretization of the compressible moist Euler equations

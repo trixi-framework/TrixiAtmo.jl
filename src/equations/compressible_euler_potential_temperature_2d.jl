@@ -225,6 +225,88 @@ end
     return SVector(f1, f2, f3, f4)
 end
 
+@inline function flux_theta_rhoAM(u_ll, u_rr, normal_direction::AbstractVector,
+                                  equations::CompressibleEulerPotentialTemperatureEquations2D)
+    # Unpack left and right state
+    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
+    v_dot_n_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2]
+    v_dot_n_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2]
+    _, _, _, rho_theta_ll = u_ll
+    _, _, _, rho_theta_rr = u_rr
+    # Compute the necessary mean values
+    rho_mean = 0.5f0 * (rho_ll + rho_rr)
+
+    gammamean = stolarsky_mean(rho_theta_ll, rho_theta_rr, equations.gamma)
+
+    v1_avg = 0.5f0 * (v1_ll + v1_rr)
+    v2_avg = 0.5f0 * (v2_ll + v2_rr)
+    p_avg = 0.5f0 * (p_ll + p_rr)
+
+    # Calculate fluxes depending on normal_direction
+    f1 = rho_mean * 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
+    f2 = f1 * v1_avg + p_avg * normal_direction[1]
+    f3 = f1 * v2_avg + p_avg * normal_direction[2]
+    f4 = gammamean * 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
+    return SVector(f1, f2, f3, f4)
+end
+
+@inline function flux_theta_physentropy(u_ll, u_rr, normal_direction::AbstractVector,
+                                        equations::CompressibleEulerPotentialTemperatureEquations2D)
+    # Unpack left and right state
+    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
+    v_dot_n_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2]
+    v_dot_n_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2]
+    _, _, _, rho_theta_ll = u_ll
+    _, _, _, rho_theta_rr = u_rr
+    # Compute the necessary mean values
+    #rho_mean = ln_mean(rho_ll, rho_rr)
+    #rho_mean = 0.5f0 * (rho_ll + rho_rr)
+    rho_mean = ln_mean(rho_ll / rho_theta_ll, rho_rr / rho_theta_rr)
+    gammamean = stolarsky_mean(rho_theta_ll, rho_theta_rr, equations.gamma)
+
+    v1_avg = 0.5f0 * (v1_ll + v1_rr)
+    v2_avg = 0.5f0 * (v2_ll + v2_rr)
+    p_avg = 0.5f0 * (p_ll + p_rr)
+
+    # Calculate fluxes depending on normal_direction
+    #f1 = rho_mean * 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
+    f4 = gammamean * 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
+    f1 = f4 * rho_mean
+    f2 = f1 * v1_avg + p_avg * normal_direction[1]
+    f3 = f1 * v2_avg + p_avg * normal_direction[2]
+
+    return SVector(f1, f2, f3, f4)
+end
+
+@inline function flux_theta_physentropy2(u_ll, u_rr, normal_direction::AbstractVector,
+                                         equations::CompressibleEulerPotentialTemperatureEquations2D)
+    # Unpack left and right state
+    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
+    v_dot_n_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2]
+    v_dot_n_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2]
+    _, _, _, rho_theta_ll = u_ll
+    _, _, _, rho_theta_rr = u_rr
+    # Compute the necessary mean values
+    rho_mean = ln_mean(rho_ll, rho_rr)
+    #rho_mean = 0.5f0 * (rho_ll + rho_rr)
+    #rho_mean = ln_mean(rho_ll/rho_theta_ll, rho_rr/rho_theta_rr)
+    gammamean = stolarsky_mean(rho_theta_ll, rho_theta_rr, equations.gamma)
+
+    v1_avg = 0.5f0 * (v1_ll + v1_rr)
+    v2_avg = 0.5f0 * (v2_ll + v2_rr)
+    p_avg = 0.5f0 * (p_ll + p_rr)
+
+    # Calculate fluxes depending on normal_direction
+    f1 = rho_mean * 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
+    f2 = f1 * v1_avg + p_avg * normal_direction[1]
+    f3 = f1 * v2_avg + p_avg * normal_direction[2]
+    f4 = inv_ln_mean(rho_ll / rho_theta_ll, rho_rr / rho_theta_rr) * f1
+    return SVector(f1, f2, f3, f4)
+end
+
 @inline function prim2cons(prim,
                            equations::CompressibleEulerPotentialTemperatureEquations2D)
     rho, v1, v2, p = prim
@@ -267,7 +349,7 @@ end
     # Mathematical entropy
     p = equations.p_0 * (equations.R * cons[4] / equations.p_0)^equations.gamma
 
-    U = (p / (equations.gamma - 1) + 1 / 2 * (cons[2]^2 + cons[3]^2) / (cons[1]))
+    U = (p / (equations.gamma - 1) + 0.5f0 * (cons[2]^2 + cons[3]^2) / (cons[1]))
 
     return U
 end

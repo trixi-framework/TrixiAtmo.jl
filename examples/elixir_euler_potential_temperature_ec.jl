@@ -1,7 +1,7 @@
 using OrdinaryDiffEq
 using Trixi
 using TrixiAtmo
-using TrixiAtmo: flux_theta
+
 ###############################################################################
 # semidiscretization of the compressible Euler equations
 equations = CompressibleEulerPotentialTemperatureEquations2D()
