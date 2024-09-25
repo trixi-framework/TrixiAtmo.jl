@@ -1,6 +1,6 @@
 using OrdinaryDiffEq
-using Trixi
-using TrixiAtmo
+using Trixi, TrixiAtmo
+using TrixiAtmo: source_terms_gravity
 
 function initial_condition_gravity_wave(x, t,
                                         equations::CompressibleEulerPotentialTemperatureEquations2D)
