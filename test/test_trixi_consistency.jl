@@ -1,5 +1,7 @@
 module TestTrixiConsistency
 
+using Trixi
+
 include("test_trixiatmo.jl")
 
 EXAMPLES_DIR = TrixiAtmo.examples_dir()
