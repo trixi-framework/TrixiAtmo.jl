@@ -4,7 +4,7 @@ using TrixiAtmo
 
 
 
-# from compressible_euler_2d.jl
+# adapted from compressible_euler_2d.jl
 function initial_condition_convergence_test(x, t, equations::CompressibleRainyEulerEquations2D)
     RealT = eltype(x)
     c = 2
@@ -23,8 +23,13 @@ function initial_condition_convergence_test(x, t, equations::CompressibleRainyEu
 end
 
 
-# from compressible_euler_2d.jl
+# adapted from compressible_euler_2d.jl
 function source_terms_convergence_test(u, x, t, equations::CompressibleRainyEulerEquations2D)
+    c_pd     = equations.c_dry_air_const_pressure
+    c_vd     = equations.c_dry_air_const_volume
+    #R_d      = equations.R_dry_air
+    #ref_temp = equations.ref_temperature
+
     # Same settings as in `initial_condition`
     RealT = eltype(u)
     c = 2
@@ -32,7 +37,7 @@ function source_terms_convergence_test(u, x, t, equations::CompressibleRainyEule
     L = 2
     f = 1.0f0 / L
     ω = 2 * convert(RealT, pi) * f
-    γ = equations.c_dry_air_const_pressure / equations.c_dry_air_const_volume
+    γ = c_pd / c_vd
 
     x1, x2 = x
     si, co = sincos(ω * (x1 + x2 - t))
@@ -40,7 +45,7 @@ function source_terms_convergence_test(u, x, t, equations::CompressibleRainyEule
     rho_x = ω * A * co
     # Note that d/dt rho = -d/dx rho = -d/dy rho.
 
-    tmp = (2 * rho - 1) * (γ - 1)
+    tmp = (2 * rho - 1) * (γ - 1) #+ R_d * ref_temp
 
     du1 = rho_x
     du2 = rho_x * (1 + tmp)
@@ -84,7 +89,7 @@ analysis_callback = AnalysisCallback(semi, interval = analysis_interval)
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
-save_solution = SaveSolutionCallback(interval = 100,
+save_solution = SaveSolutionCallback(interval = analysis_interval,
                                      save_initial_solution = true,
                                      save_final_solution = true,
                                      solution_variables = cons2prim)

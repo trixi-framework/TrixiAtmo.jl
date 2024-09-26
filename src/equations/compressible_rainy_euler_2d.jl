@@ -128,6 +128,7 @@ end
 @inline function cons2nonlinearsystemsol(u, equations::CompressibleRainyEulerEquations2D)
     # constants
     c_vd     = equations.c_dry_air_const_volume
+    #ref_temp = equations.ref_temperature
 
     # densities
     rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
@@ -142,7 +143,7 @@ end
     if (rho_moist == 0.0 && rho_rain == 0.0)
         # energy density definition without ref_temp for dry case
         energy_kinetic = 0.5 * (v1^2 + v2^2) * rho
-        temperature = (energy - energy_kinetic) / (c_vd * rho)
+        temperature = (energy - energy_kinetic) / (c_vd * rho) #+ ref_temp
 
         if (temperature < 0.0)
             error("temp negative")
