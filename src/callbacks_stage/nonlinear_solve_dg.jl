@@ -5,8 +5,8 @@ using Trixi: wrap_array, AbstractSemidiscretization, TimerOutputs, @trixi_timeit
 @muladd begin
  
 struct NonlinearSolveDG
-    residual
-    jacobian
+    residual              ::Function
+    jacobian              ::Function
     variables_index_vector::Vector{Int}
     tolerance             ::Real
 end

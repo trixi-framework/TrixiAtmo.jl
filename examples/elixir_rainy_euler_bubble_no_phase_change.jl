@@ -7,8 +7,7 @@ using NLsolve: nlsolve
 
 
 
-# Initial condition from 
-
+# Initial condition from elixir_moist_euler_bubble.jl
 function moist_state(y, dz, y0, r_t0, theta_e0, equations::CompressibleMoistEulerEquations2D)
 
     @unpack p_0, g, c_pd, c_pv, c_vd, c_vv, R_d, R_v, c_pl, L_00 = equations
@@ -261,7 +260,7 @@ semi = SemidiscretizationHyperbolic(mesh, equations,
 ###############################################################################
 # ODE solvers, callbacks etc.
 
-tspan = (0.0, 10.0)
+tspan = (0.0, 1020.0)
 
 ode = semidiscretize(semi, tspan)
 
@@ -273,15 +272,15 @@ analysis_interval = 1000
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
                                      extra_analysis_errors = (:entropy_conservation_error,))
 
-alive_callback = AliveCallback(analysis_interval = 1000)
+alive_callback = AliveCallback(analysis_interval = 100)
 
-save_solution = SaveSolutionCallback(interval = 1000,
+save_solution = SaveSolutionCallback(interval = 100,
                                      save_initial_solution = true,
                                      save_final_solution = true,
                                      output_directory = "out",
                                      solution_variables = cons2prim)
 
-stepsize_callback = StepsizeCallback(cfl = 1.0)
+stepsize_callback = StepsizeCallback(cfl = 0.2)
 
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,
