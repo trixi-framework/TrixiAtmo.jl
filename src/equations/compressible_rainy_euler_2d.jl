@@ -63,7 +63,7 @@ function CompressibleRainyEulerEquations2D(; RealT = Float64)
     eps       = R_dry_air                / R_vapour
 
     # Reference values:
-    ref_saturation_pressure  = 610.7
+    ref_saturation_pressure  = 610.7    # This needs to be adjusted if ref_temperature is changed!
     ref_temperature          = 273.15
     ref_latent_heat_vap_temp = 2.5e6#3147620.0
     ref_pressure             = 1e5
@@ -363,7 +363,7 @@ end
         f2 = rho_moist * v1
         f3 = rho_rain  * v1
 
-        # "impulse"
+        # "momentum"
         f4 = rho       * v1 * v1 + p
         f5 = rho       * v1 * v2
 
@@ -376,7 +376,7 @@ end
         f2 = rho_moist *  v2
         f3 = rho_rain  * (v2 - v_r)
 
-        # "impulse"
+        # "momentum"
         f4 = rho       * v1 * v2      - rho_rain * v_r * v1
         f5 = rho       * v2 * v2  + p - rho_rain * v_r * v2
 
@@ -390,7 +390,6 @@ end
 
 
 @inline function flux(u, normal_direction::AbstractVector, equations::CompressibleRainyEulerEquations2D)
-    #TODO Double-check for mistakes in "impulse" and "energy"
     # constants
     c_l      = equations.c_liquid_water
     ref_temp = equations.ref_temperature
@@ -421,7 +420,7 @@ end
     f2 = rho_moist *  v_normal
     f3 = rho_rain  * (v_normal - v_r_normal)
 
-    # "impulse"
+    # "momentum"
     f4 = rho       * v_normal * v1 + p * normal_direction[1] - rho_rain * v_r_normal * v1
     f5 = rho       * v_normal * v2 + p * normal_direction[2] - rho_rain * v_r_normal * v2 
 
