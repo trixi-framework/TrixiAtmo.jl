@@ -1,8 +1,8 @@
 using OrdinaryDiffEq
 using Trixi
 using TrixiAtmo
-using TrixiAtmo: source_terms_no_phase_change, saturation_residual,
-                 saturation_residual_jacobian, NonlinearSolveDG
+using TrixiAtmo: source_terms_no_phase_change, saturation_residual_custom,
+                 saturation_residual_jacobian_custom, NonlinearSolveDG
 using NLsolve: nlsolve
 
 
@@ -241,7 +241,7 @@ boundary_conditions = (x_neg = boundary_condition_slip_wall,
                        y_neg = boundary_condition_slip_wall,
                        y_pos = boundary_condition_slip_wall)
 
-polydeg = 4
+polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
 
 surface_flux = flux_lax_friedrichs
@@ -263,7 +263,7 @@ semi = SemidiscretizationHyperbolic(mesh, equations,
 ###############################################################################
 # ODE solvers, callbacks etc.
 
-tspan = (0.0, 1020.0)
+tspan = (0.0, 10.0)
 
 ode = semidiscretize(semi, tspan)
 
@@ -275,9 +275,9 @@ analysis_interval = 1000
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
                                      extra_analysis_errors = (:entropy_conservation_error,))
 
-alive_callback = AliveCallback(analysis_interval = 100)
+alive_callback = AliveCallback(analysis_interval = 1000)
 
-save_solution = SaveSolutionCallback(interval = 100,
+save_solution = SaveSolutionCallback(interval = 1000,
                                      save_initial_solution = true,
                                      save_final_solution = true,
                                      output_directory = "out",
@@ -291,7 +291,7 @@ callbacks = CallbackSet(summary_callback,
                         save_solution,
                         stepsize_callback)
 
-stage_limiter! = NonlinearSolveDG(saturation_residual, saturation_residual_jacobian, SVector(7, 8, 9), 1e-9)
+stage_limiter! = NonlinearSolveDG(saturation_residual_custom, saturation_residual_jacobian_custom, SVector(7, 8, 9), 1e-9)
 
 ###############################################################################
 # run the simulation

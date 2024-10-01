@@ -2,7 +2,7 @@ using OrdinaryDiffEq
 using Trixi
 using TrixiAtmo
 using TrixiAtmo: saturation_vapour_pressure, saturation_vapour_pressure_derivative,
-                 saturation_residual, saturation_residual_jacobian
+                 saturation_residual_custom, saturation_residual_jacobian_custom
 
 
 
@@ -122,7 +122,7 @@ solver = DGSEM(polydeg = 3, surface_flux = flux_lax_friedrichs)
 coordinates_min = (0.0, 0.0)
 coordinates_max = (2.0, 2.0)
 
-cells_per_dimension = (8, 8)
+cells_per_dimension = (12, 12)
 
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max)
 
@@ -137,7 +137,7 @@ ode = semidiscretize(semi, tspan)
 
 summary_callback = SummaryCallback()
 
-analysis_interval = 1000
+analysis_interval = 10000
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval)
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
@@ -154,7 +154,7 @@ callbacks = CallbackSet(summary_callback,
                         save_solution,
                         stepsize_callback)
 
-stage_limiter! = NonlinearSolveDG(saturation_residual, saturation_residual_jacobian, SVector(7, 8, 9), 1e-9)
+stage_limiter! = NonlinearSolveDG(saturation_residual_custom, saturation_residual_jacobian_custom, SVector(7, 8, 9), 1e-9)
 
 ###############################################################################
 # run the simulation
