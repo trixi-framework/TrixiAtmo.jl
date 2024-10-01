@@ -627,6 +627,44 @@ end
 end
 
 
+@inline function saturation_residual_custom(u, equations::CompressibleRainyEulerEquations2D)
+    # constants
+    c_l      = equations.c_liquid_water
+    c_vd     = equations.c_dry_air_const_volume
+    c_vv     = equations.c_vapour_const_volume
+    R_v      = equations.R_vapour
+    L_ref    = equations.ref_latent_heat_vap_temp
+    ref_temp = equations.ref_temperature
+
+    # densities
+    rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
+
+    # velocity
+    v1, v2 = velocities(u, rho_inv, equations)
+
+    # energy density
+    energy = energy_density(u, equations)
+
+    function saturation_residual!(residual, guess)
+        residual1  = (c_vd * rho_dry + c_vv * guess[1] + c_l * (guess[2] + rho_rain)) * (guess[3] - ref_temp)
+        residual1 += guess[1] * (L_ref - R_v * ref_temp)
+        residual1 -= (energy - rho * 0.5 * (v1^2 + v2^2))
+
+        residual2  = min(saturation_vapour_pressure(guess[3], equations) / (R_v * guess[3]), rho_moist)
+        residual2 -= guess[1]
+        residual2 *= 1e7
+
+        residual3  = rho_moist
+        residual3 -= guess[1] + guess[2]
+        residual3 *= 1e7
+
+        residual = SVector(residual1, residual2, residual3)
+    end
+
+    return saturation_residual!
+end
+
+
 @inline function saturation_residual_jacobian(u, equations::CompressibleRainyEulerEquations2D)
     # constants
     c_l      = equations.c_liquid_water
@@ -659,6 +697,46 @@ end
         J[3, 1] = -1e7
         J[3, 2] = -1e7
         J[3, 3] =  0.0
+    end
+
+    return jacobian!
+end
+
+
+@inline function saturation_residual_jacobian_custom(u, equations::CompressibleRainyEulerEquations2D)
+    # constants
+    c_l      = equations.c_liquid_water
+    c_vd     = equations.c_dry_air_const_volume
+    c_vv     = equations.c_vapour_const_volume
+    R_v      = equations.R_vapour
+    L_ref    = equations.ref_latent_heat_vap_temp
+    ref_temp = equations.ref_temperature
+
+    # densities
+    rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
+
+    function jacobian!(J, guess)
+        svp         = saturation_vapour_pressure(guess[3], equations)
+        d_dtemp_svp = saturation_vapour_pressure_derivative(guess[3], equations)
+
+        J_11 = c_vv * (guess[3] - ref_temp) + L_ref - R_v * ref_temp
+        J_12 = c_l  * (guess[3] - ref_temp)
+        J_13 = c_vd * rho_dry + c_vv * guess[1] + c_l * (guess[2] + rho_rain)
+
+        J_21 = -1e7
+        J_22 =  0.0
+        
+        if (svp / (R_v * guess[3]) < rho_moist)
+            J_23 = (d_dtemp_svp * guess[3] - svp) / (R_v * guess[3]^2) * 1e7
+        else
+            J_23 = 0.0
+        end
+
+        J_31 = -1e7
+        J_32 = -1e7
+        J_33 =  0.0
+
+        J = SMatrix{3, 3}(J_11, J_21, J_31, J_12, J_22, J_32, J_13, J_23, J_33)
     end
 
     return jacobian!
