@@ -1,11 +1,10 @@
 using Trixi
-using NLsolve: nlsolve
 import  Trixi: varnames,
                cons2prim, cons2entropy,
                flux,
                max_abs_speeds, max_abs_speed_naive,
                boundary_condition_slip_wall
-
+using StaticArrays
 
 
 ###  Implementation similar to:
@@ -591,78 +590,77 @@ end
 ###  Nonlinear System Residual  ###
 
 # in preparation for a callback to solve the nonlinear system
-@inline function saturation_residual(u, equations::CompressibleRainyEulerEquations2D)
+
+function saturation_residual(guess, params)
+
     # constants
-    c_l      = equations.c_liquid_water
-    c_vd     = equations.c_dry_air_const_volume
-    c_vv     = equations.c_vapour_const_volume
-    R_v      = equations.R_vapour
-    L_ref    = equations.ref_latent_heat_vap_temp
-    ref_temp = equations.ref_temperature
+    c_l = params[2].c_liquid_water
+    c_vd = params[2].c_dry_air_const_volume
+    c_vv = params[2].c_vapour_const_volume
+    R_v = params[2].R_vapour
+    L_ref = params[2].ref_latent_heat_vap_temp
+    ref_temp = params[2].ref_temperature
 
     # densities
-    rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
+    rho_dry, rho_moist, rho_rain, rho, rho_inv = TrixiAtmo.densities(params[1],
+                                                                        params[2])
 
     # velocity
-    v1, v2 = velocities(u, rho_inv, equations)
+    v1, v2 = TrixiAtmo.velocities(params[1], rho_inv, params[2])
 
     # energy density
-    energy = energy_density(u, equations)
+    energy = TrixiAtmo.energy_density(params[1], params[2])
 
-    function saturation_residual!(residual, guess)
-        residual[1]  = (c_vd * rho_dry + c_vv * guess[1] + c_l * (guess[2] + rho_rain)) * (guess[3] - ref_temp)
-        residual[1] += guess[1] * (L_ref - R_v * ref_temp)
-        residual[1] -= (energy - rho * 0.5 * (v1^2 + v2^2))
+    residual1 = (c_vd * rho_dry + c_vv * guess[1] + c_l * (guess[2] + rho_rain)) *
+                (guess[3] - ref_temp)
+    residual1 += guess[1] * (L_ref - R_v * ref_temp)
+    residual1 -= (energy - rho * 0.5 * (v1^2 + v2^2))
 
-        residual[2]  = min(saturation_vapour_pressure(guess[3], equations) / (R_v * guess[3]), rho_moist)
-        residual[2] -= guess[1]
-        residual[2] *= 1e7
+    residual2 = min(TrixiAtmo.saturation_vapour_pressure(guess[3], params[2]) /
+                    (R_v * guess[3]), rho_moist)
+    residual2 -= guess[1]
+    residual2 *= 1e7
 
-        residual[3]  = rho_moist
-        residual[3] -= guess[1] + guess[2]
-        residual[3] *= 1e7
-    end
+    residual3 = rho_moist
+    residual3 -= guess[1] + guess[2]
+    residual3 *= 1e7
 
-    return saturation_residual!
+    SA[residual1, residual2, residual3]
 end
 
-
-@inline function saturation_residual_jacobian(u, equations::CompressibleRainyEulerEquations2D)
+function saturation_residual_jacobian(guess, params)
     # constants
-    c_l      = equations.c_liquid_water
-    c_vd     = equations.c_dry_air_const_volume
-    c_vv     = equations.c_vapour_const_volume
-    R_v      = equations.R_vapour
-    L_ref    = equations.ref_latent_heat_vap_temp
-    ref_temp = equations.ref_temperature
+    c_l = params[2].c_liquid_water
+    c_vd = params[2].c_dry_air_const_volume
+    c_vv = params[2].c_vapour_const_volume
+    R_v = params[2].R_vapour
+    L_ref = params[2].ref_latent_heat_vap_temp
+    ref_temp = params[2].ref_temperature
 
     # densities
-    rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
+    rho_dry, rho_moist, rho_rain, rho, rho_inv = TrixiAtmo.densities(params[1],
+                                                                        params[2])
 
-    function jacobian!(J, guess)
-        svp         = saturation_vapour_pressure(guess[3], equations)
-        d_dtemp_svp = saturation_vapour_pressure_derivative(guess[3], equations)
+    svp = TrixiAtmo.saturation_vapour_pressure(guess[3], params[2])
+    d_dtemp_svp = TrixiAtmo.saturation_vapour_pressure_derivative(guess[3], params[2])
 
-        J[1, 1] = c_vv * (guess[3] - ref_temp) + L_ref - R_v * ref_temp
-        J[1, 2] = c_l  * (guess[3] - ref_temp)
-        J[1, 3] = c_vd * rho_dry + c_vv * guess[1] + c_l * (guess[2] + rho_rain)
+    J11 = c_vv * (guess[3] - ref_temp) + L_ref - R_v * ref_temp
+    J12 = c_l * (guess[3] - ref_temp)
+    J13 = c_vd * rho_dry + c_vv * guess[1] + c_l * (guess[2] + rho_rain)
+    J21 = -1e7
+    J22 = 0.0
 
-        J[2, 1] = -1e7
-        J[2, 2] =  0.0
-        
-        if (svp / (R_v * guess[3]) < rho_moist)
-            J[2, 3] = (d_dtemp_svp * guess[3] - svp) / (R_v * guess[3]^2) * 1e7
-        else
-            J[2, 3] = 0.0
-        end
-
-        J[3, 1] = -1e7
-        J[3, 2] = -1e7
-        J[3, 3] =  0.0
+    if (svp / (R_v * guess[3]) < rho_moist)
+        J23 = (d_dtemp_svp * guess[3] - svp) / (R_v * guess[3]^2) * 1e7
+    else
+        J23 = 0.0
     end
 
-    return jacobian!
-end
+    J31 = -1e7
+    J32 = -1e7
+    J33 = 0.0
 
+    SMatrix{3, 3}(J11, J21, J31, J12, J22, J32, J13, J23, J33)
+end
 
 end  # muladd end
