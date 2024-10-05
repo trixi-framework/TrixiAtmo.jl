@@ -1,7 +1,36 @@
 @muladd begin
 #! format: noindent
 
-# Specialized element container for partial differential equations in covariant form
+@doc raw"""
+    P4estElementContainerCovariant{NDIMS, RealT <: Real, uEltype <: Real,
+                                   NDIMSP1, NDIMSP2,
+                                   NDIMSP3} <: Trixi.AbstractContainer
+
+Specialized element container for equations in covariant form on a manifold of dimension
+`NDIMS`, created when `Trixi.init_elements` is dispatched on 
+`AbstractCovariantEquations{NDIMS, NDIMS_AMBIENT}` and `P4estMesh{NDIMS, NDIMS_AMBIENT`.
+Contains the following geometric information:
+- `node_coordinates::Array{RealT, NDIMSP2}:` Cartesian components of the node positions
+  within the ambient space of dimension `NDIMS_AMBIENT`, where the first index is the 
+  Cartesian component index, the next `NDIMS` indices are tensor-product node indices ($i$, 
+  $j$, for `NDIMS = 2` or $i$, $j$, $k$, for `NDIMS = 3`), and the last is the element
+  index.
+- `covariant_basis::Array{RealT, NDIMSP3}`: Components of the covariant tangent basis
+  vectors  $\vec{a}_m = \partial \vec{X} / \partial \xi^m$ expanded in terms of a global  
+  tangent basis (i.e. zonal and meridional components in the case of a spherical shell), 
+  where $\vec{X}$ denotes the mapping from the reference element to the physical element.
+  he first index is the global component index $l$, the second index is the local
+  component index $m$, the next `NDIMS` indices are tensor-product node indices ($i$, $j$, 
+  for `NDIMS = 2` or $i$, $j$, $k$, for `NDIMS = 3`), and the last is the element index.
+- `inverse_jacobian::Array{RealT, NDIMSP1}`: Nodal values of $1/J$, where 
+  $J = \sqrt{\mathrm{det}(\bm{G})}$, and $\bm{G}$ is the matrix of covariant metric tensor 
+  components $G_{lm} = \vec{a}_l \cdot \vec{a}_m$. The first `NDIMS` indices are 
+  tensor-product node indices ($i$, $j$, for `NDIMS = 2` or $i$, $j$, $k$, for 
+  `NDIMS = 3`), and the last is the element index.
+
+!!! warning
+    The covariant solver currently only supports conforming meshes.
+"""
 mutable struct P4estElementContainerCovariant{NDIMS, RealT <: Real, uEltype <: Real,
                                               NDIMSP1, NDIMSP2,
                                               NDIMSP3} <: Trixi.AbstractContainer
