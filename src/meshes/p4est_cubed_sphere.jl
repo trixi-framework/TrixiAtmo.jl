@@ -21,12 +21,14 @@ The mesh will have no boundaries.
                       The mapping will be approximated by an interpolation polynomial
                       of the specified degree for each tree.
 - `RealT::Type`: the type that should be used for coordinates.
-- `initial_refinement_level::Integer`: refine the mesh uniformly to this level before the simulation starts.
+- `initial_refinement_level::Integer`: refine the mesh uniformly to this level before the
+  simulation starts.
 - `unsaved_changes::Bool`: if set to `true`, the mesh will be saved to a mesh file.
-- `p4est_partition_allow_for_coarsening::Bool`: Must be `true` when using AMR to make mesh adaptivity
-                                                independent of domain partitioning. Should be `false` for static meshes
-                                                to permit more fine-grained partitioning.
-- `element_local_mapping::Bool`: option to use the element-local mapping from Guba et al. (see https://doi.org/10.5194/gmd-7-2803-2014, Appendix A).
+- `p4est_partition_allow_for_coarsening::Bool`: Must be `true` when using AMR to make mesh
+  adaptivity independent of domain partitioning. Should be `false` for static meshes to
+  permit more fine-grained partitioning.
+- `element_local_mapping::Bool`: option to use the element-local mapping from Guba et al.
+  (see https://doi.org/10.5194/gmd-7-2803-2014, Appendix A).
 """
 function P4estMeshCubedSphere2D(trees_per_face_dimension, radius;
                                 polydeg, RealT = Float64,
@@ -344,7 +346,7 @@ function calc_tree_node_coordinates_cubed_sphere_local!(node_coordinates::Abstra
             y_offset = -1 + (cell_y - 1) * dy + dy / 2
             z_offset = 0
 
-            # Vertices for bilinear planar mapping
+            # Vertices for bilinear mapping
             v1 = Trixi.cubed_sphere_mapping(x_offset - dx / 2,
                                             y_offset - dx / 2,
                                             z_offset, radius, 0, direction)
@@ -370,6 +372,8 @@ function calc_tree_node_coordinates_cubed_sphere_local!(node_coordinates::Abstra
     end
 end
 
+# Local mapping from the reference quadrilateral to a spherical patch based on four vertex
+# positions on the sphere, provided in Cartesian coordinates
 @inline function local_mapping(xi1, xi2, v1, v2, v3, v4, radius)
 
     # Construct a bilinear mapping based on the four corner vertices
