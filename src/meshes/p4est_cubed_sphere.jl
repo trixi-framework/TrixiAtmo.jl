@@ -27,8 +27,8 @@ The mesh will have no boundaries.
 - `p4est_partition_allow_for_coarsening::Bool`: Must be `true` when using AMR to make mesh
   adaptivity independent of domain partitioning. Should be `false` for static meshes to
   permit more fine-grained partitioning.
-- `element_local_mapping::Bool`: option to use the element-local mapping from Guba et al.
-  (see https://doi.org/10.5194/gmd-7-2803-2014, Appendix A).
+- `element_local_mapping::Bool`: option to use the element-local mapping from Appendix A of
+  [Guba et al. (2014)](https://doi.org/10.5194/gmd-7-2803-2014).
 """
 function P4estMeshCubedSphere2D(trees_per_face_dimension, radius;
                                 polydeg, RealT = Float64,
