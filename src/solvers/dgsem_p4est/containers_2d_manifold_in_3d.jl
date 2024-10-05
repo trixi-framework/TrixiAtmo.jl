@@ -43,37 +43,36 @@ end
 
 # Create element container and initialize element data.
 # This function dispatches on the dimensions of the mesh and the equation (AbstractEquations{3})
-function Trixi.init_elements(mesh::Union{P4estMesh{2, RealT},
-                                         T8codeMesh{2, RealT}},
+function Trixi.init_elements(mesh::Union{P4estMesh{2, 3, RealT},
+                                         T8codeMesh{2}},
                              equations::AbstractEquations{3},
                              basis,
-                             ::Type{uEltype}) where {RealT <: Real,
-                                                     uEltype <: Real}
+                             ::Type{uEltype}) where {RealT <: Real, uEltype <: Real}
     nelements = Trixi.ncells(mesh)
 
-    NDIMS = 2 #Dimension of the manifold
-    ndims_spa = size(mesh.tree_node_coordinates, 1)
+    NDIMS = 2 # dimension of the manifold
+    NDIMS_AMBIENT = 3 # dimension of the ambient space
 
     _node_coordinates = Vector{RealT}(undef,
-                                      ndims_spa * nnodes(basis)^NDIMS * nelements)
+                                      NDIMS_AMBIENT * nnodes(basis)^NDIMS * nelements)
     node_coordinates = Trixi.unsafe_wrap(Array, pointer(_node_coordinates),
-                                         (ndims_spa,
+                                         (NDIMS_AMBIENT,
                                           ntuple(_ -> nnodes(basis), NDIMS)...,
                                           nelements))
 
     _jacobian_matrix = Vector{RealT}(undef,
-                                     ndims_spa * NDIMS * nnodes(basis)^NDIMS *
+                                     NDIMS_AMBIENT * NDIMS * nnodes(basis)^NDIMS *
                                      nelements)
     jacobian_matrix = Trixi.unsafe_wrap(Array, pointer(_jacobian_matrix),
-                                        (ndims_spa, NDIMS,
+                                        (NDIMS_AMBIENT, NDIMS,
                                          ntuple(_ -> nnodes(basis), NDIMS)...,
                                          nelements))
 
     _contravariant_vectors = Vector{RealT}(undef,
-                                           ndims_spa^2 * nnodes(basis)^NDIMS *
+                                           NDIMS_AMBIENT^2 * nnodes(basis)^NDIMS *
                                            nelements)
     contravariant_vectors = PtrArray(pointer(_contravariant_vectors),
-                                     (Trixi.StaticInt(ndims_spa), ndims_spa,
+                                     (Trixi.StaticInt(NDIMS_AMBIENT), NDIMS_AMBIENT,
                                       ntuple(_ -> nnodes(basis), NDIMS)...,
                                       nelements))
 
