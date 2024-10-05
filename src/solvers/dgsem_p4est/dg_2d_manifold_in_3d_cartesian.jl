@@ -1,7 +1,11 @@
+@muladd begin
+#! format: noindent
+
 # Weak-form kernel for 3D equations solved in 2D manifolds
 @inline function Trixi.weak_form_kernel!(du, u,
                                          element,
-                                         mesh::Union{StructuredMesh{2}, UnstructuredMesh2D,
+                                         mesh::Union{StructuredMesh{2},
+                                                     UnstructuredMesh2D,
                                                      P4estMesh{2}, T8codeMesh{2}},
                                          nonconservative_terms::False,
                                          equations::AbstractEquations{3},
@@ -20,7 +24,8 @@
 
         # Compute the contravariant flux by taking the scalar product of the
         # first contravariant vector Ja^1 and the flux vector
-        Ja11, Ja12, Ja13 = Trixi.get_contravariant_vector(1, contravariant_vectors, i, j,
+        Ja11, Ja12, Ja13 = Trixi.get_contravariant_vector(1, contravariant_vectors, i,
+                                                          j,
                                                           element)
         contravariant_flux1 = Ja11 * flux1 + Ja12 * flux2 + Ja13 * flux3
         for ii in eachnode(dg)
@@ -31,7 +36,8 @@
 
         # Compute the contravariant flux by taking the scalar product of the
         # second contravariant vector Ja^2 and the flux vector
-        Ja21, Ja22, Ja23 = Trixi.get_contravariant_vector(2, contravariant_vectors, i, j,
+        Ja21, Ja22, Ja23 = Trixi.get_contravariant_vector(2, contravariant_vectors, i,
+                                                          j,
                                                           element)
         contravariant_flux2 = Ja21 * flux1 + Ja22 * flux2 + Ja23 * flux3
         for jj in eachnode(dg)
@@ -43,3 +49,4 @@
 
     return nothing
 end
+end # muladd

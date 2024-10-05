@@ -8,14 +8,15 @@ See also: [trixi-framework/TrixiAtmo.jl](https://github.com/trixi-framework/Trix
 """
 module TrixiAtmo
 
+using Reexport: @reexport
 using Trixi
 using MuladdMacro: @muladd
 using Static: True, False
-using StrideArrays: PtrArray
 using StaticArrayInterface: static_size
-using LinearAlgebra: norm
-using Reexport: @reexport
-@reexport using StaticArrays: SVector
+using StrideArrays: StrideArray, StaticInt, PtrArray
+using LinearAlgebra: norm, dot
+
+@reexport using StaticArrays: SVector, SMatrix
 
 include("auxiliary/auxiliary.jl")
 include("equations/equations.jl")
@@ -23,10 +24,12 @@ include("meshes/meshes.jl")
 include("solvers/solvers.jl")
 include("semidiscretization/semidiscretization_hyperbolic_2d_manifold_in_3d.jl")
 
-export CompressibleMoistEulerEquations2D
+export CompressibleMoistEulerEquations2D, CovariantLinearAdvectionEquation2D
 
 export flux_chandrashekar, flux_LMARS
 
-export examples_dir
+export EARTH_RADIUS, EARTH_GRAVITATIONAL_ACCELERATION,
+       EARTH_ROTATION_RATE, SECONDS_PER_DAY
 
+export examples_dir
 end # module TrixiAtmo
