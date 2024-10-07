@@ -4,7 +4,7 @@
 @doc raw"""
     P4estElementContainerCovariant{NDIMS, RealT <: Real, uEltype <: Real,
                                    NDIMSP1, NDIMSP2,
-                                   NDIMSP3} <: Trixi.AbstractContainer
+                                   NDIMSP3, NDIMSP4} <: Trixi.AbstractContainer
 
 Specialized element container for equations in covariant form on a manifold of dimension
 `NDIMS`, created when `Trixi.init_elements` is dispatched on 
@@ -261,7 +261,8 @@ function Trixi.init_elements!(elements, mesh::P4estMesh{2, 3},
     return nothing
 end
 
-# Calculate Christoffel symbols
+# Calculate Christoffel symbols (this is done approximately using the collocation
+# derivative)
 function calc_christoffel_symbols!(christoffel_symbols, covariant_metric,
                                    contravariant_metric, mesh::P4estMesh{2},
                                    basis::LobattoLegendreBasis)
@@ -309,23 +310,14 @@ function calc_christoffel_symbols!(christoffel_symbols, covariant_metric,
                                     0.5f0 * dG22dxi1, 0.5f0 * dG22dxi2)
 
             # Raise indices to get Christoffel symbols of the second kind
+            G_con_11 = contravariant_metric[1, 1, i, j, element]
+            G_con_12 = contravariant_metric[1, 2, i, j, element]
+            G_con_22 = contravariant_metric[2, 2, i, j, element]
             for l in 1:2, m in 1:2
-                christoffel_symbols[l, m, 1, i, j, element] = contravariant_metric[1, 1,
-                                                                                   i, j,
-                                                                                   element] *
-                                                              Gamma_1[l, m] +
-                                                              contravariant_metric[1, 2,
-                                                                                   i, j,
-                                                                                   element] *
-                                                              Gamma_2[l, m]
-                christoffel_symbols[l, m, 2, i, j, element] = contravariant_metric[2, 1,
-                                                                                   i, j,
-                                                                                   element] *
-                                                              Gamma_1[l, m] +
-                                                              contravariant_metric[2, 2,
-                                                                                   i, j,
-                                                                                   element] *
-                                                              Gamma_2[l, m]
+                christoffel_symbols[l, m, 1, i, j, element] = G_con_11 * Gamma_1[l, m] +
+                                                              G_con_12 * Gamma_2[l, m]
+                christoffel_symbols[l, m, 2, i, j, element] = G_con_12 * Gamma_1[l, m] +
+                                                              G_con_22 * Gamma_2[l, m]
             end
         end
     end

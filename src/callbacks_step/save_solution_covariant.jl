@@ -1,10 +1,11 @@
 @muladd begin
 #! format: noindent
 
+# Calculate the relative vorticity at all nodes in the mesh
 function calc_relative_vorticity!(relative_vorticity, u, mesh::P4estMesh,
                                   equations::CovariantShallowWaterEquations2D, dg::DG,
                                   cache)
-    for element in eachelement(dg, cache)
+    Trixi.@threaded for element in eachelement(dg, cache)
         for j in eachnode(dg), i in eachnode(dg)
             relative_vorticity[i, j, element] = calc_relative_vorticity(u, equations,
                                                                         dg, cache, i, j,
@@ -13,6 +14,7 @@ function calc_relative_vorticity!(relative_vorticity, u, mesh::P4estMesh,
     end
 end
 
+# Calculate the relative vorticity at a given node using the collocation derivative
 @inline function calc_relative_vorticity(u, equations::CovariantShallowWaterEquations2D,
                                          dg::DGSEM, cache, i, j, element)
     (; derivative_matrix) = dg.basis
@@ -38,6 +40,7 @@ end
     return (dv2dxi1 - dv1dxi2) * inverse_jacobian[i, j, element]
 end
 
+# Saves all solution variables in addition to the relative vorticity
 function Trixi.save_solution_file(u, time, dt, timestep,
                                   mesh::Union{Trixi.SerialTreeMesh, StructuredMesh,
                                               StructuredMeshView,

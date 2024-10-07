@@ -381,4 +381,16 @@ function Trixi.calc_error_norms(func, u, t, analyzer, mesh::P4estMesh{2},
 
     return l2_error, linf_error
 end
+
+function Trixi.analyze(::typeof(Trixi.entropy_timederivative), du, u, t,
+                       mesh::P4estMesh{2},
+                       equations::AbstractCovariantEquations{2}, dg::DG, cache)
+    # Calculate ∫(∂S/∂u ⋅ ∂u/∂t)dΩ
+    Trixi.integrate_via_indices(u, mesh, equations, dg, cache,
+                                du) do u, i, j, element, equations, dg, du
+        u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
+        du_node = Trixi.get_node_vars(du, equations, dg, i, j, element)
+        dot(cons2entropy(u_node, equations, cache.elements, i, j, element), du_node)
+    end
+end
 end # @muladd

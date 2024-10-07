@@ -1,8 +1,6 @@
 @muladd begin
 #! format: noindent
 
-# Variable-coefficient linear advection equation in covariant form on a two-dimensional
-# surface in three-dimensional space
 struct CovariantShallowWaterEquations2D{RealT <: Real} <: AbstractCovariantEquations{2,
                                   3, 3}
     gravitational_acceleration::RealT
@@ -13,10 +11,21 @@ function Trixi.varnames(::typeof(cons2cons), ::CovariantShallowWaterEquations2D)
     return ("h", "hv_con_1", "hv_con_2")
 end
 
-# TODO: actual entropy variables
-Trixi.cons2entropy(u, ::CovariantShallowWaterEquations2D) = SVector{3}(u[1],
-                                                                       zero(eltype(u)),
-                                                                       zero(eltype(u)))
+# Compute the entropy variables (requires element container and indices)
+@inline function Trixi.cons2entropy(u, equations::CovariantShallowWaterEquations2D,
+                                    elements, i, j, element)
+    h, hv_con_1, hv_con_2 = u
+    v_con_1, v_con_2 = hv_con_1 / h, hv_con_2 / h
+    v_cov_1 = elements.covariant_metric[1, 1, i, j, element] * v_con_1 +
+              elements.covariant_metric[1, 2, i, j, element] * v_con_2
+    v_cov_2 = elements.covariant_metric[2, 1, i, j, element] * v_con_1 +
+              elements.covariant_metric[2, 2, i, j, element] * v_con_2
+
+    w1 = equations.gravitational_acceleration * h -
+         0.5f0 * (v_cov_1 * v_con_1 + v_cov_2 * v_con_2)
+
+    return SVector{3}(w1, v_cov_1, v_cov_2)
+end
 
 # Convert contravariant velocity/momentum components to zonal and meridional components
 @inline function contravariant2spherical(u::SVector{3},

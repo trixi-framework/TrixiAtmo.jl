@@ -33,15 +33,16 @@ where $J$ is the area element (see the documentation for [`P4estElementContainer
 """
 struct CovariantLinearAdvectionEquation2D <: AbstractCovariantEquations{2, 3, 3} end
 
-# T
 function Trixi.varnames(::typeof(cons2cons), ::CovariantLinearAdvectionEquation2D)
     return ("scalar", "v_con_1", "v_con_2")
 end
 
-# We will measure the entropy/energy simply as half of the square of the scalar variable
-Trixi.cons2entropy(u, ::CovariantLinearAdvectionEquation2D) = SVector{3}(u[1],
-                                                                         zero(eltype(u)),
-                                                                         zero(eltype(u)))
+# Compute the entropy variables (requires element container and indices)
+@inline function Trixi.cons2entropy(u, equations::CovariantLinearAdvectionEquation2D,
+                                    elements, i, j, element)
+    z = zero(eltype(u))
+    return SVector{3}(u[1], z, z)
+end
 
 # The flux for the covariant form takes in the element container and node/element indices
 # in order to give the flux access to the geometric information
