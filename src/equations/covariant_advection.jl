@@ -1,12 +1,39 @@
 @muladd begin
 #! format: noindent
 
-# Variable-coefficient linear advection equation in covariant form on a two-dimensional
-# surface in three-dimensional space
+@doc raw"""
+    CovariantLinearAdvectionEquation2D <: AbstractCovariantEquations{2, 3, 3}
+
+A variable-coefficient linear advection equation can be defined on a two-dimensional
+manifold $S \subset \mathbb{R}^3$ as
+```math
+\partial_t h + \nabla_S \cdot (h \vec{v}) = 0.
+```
+We treat this problem as a system of equations in which the first variable is the scalar
+conserved quantity $h$, and the second two are the contravariant components $v^1$ and $v^2$ 
+used in the expansion 
+```math
+\vec{v} = v^1 \vec{a}_1 + v^2 \vec{a}_2,
+```
+which are spatially varying but remain constant in time (i.e. no flux or dissipation is 
+applied to such variables). The resulting system is then given on the reference element as 
+```math
+J \frac{\partial}{\partial t}\left[\begin{array}{c} h \\ v^1 \\ v^2 \end{array}\right] +
+\frac{\partial}{\partial \xi^1} \left[\begin{array}{c} J h v^1 \\ 0 \\ 0 \end{array}\right]
++ 
+\frac{\partial}{\partial \xi^2} \left[\begin{array}{c} J h v^2 \\ 0 \\ 0 \end{array}\right] 
+= \left[\begin{array}{c} 0 \\ 0 \\ 0 \end{array}\right],
+```
+where $J$ is the area element (see the documentation for [`P4estElementContainerCovariant`](@ref)).
+!!! note
+    The initial condition should be prescribed as $[h, u, v]^{\mathrm{T}}$ in terms of the 
+    global velocity components $u$ and $v$ (i.e. zonal and meridional components in the 
+    case of a spherical shell). The transformation to local contravariant components $v^1$ 
+    and $v^2$ is handled internally within `Trixi.compute_coefficients!`.
+"""
 struct CovariantLinearAdvectionEquation2D <: AbstractCovariantEquations{2, 3, 3} end
 
-# The first variable is the scalar conserved quantity, and the second two are the 
-# contravariant velocity components, which are spatially varying but constant in time.
+# T
 function Trixi.varnames(::typeof(cons2cons), ::CovariantLinearAdvectionEquation2D)
     return ("scalar", "v_con_1", "v_con_2")
 end

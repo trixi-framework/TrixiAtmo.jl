@@ -6,7 +6,25 @@ const EARTH_GRAVITATIONAL_ACCELERATION = 9.80616f0  # m/s²
 const EARTH_ROTATION_RATE = 7.292f-5  # rad/s
 const SECONDS_PER_DAY = 8.64f4
 
-# Abstract type used to dispatch specialized solvers for the covariant form
+@doc raw"""
+    AbstractCovariantEquations{NDIMS, 
+                               NDIMS_AMBIENT, 
+                               NVARS} <: AbstractEquations{NDIMS, NVARS} 
+
+Abstract type used to dispatch on systems of equations in covariant form, in which fluxes
+and prognostic variables are stored and computed in terms of their contravariant components 
+defining their expansions in terms of the local covariant tangent basis. The type parameter
+`NDIMS` denotes the dimension of the manifold on which the equations are solved, while
+`NDIMS_AMBIENT` is the dimension of the ambient space in which such a manifold is embedded. 
+
+!!! note 
+    Components of vector-valued fields should be prescibed within the global coordinate 
+    system (i.e. zonal and meridional components in the case of a spherical shell). 
+    When dispatched on this type, the function `Trixi.compute_coefficients!` will 
+    internally use the `covariant_basis` field of the container type 
+    [`P4estElementContainerCovariant`](@ref) to obtain the local contravariant components
+    used in the solver. 
+"""
 abstract type AbstractCovariantEquations{NDIMS,
                                          NDIMS_AMBIENT,
                                          NVARS} <: AbstractEquations{NDIMS, NVARS} end
