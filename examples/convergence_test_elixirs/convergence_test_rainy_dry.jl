@@ -110,4 +110,4 @@ sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
 summary_callback() # print the timer summary
 
 # For copy-paste convenience:
-#convergence_test("TrixiAtmo.jl/examples/test_elixirs/convergence_test_rainy_dry.jl", 4)
+#convergence_test("TrixiAtmo.jl/examples/convergence_test_elixirs/convergence_test_rainy_dry.jl", 4)

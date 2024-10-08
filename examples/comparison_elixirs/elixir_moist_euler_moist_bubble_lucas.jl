@@ -242,12 +242,12 @@ source_term = source_terms_moist_bubble
 polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
 
-surface_flux = flux_LMARS
-volume_flux = flux_chandrashekar
+#surface_flux = flux_LMARS
+#volume_flux = flux_chandrashekar
 
-volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
-
-solver = DGSEM(basis, surface_flux, volume_integral)
+#volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
+surface_flux = flux_lax_friedrichs
+solver = DGSEM(basis, surface_flux)#, volume_integral)
 
 coordinates_min = (0.0, 0.0)
 coordinates_max = (20000.0, 10000.0)
@@ -268,7 +268,7 @@ semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
 ###############################################################################
 # ODE solvers, callbacks etc.
 
-tspan = (0.0, 10.0)
+tspan = (0.0, 1000.0)
 ode = semidiscretize(semi, tspan)
 
 summary_callback = SummaryCallback()

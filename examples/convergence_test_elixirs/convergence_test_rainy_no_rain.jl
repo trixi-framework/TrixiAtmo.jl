@@ -12,7 +12,6 @@ function initial_condition_convergence_test_rainy_no_rain(x, t, equations::Compr
     c_vd     = equations.c_dry_air_const_volume
     c_vv     = equations.c_vapour_const_volume
     R_v      = equations.R_vapour
-    ref_temp = equations.ref_temperature
     ref_L    = equations.ref_latent_heat_vap_temp
 
     # define rho like in dry convergence test
@@ -24,15 +23,15 @@ function initial_condition_convergence_test_rainy_no_rain(x, t, equations::Compr
     rho = c + A * sin(ω * (x[1] + x[2] - t))
 
     # define variables of rho
-    temperature = rho + ref_temp
+    temperature = rho
     rho_vapour  = saturation_vapour_pressure(temperature, equations) / (R_v * temperature)
     rho_cloud   = rho / c_l
     rho_moist   = rho_vapour + rho_cloud
     rho_dry     = rho - rho_moist
 
     # define matching energydensity with v1 := 1 and v2 := 1 , initially
-    energy  = (c_vd * rho_dry + c_vv * rho_vapour + c_l * rho_cloud) * (temperature - ref_temp)
-    energy += rho_vapour * (ref_L - R_v * ref_temp) + rho
+    energy  = (c_vd * rho_dry + c_vv * rho_vapour + c_l * rho_cloud) * temperature
+    energy += rho_vapour * ref_L + rho
 
     return SVector(rho_dry, rho_moist, 0.0, rho, rho, energy, rho_vapour, rho_cloud, temperature)
 end
@@ -45,7 +44,6 @@ function source_terms_convergence_test_rainy_no_rain(u, x, t, equations::Compres
     c_vv     = equations.c_vapour_const_volume
     R_d      = equations.R_dry_air
     R_v      = equations.R_vapour
-    ref_temp = equations.ref_temperature
     ref_L    = equations.ref_latent_heat_vap_temp
 
     # define rho like initial condition
@@ -60,7 +58,7 @@ function source_terms_convergence_test_rainy_no_rain(u, x, t, equations::Compres
     rho_t  = -rho_x
 
     # define variables of rho
-    temperature = rho + ref_temp
+    temperature = rho
     sat_vap_p   = saturation_vapour_pressure(temperature, equations)
     rho_vapour  = sat_vap_p / (R_v * temperature)
     rho_cloud   = rho / c_l
@@ -85,11 +83,11 @@ function source_terms_convergence_test_rainy_no_rain(u, x, t, equations::Compres
 
     energy_t     = (c_vd * rho_dry_t + c_vv * rho_vapour_t + rho_t) * rho
     energy_t    += (c_vd * rho_dry   + c_vv * rho_vapour   + rho  ) * rho_t
-    energy_t    += rho_vapour_t * (ref_L - R_v * ref_temp) + rho_t
+    energy_t    += rho_vapour_t * ref_L + rho_t
 
     energy_x     = (c_vd * rho_dry_x + c_vv * rho_vapour_x + rho_x) * rho
     energy_x    += (c_vd * rho_dry   + c_vv * rho_vapour   + rho  ) * rho_x
-    energy_x    += rho_vapour_x * (ref_L - R_v * ref_temp) + rho_x
+    energy_x    += rho_vapour_x * ref_L + rho_x
 
     pressure_x   = (rho_dry_x * R_d + rho_vapour_x * R_v) * temperature
     pressure_x  += (rho_dry   * R_d + rho_vapour   * R_v) * rho_x         # temperature_x = rho_x
@@ -122,7 +120,7 @@ solver = DGSEM(polydeg = 3, surface_flux = flux_lax_friedrichs)
 coordinates_min = (0.0, 0.0)
 coordinates_max = (2.0, 2.0)
 
-cells_per_dimension = (12, 12)
+cells_per_dimension = (16, 16)
 
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max)
 
@@ -165,4 +163,4 @@ sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false, stage_limite
 summary_callback() # print the timer summary
 
 # For copy-paste convenience:
-#convergence_test("TrixiAtmo.jl/examples/test_elixirs/convergence_test_rainy_no_rain.jl", 3)
+#convergence_test("TrixiAtmo.jl/examples/convergence_test_elixirs/convergence_test_rainy_no_rain.jl", 3)

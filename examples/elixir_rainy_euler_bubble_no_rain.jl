@@ -1,8 +1,9 @@
 using OrdinaryDiffEq
 using Trixi
 using TrixiAtmo
-using TrixiAtmo: source_terms_no_phase_change, saturation_residual_custom,
-                 saturation_residual_jacobian_custom, NonlinearSolveDG
+using TrixiAtmo: source_terms_no_phase_change, saturation_residual,
+                 saturation_residual_jacobian, NonlinearSolveDG,
+                 cons2eq_pot_temp
 using NLsolve: nlsolve
 
 
@@ -156,7 +157,7 @@ function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
     kappa_M = (R_d * rho_d + R_v * rho_qv) / (c_pd * rho_d + c_pv * rho_qv + c_pl * rho_ql)
     p_loc = p_0 * (R_d * rho_theta / p_0)^(1 / (1 - kappa_M))
     T_loc = p_loc / (R_d * rho_d + R_v * rho_qv)
-    rho_e = (c_vd * rho_d + c_vv * rho_qv + c_pl * rho_ql) * (T_loc - 273.15) + (L_00 - R_v * 273.15) * rho_qv
+    rho_e = (c_vd * rho_d + c_vv * rho_qv + c_pl * rho_ql) * T_loc + L_00 * rho_qv
 
     #=p_v = rho_qv * R_v * T_loc
     p_d = p_loc - p_v
@@ -216,7 +217,7 @@ function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
         kappa_M = (R_d * rho_d + R_v * rho_qv) /
                   (c_pd * rho_d + c_pv * rho_qv + c_pl * rho_ql)
         rho_theta = rho * θ_dens_new * (p_loc / p_0)^(kappa - kappa_M)
-        rho_e = (c_vd * rho_d + c_vv * rho_qv + c_pl * rho_ql) * (T_loc - 273.15) + (L_00 - R_v * 273.15) * rho_qv
+        rho_e = (c_vd * rho_d + c_vv * rho_qv + c_pl * rho_ql) * T_loc + L_00 * rho_qv
     end
     return SVector(rho, rho_e, rho_qv, rho_ql, T_loc)
 end
@@ -236,8 +237,8 @@ end
 
 equations = CompressibleRainyEulerEquations2D()
 
-boundary_conditions = (x_neg = boundary_condition_slip_wall,
-                       x_pos = boundary_condition_slip_wall,
+boundary_conditions = (x_neg = boundary_condition_periodic,
+                       x_pos = boundary_condition_periodic,
                        y_neg = boundary_condition_slip_wall,
                        y_pos = boundary_condition_slip_wall)
 
@@ -251,9 +252,9 @@ solver = DGSEM(basis, surface_flux)
 coordinates_min = (     0.0,      0.0)
 coordinates_max = (20_000.0, 10_000.0)
 
-cells_per_dimension = (64, 32)
+cells_per_dimension = (200, 100)
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
-                      periodicity = (false, false))
+                      periodicity = (true, false))
 
 semi = SemidiscretizationHyperbolic(mesh, equations,
                                     initial_condition_moist, solver,
@@ -263,7 +264,7 @@ semi = SemidiscretizationHyperbolic(mesh, equations,
 ###############################################################################
 # ODE solvers, callbacks etc.
 
-tspan = (0.0, 10.0)
+tspan = (0.0, 1000.0)
 
 ode = semidiscretize(semi, tspan)
 
@@ -281,7 +282,7 @@ save_solution = SaveSolutionCallback(interval = 1000,
                                      save_initial_solution = true,
                                      save_final_solution = true,
                                      output_directory = "out",
-                                     solution_variables = cons2prim)
+                                     solution_variables = cons2eq_pot_temp)
 
 stepsize_callback = StepsizeCallback(cfl = 1.0)
 
@@ -291,7 +292,7 @@ callbacks = CallbackSet(summary_callback,
                         save_solution,
                         stepsize_callback)
 
-stage_limiter! = NonlinearSolveDG(saturation_residual_custom, saturation_residual_jacobian_custom, SVector(7, 8, 9), 1e-9)
+stage_limiter! = NonlinearSolveDG(saturation_residual, saturation_residual_jacobian, SVector(7, 8, 9), 1e-9)
 
 ###############################################################################
 # run the simulation
