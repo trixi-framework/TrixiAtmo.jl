@@ -82,24 +82,6 @@ end
 
 
 
-###  varnames  ###
-
-varnames(::typeof(cons2cons), ::CompressibleRainyEulerEquations2D) = ("rho_dry", "rho_moist", "rho_rain",
-                                                                      "rho_v1", "rho_v2",
-                                                                      "energy_density",
-                                                                      "rho_vapour_h", "rho_cloud_h",
-                                                                      "temperature_h")
-
-
-varnames(::typeof(cons2prim), ::CompressibleRainyEulerEquations2D) = ("rho_dry", "rho_moist", "rho_rain",
-                                                                      "v1", "v2",
-                                                                      "energy_density",
-                                                                      "rho_vapour", "rho_cloud",
-                                                                      "temperature")
-
-
-
-
 ###  conversion  ###
 
 @inline function cons2prim(u, equations::CompressibleRainyEulerEquations2D)
@@ -122,6 +104,52 @@ end
 @inline function cons2entropy(u, equations::CompressibleRainyEulerEquations2D)
     #TODO
     return SVector(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+end
+
+
+# adapted from compressible_moist_euler_2d.jl
+@inline function cons2eq_pot_temp(u, equations::CompressibleRainyEulerEquations2D)
+    # constants
+    c_l      = equations.c_liquid_water
+    c_pd     = equations.c_dry_air_const_pressure
+    c_pv     = equations.c_vapour_const_pressure
+    R_d      = equations.R_dry_air
+    R_v      = equations.R_vapour
+    ref_p    = equations.ref_pressure
+    ref_temp = equations.ref_temperature
+    ref_L    = equations.ref_latent_heat_vap_temp
+    
+    # densities
+    rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
+
+    # velocity
+    v1, v2 = velocities(u, rho_inv, equations)
+
+    # energy density
+    energy = energy_density(u, equations)
+
+    # nonlinear system
+    rho_vapour, rho_cloud, temperature = cons2nonlinearsystemsol(u, equations)
+
+    # pressure
+    p = pressure(u, equations)
+
+    p_v  = rho_vapour * R_v * temperature
+    p_d  = p - p_v
+    T_C  = temperature - ref_temp
+    p_vs = 611.2 * exp(17.62 * T_C / (243.12 + T_C))
+    H    = p_v / p_vs
+    r_v  = rho_vapour / rho_dry
+    r_c  = rho_cloud  / rho_dry
+    r_r  = rho_rain   / rho_dry
+    L_v  = ref_L + (c_pv - c_l) * temperature
+    c_p  = c_pd + r_v * c_pv + (r_c + r_r) * c_l
+
+    # equivalent potential temperature
+    eq_pot = (temperature * (ref_p / p_d)^(R_d / c_p) * H^(-r_v * R_v / c_p) *
+               exp(L_v * r_v * inv(c_p * temperature)))
+
+    return SVector(rho, r_v, r_c, r_r, v1, v2, eq_pot)
 end
 
 
@@ -185,6 +213,27 @@ end
 
     return SVector(v1, v2, v_sound, v_r)
 end
+
+
+
+###  varnames  ###
+
+varnames(::typeof(cons2cons), ::CompressibleRainyEulerEquations2D) = ("rho_dry", "rho_moist", "rho_rain",
+                                                                        "rho_v1", "rho_v2",
+                                                                        "energy_density",
+                                                                        "rho_vapour_h", "rho_cloud_h",
+                                                                        "temperature_h")
+
+
+varnames(::typeof(cons2prim), ::CompressibleRainyEulerEquations2D) = ("rho_dry", "rho_moist", "rho_rain",
+                                                                        "v1", "v2",
+                                                                        "energy_density",
+                                                                        "rho_vapour", "rho_cloud",
+                                                                        "temperature")
+
+varnames(::typeof(cons2eq_pot_temp), ::CompressibleRainyEulerEquations2D) = ("rho", "r_vapour",
+                                                                             "r_cloud", "r_rain", 
+                                                                             "v1", "v2", "eq_pot_temp")
 
 
 
@@ -482,7 +531,7 @@ end
     # name needed variables
     v1, v2, v_sound, v_r = cons2speeds(u, equations)
 
-    return abs(v1) + v_sound, abs(v2) + v_sound + abs(v_r)
+    return SVector((abs(v1) + v_sound), (abs(v2) + v_sound + abs(v_r)))
 end
 
 
@@ -591,14 +640,13 @@ end
 ###  Nonlinear System Residual  ###
 
 # in preparation for a callback to solve the nonlinear system
-@inline function saturation_residual(u, equations::CompressibleRainyEulerEquations2D)
+@inline function saturation_residual(u, guess, equations::CompressibleRainyEulerEquations2D)
     # constants
     c_l      = equations.c_liquid_water
     c_vd     = equations.c_dry_air_const_volume
     c_vv     = equations.c_vapour_const_volume
     R_v      = equations.R_vapour
     L_ref    = equations.ref_latent_heat_vap_temp
-    ref_temp = equations.ref_temperature
 
     # densities
     rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
@@ -609,137 +657,58 @@ end
     # energy density
     energy = energy_density(u, equations)
 
-    function saturation_residual!(residual, guess)
-        residual[1]  = (c_vd * rho_dry + c_vv * guess[1] + c_l * (guess[2] + rho_rain)) * (guess[3] - ref_temp)
-        residual[1] += guess[1] * (L_ref - R_v * ref_temp)
-        residual[1] -= (energy - rho * 0.5 * (v1^2 + v2^2))
+    # define residual
+    residual1  = (c_vd * rho_dry + c_vv * guess[1] + c_l * (guess[2] + rho_rain)) * guess[3]
+    residual1 += guess[1] * L_ref
+    residual1 -= (energy - rho * 0.5 * (v1^2 + v2^2))
 
-        residual[2]  = min(saturation_vapour_pressure(guess[3], equations) / (R_v * guess[3]), rho_moist)
-        residual[2] -= guess[1]
-        residual[2] *= 1e7
+    residual2  = min(saturation_vapour_pressure(guess[3], equations) / (R_v * guess[3]), rho_moist)
+    residual2 -= guess[1]
+    residual2 *= 1e7
 
-        residual[3]  = rho_moist
-        residual[3] -= guess[1] + guess[2]
-        residual[3] *= 1e7
-    end
+    residual3  = rho_moist
+    residual3 -= guess[1] + guess[2]
+    residual3 *= 1e7
 
-    return saturation_residual!
+    return SVector(residual1, residual2, residual3)
 end
 
 
-@inline function saturation_residual_custom(u, equations::CompressibleRainyEulerEquations2D)
+
+@inline function saturation_residual_jacobian(u, guess, equations::CompressibleRainyEulerEquations2D)
     # constants
     c_l      = equations.c_liquid_water
     c_vd     = equations.c_dry_air_const_volume
     c_vv     = equations.c_vapour_const_volume
     R_v      = equations.R_vapour
     L_ref    = equations.ref_latent_heat_vap_temp
-    ref_temp = equations.ref_temperature
 
     # densities
     rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
 
-    # velocity
-    v1, v2 = velocities(u, rho_inv, equations)
+    # saturation
+    svp   = saturation_vapour_pressure(guess[3], equations)
+    svp_t = saturation_vapour_pressure_derivative(guess[3], equations)
 
-    # energy density
-    energy = energy_density(u, equations)
+    # define jacobian
+    J_11 = c_vv * guess[3] + L_ref
+    J_12 = c_l  * guess[3]
+    J_13 = c_vd * rho_dry + c_vv * guess[1] + c_l * (guess[2] + rho_rain)
 
-    function saturation_residual!(residual, guess)
-        residual1  = (c_vd * rho_dry + c_vv * guess[1] + c_l * (guess[2] + rho_rain)) * (guess[3] - ref_temp)
-        residual1 += guess[1] * (L_ref - R_v * ref_temp)
-        residual1 -= (energy - rho * 0.5 * (v1^2 + v2^2))
-
-        residual2  = min(saturation_vapour_pressure(guess[3], equations) / (R_v * guess[3]), rho_moist)
-        residual2 -= guess[1]
-        residual2 *= 1e7
-
-        residual3  = rho_moist
-        residual3 -= guess[1] + guess[2]
-        residual3 *= 1e7
-
-        residual = SVector(residual1, residual2, residual3)
-    end
-
-    return saturation_residual!
-end
-
-
-@inline function saturation_residual_jacobian(u, equations::CompressibleRainyEulerEquations2D)
-    # constants
-    c_l      = equations.c_liquid_water
-    c_vd     = equations.c_dry_air_const_volume
-    c_vv     = equations.c_vapour_const_volume
-    R_v      = equations.R_vapour
-    L_ref    = equations.ref_latent_heat_vap_temp
-    ref_temp = equations.ref_temperature
-
-    # densities
-    rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
-
-    function jacobian!(J, guess)
-        svp         = saturation_vapour_pressure(guess[3], equations)
-        d_dtemp_svp = saturation_vapour_pressure_derivative(guess[3], equations)
-
-        J[1, 1] = c_vv * (guess[3] - ref_temp) + L_ref - R_v * ref_temp
-        J[1, 2] = c_l  * (guess[3] - ref_temp)
-        J[1, 3] = c_vd * rho_dry + c_vv * guess[1] + c_l * (guess[2] + rho_rain)
-
-        J[2, 1] = -1e7
-        J[2, 2] =  0.0
+    J_21 = -1e7
+    J_22 =  0.0
         
-        if (svp / (R_v * guess[3]) < rho_moist)
-            J[2, 3] = (d_dtemp_svp * guess[3] - svp) / (R_v * guess[3]^2) * 1e7
-        else
-            J[2, 3] = 0.0
-        end
-
-        J[3, 1] = -1e7
-        J[3, 2] = -1e7
-        J[3, 3] =  0.0
+    if (svp / (R_v * guess[3]) < rho_moist)
+        J_23 = (svp_t * guess[3] - svp) / (R_v * guess[3]^2) * 1e7
+    else
+        J_23 = 0.0
     end
 
-    return jacobian!
-end
+    J_31 = -1e7
+    J_32 = -1e7
+    J_33 =  0.0
 
-
-@inline function saturation_residual_jacobian_custom(u, equations::CompressibleRainyEulerEquations2D)
-    # constants
-    c_l      = equations.c_liquid_water
-    c_vd     = equations.c_dry_air_const_volume
-    c_vv     = equations.c_vapour_const_volume
-    R_v      = equations.R_vapour
-    L_ref    = equations.ref_latent_heat_vap_temp
-    ref_temp = equations.ref_temperature
-
-    # densities
-    rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
-
-    function jacobian!(J, guess)
-        svp         = saturation_vapour_pressure(guess[3], equations)
-        d_dtemp_svp = saturation_vapour_pressure_derivative(guess[3], equations)
-
-        J_11 = c_vv * (guess[3] - ref_temp) + L_ref - R_v * ref_temp
-        J_12 = c_l  * (guess[3] - ref_temp)
-        J_13 = c_vd * rho_dry + c_vv * guess[1] + c_l * (guess[2] + rho_rain)
-
-        J_21 = -1e7
-        J_22 =  0.0
-        
-        if (svp / (R_v * guess[3]) < rho_moist)
-            J_23 = (d_dtemp_svp * guess[3] - svp) / (R_v * guess[3]^2) * 1e7
-        else
-            J_23 = 0.0
-        end
-
-        J_31 = -1e7
-        J_32 = -1e7
-        J_33 =  0.0
-
-        J = SMatrix{3, 3}(J_11, J_21, J_31, J_12, J_22, J_32, J_13, J_23, J_33)
-    end
-
-    return jacobian!
+    return SMatrix{3, 3}(J_11, J_21, J_31, J_12, J_22, J_32, J_13, J_23, J_33)
 end
 
 
