@@ -20,4 +20,8 @@ const TRIXIATMO_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
     @time if TRIXIATMO_TEST == "all" || TRIXIATMO_TEST == "spherical_advection"
         include("test_spherical_advection.jl")
     end
+
+    @time if TRIXIATMO_TEST == "all" || TRIXIATMO_TEST == "shallow_water_3d"
+        include("test_3d_shallow_water.jl")
+    end
 end
