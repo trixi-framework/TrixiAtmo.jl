@@ -58,7 +58,7 @@ end
     return 0.5f0 * (flux_ll + flux_rr)
 end
 
-# Version for suface flux (only one set of indices)
+# Version for surface flux (only one set of indices)
 @inline function Trixi.flux_central(u_ll, u_rr,
                                     orientation_or_normal_direction,
                                     equations::AbstractCovariantEquations{2},
