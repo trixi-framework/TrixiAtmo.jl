@@ -33,7 +33,7 @@ abstract type AbstractCovariantEquations{NDIMS,
 # We assume that u_ll and u_rr have been transformed into the same local coordinate system.
 @inline function (numflux::Trixi.FluxPlusDissipation)(u_ll, u_rr,
                                                       orientation_or_normal_direction,
-                                                      equations::AbstractCovariantEquations,
+                                                      equations::AbstractCovariantEquations{2},
                                                       elements, i, j, element)
 
     # The flux and dissipation need to be defined for the specific equation set
@@ -48,7 +48,7 @@ end
 # We assume that u_ll and u_rr have been transformed into the same local coordinate system.
 @inline function Trixi.flux_central(u_ll, u_rr,
                                     orientation_or_normal_direction,
-                                    equations::AbstractCovariantEquations,
+                                    equations::AbstractCovariantEquations{2},
                                     elements, i_ll, j_ll, i_rr, j_rr, element)
     flux_ll = Trixi.flux(u_ll, orientation_or_normal_direction, equations,
                          elements, i_ll, j_ll, element)
@@ -56,6 +56,15 @@ end
                          elements, i_rr, j_rr, element)
 
     return 0.5f0 * (flux_ll + flux_rr)
+end
+
+# Version for suface flux (only one set of indices)
+@inline function Trixi.flux_central(u_ll, u_rr,
+                                    orientation_or_normal_direction,
+                                    equations::AbstractCovariantEquations{2},
+                                    elements, i, j, element)
+    return flux_central(u_ll, u_rr, orientation_or_normal_direction,
+                        equations, elements, i, j, i, j, element)
 end
 
 include("covariant_advection.jl")
