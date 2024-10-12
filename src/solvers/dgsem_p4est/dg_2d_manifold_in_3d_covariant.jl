@@ -65,8 +65,8 @@ end
 
 # Evaluate the initial condition in spherical vector components, then 
 # transform to contravariant components for use as prognostic variables
-function Trixi.compute_coefficients!(u, func, t, mesh::P4estMesh,
-                                     equations::AbstractCovariantEquations, dg::DG,
+function Trixi.compute_coefficients!(u, func, t, mesh::P4estMesh{2},
+                                     equations::AbstractCovariantEquations{2}, dg::DG,
                                      cache)
     for element in eachelement(dg, cache)
         for j in eachnode(dg), i in eachnode(dg)
