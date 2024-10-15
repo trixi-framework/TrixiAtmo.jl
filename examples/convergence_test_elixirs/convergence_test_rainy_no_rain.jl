@@ -2,7 +2,7 @@ using OrdinaryDiffEq
 using Trixi
 using TrixiAtmo
 using TrixiAtmo: saturation_vapour_pressure, saturation_vapour_pressure_derivative,
-                 saturation_residual_custom, saturation_residual_jacobian_custom
+                 saturation_residual, saturation_residual_jacobian
 
 
 
@@ -23,9 +23,9 @@ function initial_condition_convergence_test_rainy_no_rain(x, t, equations::Compr
     rho = c + A * sin(ω * (x[1] + x[2] - t))
 
     # define variables of rho
-    temperature = rho
+    temperature = rho + 250.0
     rho_vapour  = saturation_vapour_pressure(temperature, equations) / (R_v * temperature)
-    rho_cloud   = rho / c_l
+    rho_cloud   = rho / c_l * 4000
     rho_moist   = rho_vapour + rho_cloud
     rho_dry     = rho - rho_moist
 
@@ -58,10 +58,10 @@ function source_terms_convergence_test_rainy_no_rain(u, x, t, equations::Compres
     rho_t  = -rho_x
 
     # define variables of rho
-    temperature = rho
+    temperature = rho + 250.0
     sat_vap_p   = saturation_vapour_pressure(temperature, equations)
     rho_vapour  = sat_vap_p / (R_v * temperature)
-    rho_cloud   = rho / c_l
+    rho_cloud   = rho / c_l * 4000
     rho_moist   = rho_vapour + rho_cloud
     rho_dry     = rho - rho_moist
 
@@ -72,8 +72,8 @@ function source_terms_convergence_test_rainy_no_rain(u, x, t, equations::Compres
     rho_vapour_t = (sat_vap_p_t * temperature - rho_t * sat_vap_p) / (R_v * temperature^2)
     rho_vapour_x = (sat_vap_p_x * temperature - rho_x * sat_vap_p) / (R_v * temperature^2)
 
-    rho_cloud_t  = rho_t / c_l
-    rho_cloud_x  = rho_x / c_l
+    rho_cloud_t  = rho_t / c_l * 4000
+    rho_cloud_x  = rho_x / c_l * 4000
 
     rho_moist_t  = rho_vapour_t + rho_cloud_t
     rho_moist_x  = rho_vapour_x + rho_cloud_x
@@ -81,12 +81,12 @@ function source_terms_convergence_test_rainy_no_rain(u, x, t, equations::Compres
     rho_dry_t    = rho_t - rho_moist_t
     rho_dry_x    = rho_x - rho_moist_x
 
-    energy_t     = (c_vd * rho_dry_t + c_vv * rho_vapour_t + rho_t) * rho
-    energy_t    += (c_vd * rho_dry   + c_vv * rho_vapour   + rho  ) * rho_t
+    energy_t     = (c_vd * rho_dry_t + c_vv * rho_vapour_t + c_l * rho_cloud_t) * temperature
+    energy_t    += (c_vd * rho_dry   + c_vv * rho_vapour   + c_l * rho_cloud  ) * rho_t
     energy_t    += rho_vapour_t * ref_L + rho_t
 
-    energy_x     = (c_vd * rho_dry_x + c_vv * rho_vapour_x + rho_x) * rho
-    energy_x    += (c_vd * rho_dry   + c_vv * rho_vapour   + rho  ) * rho_x
+    energy_x     = (c_vd * rho_dry_x + c_vv * rho_vapour_x + c_l * rho_cloud_x) * temperature
+    energy_x    += (c_vd * rho_dry   + c_vv * rho_vapour   + c_l * rho_cloud  ) * rho_x
     energy_x    += rho_vapour_x * ref_L + rho_x
 
     pressure_x   = (rho_dry_x * R_d + rho_vapour_x * R_v) * temperature
@@ -140,7 +140,7 @@ analysis_callback = AnalysisCallback(semi, interval = analysis_interval)
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
-save_solution = SaveSolutionCallback(interval = analysis_interval,
+save_solution = SaveSolutionCallback(interval = 1000,
                                      save_initial_solution = true,
                                      save_final_solution = true,
                                      solution_variables = cons2prim)
@@ -152,7 +152,7 @@ callbacks = CallbackSet(summary_callback,
                         save_solution,
                         stepsize_callback)
 
-stage_limiter! = NonlinearSolveDG(saturation_residual_custom, saturation_residual_jacobian_custom, SVector(7, 8, 9), 1e-9)
+stage_limiter! = NonlinearSolveDG(saturation_residual, saturation_residual_jacobian, SVector(7, 8, 9), 1e-9)
 
 ###############################################################################
 # run the simulation

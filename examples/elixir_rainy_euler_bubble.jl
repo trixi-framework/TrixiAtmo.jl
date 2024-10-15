@@ -1,9 +1,36 @@
 using OrdinaryDiffEq
 using Trixi
 using TrixiAtmo
-using TrixiAtmo: source_terms_rainy
+using TrixiAtmo: source_terms_rainy, saturation_residual,
+                 saturation_residual_jacobian, NonlinearSolveDG,
+                 cons2eq_pot_temp, saturation_vapour_pressure
+using NLsolve: nlsolve
 
 
+## Hydrostatic base state
+
+function initial_constraint_residual(guess, equations::CompressibleRainyEulerEquations2D)
+    # rho_dry, rho_vapour, temperature = guess
+    c_pd          = equations.c_dry_air_const_pressure
+    R_d           = equations.R_dry_air
+    R_v           = equations.R_vapour
+    eps           = equations.eps
+    ref_p         = equations.ref_pressure
+    surf_p        = 8.5e4                   # surface pressure
+    humidity_rel0 = 0.2                     # hydrostatic relative humidity
+
+    rho_vs = saturation_vapour_pressure(guess[3]) / (R_v * guess[3])
+
+    res1  = surf_p   - guess[3] * (guess[1] * R_d + guess[2] * R_v)
+    res2  = theta_d0 - guess[3] * (ref_p / surf_p)^(R_d / c_pd)
+    res3  = rho_vs * (guess[1] + guess[2] / eps) * humidity_rel0
+    res3 -= guess[2] * (guess[1] + rho_vs / eps)
+
+    return SVector(res1, res2, 1000 * res3)
+end
+
+
+## Initial condition
 
 function initial_condition_bubble_rainy(x, t, equations::CompressibleRainyEulerEquations2D)
     #TODO
