@@ -143,13 +143,13 @@ end
     r_c  = rho_cloud  / rho_dry
     r_r  = rho_rain   / rho_dry
     L_v  = ref_L + (c_pv - c_l) * temperature
-    c_p  = c_pd + r_v * c_pv + (r_c + r_r) * c_l
+    c_p  = c_pd + (r_v + r_c + r_r) * c_l
 
     # equivalent potential temperature
     eq_pot = (temperature * (ref_p / p_d)^(R_d / c_p) * H^(-r_v * R_v / c_p) *
                exp(L_v * r_v * inv(c_p * temperature)))
 
-    return SVector(rho, r_v, r_c, r_r, v1, v2, eq_pot)
+    return SVector(rho, r_v, r_c, r_r, v1, v2, eq_pot, p)
 end
 
 
@@ -233,7 +233,8 @@ varnames(::typeof(cons2prim), ::CompressibleRainyEulerEquations2D) = ("rho_dry",
 
 varnames(::typeof(cons2eq_pot_temp), ::CompressibleRainyEulerEquations2D) = ("rho", "r_vapour",
                                                                              "r_cloud", "r_rain", 
-                                                                             "v1", "v2", "eq_pot_temp")
+                                                                             "v1", "v2", "eq_pot_temp",
+                                                                             "pressure")
 
 
 
@@ -430,7 +431,7 @@ end
         f5 = rho       * v2 * v2  + p - rho_rain * v_r * v2
 
         # "energy"
-        f6 = (energy + p) * v2 - (c_l * (temperature - ref_temp) + 0.5 * (v1^2 + v2^2)) * rho_rain * v_r
+        f6 = (energy + p) * v2 - (c_l * temperature + 0.5 * (v1^2 + v2^2)) * rho_rain * v_r
     end
 
     return SVector(f1, f2, f3, f4, f5, f6, 
@@ -474,7 +475,7 @@ end
     f5 = rho       * v_normal * v2 + p * normal_direction[2] - rho_rain * v_r_normal * v2 
 
     # "energy"
-    f6 = (energy + p) * v_normal - (c_l * (temperature - ref_temp) + 0.5 * (v1^2 + v2^2)) * rho_rain * v_r_normal
+    f6 = (energy + p) * v_normal - (c_l * temperature + 0.5 * (v1^2 + v2^2)) * rho_rain * v_r_normal
 
     return SVector(f1, f2, f3, f4, f5, f6, 
                    0.0, 0.0, 0.0)
@@ -499,7 +500,7 @@ end
 
     rho_vs = saturation_vapour_pressure(temperature, equations) / (R_v * temperature)
 
-    # source terms phase change
+    # source terms phase change #TODO no ref_temp?
     S_evaporation     = (3.86e-3 - 9.41e-5 * (temperature - ref_temp)) * (1 + 9.1 * rho_rain^(0.1875))
     S_evaporation    *= (rho_vs - rho_vapour) * rho_rain^(0.5)
     S_auto_conversion = 0.001 * rho_cloud
