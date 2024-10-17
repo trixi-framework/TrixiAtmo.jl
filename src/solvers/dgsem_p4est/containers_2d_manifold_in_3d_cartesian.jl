@@ -29,15 +29,26 @@ mutable struct P4estElementContainerPtrArray{NDIMS, RealT <: Real, uEltype <: Re
 end
 
 @inline function Trixi.nelements(elements::P4estElementContainerPtrArray)
-    size(elements.node_coordinates, ndims(elements) + 2)
+    return size(elements.node_coordinates, ndims(elements) + 2)
 end
 @inline Base.ndims(::P4estElementContainerPtrArray{NDIMS}) where {NDIMS} = NDIMS
-@inline function Base.eltype(::P4estElementContainerPtrArray{NDIMS, RealT, uEltype}) where {
-                                                                                            NDIMS,
-                                                                                            RealT,
-                                                                                            uEltype
-                                                                                            }
-    uEltype
+@inline function Base.eltype(::P4estElementContainerPtrArray{NDIMS,
+                                                             RealT, uEltype}) where {
+                                                                                     NDIMS,
+                                                                                     RealT,
+                                                                                     uEltype
+                                                                                     }
+    return uEltype
+end
+
+# Extract contravariant vector Ja^i (i = index) as SVector
+# This function dispatches on the type of contravariant_vectors
+static2val(::Trixi.StaticInt{N}) where {N} = Val{N}()
+@inline function Trixi.get_contravariant_vector(index, contravariant_vectors::PtrArray,
+                                                indices...)
+    return SVector(ntuple(@inline(dim->contravariant_vectors[dim, index, indices...]),
+                          static2val(static_size(contravariant_vectors,
+                                                 Trixi.StaticInt(1)))))
 end
 
 # Create element container and initialize element data.
@@ -89,26 +100,30 @@ function Trixi.init_elements(mesh::Union{P4estMesh{2, 3, RealT},
                                              ntuple(_ -> nnodes(basis), NDIMS - 1)...,
                                              NDIMS * 2, nelements))
 
+    ContravariantVectors = typeof(contravariant_vectors)
     elements = P4estElementContainerPtrArray{NDIMS, RealT, uEltype, NDIMS + 1,
                                              NDIMS + 2,
-                                             NDIMS + 3, typeof(contravariant_vectors)}(node_coordinates,
-                                                                                       jacobian_matrix,
-                                                                                       contravariant_vectors,
-                                                                                       inverse_jacobian,
-                                                                                       surface_flux_values,
-                                                                                       _node_coordinates,
-                                                                                       _jacobian_matrix,
-                                                                                       _contravariant_vectors,
-                                                                                       _inverse_jacobian,
-                                                                                       _surface_flux_values)
+                                             NDIMS + 3,
+                                             ContravariantVectors}(node_coordinates,
+                                                                   jacobian_matrix,
+                                                                   contravariant_vectors,
+                                                                   inverse_jacobian,
+                                                                   surface_flux_values,
+                                                                   _node_coordinates,
+                                                                   _jacobian_matrix,
+                                                                   _contravariant_vectors,
+                                                                   _inverse_jacobian,
+                                                                   _surface_flux_values)
 
-    init_elements_2d_manifold_in_3d!(elements, mesh, basis)
+    init_elements_2d_manifold_in_3d!(elements, mesh, equations, basis)
 
     return elements
 end
 
+# This assumes a sphere, although the radius can be arbitrary, and general mesh topologies are supported.
 function init_elements_2d_manifold_in_3d!(elements,
                                           mesh::Union{P4estMesh{2}, T8codeMesh{2}},
+                                          equations::AbstractEquations{3},
                                           basis::LobattoLegendreBasis)
     (; node_coordinates, jacobian_matrix,
     contravariant_vectors, inverse_jacobian) = elements
@@ -198,22 +213,24 @@ function calc_node_coordinates_2d_shell!(node_coordinates,
             Trixi.multiply_dimensionwise!(view(node_coordinates, :, :, :, element),
                                           matrix1, matrix2,
                                           view(mesh.tree_node_coordinates, :, :, :,
-                                               tree),
-                                          tmp1)
+                                               tree), tmp1)
         end
     end
 
     return node_coordinates
 end
 
-# This only works for a sphere
+# Calculate contravariant vectors, multiplied by the Jacobian determinant J of the transformation mapping,
+# using Eq. (12) of :
+#   Giraldo, F. X. (2001). A spectral element shallow water model on spherical geodesic grids. 
+#   International Journal for Numerical Methods in Fluids, 35(8), 869-901. 
+# This is nothing but the cross-product form, but we end up with three contravariant vectors
+# because there are three space dimensions.
 function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArray{<:Any,
                                                                                    5},
                                               element,
                                               jacobian_matrix, node_coordinates,
                                               basis::LobattoLegendreBasis)
-    @unpack derivative_matrix = basis
-
     for j in eachnode(basis), i in eachnode(basis)
         radius = sqrt(node_coordinates[1, i, j, element]^2 +
                       node_coordinates[2, i, j, element]^2 +

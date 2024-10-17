@@ -3,4 +3,6 @@ run
 run/*
 out
 out/*
+docs/build
+docs/build/*
 .DS_Store
