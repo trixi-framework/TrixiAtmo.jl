@@ -5,7 +5,7 @@
 # not yet support non-conforming meshes for the covariant solver.
 function Trixi.rhs!(du, u, t, mesh::P4estMesh{2},
                     equations::AbstractCovariantEquations{2},
-                    initial_condition, boundary_conditions, source_terms::Source,
+                    boundary_conditions, source_terms::Source,
                     dg::DG, cache) where {Source}
     # Reset du
     Trixi.@trixi_timeit Trixi.timer() "reset ∂u/∂t" Trixi.reset_du!(du, dg, cache)
