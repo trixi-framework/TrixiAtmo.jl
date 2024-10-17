@@ -322,4 +322,61 @@ function calc_christoffel_symbols!(christoffel_symbols, covariant_metric,
         end
     end
 end
+
+# Check that the metric identities ∂ⱼ(J Gⁱʲ) = - JGʲᵏΓⱼₖⁱ are satisfied
+function check_metric_compatibility(solver::DG,
+                                    elements::P4estElementContainerCovariant{2},
+                                    i, j, element)
+    (; basis) = solver
+    (; derivative_matrix) = basis
+    (; contravariant_metric, christoffel_symbols) = elements
+
+    J = volume_element(elements, i, j, element)
+    JG_con_11 = J * contravariant_metric[1, 1, i, j, element]
+    JG_con_12 = J * contravariant_metric[1, 2, i, j, element]
+    JG_con_21 = J * contravariant_metric[2, 1, i, j, element]
+    JG_con_22 = J * contravariant_metric[2, 2, i, j, element]
+
+    # Differentiate with respect to ξ¹
+    d1_JG_con_11 = zero(eltype(contravariant_metric))
+    d1_JG_con_21 = zero(eltype(contravariant_metric))
+
+    for ii in eachnode(basis)
+        J_ii = volume_element(elements, ii, j, element)
+        d1_JG_con_11 = d1_JG_con_11 +
+                       derivative_matrix[i, ii] *
+                       J_ii * contravariant_metric[1, 1, ii, j, element]
+        d1_JG_con_21 = d1_JG_con_21 +
+                       derivative_matrix[i, ii] *
+                       J_ii * contravariant_metric[2, 1, ii, j, element]
+    end
+
+    # Differentiate with respect to ξ²
+    d2_JG_con_12 = zero(eltype(contravariant_metric))
+    d2_JG_con_22 = zero(eltype(contravariant_metric))
+    for jj in eachnode(basis)
+        J_jj = volume_element(elements, i, jj, element)
+        d2_JG_con_12 = d2_JG_con_12 +
+                       derivative_matrix[j, jj] *
+                       J_jj * contravariant_metric[1, 2, i, jj, element]
+        d2_JG_con_22 = d2_JG_con_22 +
+                       derivative_matrix[j, jj] *
+                       J_jj * contravariant_metric[2, 2, i, jj, element]
+    end
+
+    LHS1 = d1_JG_con_11 + d2_JG_con_12
+    LHS2 = d1_JG_con_21 + d2_JG_con_22
+
+    RHS1 = -(JG_con_11 * christoffel_symbols[1, 1, 1, i, j, element] +
+             JG_con_12 * christoffel_symbols[1, 2, 1, i, j, element] +
+             JG_con_21 * christoffel_symbols[2, 1, 1, i, j, element] +
+             JG_con_22 * christoffel_symbols[2, 2, 1, i, j, element])
+
+    RHS2 = -(JG_con_11 * christoffel_symbols[1, 1, 2, i, j, element] +
+             JG_con_12 * christoffel_symbols[1, 2, 2, i, j, element] +
+             JG_con_21 * christoffel_symbols[2, 1, 2, i, j, element] +
+             JG_con_22 * christoffel_symbols[2, 2, 2, i, j, element])
+
+    return LHS1 - RHS1, LHS2 - RHS2
+end
 end # @muladd

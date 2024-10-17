@@ -36,11 +36,11 @@ end
 # Spatial discretization
 
 polydeg = 3
-cells_per_dimension = 2
+cells_per_dimension = 5
 
 element_local_mapping = true
 
-mesh = P4estMeshCubedSphere2D(5, EARTH_RADIUS, polydeg = polydeg,
+mesh = P4estMeshCubedSphere2D(cells_per_dimension, EARTH_RADIUS, polydeg = polydeg,
                               initial_refinement_level = 0,
                               element_local_mapping = element_local_mapping)
 
