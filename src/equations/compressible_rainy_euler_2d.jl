@@ -713,4 +713,142 @@ end
 end
 
 
+
+# fluxes adapted from compressible_moist_euler_2d.jl
+
+# Low Mach number approximate Riemann solver (LMARS) from
+# X. Chen, N. Andronova, B. Van Leer, J. E. Penner, J. P. Boyd, C. Jablonowski, S.
+# Lin, A Control-Volume Model of the Compressible Euler Equations with a Vertical Lagrangian
+# Coordinate Monthly Weather Review Vol. 141.7, pages 2526–2544, 2013,
+# https://journals.ametsoc.org/view/journals/mwre/141/7/mwr-d-12-00129.1.xml.
+@inline function flux_LMARS(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleRainyEulerEquations2D)
+    # constants
+    a = 360.0      # TODO try with different speeds of sound
+    #a = max(speed_of_sound(u_ll, equations)[1], speed_of_sound(u_rr, equations)[1]) 
+
+    # densities
+    rho_dry_ll, rho_moist_ll, rho_rain_ll, rho_ll, rho_inv_ll = densities(u_ll, equations)
+    rho_dry_rr, rho_moist_rr, rho_rain_rr, rho_rr, rho_inv_rr = densities(u_rr, equations)
+
+    # pressure
+    p_ll = pressure(u_ll, equations)
+    p_rr = pressure(u_rr, equations)
+
+    # velocities
+    v1_ll, v2_ll = velocities(u_ll, rho_inv_ll, equations)
+    v1_rr, v2_rr = velocities(u_rr, rho_inv_rr, equations)
+    
+    v_ll  = v1_ll * normal_direction[1] + v2_ll * normal_direction[2]
+    v_rr  = v1_rr * normal_direction[1] + v2_rr * normal_direction[2]
+    norm_ = norm(normal_direction)
+
+    # diffusion parameter 0.0 < beta <= 1.0
+    beta = 1.0
+    
+    # interface flux components
+    rho = 0.5 * (rho_ll + rho_rr)
+    p_interface = 0.5 * (p_ll + p_rr) - beta * 0.5 * a * rho * (v_rr - v_ll) / norm_
+    v_interface = 0.5 * (v_ll + v_rr) - beta * 1 / (2 * a * rho) * (p_rr - p_ll) * norm_
+    
+    if (v_interface > 0)
+        f1, f2, f3, f4, f5, f6, _, _, _ = u_ll * v_interface
+        f6 += p_ll * v_interface
+        f7  = u_ll[7]
+        f8  = u_ll[8]
+        f9  = u_ll[9]
+    else
+        f1, f2, f3, f4, f5, f6, _, _, _ = u_rr * v_interface
+        f6 += p_rr * v_interface
+        f7  = u_rr[7]
+        f8  = u_rr[8]
+        f9  = u_rr[9]
+    end
+    
+    return SVector(f1, f2, f3,
+                   f4 + p_interface * normal_direction[1],
+                   f5 + p_interface * normal_direction[2],
+                   f6, f7, f8, f9)
+end
+
+
+# Adjusted EC flux in a normal direction with R_q=0. This is based on
+# A. Gouasmi, K. Duraisamy, S. M. Murman, Formulation of Entropy-Stable schemes for the
+# multicomponent compressible Euler equations, 4 Feb 2020, doi:10.1016/j.cma.2020.112912,
+# https://arxiv.org/abs/1904.00972 [math.NA].
+@inline function flux_chandrashekar(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleRainyEulerEquations2D)
+    # constants
+    c_l   = equations.c_liquid_water
+    c_vd  = equations.c_dry_air_const_volume
+    c_vv  = equations.c_vapour_const_volume
+    R_d   = equations.R_dry_air
+    R_v   = equations.R_vapour
+    ref_L = equations.ref_latent_heat_vap_temp
+    R_q   = 0.0
+
+    # densities and temperatures
+    rho_dry_ll, rho_moist_ll, rho_rain_ll, rho_ll, rho_inv_ll = densities(u_ll, equations)
+    rho_dry_rr, rho_moist_rr, rho_rain_rr, rho_rr, rho_inv_rr = densities(u_rr, equations)
+    rho_vapour_ll, rho_cloud_ll, temperature_ll               = cons2nonlinearsystemsol(u_ll, equations)
+    rho_vapour_rr, rho_cloud_rr, temperature_rr               = cons2nonlinearsystemsol(u_rr, equations)
+
+    # velocities
+    v1_ll, v2_ll = velocities(u_ll, rho_inv_ll, equations)
+    v1_rr, v2_rr = velocities(u_rr, rho_inv_rr, equations)
+    
+    # mean values
+    rho_dry_mean          = 0.0
+    rho_vapour_mean       = 0.0
+    rho_cloud_mean        = 0.0
+    rho_rain_mean         = 0.0
+    inv_temperature_mean  = 0.0
+
+    if (!(rho_dry_ll == 0.0) && !(rho_dry_rr == 0.0))
+        rho_dry_mean = ln_mean(rho_dry_ll, rho_dry_rr)
+    end
+
+    if (!(rho_vapour_ll == 0.0) && !(rho_vapour_rr == 0.0))
+        rho_vapour_mean = ln_mean(rho_vapour_ll, rho_vapour_rr)
+    end
+
+    if (!(rho_cloud_ll == 0.0) && !(rho_cloud_rr == 0.0))
+        rho_cloud_mean = ln_mean(rho_cloud_ll, rho_cloud_rr)
+    end
+
+    if (!(rho_rain_ll == 0.0) && !(rho_rain_rr == 0.0))
+        rho_rain_mean = ln_mean(rho_rain_ll, rho_rain_rr)
+    end
+
+    if (!(inv(temperature_ll) == 0.0) && !(inv(temperature_rr) == 0.0))
+        inv_temperature_mean = inv_ln_mean(inv(temperature_ll), inv(temperature_rr))
+    end
+    
+    v1_avg              = 0.5 * (v1_ll               + v1_rr)
+    v2_avg              = 0.5 * (v2_ll               + v2_rr)
+    v1_square_avg       = 0.5 * (v1_ll^2             + v1_rr^2)
+    v2_square_avg       = 0.5 * (v2_ll^2             + v2_rr^2)
+    rho_dry_avg         = 0.5 * (rho_dry_ll          + rho_dry_rr)
+    rho_vapour_avg      = 0.5 * (rho_vapour_ll       + rho_vapour_rr)
+    rho_cloud_avg       = 0.5 * (rho_cloud_ll        + rho_cloud_rr)
+    rho_rain_avg        = 0.5 * (rho_rain_ll         + rho_rain_rr)
+    inv_temperature_avg = 0.5 * (inv(temperature_ll) + inv(temperature_rr))
+    v_dot_n_avg         = normal_direction[1]*v1_avg + normal_direction[2]*v2_avg
+    
+    p_int = inv(inv_temperature_avg) * (R_d * rho_dry_avg + R_v * rho_vapour_avg + R_q * (rho_cloud_avg + rho_rain_avg))
+    K_avg = 0.5 * (v1_square_avg + v2_square_avg)
+
+    # assemble the flux
+    f_dry    = rho_dry_mean    * v_dot_n_avg
+    f_rain   = rho_rain_mean   * v_dot_n_avg
+    f_vapour = rho_vapour_mean * v_dot_n_avg
+    f_cloud  = rho_cloud_mean  * v_dot_n_avg
+    f_moist  = (rho_vapour_mean + rho_cloud_mean) * v_dot_n_avg
+    f_rhov1  = (f_dry + f_moist + f_rain) * v1_avg + normal_direction[1] * p_int
+    f_rhov2  = (f_dry + f_moist + f_rain) * v2_avg + normal_direction[2] * p_int
+    f_energy = ((c_vd * inv_temperature_mean - K_avg)         *  f_dry    +
+                (ref_L + c_vv * inv_temperature_mean - K_avg) *  f_vapour +
+                (c_l * inv_temperature_mean - K_avg)          * (f_cloud  + f_rain) + v1_avg * f_rhov1 + v2_avg * f_rhov2)
+    
+    return SVector(f_dry, f_moist, f_rain, f_rhov1, f_rhov2, f_energy, 0.0, 0.0, 0.0)
+end
+
 end  # muladd end

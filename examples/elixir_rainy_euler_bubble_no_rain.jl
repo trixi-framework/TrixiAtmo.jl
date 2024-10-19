@@ -3,7 +3,7 @@ using Trixi
 using TrixiAtmo
 using TrixiAtmo: source_terms_no_phase_change, saturation_residual,
                  saturation_residual_jacobian, NonlinearSolveDG,
-                 cons2eq_pot_temp
+                 cons2eq_pot_temp, flux_LMARS, flux_chandrashekar
 using NLsolve: nlsolve
 
 
@@ -242,17 +242,21 @@ boundary_conditions = (x_neg = boundary_condition_periodic,
                        y_neg = boundary_condition_slip_wall,
                        y_pos = boundary_condition_slip_wall)
 
-polydeg = 3
+polydeg = 4
 basis = LobattoLegendreBasis(polydeg)
 
-surface_flux = flux_lax_friedrichs
+#surface_flux = flux_lax_friedrichs
+surface_flux = flux_LMARS
+volume_flux  = flux_chandrashekar
 
-solver = DGSEM(basis, surface_flux)
+volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
+
+solver = DGSEM(basis, surface_flux, volume_integral)
 
 coordinates_min = (     0.0,      0.0)
 coordinates_max = (20_000.0, 10_000.0)
 
-cells_per_dimension = (200, 100)
+cells_per_dimension = (64, 32)
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = (true, false))
 
