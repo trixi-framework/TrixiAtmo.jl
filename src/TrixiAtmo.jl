@@ -16,7 +16,7 @@ using Printf: @sprintf
 using Static: True, False
 using StaticArrayInterface: static_size
 using StrideArrays: StrideArray, StaticInt, PtrArray
-using LinearAlgebra: norm, dot
+using LinearAlgebra: norm, dot, I
 
 @reexport using StaticArrays: SVector, SMatrix
 
@@ -30,7 +30,10 @@ include("callbacks_step/callbacks_step.jl")
 export CompressibleMoistEulerEquations2D, CovariantLinearAdvectionEquation2D,
        CovariantShallowWaterEquations2D
 
-export flux_chandrashekar, flux_LMARS
+export flux_chandrashekar, flux_LMARS, flux_nonconservative_split_covariant,
+       flux_split_covariant, source_terms_split_covariant
+
+export initial_condition_rossby_haurwitz, initial_condition_barotropic_instability
 
 export EARTH_RADIUS, EARTH_GRAVITATIONAL_ACCELERATION,
        EARTH_ROTATION_RATE, SECONDS_PER_DAY

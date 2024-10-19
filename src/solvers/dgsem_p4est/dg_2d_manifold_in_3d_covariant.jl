@@ -150,6 +150,50 @@ end
     return nothing
 end
 
+# Non-conservative flux differencing kernel which uses contravariant flux components,
+# passing the element container and node/element indices into the two-point volume flux 
+# function to give the flux access to geometric quantities
+@inline function Trixi.flux_differencing_kernel!(du, u, element, mesh::P4estMesh{2},
+                                                 nonconservative_terms::True,
+                                                 equations::AbstractCovariantEquations{2},
+                                                 volume_flux, dg::DGSEM, cache,
+                                                 alpha = true)
+    (; derivative_split) = dg.basis
+    symmetric_flux, nonconservative_flux = volume_flux
+
+    # Apply the symmetric flux as usual
+    Trixi.flux_differencing_kernel!(du, u, element, mesh, False(), equations,
+                                    symmetric_flux, dg, cache, alpha)
+
+    for j in eachnode(dg), i in eachnode(dg)
+        u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
+
+        # x direction
+        integral_contribution = zero(u_node)
+        for ii in eachnode(dg)
+            u_node_ii = Trixi.get_node_vars(u, equations, dg, ii, j, element)
+            flux1 = nonconservative_flux(u_node, u_node_ii, 1, equations,
+                                         cache.elements, i, j, ii, j, element)
+            integral_contribution = integral_contribution +
+                                    derivative_split[i, ii] * flux1
+        end
+        # y direction
+        for jj in eachnode(dg)
+            u_node_jj = Trixi.get_node_vars(u, equations, dg, i, jj, element)
+            flux2 = nonconservative_flux(u_node, u_node_jj, 2, equations,
+                                         cache.elements, i, j, i, jj, element)
+            integral_contribution = integral_contribution +
+                                    derivative_split[j, jj] * flux2
+        end
+
+        Trixi.multiply_add_to_node_vars!(du, alpha * 0.5f0,
+                                         integral_contribution, equations,
+                                         dg, i, j, element)
+    end
+
+    return nothing
+end
+
 # Outward unit normal vector in reference coordinates for a quadrilateral element
 @inline function reference_normal_vector(direction)
     orientation = (direction + 1) >> 1
@@ -215,13 +259,15 @@ function Trixi.calc_interface_flux!(surface_flux_values,
         end
 
         for node in eachnode(dg)
-            Trixi.calc_interface_flux!(surface_flux_values, mesh, nonconservative_terms,
-                                       equations, surface_integral, dg, cache,
-                                       interface, i_primary, j_primary, i_secondary,
-                                       j_secondary,
-                                       node, primary_direction, primary_element,
-                                       node_secondary, secondary_direction,
-                                       secondary_element)
+            # Note: here we are assuming that a single surface flux is used, without 
+            # separating nonconservative and conservative parts
+            calc_interface_flux_covariant!(surface_flux_values, mesh,
+                                           equations, surface_integral, dg, cache,
+                                           interface, i_primary, j_primary, i_secondary,
+                                           j_secondary,
+                                           node, primary_direction, primary_element,
+                                           node_secondary, secondary_direction,
+                                           secondary_element)
 
             # Increment primary and secondary element indices
             i_primary += i_primary_step
@@ -240,18 +286,18 @@ end
 
 # Pointwise interface flux, transforming the contravariant prognostic variables into the 
 # local coordinate system
-@inline function Trixi.calc_interface_flux!(surface_flux_values, mesh::P4estMesh{2},
-                                            nonconservative_terms::False, equations,
-                                            surface_integral, dg::DG, cache,
-                                            interface_index,
-                                            i_primary, j_primary,
-                                            i_secondary, j_secondary,
-                                            primary_node_index,
-                                            primary_direction_index,
-                                            primary_element_index,
-                                            secondary_node_index,
-                                            secondary_direction_index,
-                                            secondary_element_index)
+@inline function calc_interface_flux_covariant!(surface_flux_values, mesh::P4estMesh{2},
+                                                equations,
+                                                surface_integral, dg::DG, cache,
+                                                interface_index,
+                                                i_primary, j_primary,
+                                                i_secondary, j_secondary,
+                                                primary_node_index,
+                                                primary_direction_index,
+                                                primary_element_index,
+                                                secondary_node_index,
+                                                secondary_direction_index,
+                                                secondary_element_index)
     (; u) = cache.interfaces
     (; surface_flux) = surface_integral
 

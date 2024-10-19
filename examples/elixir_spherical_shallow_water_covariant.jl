@@ -7,23 +7,23 @@ using OrdinaryDiffEq, Trixi, TrixiAtmo
 ###############################################################################
 # Spatial discretization
 
+initial_condition = initial_condition_convergence_test
 polydeg = 3
 cells_per_dimension = 5
-element_local_mapping = true
+splitting_coefficient = 1.0
+tspan = (0.0, 1.0 * SECONDS_PER_DAY)
 
 mesh = P4estMeshCubedSphere2D(cells_per_dimension, EARTH_RADIUS, polydeg = polydeg,
                               initial_refinement_level = 0,
-                              element_local_mapping = element_local_mapping)
+                              element_local_mapping = true)
 
-equations = CovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION,
-                                             EARTH_ROTATION_RATE)
+equations = CovariantShallowWaterEquations2D(Float64(EARTH_GRAVITATIONAL_ACCELERATION),
+                                             Float64(EARTH_ROTATION_RATE),
+                                             splitting_coefficient)
 
-initial_condition = initial_condition_convergence_test
-source_terms = source_terms_convergence_test
-tspan = (0.0, 7 * SECONDS_PER_DAY)
-
-# Standard weak-form volume integral
-volume_integral = VolumeIntegralWeakForm()
+# Flux-differencing volume integral
+volume_flux = (flux_split_covariant, flux_nonconservative_split_covariant)
+volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
 # Create DG solver with polynomial degree = p and a local Lax-Friedrichs flux
 solver = DGSEM(polydeg = polydeg, surface_flux = flux_lax_friedrichs,
@@ -31,7 +31,7 @@ solver = DGSEM(polydeg = polydeg, surface_flux = flux_lax_friedrichs,
 
 # A semidiscretization collects data structures and functions for the spatial discretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
-                                    source_terms = source_terms)
+                                    source_terms = source_terms_split_covariant)
 
 ###############################################################################
 # ODE solvers, callbacks etc.
