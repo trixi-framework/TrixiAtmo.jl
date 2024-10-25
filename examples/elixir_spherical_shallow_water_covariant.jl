@@ -5,28 +5,39 @@
 using OrdinaryDiffEq, Trixi, TrixiAtmo
 
 ###############################################################################
-# Spatial discretization
+# Parameters
 
 initial_condition = initial_condition_convergence_test
 polydeg = 3
 cells_per_dimension = 5
-splitting_coefficient = 1.0
+splitting_coefficient = 0.5
+rotation_rate = Float64(EARTH_ROTATION_RATE)
+gravitational_acceleration = Float64(EARTH_GRAVITATIONAL_ACCELERATION)
+
+###############################################################################
+# Spatial discretization
+
 tspan = (0.0, 1.0 * SECONDS_PER_DAY)
 
 mesh = P4estMeshCubedSphere2D(cells_per_dimension, EARTH_RADIUS, polydeg = polydeg,
                               initial_refinement_level = 0,
                               element_local_mapping = true)
 
-equations = CovariantShallowWaterEquations2D(Float64(EARTH_GRAVITATIONAL_ACCELERATION),
-                                             Float64(EARTH_ROTATION_RATE),
+equations = CovariantShallowWaterEquations2D(gravitational_acceleration,
+                                             rotation_rate,
                                              splitting_coefficient)
 
 # Flux-differencing volume integral
 volume_flux = (flux_split_covariant, flux_nonconservative_split_covariant)
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
+# Surface flux with nonconservative term
+surface_flux = (FluxPlusDissipation(flux_split_covariant,
+                                    DissipationLocalLaxFriedrichs(max_abs_speed_naive)),
+                flux_nonconservative_split_covariant)
+
 # Create DG solver with polynomial degree = p and a local Lax-Friedrichs flux
-solver = DGSEM(polydeg = polydeg, surface_flux = flux_lax_friedrichs,
+solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = volume_integral)
 
 # A semidiscretization collects data structures and functions for the spatial discretization
@@ -46,7 +57,8 @@ summary_callback = SummaryCallback()
 # The AnalysisCallback allows to analyse the solution in regular intervals and prints the results
 analysis_callback = AnalysisCallback(semi, interval = 100,
                                      save_analysis = true,
-                                     extra_analysis_errors = (:conservation_error,))
+                                     extra_analysis_errors = (:conservation_error,),
+                                     extra_analysis_integrals = (entropy_timederivative_source,))
 
 # The SaveSolutionCallback allows to save the solution to a file in regular intervals
 save_solution = SaveSolutionCallback(dt = (tspan[2] - tspan[1]) / 50,

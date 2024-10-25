@@ -83,34 +83,31 @@ end
     return F_con_1 * normal_direction[1] + F_con_2 * normal_direction[2]
 end
 
-# Return a vector containing components (T_1^orientation and T_2^orientation)
-# In other words, orientation is the contravariant index
-@inline function momentum_flux_mixed(u, orientation::Integer,
-                                     equations::CovariantShallowWaterEquations2D,
-                                     elements, i, j, element)
-    h, hv_con_1, hv_con_2 = u
-
-    # Lower indices of momentum flux to obtain covariant components
-    G_cov = SMatrix{2, 2}(view(elements.covariant_metric, :, :, i, j, element))
-    hv_cov = G_cov * SVector(hv_con_1, hv_con_2)
-
-    # Get contravariant velocity in correct orientation
-    v_con = u[1 + orientation] / h
-
-    # Add gravitational term in the correct orientation
-    gravitational_term = 0.5f0 * equations.gravitational_acceleration * h^2
-    return SVector(hv_cov[1] * v_con + I[orientation, 1] * gravitational_term,
-                   hv_cov[2] * v_con + I[orientation, 2] * gravitational_term)
-end
-
 # Simple average but multiplied by splitting coefficient
-@inline function flux_split_covariant(u_ll, u_rr,
-                                      orientation_or_normal_direction,
+@inline function flux_split_covariant(u_ll, u_rr, orientation::Integer,
                                       equations::CovariantShallowWaterEquations2D,
                                       elements, i_ll, j_ll, i_rr, j_rr, element)
-    return equations.splitting_coefficient * Trixi.flux_central(u_ll, u_rr,
-                              orientation_or_normal_direction, equations, elements,
-                              i_ll, j_ll, i_rr, j_rr, element)
+    h_ll, hv_con_1_ll, hv_con_2_ll = u_ll
+    h_rr, hv_con_1_rr, hv_con_2_rr = u_rr
+
+    v_con_ll = u_ll[1 + orientation] / h_ll
+    v_con_rr = u_rr[1 + orientation] / h_rr
+
+    J_ll = volume_element(elements, i_ll, j_ll, element)
+    J_rr = volume_element(elements, i_rr, j_rr, element)
+
+    Jhv_con_ll = J_ll * u_ll[1 + orientation]
+    Jhv_con_rr = J_rr * u_rr[1 + orientation]
+
+    Jhv_con_v_con_ll = J_ll * SVector(hv_con_1_ll * v_con_ll, hv_con_2_ll * v_con_ll)
+    Jhv_con_v_con_rr = J_rr * SVector(hv_con_1_rr * v_con_rr, hv_con_2_rr * v_con_rr)
+
+    Jhv_con_avg = 0.5f0 * (Jhv_con_ll + Jhv_con_rr)
+    Jhv_con_v_con_avg = 0.5f0 * (Jhv_con_v_con_ll + Jhv_con_v_con_rr)
+
+    return SVector(Jhv_con_avg,
+                   equations.splitting_coefficient * Jhv_con_v_con_avg[1],
+                   equations.splitting_coefficient * Jhv_con_v_con_avg[2])
 end
 
 # Index raised outside the differential operator
@@ -119,29 +116,56 @@ end
                                                       equations::CovariantShallowWaterEquations2D,
                                                       elements, i_ll, j_ll, i_rr, j_rr,
                                                       element)
+    h_ll, hv_con_1_ll, hv_con_2_ll = u_ll
+    h_rr, hv_con_1_rr, hv_con_2_rr = u_rr
 
-    # Evaluate Jacobian at left and right
+    G_cov_ll = SMatrix{2, 2}(view(elements.covariant_metric, :, :, i_ll, j_ll, element))
+    G_cov_rr = SMatrix{2, 2}(view(elements.covariant_metric, :, :, i_rr, j_rr, element))
+
+    hv_cov_ll = G_cov_ll * SVector(hv_con_1_ll, hv_con_2_ll)
+    hv_cov_rr = G_cov_rr * SVector(hv_con_1_rr, hv_con_2_rr)
+
+    v_con_ll = u_ll[1 + orientation] / h_ll
+    v_con_rr = u_rr[1 + orientation] / h_rr
+
     J_ll = volume_element(elements, i_ll, j_ll, element)
     J_rr = volume_element(elements, i_rr, j_rr, element)
 
-    # Evaluate symmetric contravariant mass flux
-    Jhv_con_avg = J_ll * u_ll[1 + orientation] +
-                  J_rr * u_rr[1 + orientation]
+    Jhv_cov_v_con_avg = J_ll * hv_cov_ll * v_con_ll + J_rr * hv_cov_rr * v_con_rr
 
-    # Evaluate symmetric mixed momentum flux (orientation is the contravariant index)
-    JT_mixed_avg = J_ll * momentum_flux_mixed(u_ll, orientation, equations,
-                                       elements, i_ll, j_ll, element) +
-                   J_rr * momentum_flux_mixed(u_rr, orientation, equations,
-                                       elements, i_rr, j_rr, element)
-
-    # Contravariant metric tensor defined outside the differential operator (local part)
-    G_ll_con = SMatrix{2, 2}(view(elements.contravariant_metric, :, :, i_ll, j_ll,
+    G_con_ll = SMatrix{2, 2}(view(elements.contravariant_metric, :, :, i_ll, j_ll,
                                   element))
 
-    # Non-conservative term is a product of local and symmetric parts
-    return (1 - equations.splitting_coefficient) * SVector(Jhv_con_avg,
-                   G_ll_con[1, 1] * JT_mixed_avg[1] + G_ll_con[1, 2] * JT_mixed_avg[2],
-                   G_ll_con[2, 1] * JT_mixed_avg[1] + G_ll_con[2, 2] * JT_mixed_avg[2])
+    nonconservative_term_inertial = (1 - equations.splitting_coefficient) * G_con_ll *
+                                    Jhv_cov_v_con_avg
+    nonconservative_term_gravitational = equations.gravitational_acceleration *
+                                         J_ll * G_con_ll[:, orientation] * h_ll * h_rr
+
+    nonconservative_term = nonconservative_term_inertial +
+                           nonconservative_term_gravitational
+
+    return SVector(0.0, nonconservative_term[1], nonconservative_term[2])
+end
+
+@inline function flux_split_covariant(u_ll, u_rr, normal_direction::AbstractVector,
+                                      equations::CovariantShallowWaterEquations2D,
+                                      elements, i, j, element)
+    F_con_1 = flux_split_covariant(u_ll, u_rr, 1, equations, elements,
+                                   i, j, i, j, element)
+    F_con_2 = flux_split_covariant(u_ll, u_rr, 2, equations, elements,
+                                   i, j, i, j, element)
+    return F_con_1 * normal_direction[1] + F_con_2 * normal_direction[2]
+end
+
+@inline function flux_nonconservative_split_covariant(u_ll, u_rr,
+                                                      normal_direction::AbstractVector,
+                                                      equations::CovariantShallowWaterEquations2D,
+                                                      elements, i, j, element)
+    F_con_1 = flux_nonconservative_split_covariant(u_ll, u_rr, 1, equations, elements,
+                                                   i, j, i, j, element)
+    F_con_2 = flux_nonconservative_split_covariant(u_ll, u_rr, 2, equations, elements,
+                                                   i, j, i, j, element)
+    return F_con_1 * normal_direction[1] + F_con_2 * normal_direction[2]
 end
 
 @inline function (dissipation::DissipationLocalLaxFriedrichs)(u_ll, u_rr,
@@ -170,17 +194,20 @@ end
     hv_con = SVector{2}(hv_con_1, hv_con_2)
     v_con = SVector{2}(hv_con_1 / h, hv_con_2 / h)
 
-    T_con = hv_con * v_con' + 0.5f0 * equations.gravitational_acceleration * h^2 * G_con
-    T_mix = G_cov * T_con
+    hv_con_v_con = hv_con * v_con'
+    hv_cov_v_con = G_cov * hv_con_v_con
 
     # Coriolis parameter
     f = 2 * equations.rotation_rate * x[3] / norm(x)  # 2Ωsinθ
 
     # Geometric source term
     positive_geometric_source = (equations.splitting_coefficient) *
-                                SVector(sum(Gamma1 .* T_con), sum(Gamma2 .* T_con))
+                                SVector(sum(Gamma1 .* hv_con_v_con),
+                                        sum(Gamma2 .* hv_con_v_con))
     negative_geometric_source = (1 - equations.splitting_coefficient) *
-                                G_con * (Gamma1 * T_mix[1, :] + Gamma2 * T_mix[2, :])
+                                G_con *
+                                (Gamma1 * hv_cov_v_con[1, :] +
+                                 Gamma2 * hv_cov_v_con[2, :])
     s_geo = positive_geometric_source - negative_geometric_source
 
     # Combined source terms

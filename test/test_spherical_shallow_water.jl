@@ -11,14 +11,14 @@ EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_spherical_shallow_water_covariant.jl"),
                         l2=[
-                            3.06531437e-01,
-                            1.99844667e-04,
-                            8.76781938e-05,
+                            2.14259253e-01,
+                            8.16220315e-05,
+                            5.05931104e-05,
                         ],
                         linf=[
-                            1.47865445e+00,
-                            1.37545995e-03,
-                            7.56401514e-04,
+                            7.42310936e-01,
+                            4.02787433e-04,
+                            2.68019703e-04,
                         ])
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)

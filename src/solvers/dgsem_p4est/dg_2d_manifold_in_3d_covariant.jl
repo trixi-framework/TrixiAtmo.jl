@@ -259,15 +259,13 @@ function Trixi.calc_interface_flux!(surface_flux_values,
         end
 
         for node in eachnode(dg)
-            # Note: here we are assuming that a single surface flux is used, without 
-            # separating nonconservative and conservative parts
-            calc_interface_flux_covariant!(surface_flux_values, mesh,
-                                           equations, surface_integral, dg, cache,
-                                           interface, i_primary, j_primary, i_secondary,
-                                           j_secondary,
-                                           node, primary_direction, primary_element,
-                                           node_secondary, secondary_direction,
-                                           secondary_element)
+            Trixi.calc_interface_flux!(surface_flux_values, mesh, nonconservative_terms,
+                                       equations, surface_integral, dg, cache,
+                                       interface, i_primary, j_primary, i_secondary,
+                                       j_secondary,
+                                       node, primary_direction, primary_element,
+                                       node_secondary, secondary_direction,
+                                       secondary_element)
 
             # Increment primary and secondary element indices
             i_primary += i_primary_step
@@ -286,18 +284,18 @@ end
 
 # Pointwise interface flux, transforming the contravariant prognostic variables into the 
 # local coordinate system
-@inline function calc_interface_flux_covariant!(surface_flux_values, mesh::P4estMesh{2},
-                                                equations,
-                                                surface_integral, dg::DG, cache,
-                                                interface_index,
-                                                i_primary, j_primary,
-                                                i_secondary, j_secondary,
-                                                primary_node_index,
-                                                primary_direction_index,
-                                                primary_element_index,
-                                                secondary_node_index,
-                                                secondary_direction_index,
-                                                secondary_element_index)
+@inline function Trixi.calc_interface_flux!(surface_flux_values, mesh::P4estMesh{2},
+                                            nonconservative_terms::False, equations,
+                                            surface_integral, dg::DG, cache,
+                                            interface_index,
+                                            i_primary, j_primary,
+                                            i_secondary, j_secondary,
+                                            primary_node_index,
+                                            primary_direction_index,
+                                            primary_element_index,
+                                            secondary_node_index,
+                                            secondary_direction_index,
+                                            secondary_element_index)
     (; u) = cache.interfaces
     (; surface_flux) = surface_integral
 
@@ -328,6 +326,73 @@ end
                                   reference_normal_vector(secondary_direction_index),
                                   equations, cache.elements,
                                   i_secondary, j_secondary, secondary_element_index)
+
+    # Now we can update the surface flux values, where all vector variables are stored 
+    # as contravariant components
+    for v in eachvariable(equations)
+        surface_flux_values[v, primary_node_index, primary_direction_index,
+        primary_element_index] = flux_primary[v]
+        surface_flux_values[v, secondary_node_index, secondary_direction_index,
+        secondary_element_index] = flux_secondary[v]
+    end
+end
+
+# Pointwise interface flux for problems with non-conservative terms
+@inline function Trixi.calc_interface_flux!(surface_flux_values, mesh::P4estMesh{2},
+                                            nonconservative_terms::True, equations,
+                                            surface_integral, dg::DG, cache,
+                                            interface_index,
+                                            i_primary, j_primary,
+                                            i_secondary, j_secondary,
+                                            primary_node_index,
+                                            primary_direction_index,
+                                            primary_element_index,
+                                            secondary_node_index,
+                                            secondary_direction_index,
+                                            secondary_element_index)
+    (; u) = cache.interfaces
+    surface_flux, nonconservative_flux = surface_integral.surface_flux
+
+    u_ll, u_rr = Trixi.get_surface_node_vars(u, equations, dg, primary_node_index,
+                                             interface_index)
+
+    # Convert to spherical components on each element
+    u_ll_pol = contravariant2spherical(u_ll, equations, cache.elements,
+                                       i_primary, j_primary, primary_element_index)
+    u_rr_pol = contravariant2spherical(u_rr, equations, cache.elements,
+                                       i_secondary, j_secondary,
+                                       secondary_element_index)
+
+    # evaluate u_rr in secondary coordinate system 
+    u_rr_ll = spherical2contravariant(u_rr_pol, equations, cache.elements,
+                                      i_primary, j_primary, primary_element_index)
+
+    # evaluate u_ll in primary coordinate system
+    u_ll_rr = spherical2contravariant(u_ll_pol, equations, cache.elements,
+                                      i_secondary, j_secondary, secondary_element_index)
+
+    # get normal vectors to the reference element
+    n_ll = reference_normal_vector(primary_direction_index)
+    n_rr = reference_normal_vector(secondary_direction_index)
+
+    # Compute the flux on both sides of the interface
+    flux_primary = surface_flux(u_ll, u_rr_ll, n_ll,
+                                equations, cache.elements,
+                                i_primary, j_primary,
+                                primary_element_index) +
+                   0.5f0 *
+                   nonconservative_flux(u_ll, u_rr_ll, n_ll,
+                                        equations, cache.elements,
+                                        i_primary, j_primary, primary_element_index)
+    flux_secondary = surface_flux(u_rr, u_ll_rr, n_rr,
+                                  equations, cache.elements,
+                                  i_secondary, j_secondary,
+                                  secondary_element_index) +
+                     0.5f0 *
+                     nonconservative_flux(u_rr, u_ll_rr, n_rr,
+                                          equations, cache.elements,
+                                          i_secondary, j_secondary,
+                                          secondary_element_index)
 
     # Now we can update the surface flux values, where all vector variables are stored 
     # as contravariant components

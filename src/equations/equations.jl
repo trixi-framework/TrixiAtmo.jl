@@ -38,7 +38,7 @@ abstract type AbstractCovariantEquations{NDIMS,
 
     # The flux and dissipation need to be defined for the specific equation set
     flux = numflux.numerical_flux(u_ll, u_rr, orientation_or_normal_direction, equations,
-                                  elements, i, j, i, j, element)
+                                  elements, i, j, element)
     diss = numflux.dissipation(u_ll, u_rr, orientation_or_normal_direction, equations,
                                elements, i, j, element)
     return flux + diss

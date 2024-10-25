@@ -17,6 +17,7 @@ using Static: True, False
 using StaticArrayInterface: static_size
 using StrideArrays: StrideArray, StaticInt, PtrArray
 using LinearAlgebra: norm, dot, I
+using Infiltrator
 
 @reexport using StaticArrays: SVector, SMatrix
 
@@ -37,6 +38,8 @@ export initial_condition_rossby_haurwitz, initial_condition_barotropic_instabili
 
 export EARTH_RADIUS, EARTH_GRAVITATIONAL_ACCELERATION,
        EARTH_ROTATION_RATE, SECONDS_PER_DAY
+
+export entropy_timederivative_source
 
 export examples_dir
 end # module TrixiAtmo
