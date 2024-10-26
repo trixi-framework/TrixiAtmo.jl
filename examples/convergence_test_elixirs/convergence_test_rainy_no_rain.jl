@@ -120,7 +120,7 @@ solver = DGSEM(polydeg = 3, surface_flux = flux_lax_friedrichs)
 coordinates_min = (0.0, 0.0)
 coordinates_max = (2.0, 2.0)
 
-cells_per_dimension = (16, 16)
+cells_per_dimension = (8, 8)
 
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max)
 
@@ -163,4 +163,4 @@ sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false, stage_limite
 summary_callback() # print the timer summary
 
 # For copy-paste convenience:
-#convergence_test("TrixiAtmo.jl/examples/convergence_test_elixirs/convergence_test_rainy_no_rain.jl", 3)
+#convergence_test("TrixiAtmo.jl/examples/convergence_test_elixirs/convergence_test_rainy_no_rain.jl", 4)
