@@ -2,7 +2,7 @@ using Trixi
 using NLsolve: nlsolve
 import  Trixi: varnames,
                cons2prim, cons2entropy,
-               flux,
+               flux, flux_chandrashekar,
                max_abs_speeds, max_abs_speed_naive,
                boundary_condition_slip_wall
 
@@ -34,7 +34,7 @@ struct CompressibleRainyEulerEquations2D{RealT <: Real} <: AbstractCompressibleR
     # Gas constants:
     R_dry_air                  ::RealT
     R_vapour                   ::RealT
-    eps                        ::RealT        #TODO not used?
+    eps                        ::RealT
 
     # Reference values:
     ref_saturation_pressure    ::RealT
@@ -221,15 +221,13 @@ end
 varnames(::typeof(cons2cons), ::CompressibleRainyEulerEquations2D) = ("rho_dry", "rho_moist", "rho_rain",
                                                                         "rho_v1", "rho_v2",
                                                                         "energy_density",
-                                                                        "rho_vapour_h", "rho_cloud_h",
-                                                                        "temperature_h")
+                                                                        "rho_vapour", "rho_cloud", "temperature")
 
 
 varnames(::typeof(cons2prim), ::CompressibleRainyEulerEquations2D) = ("rho_dry", "rho_moist", "rho_rain",
                                                                         "v1", "v2",
                                                                         "energy_density",
-                                                                        "rho_vapour", "rho_cloud",
-                                                                        "temperature")
+                                                                        "rho_vapour", "rho_cloud", "temperature")
 
 varnames(::typeof(cons2eq_pot_temp), ::CompressibleRainyEulerEquations2D) = ("rho", "r_vapour",
                                                                              "r_cloud", "r_rain", 
@@ -456,7 +454,7 @@ end
 
     # normal velocities
     v_normal   = v1  * normal_direction[1] +  v2 * normal_direction[2]
-    v_r_normal =                             v_r * normal_direction[2]    #TODO correct?
+    v_r_normal =                             v_r * normal_direction[2]
 
     # pressure
     p = pressure(u, equations)
@@ -495,12 +493,14 @@ end
     # densities
     rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
 
+    rho_rain = max(rho_rain, 0.0) # test
+
     # recover rho_vapour, rho_cloud, temperature from nonlinear system
     rho_vapour, rho_cloud, temperature = cons2nonlinearsystemsol(u, equations)
 
     rho_vs = saturation_vapour_pressure(temperature, equations) / (R_v * temperature)
 
-    # source terms phase change #TODO no ref_temp?
+    # source terms phase change
     S_evaporation     = (3.86e-3 - 9.41e-5 * (temperature - ref_temp)) * (1 + 9.1 * rho_rain^(0.1875))
     S_evaporation    *= (rho_vs - rho_vapour) * rho_rain^(0.5)
     S_auto_conversion = 0.001 * rho_cloud
@@ -713,7 +713,7 @@ end
 end
 
 
-
+# TODO Careful with rain != 0.0, double check the fluxes!
 # fluxes adapted from compressible_moist_euler_2d.jl
 
 # Low Mach number approximate Riemann solver (LMARS) from
@@ -723,8 +723,7 @@ end
 # https://journals.ametsoc.org/view/journals/mwre/141/7/mwr-d-12-00129.1.xml.
 @inline function flux_LMARS(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleRainyEulerEquations2D)
     # constants
-    a = 360.0      # TODO try with different speeds of sound
-    #a = max(speed_of_sound(u_ll, equations)[1], speed_of_sound(u_rr, equations)[1]) 
+    a = 360.0
 
     # densities
     rho_dry_ll, rho_moist_ll, rho_rain_ll, rho_ll, rho_inv_ll = densities(u_ll, equations)
@@ -753,21 +752,15 @@ end
     if (v_interface > 0)
         f1, f2, f3, f4, f5, f6, _, _, _ = u_ll * v_interface
         f6 += p_ll * v_interface
-        f7  = u_ll[7]
-        f8  = u_ll[8]
-        f9  = u_ll[9]
     else
         f1, f2, f3, f4, f5, f6, _, _, _ = u_rr * v_interface
         f6 += p_rr * v_interface
-        f7  = u_rr[7]
-        f8  = u_rr[8]
-        f9  = u_rr[9]
     end
     
     return SVector(f1, f2, f3,
                    f4 + p_interface * normal_direction[1],
                    f5 + p_interface * normal_direction[2],
-                   f6, f7, f8, f9)
+                   f6, 0.0, 0.0, 0.0)
 end
 
 
