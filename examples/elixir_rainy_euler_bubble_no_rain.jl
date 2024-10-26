@@ -159,22 +159,6 @@ function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
     T_loc = p_loc / (R_d * rho_d + R_v * rho_qv)
     rho_e = (c_vd * rho_d + c_vv * rho_qv + c_pl * rho_ql) * T_loc + L_00 * rho_qv
 
-    #=p_v = rho_qv * R_v * T_loc
-    p_d = p_loc - p_v
-    T_C = T_loc - 273.15
-    p_vs = 611.2 * exp(17.62 * T_C / (243.12 + T_C))
-    H = p_v / p_vs
-    r_v = rho_qv / rho_d
-    r_l = rho_ql / rho_d
-    r_t = r_v + r_l
-
-    # equivalent potential temperature
-    a = T_loc * (p_0 / p_d)^(R_d / (c_pd + r_t * c_pl))
-    b = H^(-r_v * R_v / c_pd)
-    L_v = L_00 + (c_pv - c_pl) * (T_loc - 273.15)
-    c = exp(L_v * r_v / ((c_pd + r_t * c_pl) * T_loc))
-    aeq_pot = (a * b * c) # TODO: this is not used. remove? =#
-
     # Assume pressure stays constant
     if (r < rc && Δθ > 0)
         # Calculate background density potential temperature
@@ -242,7 +226,7 @@ boundary_conditions = (x_neg = boundary_condition_periodic,
                        y_neg = boundary_condition_slip_wall,
                        y_pos = boundary_condition_slip_wall)
 
-polydeg = 4
+polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
 
 #surface_flux = flux_lax_friedrichs
@@ -256,7 +240,7 @@ solver = DGSEM(basis, surface_flux, volume_integral)
 coordinates_min = (     0.0,      0.0)
 coordinates_max = (20_000.0, 10_000.0)
 
-cells_per_dimension = (64, 32)
+cells_per_dimension = (65, 32)
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = (true, false))
 
