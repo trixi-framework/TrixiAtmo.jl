@@ -23,14 +23,22 @@ mesh = P4estMeshCubedSphere2D(cells_per_dimension, EARTH_RADIUS, polydeg = polyd
 equations = CovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION,
                                              EARTH_ROTATION_RATE)
 
+# Flux-differencing volume integral
+volume_flux = (flux_split_covariant, flux_nonconservative_split_covariant)
+volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
+
+# Surface flux with nonconservative term
+flux_split_covariant_llf = FluxPlusDissipation(flux_split_covariant,
+                                               DissipationLocalLaxFriedrichs(max_abs_speed_naive))
+surface_flux = (flux_split_covariant, flux_nonconservative_split_covariant)
+
 # Create DG solver with polynomial degree = p
-solver = DGSEM(polydeg = polydeg,
-               surface_flux = (flux_lax_friedrichs, flux_nonconservative_weak_form),
-               volume_integral = VolumeIntegralWeakForm())
+solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
+               volume_integral = volume_integral)
 
 # A semidiscretization collects data structures and functions for the spatial discretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
-                                    source_terms = source_terms_weak_form)
+                                    source_terms = source_terms_split_covariant)
 
 ###############################################################################
 # ODE solvers, callbacks etc.
