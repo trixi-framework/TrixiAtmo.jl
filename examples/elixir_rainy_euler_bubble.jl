@@ -4,7 +4,8 @@ using TrixiAtmo
 using TrixiAtmo: source_terms_rainy, saturation_residual,
                  saturation_residual_jacobian, NonlinearSolveDG,
                  cons2eq_pot_temp, saturation_vapour_pressure,
-                 flux_chandrashekar
+                 flux_chandrashekar, flux_LMARS,
+                 source_terms_no_phase_change
 using NLsolve: nlsolve
 
 
@@ -51,7 +52,7 @@ function generate_hydrostatic_residual(pressure_lower, humidity_rel0, z, dz, equ
 
         rho_vs = saturation_vapour_pressure(temperature, equations) / (R_v * temperature)
 
-        # pressure derivative residual
+        # pressure derivative residual approximation
         residual[1] = (pressure - pressure_lower) / dz + (rho_dry + rho_vapour) * g
 
         # pressure residual
@@ -144,7 +145,7 @@ end
 
 # create layers for initial condition
 equations = CompressibleRainyEulerEquations2D()
-layers = AtmosphereLayers(equations)
+layers    = AtmosphereLayers(equations)
 
 
 function initial_condition_bubble_rainy(x, t, equations::CompressibleRainyEulerEquations2D; atmosphere_layers = layers)
@@ -226,7 +227,7 @@ surface_flux = flux_lax_friedrichs
 
 solver = DGSEM(basis, surface_flux)#, volume_integral)
 
-cells_per_dimension = (201, 100)
+cells_per_dimension = (193, 96)
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = (true, false))
 

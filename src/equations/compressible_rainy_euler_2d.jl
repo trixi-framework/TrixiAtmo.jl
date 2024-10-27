@@ -787,6 +787,8 @@ end
     # velocities
     v1_ll, v2_ll = velocities(u_ll, rho_inv_ll, equations)
     v1_rr, v2_rr = velocities(u_rr, rho_inv_rr, equations)
+    #vr_ll        = terminal_velocity_rain(rho_moist_ll, rho_rain_ll, equations)
+    #vr_rr        = terminal_velocity_rain(rho_moist_rr, rho_rain_rr, equations)
     
     # mean values
     rho_dry_mean          = 0.0
@@ -815,31 +817,33 @@ end
         inv_temperature_mean = inv_ln_mean(inv(temperature_ll), inv(temperature_rr))
     end
     
-    v1_avg              = 0.5 * (v1_ll               + v1_rr)
-    v2_avg              = 0.5 * (v2_ll               + v2_rr)
-    v1_square_avg       = 0.5 * (v1_ll^2             + v1_rr^2)
-    v2_square_avg       = 0.5 * (v2_ll^2             + v2_rr^2)
-    rho_dry_avg         = 0.5 * (rho_dry_ll          + rho_dry_rr)
-    rho_vapour_avg      = 0.5 * (rho_vapour_ll       + rho_vapour_rr)
-    rho_cloud_avg       = 0.5 * (rho_cloud_ll        + rho_cloud_rr)
-    rho_rain_avg        = 0.5 * (rho_rain_ll         + rho_rain_rr)
-    inv_temperature_avg = 0.5 * (inv(temperature_ll) + inv(temperature_rr))
-    v_dot_n_avg         = normal_direction[1]*v1_avg + normal_direction[2]*v2_avg
+    v1_avg              = 0.5 * (v1_ll                 + v1_rr)
+    v2_avg              = 0.5 * (v2_ll                 + v2_rr)
+    v1_square_avg       = 0.5 * (v1_ll^2               + v1_rr^2)
+    v2_square_avg       = 0.5 * (v2_ll^2               + v2_rr^2)
+    rho_dry_avg         = 0.5 * (rho_dry_ll            + rho_dry_rr)
+    rho_vapour_avg      = 0.5 * (rho_vapour_ll         + rho_vapour_rr)
+    rho_cloud_avg       = 0.5 * (rho_cloud_ll          + rho_cloud_rr)
+    rho_rain_avg        = 0.5 * (rho_rain_ll           + rho_rain_rr)
+    inv_temperature_avg = 0.5 * (inv(temperature_ll)   + inv(temperature_rr))
+    v_dot_n_avg         = normal_direction[1] * v1_avg + normal_direction[2] * v2_avg
+    #vr_avg              = 0.5 * (vr_ll                 + vr_rr)
+    #vr_dot_n_avg        = normal_direction[2] * vr_avg
     
     p_int = inv(inv_temperature_avg) * (R_d * rho_dry_avg + R_v * rho_vapour_avg + R_q * (rho_cloud_avg + rho_rain_avg))
     K_avg = 0.5 * (v1_square_avg + v2_square_avg)
 
     # assemble the flux
-    f_dry    = rho_dry_mean    * v_dot_n_avg
-    f_rain   = rho_rain_mean   * v_dot_n_avg
-    f_vapour = rho_vapour_mean * v_dot_n_avg
-    f_cloud  = rho_cloud_mean  * v_dot_n_avg
+    f_dry    = rho_dry_mean    *  v_dot_n_avg
+    f_rain   = rho_rain_mean   * (v_dot_n_avg) #- vr_dot_n_avg)
+    f_vapour = rho_vapour_mean *  v_dot_n_avg
+    f_cloud  = rho_cloud_mean  *  v_dot_n_avg
     f_moist  = (rho_vapour_mean + rho_cloud_mean) * v_dot_n_avg
-    f_rhov1  = (f_dry + f_moist + f_rain) * v1_avg + normal_direction[1] * p_int
-    f_rhov2  = (f_dry + f_moist + f_rain) * v2_avg + normal_direction[2] * p_int
-    f_energy = ((c_vd * inv_temperature_mean - K_avg)         *  f_dry    +
+    f_rhov1  = (f_dry + f_moist + f_rain) * v1_avg + normal_direction[1] * p_int #- rho_rain_mean * vr_dot_n_avg * v1_avg
+    f_rhov2  = (f_dry + f_moist + f_rain) * v2_avg + normal_direction[2] * p_int #- rho_rain_mean * vr_dot_n_avg * v2_avg
+    f_energy = ((        c_vd * inv_temperature_mean - K_avg) *  f_dry    +
                 (ref_L + c_vv * inv_temperature_mean - K_avg) *  f_vapour +
-                (c_l * inv_temperature_mean - K_avg)          * (f_cloud  + f_rain) + v1_avg * f_rhov1 + v2_avg * f_rhov2)
+                (         c_l * inv_temperature_mean - K_avg) * (f_cloud  + f_rain) + v1_avg * f_rhov1 + v2_avg * f_rhov2)
     
     return SVector(f_dry, f_moist, f_rain, f_rhov1, f_rhov2, f_energy, 0.0, 0.0, 0.0)
 end
