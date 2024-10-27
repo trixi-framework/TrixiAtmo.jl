@@ -11,14 +11,14 @@ EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_spherical_shallow_water_covariant.jl"),
                         l2=[
-                            3.06531446e-01,
-                            1.99844676e-04,
-                            8.76781950e-05,
+                            0.30653144639857915,
+                            0.00019984467582354125,
+                            8.767819502807496e-5,
                         ],
                         linf=[
-                            1.47865447e+00,
-                            1.37546000e-03,
-                            7.56401474e-04,
+                            1.478654467828619,
+                            0.0013754600033516612,
+                            0.0007564014737141897,
                         ])
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
@@ -34,14 +34,14 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_spherical_shallow_water_covariant_ec.jl"),
                         l2=[
-                            9.99533073e-01,
-                            1.11592713e-04,
-                            9.12269017e-05,
+                            0.9995330728181165,
+                            0.00011159271336455212,
+                            9.122690167302845e-5,
                         ],
                         linf=[
-                            3.65906604e+00,
-                            1.27847228e-03,
-                            1.27847228e-03,
+                            3.659066044232077,
+                            0.0012784722821572864,
+                            0.0012784722821592154,
                         ])
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
