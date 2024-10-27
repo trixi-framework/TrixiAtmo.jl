@@ -15,6 +15,7 @@ using HDF5: HDF5, h5open, attributes
 using Printf: @sprintf
 using Static: True, False
 using StaticArrayInterface: static_size
+using QuadGK
 using StrideArrays: StrideArray, StaticInt, PtrArray
 using LinearAlgebra: norm, dot, I
 using Infiltrator

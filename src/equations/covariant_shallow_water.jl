@@ -321,7 +321,8 @@ function initial_condition_barotropic_instability(x, t,
 
     # compute zonal and meridional velocity components
     u_0 = 80.0f0
-    lat_0, lat_1 = convert(realT, π / 7), convert(realT, π / 2) - lat_0
+    lat_0 = convert(realT, π / 7)
+    lat_1 = convert(realT, π / 2) - lat_0
     vlon = galewsky_velocity(lat, u_0, lat_0, lat_1)
     vlat = zero(eltype(x))
 

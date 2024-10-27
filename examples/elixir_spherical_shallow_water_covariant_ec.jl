@@ -10,6 +10,7 @@ using OrdinaryDiffEq, Trixi, TrixiAtmo
 initial_condition = initial_condition_convergence_test
 polydeg = 3
 cells_per_dimension = 5
+n_saves = 10
 
 ###############################################################################
 # Spatial discretization
@@ -54,7 +55,7 @@ analysis_callback = AnalysisCallback(semi, interval = 50,
                                      extra_analysis_errors = (:conservation_error,))
 
 # The SaveSolutionCallback allows to save the solution to a file in regular intervals
-save_solution = SaveSolutionCallback(dt = (tspan[2] - tspan[1]) / 10,
+save_solution = SaveSolutionCallback(dt = (tspan[2] - tspan[1]) / n_saves,
                                      solution_variables = cons2cons)
 
 # The StepsizeCallback handles the re-calculation of the maximum Δt after each time step
