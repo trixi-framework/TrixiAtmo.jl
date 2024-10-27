@@ -28,8 +28,6 @@ volume_flux = (flux_split_covariant, flux_nonconservative_split_covariant)
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
 # Surface flux with nonconservative term
-flux_split_covariant_llf = FluxPlusDissipation(flux_split_covariant,
-                                               DissipationLocalLaxFriedrichs(max_abs_speed_naive))
 surface_flux = (flux_split_covariant, flux_nonconservative_split_covariant)
 
 # Create DG solver with polynomial degree = p
@@ -51,7 +49,7 @@ ode = semidiscretize(semi, tspan)
 summary_callback = SummaryCallback()
 
 # The AnalysisCallback allows to analyse the solution in regular intervals and prints the results
-analysis_callback = AnalysisCallback(semi, interval = 10,
+analysis_callback = AnalysisCallback(semi, interval = 50,
                                      save_analysis = true,
                                      extra_analysis_errors = (:conservation_error,))
 

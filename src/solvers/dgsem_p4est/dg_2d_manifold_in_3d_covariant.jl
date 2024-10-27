@@ -204,18 +204,6 @@ end
     return nothing
 end
 
-# Outward unit normal vector in reference coordinates for a quadrilateral element
-@inline function reference_normal_vector(direction)
-    orientation = (direction + 1) >> 1
-    sign = isodd(direction) ? -1 : 1
-
-    if orientation == 1
-        return SVector(sign, 0.0f0)
-    else
-        return SVector(0.0f0, sign)
-    end
-end
-
 # Interface flux which transforms the contravariant prognostic variables into the same 
 # reference coordinate system on each side of the interface, then applies the numerical 
 # flux in reference space, taking in the reference normal vector
@@ -319,23 +307,38 @@ end
                                        i_secondary, j_secondary,
                                        secondary_element_index)
 
-    # evaluate u_rr in secondary coordinate system 
+    # Evaluate u_rr in primary coordinate system 
     u_rr_ll = spherical2contravariant(u_rr_pol, equations, cache.elements,
                                       i_primary, j_primary, primary_element_index)
 
-    # evaluate u_ll in primary coordinate system
+    # Compute flux on primary element
+    if isodd(primary_direction_index)
+        flux_primary = -surface_flux(u_rr_ll, u_ll, (primary_direction_index + 1) >> 1,
+                                     equations, cache.elements, i_primary, j_primary,
+                                     i_primary, j_primary, primary_element_index)
+    else
+        flux_primary = surface_flux(u_ll, u_rr_ll, (primary_direction_index + 1) >> 1,
+                                    equations, cache.elements, i_primary, j_primary,
+                                    i_primary, j_primary, primary_element_index)
+    end
+
+    # Evaluate u_ll in secondary coordinate system
     u_ll_rr = spherical2contravariant(u_ll_pol, equations, cache.elements,
                                       i_secondary, j_secondary, secondary_element_index)
-
-    # Since the flux is computed in reference space, we do it separately for each element
-    flux_primary = surface_flux(u_ll, u_rr_ll,
-                                reference_normal_vector(primary_direction_index),
-                                equations, cache.elements,
-                                i_primary, j_primary, primary_element_index)
-    flux_secondary = surface_flux(u_rr, u_ll_rr,
-                                  reference_normal_vector(secondary_direction_index),
-                                  equations, cache.elements,
-                                  i_secondary, j_secondary, secondary_element_index)
+    # Compute flux on secondary element
+    if isodd(secondary_direction_index)
+        flux_secondary = -surface_flux(u_ll_rr, u_rr,
+                                       (secondary_direction_index + 1) >> 1,
+                                       equations, cache.elements, i_secondary,
+                                       j_secondary, i_secondary, j_secondary,
+                                       secondary_element_index)
+    else
+        flux_secondary = surface_flux(u_rr, u_ll_rr,
+                                      (secondary_direction_index + 1) >> 1,
+                                      equations, cache.elements, i_secondary,
+                                      j_secondary, i_secondary, j_secondary,
+                                      secondary_element_index)
+    end
 
     # Now we can update the surface flux values, where all vector variables are stored 
     # as contravariant components
@@ -373,36 +376,60 @@ end
                                        i_secondary, j_secondary,
                                        secondary_element_index)
 
-    # evaluate u_rr in secondary coordinate system 
+    # Evaluate u_rr in primary coordinate system 
     u_rr_ll = spherical2contravariant(u_rr_pol, equations, cache.elements,
                                       i_primary, j_primary, primary_element_index)
 
-    # evaluate u_ll in primary coordinate system
+    # Compute flux on primary element
+    primary_orientation = (primary_direction_index + 1) >> 1
+    if isodd(primary_direction_index)
+        flux_primary = -(surface_flux(u_rr_ll, u_ll, primary_orientation, equations,
+                                      cache.elements, i_primary, j_primary, i_primary,
+                                      j_primary,
+                                      primary_element_index) +
+                         0.5f0 *
+                         nonconservative_flux(u_rr_ll, u_ll, primary_orientation,
+                                              equations, cache.elements,
+                                              i_primary, j_primary, i_primary,
+                                              j_primary,
+                                              primary_element_index))
+    else
+        flux_primary = surface_flux(u_ll, u_rr_ll, primary_orientation,
+                                    equations, cache.elements, i_primary, j_primary,
+                                    i_primary, j_primary, primary_element_index) +
+                       0.5f0 *
+                       nonconservative_flux(u_ll, u_rr_ll, primary_orientation,
+                                            equations, cache.elements, i_primary,
+                                            j_primary, i_primary, j_primary,
+                                            primary_element_index)
+    end
+
+    # Evaluate u_ll in secondary coordinate system
     u_ll_rr = spherical2contravariant(u_ll_pol, equations, cache.elements,
                                       i_secondary, j_secondary, secondary_element_index)
-
-    # get normal vectors to the reference element
-    n_ll = reference_normal_vector(primary_direction_index)
-    n_rr = reference_normal_vector(secondary_direction_index)
-
-    # Compute the flux on both sides of the interface
-    flux_primary = surface_flux(u_ll, u_rr_ll, n_ll,
-                                equations, cache.elements,
-                                i_primary, j_primary,
-                                primary_element_index) +
-                   0.5f0 *
-                   nonconservative_flux(u_ll, u_rr_ll, n_ll,
-                                        equations, cache.elements,
-                                        i_primary, j_primary, primary_element_index)
-    flux_secondary = surface_flux(u_rr, u_ll_rr, n_rr,
-                                  equations, cache.elements,
-                                  i_secondary, j_secondary,
-                                  secondary_element_index) +
-                     0.5f0 *
-                     nonconservative_flux(u_rr, u_ll_rr, n_rr,
-                                          equations, cache.elements,
-                                          i_secondary, j_secondary,
-                                          secondary_element_index)
+    # Compute flux on secondary element
+    secondary_orientation = (secondary_direction_index + 1) >> 1
+    if isodd(secondary_direction_index)
+        flux_secondary = -(surface_flux(u_ll_rr, u_rr, secondary_orientation,
+                                        equations, cache.elements, i_secondary,
+                                        j_secondary, i_secondary, j_secondary,
+                                        secondary_element_index) +
+                           0.5f0 *
+                           nonconservative_flux(u_ll_rr, u_rr, secondary_orientation,
+                                                equations, cache.elements,
+                                                i_secondary, j_secondary, i_secondary,
+                                                j_secondary, secondary_element_index))
+    else
+        flux_secondary = surface_flux(u_rr, u_ll_rr, secondary_orientation,
+                                      equations, cache.elements, i_secondary,
+                                      j_secondary, i_secondary, j_secondary,
+                                      secondary_element_index) +
+                         0.5f0 *
+                         nonconservative_flux(u_rr, u_ll_rr, secondary_orientation,
+                                              equations, cache.elements, i_secondary,
+                                              j_secondary, i_secondary, j_secondary,
+                                              secondary_element_index)
+    end
 
     # Now we can update the surface flux values, where all vector variables are stored 
     # as contravariant components

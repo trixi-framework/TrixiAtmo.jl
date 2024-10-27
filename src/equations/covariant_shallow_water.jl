@@ -100,6 +100,10 @@ end
     return SVector(mass_flux, momentum_flux[1], momentum_flux[2])
 end
 
+# Split-covariant flux with local Lax-Friedrichs dissipation
+const flux_split_covariant_lax_friedrichs = FluxPlusDissipation(flux_split_covariant,
+                                                                DissipationLocalLaxFriedrichs(max_abs_speed_naive))
+
 # Non-symmetric part of entropy-conservative flux
 @inline function flux_nonconservative_split_covariant(u_ll, u_rr,
                                                       orientation::Integer,
@@ -137,45 +141,6 @@ end
                            nonconservative_term_gravitational
 
     return SVector(zero(eltype(u_ll)), nonconservative_term[1], nonconservative_term[2])
-end
-
-# Directional version of symmetric part of entropy-conservative flux
-@inline function flux_split_covariant(u_ll, u_rr, normal_direction::AbstractVector,
-                                      equations::CovariantShallowWaterEquations2D,
-                                      elements, i, j, element)
-    fcon1 = flux_split_covariant(u_ll, u_rr, 1, equations, elements,
-                                 i, j, i, j, element)
-    fcon2 = flux_split_covariant(u_ll, u_rr, 2, equations, elements,
-                                 i, j, i, j, element)
-    return fcon1 * normal_direction[1] + fcon2 * normal_direction[2]
-end
-
-# Directional version of nonsymmetric part of entropy-conservative flux
-@inline function flux_nonconservative_split_covariant(u_ll, u_rr,
-                                                      normal_direction::AbstractVector,
-                                                      equations::CovariantShallowWaterEquations2D,
-                                                      elements, i, j, element)
-    fcon1 = flux_nonconservative_split_covariant(u_ll, u_rr, 1, equations, elements,
-                                                 i, j, i, j, element)
-    fcon2 = flux_nonconservative_split_covariant(u_ll, u_rr, 2, equations, elements,
-                                                 i, j, i, j, element)
-    return fcon1 * normal_direction[1] + fcon2 * normal_direction[2]
-end
-
-# Dummy flux for weak form
-@inline function flux_nonconservative_weak_form(u_ll, u_rr, normal_direction,
-                                                equations::CovariantShallowWaterEquations2D,
-                                                elements, i, j, element)
-    return SVector(zero(eltype(u_ll)), zero(eltype(u_ll)), zero(eltype(u_ll)))
-end
-
-@inline function (dissipation::DissipationLocalLaxFriedrichs)(u_ll, u_rr,
-                                                              normal_direction::AbstractVector,
-                                                              equations::CovariantShallowWaterEquations2D,
-                                                              elements, i, j, element)
-    λ = dissipation.max_abs_speed(u_ll, u_rr, normal_direction, equations,
-                                  elements, i, j, element)
-    return -0.5f0 * volume_element(elements, i, j, element) * λ * (u_rr - u_ll)
 end
 
 @inline function source_terms_weak_form(u, x, t,
@@ -247,22 +212,22 @@ end
 end
 
 # Maximum wave speed along the normal direction in reference space
-@inline function Trixi.max_abs_speed_naive(u_ll, u_rr, normal_direction,
+@inline function Trixi.max_abs_speed_naive(u_ll, u_rr, orientation,
                                            equations::CovariantShallowWaterEquations2D,
-                                           elements, i, j, element)
+                                           elements, i_ll, j_ll, i_rr, j_rr, element)
     h_ll, h_vcon1_ll, h_vcon2_ll = u_ll
     h_rr, h_vcon1_rr, h_vcon2_rr = u_rr
 
-    Gcon = SMatrix{2, 2}(view(elements.contravariant_metric, :, :, i, j, element))
-    G = normal_direction' * Gcon * normal_direction
+    h_vcon_ll = SVector(h_vcon1_ll, h_vcon2_ll)
+    h_vcon_rr = SVector(h_vcon1_rr, h_vcon2_rr)
 
-    v_ll = (h_vcon1_ll * normal_direction[1] + h_vcon2_ll * normal_direction[2]) / h_ll
-    v_rr = (h_vcon1_rr * normal_direction[1] + h_vcon2_rr * normal_direction[2]) / h_rr
+    Gcon = elements.contravariant_metric[orientation, orientation, i_ll, j_ll, element]
 
     phi_ll = max(h_ll * equations.gravitational_acceleration, 0)
     phi_rr = max(h_rr * equations.gravitational_acceleration, 0)
 
-    return max(abs(v_ll) + sqrt(G * phi_ll), abs(v_rr) + sqrt(G * phi_rr))
+    return max(abs(h_vcon_ll[orientation] / h_ll) + sqrt(Gcon * phi_ll),
+               abs(h_vcon_rr[orientation] / h_rr) + sqrt(Gcon * phi_rr))
 end
 
 # Maximum wave speeds with respect to the covariant basis

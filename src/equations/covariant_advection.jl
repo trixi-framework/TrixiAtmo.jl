@@ -54,39 +54,28 @@ end
     return SVector(J * u[1] * u[orientation + 1], z, z)
 end
 
-# Directional flux that takes in the normal components in reference space
-@inline function Trixi.flux(u, normal_direction::AbstractVector,
-                            ::CovariantLinearAdvectionEquation2D,
-                            elements, i, j, element)
-    z = zero(eltype(u))
-    v_n = u[2] * normal_direction[1] + u[3] * normal_direction[2]
-    J = volume_element(elements, i, j, element)
-    return SVector(J * u[1] * v_n, z, z)
-end
-
 # Local Lax-Friedrichs dissipation which is not applied to the contravariant velocity 
 # components, as they should remain unchanged in time
 @inline function (dissipation::DissipationLocalLaxFriedrichs)(u_ll, u_rr,
-                                                              normal_direction::AbstractVector,
+                                                              orientation_or_normal_direction,
                                                               equations::CovariantLinearAdvectionEquation2D,
-                                                              elements, i, j, element)
+                                                              elements, i_ll, j_ll,
+                                                              i_rr, j_rr, element)
     z = zero(eltype(u_ll))
-    J = volume_element(elements, i, j, element)
-    λ = dissipation.max_abs_speed(u_ll, u_rr, normal_direction, equations,
-                                  elements, i, j, element)
+    J = volume_element(elements, i_ll, j_ll, element)
+    λ = dissipation.max_abs_speed(u_ll, u_rr, orientation_or_normal_direction,
+                                  equations, elements, i_ll, j_ll, i_rr, j_rr, element)
     return -0.5f0 * J * λ * SVector(u_rr[1] - u_ll[1], z, z)
 end
 
-# Maximum wave speed in the normal direction
-@inline function Trixi.max_abs_speed_naive(u_ll, u_rr, normal_direction,
+# Maximum wave speed with respect to the a specific orientation
+@inline function Trixi.max_abs_speed_naive(u_ll, u_rr, orientation::Integer,
                                            ::CovariantLinearAdvectionEquation2D,
-                                           elements, i, j, element)
-    v_n_ll = u_ll[2] * normal_direction[1] + u_ll[3] * normal_direction[2]
-    v_n_rr = u_rr[2] * normal_direction[1] + u_rr[3] * normal_direction[2]
-    return max(abs(v_n_ll), abs(v_n_rr))
+                                           elements, i_ll, j_ll, i_rr, j_rr, element)
+    return max(abs(u_ll[orientation + 1]), abs(u_rr[orientation + 1]))
 end
 
-# Maximum wave speeds with respect to the contravariant basis
+# Maximum wave speeds in each direction for CFL calculation
 @inline function Trixi.max_abs_speeds(u, ::CovariantLinearAdvectionEquation2D,
                                       elements, i, j, element)
     return abs(u[2]), abs(u[3])

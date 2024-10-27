@@ -34,7 +34,8 @@ export CompressibleMoistEulerEquations2D, CovariantLinearAdvectionEquation2D,
 export flux_chandrashekar, flux_LMARS
 
 export flux_nonconservative_split_covariant, flux_nonconservative_weak_form,
-       flux_split_covariant, source_terms_weak_form, source_terms_split_covariant
+       flux_split_covariant, source_terms_weak_form, source_terms_split_covariant,
+       flux_split_covariant_lax_friedrichs
 
 export initial_condition_rossby_haurwitz, initial_condition_barotropic_instability
 

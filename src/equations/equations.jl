@@ -34,13 +34,14 @@ abstract type AbstractCovariantEquations{NDIMS,
 @inline function (numflux::Trixi.FluxPlusDissipation)(u_ll, u_rr,
                                                       orientation_or_normal_direction,
                                                       equations::AbstractCovariantEquations{2},
-                                                      elements, i, j, element)
+                                                      elements, i_ll, j_ll, i_rr, j_rr,
+                                                      element)
 
     # The flux and dissipation need to be defined for the specific equation set
     flux = numflux.numerical_flux(u_ll, u_rr, orientation_or_normal_direction, equations,
-                                  elements, i, j, element)
+                                  elements, i_ll, j_ll, i_rr, j_rr, element)
     diss = numflux.dissipation(u_ll, u_rr, orientation_or_normal_direction, equations,
-                               elements, i, j, element)
+                               elements, i_ll, j_ll, i_rr, j_rr, element)
     return flux + diss
 end
 
@@ -58,13 +59,26 @@ end
     return 0.5f0 * (flux_ll + flux_rr)
 end
 
-# Version for surface flux (only one set of indices)
-@inline function Trixi.flux_central(u_ll, u_rr,
-                                    orientation_or_normal_direction,
-                                    equations::AbstractCovariantEquations{2},
-                                    elements, i, j, element)
-    return flux_central(u_ll, u_rr, orientation_or_normal_direction,
-                        equations, elements, i, j, i, j, element)
+@inline function (dissipation::DissipationLocalLaxFriedrichs)(u_ll, u_rr,
+                                                              orientation_or_normal_direction,
+                                                              equations::AbstractCovariantEquations{2},
+                                                              elements, i_ll, j_ll, i_rr,
+                                                              j_rr, element)
+    λ = dissipation.max_abs_speed(u_ll, u_rr, orientation_or_normal_direction, equations,
+                                  elements, i_ll, j_ll, i_rr, j_rr, element)
+    return -0.5f0 * volume_element(elements, i_ll, j_ll, element) * λ * (u_rr - u_ll)
+end
+
+# Dummy flux for weak form
+@inline function flux_nonconservative_weak_form(u_ll::SVector{NVARS, RealT},
+                                                u_rr::SVector{NVARS, RealT},
+                                                orientation_ornormal_direction,
+                                                equations::AbstractCovariantEquations{2,
+                                                                                      NDIMS_AMBIENT,
+                                                                                      NVARS},
+                                                elements, i_ll, j_ll, i_rr, j_rr,
+                                                element) where {NDIMS_AMBIENT, NVARS, RealT}
+    return zeros(SVector{NVARS, RealT})
 end
 
 include("covariant_advection.jl")
