@@ -11,18 +11,18 @@ EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_spherical_advection_cartesian.jl"),
                         l2=[
-                            8.44505073e-03,
-                            8.23414117e-03,
-                            1.84210648e-03,
-                            0.00000000e+00,
-                            6.44302430e-02,
+                            0.008445050734443814,
+                            0.008234141170177999,
+                            0.0018421064842753803,
+                            0.0,
+                            0.06443024298066,
                         ],
                         linf=[
-                            9.48950488e-02,
-                            9.64811952e-02,
-                            1.37453400e-02,
-                            0.00000000e+00,
-                            4.09322999e-01,
+                            0.09489504882003308,
+                            0.09648119517743559,
+                            0.013745339970863746,
+                            0.0,
+                            0.40932299941471895,
                         ])
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
@@ -37,16 +37,8 @@ end
 @trixiatmo_testset "Spherical advection, covariant weak form, LLF surface flux" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_spherical_advection_covariant.jl"),
-                        l2=[
-                            1.00016205e+00,
-                            0.00000000e+00,
-                            0.00000000e+00,
-                        ],
-                        linf=[
-                            1.42451839e+01,
-                            0.00000000e+00,
-                            0.00000000e+00,
-                        ])
+                        l2=[1.0001621291410059, 0.0, 0.0],
+                        linf=[14.245184617343739, 0.0, 0.0])
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let
@@ -62,16 +54,9 @@ end
 @trixiatmo_testset "Spherical advection, covariant flux-differencing, central/LLF" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_spherical_advection_covariant.jl"),
-                        l2=[
-                            1.00016205e+00,
-                            0.00000000e+00,
-                            0.00000000e+00,
-                        ],
-                        linf=[
-                            1.42451839e+01,
-                            0.00000000e+00,
-                            0.00000000e+00,
-                        ], volume_integral=VolumeIntegralFluxDifferencing(flux_central))
+                        l2=[1.000162129141023, 0.0, 0.0],
+                        linf=[14.245184617342034, 0.0, 0.0],
+                        volume_integral=VolumeIntegralFluxDifferencing(flux_central))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let
@@ -86,16 +71,9 @@ end
 @trixiatmo_testset "Spherical advection, covariant flux-differencing, central/central" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_spherical_advection_covariant.jl"),
-                        l2=[
-                            2.49998218e+00,
-                            0.00000000e+00,
-                            0.00000000e+00,
-                        ],
-                        linf=[
-                            3.80905607e+01,
-                            0.00000000e+00,
-                            0.00000000e+00,
-                        ], volume_integral=VolumeIntegralFluxDifferencing(flux_central),
+                        l2=[2.4999822899157116, 0.0, 0.0],
+                        linf=[38.09056110399384, 0.0, 0.0],
+                        volume_integral=VolumeIntegralFluxDifferencing(flux_central),
                         surface_flux=flux_central)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)

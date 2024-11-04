@@ -1,3 +1,6 @@
+@muladd begin
+#! format: noindent
+
 using Trixi: AbstractEquations
 
 # Physical constants
@@ -34,13 +37,15 @@ abstract type AbstractCovariantEquations{NDIMS,
 @inline function (numflux::Trixi.FluxPlusDissipation)(u_ll, u_rr,
                                                       orientation_or_normal_direction,
                                                       equations::AbstractCovariantEquations{2},
-                                                      elements, i, j, element)
+                                                      elements, i_ll, j_ll, i_rr, j_rr,
+                                                      element)
 
     # The flux and dissipation need to be defined for the specific equation set
-    flux = numflux.numerical_flux(u_ll, u_rr, orientation_or_normal_direction, equations,
-                                  elements, i, j, i, j, element)
+    flux = numflux.numerical_flux(u_ll, u_rr, orientation_or_normal_direction,
+                                  equations,
+                                  elements, i_ll, j_ll, i_rr, j_rr, element)
     diss = numflux.dissipation(u_ll, u_rr, orientation_or_normal_direction, equations,
-                               elements, i, j, element)
+                               elements, i_ll, j_ll, i_rr, j_rr, element)
     return flux + diss
 end
 
@@ -58,16 +63,8 @@ end
     return 0.5f0 * (flux_ll + flux_rr)
 end
 
-# Version for surface flux (only one set of indices)
-@inline function Trixi.flux_central(u_ll, u_rr,
-                                    orientation_or_normal_direction,
-                                    equations::AbstractCovariantEquations{2},
-                                    elements, i, j, element)
-    return flux_central(u_ll, u_rr, orientation_or_normal_direction,
-                        equations, elements, i, j, i, j, element)
-end
-
 include("covariant_advection.jl")
 abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:
               AbstractEquations{NDIMS, NVARS} end
 include("compressible_moist_euler_2d_lucas.jl")
+end # @muladd
