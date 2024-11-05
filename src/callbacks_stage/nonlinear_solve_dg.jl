@@ -17,7 +17,7 @@ function (limiter!::NonlinearSolveDG)(u_ode, integrator, semi::AbstractSemidiscr
     
     @trixi_timeit timer() "nonlinear system solver" begin
         nonlinear_solve_dg_2d!(u, limiter!.residual, limiter!.jacobian, limiter!.variables_index_vector,
-                               limiter!.tolerance, semi.equations, semi.solver, semi.cache)
+                               limiter!.tolerance, semi.equations, semi.solver, semi.cache, semi.mesh)
     end
 end
 

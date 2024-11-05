@@ -249,6 +249,9 @@ varnames(::typeof(cons2eq_pot_temp), ::CompressibleRainyEulerEquations2D) = ("rh
     return SVector(rho_dry, rho_moist, rho_rain, rho, rho_inv)
 end
 
+@inline function rain_density(u, equations::CompressibleRainyEulerEquations2D) 
+    return u[3]
+end
 
 @inline function velocities(u, rho_inv, equations::CompressibleRainyEulerEquations2D)
     return SVector(u[4] * rho_inv, u[5] * rho_inv)
@@ -386,7 +389,6 @@ end
 @inline function flux(u, orientation::Integer, equations::CompressibleRainyEulerEquations2D)
     # constants
     c_l      = equations.c_liquid_water
-    ref_temp = equations.ref_temperature
 
     #densities
     rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
@@ -440,7 +442,6 @@ end
 @inline function flux(u, normal_direction::AbstractVector, equations::CompressibleRainyEulerEquations2D)
     # constants
     c_l      = equations.c_liquid_water
-    ref_temp = equations.ref_temperature
 
     # densities
     rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
@@ -492,8 +493,6 @@ end
 
     # densities
     rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
-
-    rho_rain = max(rho_rain, 0.0) # test
 
     # recover rho_vapour, rho_cloud, temperature from nonlinear system
     rho_vapour, rho_cloud, temperature = cons2nonlinearsystemsol(u, equations)
@@ -551,6 +550,23 @@ end
     return max(v_ll_max, v_rr_max) + max(v_sound_ll, v_sound_rr) * norm(normal_direction)
 end
 
+
+@inline function max_abs_speed_naive(u_ll, u_rr, orientation::Integer, equations::CompressibleRainyEulerEquations2D)
+    # name needed variables
+    v1_ll, v2_ll, v_sound_ll, v_r_ll = cons2speeds(u_ll, equations)
+    v1_rr, v2_rr, v_sound_rr, v_r_rr = cons2speeds(u_rr, equations)
+
+    if (orientation == 1)
+        v_ll  = abs(v1_ll)
+        v_rr  = abs(v1_rr)
+    else
+        v_ll  = abs(v2_ll)
+        v_rr  = abs(v2_rr)
+        v_rr += abs(v_r_rr)
+    end
+
+    return max(v_ll, v_rr) + max(v_sound_ll, v_sound_rr)
+end
 
 
 ###  boundary conditions  ###
@@ -637,6 +653,22 @@ end
 end
 
 
+# should be used together with TreeMesh (adapted from compressible_euler_2d.jl)
+@inline function boundary_condition_slip_wall(u_inner, orientation, direction, x, t, surface_flux_function,
+                                              equations::CompressibleRainyEulerEquations2D)
+    # get the appropriate normal vector from the orientation
+    RealT = eltype(u_inner)
+    if orientation == 1
+        normal_direction = SVector(one(RealT), zero(RealT))
+    else # orientation == 2
+        normal_direction = SVector(zero(RealT), one(RealT))
+    end
+
+    # compute and return the flux using `boundary_condition_slip_wall` routine above
+    return boundary_condition_slip_wall(u_inner, normal_direction, direction,
+                                        x, t, surface_flux_function, equations)
+end
+
 
 ###  Nonlinear System Residual  ###
 
@@ -713,7 +745,7 @@ end
 end
 
 
-# TODO Careful with rain != 0.0, double check the fluxes!
+# TODO Careful with rain != 0.0 does not really work (bad physics)
 # fluxes adapted from compressible_moist_euler_2d.jl
 
 # Low Mach number approximate Riemann solver (LMARS) from
@@ -828,10 +860,12 @@ end
     inv_temperature_avg = 0.5 * (inv(temperature_ll)   + inv(temperature_rr))
     v_dot_n_avg         = normal_direction[1] * v1_avg + normal_direction[2] * v2_avg
     #vr_avg              = 0.5 * (vr_ll                 + vr_rr)
+    #vr_square_avg       = 0.5 * ((v2_ll - vr_ll)^2     + (v2_rr - vr_rr)^2)
     #vr_dot_n_avg        = normal_direction[2] * vr_avg
     
-    p_int = inv(inv_temperature_avg) * (R_d * rho_dry_avg + R_v * rho_vapour_avg + R_q * (rho_cloud_avg + rho_rain_avg))
-    K_avg = 0.5 * (v1_square_avg + v2_square_avg)
+    p_int  = inv(inv_temperature_avg) * (R_d * rho_dry_avg + R_v * rho_vapour_avg + R_q * (rho_cloud_avg + rho_rain_avg))
+    K_avg  = 0.5 * (v1_square_avg + v2_square_avg)
+    #K2_avg = 0.5 * (v1_square_avg + (vr_square_avg))
 
     # assemble the flux
     f_dry    = rho_dry_mean    *  v_dot_n_avg
@@ -841,9 +875,9 @@ end
     f_moist  = (rho_vapour_mean + rho_cloud_mean) * v_dot_n_avg
     f_rhov1  = (f_dry + f_moist + f_rain) * v1_avg + normal_direction[1] * p_int #- rho_rain_mean * vr_dot_n_avg * v1_avg
     f_rhov2  = (f_dry + f_moist + f_rain) * v2_avg + normal_direction[2] * p_int #- rho_rain_mean * vr_dot_n_avg * v2_avg
-    f_energy = ((        c_vd * inv_temperature_mean - K_avg) *  f_dry    +
-                (ref_L + c_vv * inv_temperature_mean - K_avg) *  f_vapour +
-                (         c_l * inv_temperature_mean - K_avg) * (f_cloud  + f_rain) + v1_avg * f_rhov1 + v2_avg * f_rhov2)
+    f_energy = ((        c_vd * inv_temperature_mean - K_avg)  *  f_dry    +
+                (ref_L + c_vv * inv_temperature_mean - K_avg)  *  f_vapour +
+                (         c_l * inv_temperature_mean - K_avg)  * (f_cloud  + f_rain)  + v1_avg * f_rhov1 + v2_avg * f_rhov2)
     
     return SVector(f_dry, f_moist, f_rain, f_rhov1, f_rhov2, f_energy, 0.0, 0.0, 0.0)
 end

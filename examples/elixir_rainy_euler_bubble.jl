@@ -110,7 +110,7 @@ struct AtmosphereLayers{RealT <: Real}
 end
 
 
-function AtmosphereLayers(equations::CompressibleRainyEulerEquations2D; total_height = coordinates_max[2] + 2.0, precision = 2.0, RealT = Float64)
+function AtmosphereLayers(equations::CompressibleRainyEulerEquations2D; total_height = coordinates_max[2] + 1.0, precision = 1.0, RealT = Float64)
     # constants
     humidity_rel0    = 0.2      # hydrostatic relative humidity
     surface_pressure = 8.5e4
@@ -136,7 +136,7 @@ function AtmosphereLayers(equations::CompressibleRainyEulerEquations2D; total_he
         z += dz
         residual_function! = generate_hydrostatic_residual(layer_data[i, 1], humidity_rel0, z, dz, equations)
         guess = deepcopy(layer_data[i, :])
-        layer_data[i + 1, :] .= nlsolve(residual_function!, guess, ftol = 1e-10, iterations = 10).zero
+        layer_data[i + 1, :] .= nlsolve(residual_function!, guess, ftol = 1e-10, iterations = 20).zero
     end
     
     return AtmosphereLayers{RealT}(layer_data, total_height, precision)
@@ -201,7 +201,7 @@ function initial_condition_bubble_rainy(x, t, equations::CompressibleRainyEulerE
 
     # solve perturbation
     residual_function! = generate_perturbation_residual(pressure_hydrostatic, humidity, z, equations)
-    rho_dry, rho_vapour, temperature = nlsolve(residual_function!, layer_data[n, 2:4], ftol = 1e-9, iterations = 10).zero
+    rho_dry, rho_vapour, temperature = nlsolve(residual_function!, layer_data[n, 2:4], ftol = 1e-9, iterations = 20).zero
 
     energy_density = (c_vd * rho_dry + c_vv * rho_vapour) * temperature + rho_vapour * ref_L
 
@@ -219,7 +219,7 @@ boundary_conditions = (x_neg = boundary_condition_periodic,
                        y_neg = boundary_condition_slip_wall,
                        y_pos = boundary_condition_slip_wall)
 
-polydeg = 1
+polydeg = 2
 basis = LobattoLegendreBasis(polydeg)
 
 surface_flux = flux_lax_friedrichs
@@ -227,7 +227,7 @@ surface_flux = flux_lax_friedrichs
 
 solver = DGSEM(basis, surface_flux)#, volume_integral)
 
-cells_per_dimension = (193, 96)
+cells_per_dimension = (400, 200)
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = (true, false))
 
@@ -252,7 +252,7 @@ analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
-save_solution = SaveSolutionCallback(interval = 100,
+save_solution = SaveSolutionCallback(interval = 1000,
                                      save_initial_solution = true,
                                      save_final_solution = true,
                                      output_directory = "out",
