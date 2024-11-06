@@ -27,8 +27,15 @@ The mesh will have no boundaries.
 - `p4est_partition_allow_for_coarsening::Bool`: Must be `true` when using AMR to make mesh
   adaptivity independent of domain partitioning. Should be `false` for static meshes to
   permit more fine-grained partitioning.
-- `element_local_mapping::Bool`: option to use the element-local mapping from Appendix A of
-  [Guba et al. (2014)](https://doi.org/10.5194/gmd-7-2803-2014).
+- `element_local_mapping::Bool`: option to use the alternative element-local mapping from
+  Appendix A of [Guba et al. (2014)](https://doi.org/10.5194/gmd-7-2803-2014). If set to 
+  `true`, the four corner vertex positions for each element will be obtained through an 
+  equiangular gnomonic projection [(Ronchi et al. 1996)](https://doi.org/10.1006/jcph.1996.
+  0047), and the tree node coordinates within the element will be obtained by first using 
+  a bilinear mapping based on the four corner vertices, and then projecting the bilinearly 
+  mapped nodes onto the spherical surface by normalizing the resulting Cartesian 
+  coordinates and scaling by  `radius`. If set to `false`, the equiangular gnomonic 
+  projection will be used for all node coordinates.
 """
 function P4estMeshCubedSphere2D(trees_per_face_dimension, radius;
                                 polydeg, RealT = Float64,
@@ -284,9 +291,9 @@ function connectivity_cubed_sphere_2D(trees_per_face_dimension)
     return connectivity
 end
 
-# Calculate physical coordinates of each node of a 2D cubed sphere mesh using the
-# element-local mapping from Guba et al. (see https://doi.org/10.5194/gmd-7-2803-2014,
-# Appendix A). We thank Oswald Knoth for bringing this paper to our attention.
+# Calculate physical coordinates of each node of a 2D cubed sphere mesh by mapping 
+# the LGL quadrature nodes onto a Cartesian element grid, then using the equiangular 
+# gnomonic mapping to place the nodes on the spherical surface
 function calc_tree_node_coordinates_cubed_sphere_standard!(node_coordinates::AbstractArray{<:Any,
                                                                                            4},
                                                            nodes,
@@ -325,7 +332,9 @@ function calc_tree_node_coordinates_cubed_sphere_standard!(node_coordinates::Abs
     end
 end
 
-# Calculate physical coordinates of each node of a 2D cubed sphere mesh using the 
+# Calculate physical coordinates of each node of a 2D cubed sphere mesh using the
+# element-local mapping from Guba et al. (see https://doi.org/10.5194/gmd-7-2803-2014,
+# Appendix A). We thank Oswald Knoth for bringing this paper to our attention.
 function calc_tree_node_coordinates_cubed_sphere_local!(node_coordinates::AbstractArray{<:Any,
                                                                                         4},
                                                         nodes, trees_per_face_dimension,
