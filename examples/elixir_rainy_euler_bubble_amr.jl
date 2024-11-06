@@ -223,7 +223,7 @@ boundary_conditions = (x_neg = boundary_condition_periodic,
 
 surface_flux = flux_lax_friedrichs
 #volume_integral = VolumeIntegralFluxDifferencing(flux_chandrashekar)
-polydeg = 2
+polydeg = 1
 basis = LobattoLegendreBasis(polydeg)
 
 solver = DGSEM(basis, surface_flux)#, volume_integral)
@@ -274,15 +274,12 @@ callbacks = CallbackSet(summary_callback,
                         analysis_callback, alive_callback,
                         amr_callback, save_solution, stepsize_callback)
 
-# positivity limiter necessary for this tough example
 stage_limiter! = NonlinearSolveDG(saturation_residual, saturation_residual_jacobian, SVector(7, 8, 9), 1e-9)
 
 ###############################################################################
 # run the simulation
 # use adaptive time stepping based on error estimates
-sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false, stage_limiter!),
-            maxiters = 1.0e7,
-            dt = 1.0,
-            save_everystep = false, callback = callbacks);
+sol = solve(ode, SSPRK43(stage_limiter!);
+            ode_default_options()..., callback = callbacks);
 
 summary_callback() # print the timer summary
