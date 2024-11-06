@@ -5,7 +5,8 @@
     P4estMeshCubedSphere2D(trees_per_face_dimension, radius;
                             polydeg, RealT=Float64,
                             initial_refinement_level=0, unsaved_changes=true,
-                            p4est_partition_allow_for_coarsening=true)
+                            p4est_partition_allow_for_coarsening=true,
+                            element_local_mapping=false)
 
 Build a "Cubed Sphere" mesh as a 2D `P4estMesh` with
 `6 * trees_per_face_dimension^2` trees.
@@ -20,16 +21,28 @@ The mesh will have no boundaries.
                       The mapping will be approximated by an interpolation polynomial
                       of the specified degree for each tree.
 - `RealT::Type`: the type that should be used for coordinates.
-- `initial_refinement_level::Integer`: refine the mesh uniformly to this level before the simulation starts.
+- `initial_refinement_level::Integer`: refine the mesh uniformly to this level before the
+  simulation starts.
 - `unsaved_changes::Bool`: if set to `true`, the mesh will be saved to a mesh file.
-- `p4est_partition_allow_for_coarsening::Bool`: Must be `true` when using AMR to make mesh adaptivity
-                                                independent of domain partitioning. Should be `false` for static meshes
-                                                to permit more fine-grained partitioning.
+- `p4est_partition_allow_for_coarsening::Bool`: Must be `true` when using AMR to make mesh
+  adaptivity independent of domain partitioning. Should be `false` for static meshes to
+  permit more fine-grained partitioning.
+- `element_local_mapping::Bool`: option to use the alternative element-local mapping from
+  Appendix A of [Guba et al. (2014)](https://doi.org/10.5194/gmd-7-2803-2014). If set to 
+  `true`, the four corner vertex positions for each element will be obtained through an 
+  equiangular gnomonic projection [(Ronchi et al. 1996)](https://doi.org/10.1006/jcph.1996.
+  0047), and the tree node coordinates within the element will be obtained by first using 
+  a bilinear mapping based on the four corner vertices, and then projecting the bilinearly 
+  mapped nodes onto the spherical surface by normalizing the resulting Cartesian 
+  coordinates and scaling by  `radius`. If set to `false`, the equiangular gnomonic 
+  projection will be used for all node coordinates.
 """
 function P4estMeshCubedSphere2D(trees_per_face_dimension, radius;
                                 polydeg, RealT = Float64,
-                                initial_refinement_level = 0, unsaved_changes = true,
-                                p4est_partition_allow_for_coarsening = true)
+                                initial_refinement_level = 0,
+                                unsaved_changes = true,
+                                p4est_partition_allow_for_coarsening = true,
+                                element_local_mapping = false)
     connectivity = connectivity_cubed_sphere_2D(trees_per_face_dimension)
 
     n_trees = 6 * trees_per_face_dimension^2
@@ -40,8 +53,14 @@ function P4estMeshCubedSphere2D(trees_per_face_dimension, radius;
     tree_node_coordinates = Array{RealT, 4}(undef, 3,
                                             ntuple(_ -> length(nodes), 2)...,
                                             n_trees)
-    calc_tree_node_coordinates_cubed_sphere_2D!(tree_node_coordinates, nodes,
-                                                trees_per_face_dimension, radius)
+    if element_local_mapping
+        calc_tree_node_coordinates_cubed_sphere_local!(tree_node_coordinates, nodes,
+                                                       trees_per_face_dimension, radius)
+    else
+        calc_tree_node_coordinates_cubed_sphere_standard!(tree_node_coordinates, nodes,
+                                                          trees_per_face_dimension,
+                                                          radius)
+    end
 
     p4est = Trixi.new_p4est(connectivity, initial_refinement_level)
 
@@ -272,11 +291,14 @@ function connectivity_cubed_sphere_2D(trees_per_face_dimension)
     return connectivity
 end
 
-# Calculate physical coordinates of each node of a 2D cubed sphere mesh.
-function calc_tree_node_coordinates_cubed_sphere_2D!(node_coordinates::AbstractArray{<:Any,
-                                                                                     4},
-                                                     nodes, trees_per_face_dimension,
-                                                     radius)
+# Calculate physical coordinates of each node of a 2D cubed sphere mesh by mapping 
+# the LGL quadrature nodes onto a Cartesian element grid, then using the equiangular 
+# gnomonic mapping to place the nodes on the spherical surface
+function calc_tree_node_coordinates_cubed_sphere_standard!(node_coordinates::AbstractArray{<:Any,
+                                                                                           4},
+                                                           nodes,
+                                                           trees_per_face_dimension,
+                                                           radius)
     n_cells_x = n_cells_y = trees_per_face_dimension
 
     linear_indices = LinearIndices((n_cells_x, n_cells_y, 6))
@@ -308,5 +330,66 @@ function calc_tree_node_coordinates_cubed_sphere_2D!(node_coordinates::AbstractA
             end
         end
     end
+end
+
+# Calculate physical coordinates of each node of a 2D cubed sphere mesh using the
+# element-local mapping from Guba et al. (see https://doi.org/10.5194/gmd-7-2803-2014,
+# Appendix A). We thank Oswald Knoth for bringing this paper to our attention.
+function calc_tree_node_coordinates_cubed_sphere_local!(node_coordinates::AbstractArray{<:Any,
+                                                                                        4},
+                                                        nodes, trees_per_face_dimension,
+                                                        radius)
+    n_cells_x = n_cells_y = trees_per_face_dimension
+
+    linear_indices = LinearIndices((n_cells_x, n_cells_y, 6))
+
+    # Get cell length in reference mesh
+    dx = 2 / n_cells_x
+    dy = 2 / n_cells_y
+
+    for direction in 1:6
+        for cell_y in 1:n_cells_y, cell_x in 1:n_cells_x
+            tree = linear_indices[cell_x, cell_y, direction]
+
+            x_offset = -1 + (cell_x - 1) * dx + dx / 2
+            y_offset = -1 + (cell_y - 1) * dy + dy / 2
+            z_offset = 0
+
+            # Vertices for bilinear mapping
+            v1 = Trixi.cubed_sphere_mapping(x_offset - dx / 2,
+                                            y_offset - dx / 2,
+                                            z_offset, radius, 0, direction)
+
+            v2 = Trixi.cubed_sphere_mapping(x_offset + dx / 2,
+                                            y_offset - dx / 2,
+                                            z_offset, radius, 0, direction)
+
+            v3 = Trixi.cubed_sphere_mapping(x_offset + dx / 2,
+                                            y_offset + dx / 2,
+                                            z_offset, radius, 0, direction)
+
+            v4 = Trixi.cubed_sphere_mapping(x_offset - dx / 2,
+                                            y_offset + dx / 2,
+                                            z_offset, radius, 0, direction)
+
+            for j in eachindex(nodes), i in eachindex(nodes)
+                # node_coordinates are the mapped reference node coordinates
+                node_coordinates[:, i, j, tree] .= local_mapping(nodes[i], nodes[j],
+                                                                 v1, v2, v3, v4, radius)
+            end
+        end
+    end
+end
+
+# Local mapping from the reference quadrilateral to a spherical patch based on four vertex
+# positions on the sphere, provided in Cartesian coordinates
+@inline function local_mapping(xi1, xi2, v1, v2, v3, v4, radius)
+
+    # Construct a bilinear mapping based on the four corner vertices
+    x_bilinear = 0.25f0 * ((1 - xi1) * (1 - xi2) * v1 + (1 + xi1) * (1 - xi2) * v2 +
+                  (1 + xi1) * (1 + xi2) * v3 + (1 - xi1) * (1 + xi2) * v4)
+
+    # Project the mapped local coordinates onto the sphere
+    return radius * x_bilinear / norm(x_bilinear)
 end
 end # @muladd
