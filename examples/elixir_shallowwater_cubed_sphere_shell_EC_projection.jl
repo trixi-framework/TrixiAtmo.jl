@@ -128,7 +128,7 @@ mesh = TrixiAtmo.P4estMeshCubedSphere2D(5, 2.0, polydeg = polydeg,
 
 # A semidiscretization collects data structures and functions for the spatial discretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
-                                    metric_terms = TrixiAtmo.MetricTermsCurlInvariant())
+                                    metric_terms = TrixiAtmo.MetricTermsInvariantCurl())
 
 ###############################################################################
 # ODE solvers, callbacks etc.

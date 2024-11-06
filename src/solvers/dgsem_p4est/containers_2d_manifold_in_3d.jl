@@ -285,12 +285,16 @@ end
 # We compute the metric terms in two steps
 # 1. Compute the 3D contravariant vectors, Jaⁱ=J*grad(ξⁱ), using the curl invariant form and xₗ_ζ = xₗ
 # 2. Convert the 3D mapping Jacobian determinant J:=a_k.(a_i x a_j) to 2D J_2D=||a_i x a_j||
+## References
+# - Kopriva, D. A. (2006). Metric identities and the discontinuous spectral element method on curvilinear meshes. Journal of #   Scientific Computing 26, 301-327. https://doi.org/10.1007/s10915-005-9070-8
+# - Vinokur, M. and Yee, H. C. (2001). Extension of efficient low dissipation high order schemes for 3-D curvilinear moving # #   grids. In Caughey, D. A., and Hafez, M. M. (eds.), Frontiers of Computational Fluid Dynamics 2002, World Scientific, Singapore, pp. 129–164. https://doi.org/10.1142/9789812810793_0008
+
 function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArray{<:Any,
                                                                                    5},
                                               element,
                                               jacobian_matrix, node_coordinates,
                                               basis::LobattoLegendreBasis,
-                                              metric_terms::MetricTermsCurlInvariant)
+                                              metric_terms::MetricTermsInvariantCurl)
     @unpack derivative_matrix = basis
 
     # 1. Compute the 3D contravariant vectors, Jaⁱₙ=J*grad(ξ), using the curl invariant form and xₗ_ζ = xₗ
