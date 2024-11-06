@@ -28,7 +28,10 @@ The mesh will have no boundaries.
   adaptivity independent of domain partitioning. Should be `false` for static meshes to
   permit more fine-grained partitioning.
 - `element_local_mapping::Bool`: option to use the element-local mapping from Appendix A of
-  [Guba et al. (2014)](https://doi.org/10.5194/gmd-7-2803-2014).
+  [Guba et al. (2014)](https://doi.org/10.5194/gmd-7-2803-2014), which first maps the 
+  quadrature node coordinates from the reference element using a bilinear mapping based on
+  the four corner vertices, and then projects the mapped nodes onto the sphere by 
+  normalizing the resulting Cartesian coordinates and scaling by `radius`.
 """
 function P4estMeshCubedSphere2D(trees_per_face_dimension, radius;
                                 polydeg, RealT = Float64,
