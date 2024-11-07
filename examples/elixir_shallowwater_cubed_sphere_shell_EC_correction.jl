@@ -55,8 +55,9 @@ function initial_condition_advection_sphere(x, t, equations::ShallowWaterEquatio
     return prim2cons(SVector(rho, v1, v2, v3, 0), equations)
 end
 
-# Source term function to apply Lagrange multiplier to the semi-discretization
-# The vector contravariant_normal_vector contains the normal contravariant vectors scaled with the inverse Jacobian
+# Source term function to apply the entropy correction term and the Lagrange multiplier to the semi-discretization.
+# The vector contravariant_normal_vector contains the normal contravariant vectors scaled with the inverse Jacobian.
+# The Lagrange multiplier is applied with the vector x, which contains the exact normal direction to the 2D manifold.
 function source_terms_entropy_correction(u, du, x, t,
                                          equations::ShallowWaterEquations3D,
                                          contravariant_normal_vector)
@@ -68,47 +69,10 @@ function source_terms_entropy_correction(u, du, x, t,
 
     new_du = SVector(du[1], du[2] + s2, du[3] + s3, du[4] + s4, du[5])
 
-    # Apply Lagrange multipliers using the exact normal vector x
+    # Apply Lagrange multipliers using the exact normal vector to the 2D manifold (x)
     s = source_terms_lagrange_multiplier(u, new_du, x, t, equations, x)
 
     return SVector(s[1], s[2] + s2, s[3] + s3, s[4] + s4, s[5])
-end
-
-# Custom RHS that applies a source term that depends on du (used to convert apply Lagrange multiplier)
-function rhs_semi_custom!(du_ode, u_ode, semi, t)
-    # Compute standard Trixi RHS
-    Trixi.rhs!(du_ode, u_ode, semi, t)
-
-    # Now apply the custom source term
-    Trixi.@trixi_timeit Trixi.timer() "custom source term" begin
-        @unpack solver, equations, cache = semi
-        @unpack node_coordinates, contravariant_vectors, inverse_jacobian = cache.elements
-
-        # Wrap the solution and RHS
-        u = Trixi.wrap_array(u_ode, semi)
-        du = Trixi.wrap_array(du_ode, semi)
-
-        #Trixi.@threaded 
-        for element in eachelement(solver, cache)
-            for j in eachnode(solver), i in eachnode(solver)
-                u_local = Trixi.get_node_vars(u, equations, solver, i, j, element)
-                du_local = Trixi.get_node_vars(du, equations, solver, i, j, element)
-                x_local = Trixi.get_node_coords(node_coordinates, equations, solver,
-                                                i, j, element)
-                contravariant_normal_vector = Trixi.get_contravariant_vector(3,
-                                                                             contravariant_vectors,
-                                                                             i, j,
-                                                                             element) *
-                                              inverse_jacobian[i, j, element]
-
-                source = source_terms_entropy_correction(u_local, du_local,
-                                                         x_local, t, equations,
-                                                         contravariant_normal_vector)
-
-                Trixi.add_to_node_vars!(du, source, equations, solver, i, j, element)
-            end
-        end
-    end
 end
 
 initial_condition = initial_condition_advection_sphere
@@ -118,7 +82,8 @@ mesh = TrixiAtmo.P4estMeshCubedSphere2D(5, 2.0, polydeg = polydeg,
 
 # A semidiscretization collects data structures and functions for the spatial discretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
-                                    metric_terms = TrixiAtmo.MetricTermsInvariantCurl())
+                                    metric_terms = TrixiAtmo.MetricTermsInvariantCurl(),
+                                    source_terms = source_terms_entropy_correction)
 
 ###############################################################################
 # ODE solvers, callbacks etc.
@@ -126,12 +91,6 @@ semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
 # Create ODE problem with time span from 0.0 to π
 tspan = (0.0, pi)
 ode = semidiscretize(semi, tspan)
-
-# Create custom discretization that runs with the custom RHS
-ode_semi_custom = ODEProblem(rhs_semi_custom!,
-                             ode.u0,
-                             ode.tspan,
-                             semi)
 
 # At the beginning of the main loop, the SummaryCallback prints a summary of the simulation setup
 # and resets the timers
@@ -158,7 +117,7 @@ callbacks = CallbackSet(summary_callback, analysis_callback, save_solution,
 # run the simulation
 
 # OrdinaryDiffEq's `solve` method evolves the solution in time and executes the passed callbacks
-sol = solve(ode_semi_custom, CarpenterKennedy2N54(williamson_condition = false),
+sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
             dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
             save_everystep = false, callback = callbacks);
 
