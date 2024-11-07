@@ -32,6 +32,8 @@ abstract type AbstractCovariantEquations{NDIMS,
                                          NDIMS_AMBIENT,
                                          NVARS} <: AbstractEquations{NDIMS, NVARS} end
 
+@inline Trixi.cons2cons(u, equations, elements, i, j, element) = u 
+
 # Numerical flux plus dissipation which passes node/element indices and cache. 
 # We assume that u_ll and u_rr have been transformed into the same local coordinate system.
 @inline function (numflux::Trixi.FluxPlusDissipation)(u_ll, u_rr,
@@ -41,7 +43,8 @@ abstract type AbstractCovariantEquations{NDIMS,
                                                       element)
 
     # The flux and dissipation need to be defined for the specific equation set
-    flux = numflux.numerical_flux(u_ll, u_rr, orientation_or_normal_direction, equations,
+    flux = numflux.numerical_flux(u_ll, u_rr, orientation_or_normal_direction,
+                                  equations,
                                   elements, i_ll, j_ll, i_rr, j_rr, element)
     diss = numflux.dissipation(u_ll, u_rr, orientation_or_normal_direction, equations,
                                elements, i_ll, j_ll, i_rr, j_rr, element)
@@ -65,9 +68,11 @@ end
 @inline function (dissipation::DissipationLocalLaxFriedrichs)(u_ll, u_rr,
                                                               orientation_or_normal_direction,
                                                               equations::AbstractCovariantEquations{2},
-                                                              elements, i_ll, j_ll, i_rr,
+                                                              elements, i_ll, j_ll,
+                                                              i_rr,
                                                               j_rr, element)
-    λ = dissipation.max_abs_speed(u_ll, u_rr, orientation_or_normal_direction, equations,
+    λ = dissipation.max_abs_speed(u_ll, u_rr, orientation_or_normal_direction,
+                                  equations,
                                   elements, i_ll, j_ll, i_rr, j_rr, element)
     return -0.5f0 * volume_element(elements, i_ll, j_ll, element) * λ * (u_rr - u_ll)
 end
@@ -80,9 +85,25 @@ end
                                                                                       NDIMS_AMBIENT,
                                                                                       NVARS},
                                                 elements, i_ll, j_ll, i_rr, j_rr,
-                                                element) where {NDIMS_AMBIENT, NVARS, RealT}
+                                                element) where {NDIMS_AMBIENT, NVARS,
+                                                                RealT}
     return zeros(SVector{NVARS, RealT})
 end
+
+
+# Integrate a function that depends on solution as well as metric information
+function Trixi.integrate(func::Func, u,
+    mesh::Union{TreeMesh{2}, StructuredMesh{2}, StructuredMeshView{2},
+                UnstructuredMesh2D, P4estMesh{2}, T8codeMesh{2}},
+    equations::AbstractCovariantEquations{2}, dg::DG, cache; 
+    normalize = false) where {Func}
+Trixi.integrate_via_indices(u, mesh, equations, dg, cache;
+           normalize = normalize) do u, i, j, element, equations, dg
+u_local = Trixi.get_node_vars(u, equations, dg, i, j, element)
+return func(u_local, equations, cache.elements, i, j, element)
+end
+end
+
 
 include("covariant_advection.jl")
 include("covariant_shallow_water.jl")

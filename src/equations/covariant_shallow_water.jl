@@ -12,11 +12,14 @@ struct CovariantShallowWaterEquations2D{RealT <: Real} <: AbstractCovariantEquat
     end
 end
 
-Trixi.have_nonconservative_terms(::CovariantShallowWaterEquations2D) = True()
-
+# Conservative variables are the height and contravariant momentum components
 function Trixi.varnames(::typeof(cons2cons), ::CovariantShallowWaterEquations2D)
     return ("h", "h_vcon1", "h_vcon2")
 end
+
+# The flux-differencing formulation uses nonconservative terms, but the standard weak 
+# form does not.
+Trixi.have_nonconservative_terms(::CovariantShallowWaterEquations2D) = True()
 
 # Compute the entropy variables (requires element container and indices)
 @inline function Trixi.cons2entropy(u, equations::CovariantShallowWaterEquations2D,
@@ -27,6 +30,16 @@ end
     vcov = Gcov * vcon
     w1 = equations.gravitational_acceleration * h - 0.5f0 * dot(vcov, vcon)
     return SVector{3}(w1, vcov[1], vcov[2])
+end
+
+@inline mass(u, equations::CovariantShallowWaterEquations2D, elements, i, j, element) = u[1]
+@inline function Trixi.entropy(u, equations::CovariantShallowWaterEquations2D,
+                               elements, i, j, element)
+    h, h_vcon1, h_vcon2 = u
+    Gcov = SMatrix{2, 2}(view(elements.covariant_metric, :, :, i, j, element))
+    vcon = SVector(h_vcon1 / h, h_vcon2 / h)
+    vcov = Gcov * vcon
+    return 0.5f0 * (dot(vcov, vcon) + equations.gravitational_acceleration * h^2)
 end
 
 # Convert contravariant velocity/momentum components to zonal and meridional components
@@ -116,8 +129,7 @@ const flux_split_covariant_lax_friedrichs = FluxPlusDissipation(flux_split_covar
     # Geometric variables
     Gcov_ll = SMatrix{2, 2}(view(elements.covariant_metric, :, :, i_ll, j_ll, element))
     Gcov_rr = SMatrix{2, 2}(view(elements.covariant_metric, :, :, i_rr, j_rr, element))
-    Gcon_ll = SMatrix{2, 2}(view(elements.contravariant_metric, :, :, i_ll, j_ll,
-                                 element))
+    Gcon_ll = SMatrix{2, 2}(view(elements.contravariant_metric, :, :, i_ll, j_ll, element))
     J_ll = volume_element(elements, i_ll, j_ll, element)
     J_rr = volume_element(elements, i_rr, j_rr, element)
 

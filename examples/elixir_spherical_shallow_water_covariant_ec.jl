@@ -52,7 +52,8 @@ summary_callback = SummaryCallback()
 # The AnalysisCallback allows to analyse the solution in regular intervals and prints the results
 analysis_callback = AnalysisCallback(semi, interval = 50,
                                      save_analysis = true,
-                                     extra_analysis_errors = (:conservation_error,))
+                                     extra_analysis_errors = (:conservation_error,),
+                                     extra_analysis_integrals = (TrixiAtmo.mass, entropy))
 
 # The SaveSolutionCallback allows to save the solution to a file in regular intervals
 save_solution = SaveSolutionCallback(dt = (tspan[2] - tspan[1]) / n_saves,
