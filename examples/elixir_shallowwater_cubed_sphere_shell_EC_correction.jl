@@ -57,23 +57,21 @@ end
 
 # Source term function to apply Lagrange multiplier to the semi-discretization
 # The vector contravariant_normal_vector contains the normal contravariant vectors scaled with the inverse Jacobian
-function source_terms_lagrange_multiplier(u, du, x, t,
-                                          equations::ShallowWaterEquations3D,
-                                          contravariant_normal_vector)
+function source_terms_entropy_correction(u, du, x, t,
+                                         equations::ShallowWaterEquations3D,
+                                         contravariant_normal_vector)
 
     # Entropy correction term
     s2 = -contravariant_normal_vector[1] * equations.gravity * u[1]^2
     s3 = -contravariant_normal_vector[2] * equations.gravity * u[1]^2
     s4 = -contravariant_normal_vector[3] * equations.gravity * u[1]^2
 
-    # Lagrange multipliers in the x direction
-    x_dot_div_f = (x[1] * (du[2] + s2) + x[2] * (du[3] + s3) + x[3] * (du[4] + s4)) /
-                  sum(x .^ 2)
-    s2 += -x[1] * x_dot_div_f
-    s3 += -x[2] * x_dot_div_f
-    s4 += -x[3] * x_dot_div_f
+    new_du = SVector(du[1], du[2] + s2, du[3] + s3, du[4] + s4, du[5])
 
-    return SVector(0.0, s2, s3, s4, 0.0)
+    # Apply Lagrange multipliers using the exact normal vector x
+    s = source_terms_lagrange_multiplier(u, new_du, x, t, equations, x)
+
+    return SVector(s[1], s[2] + s2, s[3] + s3, s[4] + s4, s[5])
 end
 
 # Custom RHS that applies a source term that depends on du (used to convert apply Lagrange multiplier)
@@ -103,9 +101,9 @@ function rhs_semi_custom!(du_ode, u_ode, semi, t)
                                                                              element) *
                                               inverse_jacobian[i, j, element]
 
-                source = source_terms_lagrange_multiplier(u_local, du_local,
-                                                          x_local, t, equations,
-                                                          contravariant_normal_vector)
+                source = source_terms_entropy_correction(u_local, du_local,
+                                                         x_local, t, equations,
+                                                         contravariant_normal_vector)
 
                 Trixi.add_to_node_vars!(du, source, equations, solver, i, j, element)
             end

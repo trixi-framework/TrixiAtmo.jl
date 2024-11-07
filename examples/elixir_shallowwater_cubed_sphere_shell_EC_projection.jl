@@ -56,36 +56,6 @@ function initial_condition_advection_sphere(x, t, equations::ShallowWaterEquatio
     return prim2cons(SVector(rho, v1, v2, v3, 0), equations)
 end
 
-# Source term function to apply Lagrange multiplier to the semi-discretization
-# The vector contravariant_normal_vector contains the normal contravariant vectors (no scaling is needed)
-function source_terms_lagrange_multiplier(u, du, x, t,
-                                          equations::ShallowWaterEquations3D,
-                                          contravariant_normal_vector)
-    x_dot_div_f = (contravariant_normal_vector[1] * du[2] +
-                   contravariant_normal_vector[2] * du[3] +
-                   contravariant_normal_vector[3] * du[4]) /
-                  sum(contravariant_normal_vector .^ 2)
-
-    s2 = -contravariant_normal_vector[1] * x_dot_div_f
-    s3 = -contravariant_normal_vector[2] * x_dot_div_f
-    s4 = -contravariant_normal_vector[3] * x_dot_div_f
-
-    return SVector(0.0, s2, s3, s4, 0.0)
-end
-
-# Function to apply Lagrange multiplier discretely to the solution
-# The vector contravariant_normal_vector contains the normal contravariant vectors (no scaling is needed)
-function clean_solution!(u, equations::ShallowWaterEquations3D, contravariant_normal_vector)
-    x_dot_div_f = (contravariant_normal_vector[1] * u[2] +
-                   contravariant_normal_vector[2] * u[3] +
-                   contravariant_normal_vector[3] * u[4]) /
-                  sum(contravariant_normal_vector .^ 2)
-
-    u[2] -= contravariant_normal_vector[1] * x_dot_div_f
-    u[3] -= contravariant_normal_vector[2] * x_dot_div_f
-    u[4] -= contravariant_normal_vector[3] * x_dot_div_f
-end
-
 # Custom RHS that applies a source term that depends on du (used to convert apply Lagrange multiplier)
 function rhs_semi_custom!(du_ode, u_ode, semi, t)
     # Compute standard Trixi RHS
@@ -145,7 +115,8 @@ for element in eachelement(solver, semi.cache)
         contravariant_normal_vector = Trixi.get_contravariant_vector(3,
                                                                      semi.cache.elements.contravariant_vectors,
                                                                      i, j, element)
-        clean_solution!(u0[:, i, j, element], equations, contravariant_normal_vector)
+        clean_solution_lagrange_multiplier!(u0[:, i, j, element], equations,
+                                            contravariant_normal_vector)
     end
 end
 

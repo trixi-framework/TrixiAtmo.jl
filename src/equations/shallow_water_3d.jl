@@ -25,6 +25,11 @@ The equations are given by
 The unknown quantities of the SWE are the water height ``h`` and the velocities ``\mathbf{v} = (v_1, v_2, v_3)^T``.
 The gravitational constant is denoted by `g`.
 
+The 3D Shallow Water Equations (SWE) extend the 2D SWE to model shallow water flows on 2D manifolds embedded within 3D space. 
+To confine the flow to the 2D manifold, a source term incorporating a Lagrange multiplier is applied. 
+This term effectively removes momentum components that are normal to the manifold, ensuring the flow remains 
+constrained within the 2D surface.
+
 The additional quantity ``H_0`` is also available to store a reference value for the total water height that
 is useful to set initial conditions or test the "lake-at-rest" well-balancedness.
 
@@ -39,10 +44,11 @@ This affects the implementation and use of these equations in various ways:
 * [`AnalysisCallback`](https://trixi-framework.github.io/Trixi.jl/stable/reference-trixi/#Trixi.AnalysisCallback) analyzes this variable.
 * Trixi.jl's visualization tools will visualize the bottom topography by default.
 
-References for the SWE are many but a good introduction is available in Chapter 13 of the book:
-- Randall J. LeVeque (2002)
-  Finite Volume Methods for Hyperbolic Problems
-  [DOI: 10.1017/CBO9780511791253](https://doi.org/10.1017/CBO9780511791253)
+References:
+- J. Coté (1988). "A Lagrange multiplier approach for the metric terms of semi-Lagrangian models on the sphere". 
+  Quarterly Journal of the Royal Meteorological Society 114, 1347-1352. https://doi.org/10.1002/qj.49711448310
+- Giraldo (2001). "A spectral element shallow water model on spherical geodesic grids". 
+  https://doi.org/10.1002/1097-0363(20010430)35:8%3C869::AID-FLD116%3E3.0.CO;2-S
 """
 struct ShallowWaterEquations3D{RealT <: Real} <:
        Trixi.AbstractShallowWaterEquations{3, 5}
@@ -199,6 +205,53 @@ Details are available in Eq. (4.1) in the paper:
     f4 = f1 * v3_avg + p_avg * normal_direction[3]
 
     return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
+end
+
+"""
+         source_terms_lagrange_multiplier(u, du, x, t,
+                                          equations::ShallowWaterEquations3D,
+                                          normal_direction)
+
+Source term function to apply a Lagrange multiplier to the semi-discretization
+in order to constrain the momentum to a 2D manifold.
+
+The vector normal_direction is perpendicular to the 2D manifold. By default, 
+this is the normal contravariant basis vector.
+"""
+function source_terms_lagrange_multiplier(u, du, x, t,
+                                          equations::ShallowWaterEquations3D,
+                                          normal_direction)
+    x_dot_div_f = (normal_direction[1] * du[2] +
+                   normal_direction[2] * du[3] +
+                   normal_direction[3] * du[4]) /
+                  sum(normal_direction .^ 2)
+
+    s2 = -normal_direction[1] * x_dot_div_f
+    s3 = -normal_direction[2] * x_dot_div_f
+    s4 = -normal_direction[3] * x_dot_div_f
+
+    return SVector(0, s2, s3, s4, 0)
+end
+
+"""
+         clean_solution_lagrange_multiplier!(u, equations::ShallowWaterEquations3D, normal_direction)
+
+Function to apply Lagrange multiplier discretely to the solution in order to constrain 
+the momentum to a 2D manifold.
+
+The vector normal_direction is perpendicular to the 2D manifold. By default, 
+this is the normal contravariant basis vector.
+"""
+function clean_solution_lagrange_multiplier!(u, equations::ShallowWaterEquations3D,
+                                             normal_direction)
+    x_dot_div_f = (normal_direction[1] * u[2] +
+                   normal_direction[2] * u[3] +
+                   normal_direction[3] * u[4]) /
+                  sum(normal_direction .^ 2)
+
+    u[2] -= normal_direction[1] * x_dot_div_f
+    u[3] -= normal_direction[2] * x_dot_div_f
+    u[4] -= normal_direction[3] * x_dot_div_f
 end
 
 @inline function Trixi.max_abs_speed_naive(u_ll, u_rr, normal_direction::AbstractVector,
