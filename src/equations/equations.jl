@@ -32,7 +32,7 @@ abstract type AbstractCovariantEquations{NDIMS,
                                          NDIMS_AMBIENT,
                                          NVARS} <: AbstractEquations{NDIMS, NVARS} end
 
-@inline Trixi.cons2cons(u, equations, elements, i, j, element) = u 
+@inline Trixi.cons2cons(u, equations, elements, i, j, element) = u
 
 # Numerical flux plus dissipation which passes node/element indices and cache. 
 # We assume that u_ll and u_rr have been transformed into the same local coordinate system.
@@ -90,20 +90,20 @@ end
     return zeros(SVector{NVARS, RealT})
 end
 
-
 # Integrate a function that depends on solution as well as metric information
 function Trixi.integrate(func::Func, u,
-    mesh::Union{TreeMesh{2}, StructuredMesh{2}, StructuredMeshView{2},
-                UnstructuredMesh2D, P4estMesh{2}, T8codeMesh{2}},
-    equations::AbstractCovariantEquations{2}, dg::DG, cache; 
-    normalize = false) where {Func}
-Trixi.integrate_via_indices(u, mesh, equations, dg, cache;
-           normalize = normalize) do u, i, j, element, equations, dg
-u_local = Trixi.get_node_vars(u, equations, dg, i, j, element)
-return func(u_local, equations, cache.elements, i, j, element)
+                         mesh::Union{TreeMesh{2}, StructuredMesh{2},
+                                     StructuredMeshView{2},
+                                     UnstructuredMesh2D, P4estMesh{2}, T8codeMesh{2}},
+                         equations::AbstractCovariantEquations{2}, dg::DG, cache;
+                         normalize = false) where {Func}
+    Trixi.integrate_via_indices(u, mesh, equations, dg, cache;
+                                normalize = normalize) do u, i, j, element, equations,
+                                                          dg
+        u_local = Trixi.get_node_vars(u, equations, dg, i, j, element)
+        return func(u_local, equations, cache.elements, i, j, element)
+    end
 end
-end
-
 
 include("covariant_advection.jl")
 include("covariant_shallow_water.jl")

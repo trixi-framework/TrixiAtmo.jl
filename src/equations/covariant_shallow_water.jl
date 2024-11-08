@@ -129,7 +129,8 @@ const flux_split_covariant_lax_friedrichs = FluxPlusDissipation(flux_split_covar
     # Geometric variables
     Gcov_ll = SMatrix{2, 2}(view(elements.covariant_metric, :, :, i_ll, j_ll, element))
     Gcov_rr = SMatrix{2, 2}(view(elements.covariant_metric, :, :, i_rr, j_rr, element))
-    Gcon_ll = SMatrix{2, 2}(view(elements.contravariant_metric, :, :, i_ll, j_ll, element))
+    Gcon_ll = SMatrix{2, 2}(view(elements.contravariant_metric, :, :, i_ll, j_ll,
+                                 element))
     J_ll = volume_element(elements, i_ll, j_ll, element)
     J_rr = volume_element(elements, i_rr, j_rr, element)
 

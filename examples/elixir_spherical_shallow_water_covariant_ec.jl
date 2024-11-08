@@ -10,7 +10,7 @@ using OrdinaryDiffEq, Trixi, TrixiAtmo
 initial_condition = initial_condition_convergence_test
 polydeg = 3
 cells_per_dimension = 5
-n_saves = 10
+n_saves = 100
 
 ###############################################################################
 # Spatial discretization
@@ -50,7 +50,7 @@ ode = semidiscretize(semi, tspan)
 summary_callback = SummaryCallback()
 
 # The AnalysisCallback allows to analyse the solution in regular intervals and prints the results
-analysis_callback = AnalysisCallback(semi, interval = 50,
+analysis_callback = AnalysisCallback(semi, dt = (tspan[2] - tspan[1]) / n_saves,
                                      save_analysis = true,
                                      extra_analysis_errors = (:conservation_error,),
                                      extra_analysis_integrals = (TrixiAtmo.mass, entropy))
