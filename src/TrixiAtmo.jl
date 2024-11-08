@@ -33,7 +33,7 @@ export flux_chandrashekar, flux_LMARS
 export velocity, waterheight, pressure, energy_total, energy_kinetic, energy_internal,
        lake_at_rest_error, source_terms_lagrange_multiplier,
        clean_solution_lagrange_multiplier!
-
+export P4estCubedSphere2D, MetricTermsCrossProduct, MetricTermsInvariantCurl
 export examples_dir
 
 end # module TrixiAtmo

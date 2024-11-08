@@ -1,7 +1,7 @@
 
 using OrdinaryDiffEq
 using Trixi
-
+using TrixiAtmo
 ###############################################################################
 # Entropy conservation for the spherical shallow water equations in Cartesian
 # form obtained through an entropy correction term

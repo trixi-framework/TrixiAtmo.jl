@@ -1,7 +1,7 @@
 
 using OrdinaryDiffEq
 using Trixi
-
+using TrixiAtmo
 ###############################################################################
 # Entropy consistency test for the spherical shallow water equations in Cartesian
 # form using the standard DGSEM with LLF dissipation
