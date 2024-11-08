@@ -62,8 +62,8 @@ end
 
 initial_condition = initial_condition_advection_sphere
 
-mesh = TrixiAtmo.P4estMeshCubedSphere2D(5, 2.0, polydeg = polydeg,
-                                        initial_refinement_level = 0)
+mesh = P4estMeshCubedSphere2D(5, 2.0, polydeg = polydeg,
+                              initial_refinement_level = 0)
 
 # A semidiscretization collects data structures and functions for the spatial discretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
