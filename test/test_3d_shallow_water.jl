@@ -15,14 +15,14 @@ EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
                             9.98871590e-02,
                             4.55606969e-02,
                             3.17422064e-02,
-                            0.00000000e+00,
+                            0.00000000e+00
                         ],
                         linf=[
                             1.05686060e+00,
                             1.04413842e+00,
                             3.12374228e-01,
                             3.19064636e-01,
-                            0.00000000e+00,
+                            0.00000000e+00
                         ])
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
@@ -42,14 +42,14 @@ end
                             1.01017589e-01,
                             4.39697415e-02,
                             3.08898940e-02,
-                            0.00000000e+00,
+                            0.00000000e+00
                         ],
                         linf=[
                             1.06007536e+00,
                             1.05786719e+00,
                             3.93826726e-01,
                             2.34129714e-01,
-                            0.00000000e+00,
+                            0.00000000e+00
                         ])
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
@@ -69,14 +69,14 @@ end
                             9.43310712e-02,
                             3.26202302e-02,
                             2.02514293e-02,
-                            0.00000000e+00,
+                            0.00000000e+00
                         ],
                         linf=[
                             1.04610420e+00,
                             1.05891219e+00,
                             1.19809349e-01,
                             5.54354032e-02,
-                            0.00000000e+00,
+                            0.00000000e+00
                         ])
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
