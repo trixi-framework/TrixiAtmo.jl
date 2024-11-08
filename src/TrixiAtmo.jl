@@ -15,18 +15,25 @@ using StrideArrays: PtrArray
 using StaticArrayInterface: static_size
 using LinearAlgebra: norm
 using Reexport: @reexport
+using LoopVectorization: @turbo
 @reexport using StaticArrays: SVector
 
 include("auxiliary/auxiliary.jl")
 include("equations/equations.jl")
 include("meshes/meshes.jl")
+include("semidiscretization/semidiscretization.jl")
 include("solvers/solvers.jl")
 include("semidiscretization/semidiscretization_hyperbolic_2d_manifold_in_3d.jl")
+include("callbacks_step/stepsize_dg2d.jl")
 
-export CompressibleMoistEulerEquations2D
+export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D
 
 export flux_chandrashekar, flux_LMARS
 
+export velocity, waterheight, pressure, energy_total, energy_kinetic, energy_internal,
+       lake_at_rest_error, source_terms_lagrange_multiplier,
+       clean_solution_lagrange_multiplier!
+export P4estCubedSphere2D, MetricTermsCrossProduct, MetricTermsInvariantCurl
 export examples_dir
 
 end # module TrixiAtmo

@@ -4,23 +4,25 @@ using Trixi
 using TrixiAtmo
 
 ###############################################################################
-# semidiscretization of the linear advection equation
+# Entropy conservation for the spherical shallow water equations in Cartesian
+# form obtained through the projection of the momentum onto the divergence-free
+# tangential contravariant vectors
 
-# We use the Euler equations structure but modify the rhs! function to convert it to a
-# variable-coefficient advection equation
-equations = CompressibleEulerEquations3D(1.4)
+equations = ShallowWaterEquations3D(gravity_constant = 9.81)
 
-# Create DG solver with polynomial degree = 3 and (local) Lax-Friedrichs/Rusanov flux as surface flux
+# Create DG solver with polynomial degree = 3 and Wintemeyer et al.'s flux as surface flux
 polydeg = 3
-solver = DGSEM(polydeg = polydeg, surface_flux = flux_lax_friedrichs)
+volume_flux = flux_wintermeyer_etal # flux_fjordholm_etal 
+surface_flux = flux_wintermeyer_etal # flux_fjordholm_etal #flux_lax_friedrichs
+solver = DGSEM(polydeg = polydeg,
+               surface_flux = surface_flux,
+               volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
 
 # Initial condition for a Gaussian density profile with constant pressure
 # and the velocity of a rotating solid body
-function initial_condition_advection_sphere(x, t, equations::CompressibleEulerEquations3D)
+function initial_condition_advection_sphere(x, t, equations::ShallowWaterEquations3D)
     # Gaussian density
     rho = 1.0 + exp(-20 * (x[1]^2 + x[3]^2))
-    # Constant pressure
-    p = 1.0
 
     # Spherical coordinates for the point x
     if sign(x[2]) == 0.0
@@ -52,36 +54,18 @@ function initial_condition_advection_sphere(x, t, equations::CompressibleEulerEq
     v2 = -cos(colat) * sin(phi) * v_lat + cos(phi) * v_long
     v3 = sin(colat) * v_lat
 
-    return prim2cons(SVector(rho, v1, v2, v3, p), equations)
-end
-
-# Source term function to transform the Euler equations into the linear advection equations with variable advection velocity
-function source_terms_convert_to_linear_advection(u, du, x, t,
-                                                  equations::CompressibleEulerEquations3D,
-                                                  normal_direction)
-    v1 = u[2] / u[1]
-    v2 = u[3] / u[1]
-    v3 = u[4] / u[1]
-
-    s2 = du[1] * v1 - du[2]
-    s3 = du[1] * v2 - du[3]
-    s4 = du[1] * v3 - du[4]
-    s5 = 0.5 * (s2 * v1 + s3 * v2 + s4 * v3) - du[5]
-
-    return SVector(0.0, s2, s3, s4, s5)
+    return prim2cons(SVector(rho, v1, v2, v3, 0), equations)
 end
 
 initial_condition = initial_condition_advection_sphere
 
-element_local_mapping = false
-
-mesh = P4estMeshCubedSphere2D(5, 1.0, polydeg = polydeg,
-                              initial_refinement_level = 0,
-                              element_local_mapping = element_local_mapping)
+mesh = P4estMeshCubedSphere2D(5, 2.0, polydeg = polydeg,
+                              initial_refinement_level = 0)
 
 # A semidiscretization collects data structures and functions for the spatial discretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
-                                    source_terms = source_terms_convert_to_linear_advection)
+                                    metric_terms = MetricTermsInvariantCurl(),
+                                    source_terms = source_terms_lagrange_multiplier)
 
 ###############################################################################
 # ODE solvers, callbacks etc.
@@ -89,6 +73,19 @@ semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
 # Create ODE problem with time span from 0.0 to π
 tspan = (0.0, pi)
 ode = semidiscretize(semi, tspan)
+
+# Clean the initial condition
+for element in eachelement(solver, semi.cache)
+    for j in eachnode(solver), i in eachnode(solver)
+        u0 = Trixi.wrap_array(ode.u0, semi)
+
+        contravariant_normal_vector = Trixi.get_contravariant_vector(3,
+                                                                     semi.cache.elements.contravariant_vectors,
+                                                                     i, j, element)
+        clean_solution_lagrange_multiplier!(u0[:, i, j, element], equations,
+                                            contravariant_normal_vector)
+    end
+end
 
 # At the beginning of the main loop, the SummaryCallback prints a summary of the simulation setup
 # and resets the timers
@@ -98,7 +95,7 @@ summary_callback = SummaryCallback()
 analysis_callback = AnalysisCallback(semi, interval = 10,
                                      save_analysis = true,
                                      extra_analysis_errors = (:conservation_error,),
-                                     extra_analysis_integrals = (Trixi.density,))
+                                     extra_analysis_integrals = (waterheight, energy_total))
 
 # The SaveSolutionCallback allows to save the solution to a file in regular intervals
 save_solution = SaveSolutionCallback(interval = 10,

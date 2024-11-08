@@ -2,25 +2,25 @@
 using OrdinaryDiffEq
 using Trixi
 using TrixiAtmo
-
 ###############################################################################
-# semidiscretization of the linear advection equation
+# Entropy conservation for the spherical shallow water equations in Cartesian
+# form obtained through an entropy correction term
 
-# We use the Euler equations structure but modify the rhs! function to convert it to a
-# variable-coefficient advection equation
-equations = CompressibleEulerEquations3D(1.4)
+equations = ShallowWaterEquations3D(gravity_constant = 9.81)
 
-# Create DG solver with polynomial degree = 3 and (local) Lax-Friedrichs/Rusanov flux as surface flux
+# Create DG solver with polynomial degree = 3 and Wintemeyer et al.'s flux as surface flux
 polydeg = 3
-solver = DGSEM(polydeg = polydeg, surface_flux = flux_lax_friedrichs)
+volume_flux = flux_fjordholm_etal #flux_wintermeyer_etal
+surface_flux = flux_fjordholm_etal #flux_wintermeyer_etal  #flux_lax_friedrichs
+solver = DGSEM(polydeg = polydeg,
+               surface_flux = surface_flux,
+               volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
 
 # Initial condition for a Gaussian density profile with constant pressure
 # and the velocity of a rotating solid body
-function initial_condition_advection_sphere(x, t, equations::CompressibleEulerEquations3D)
+function initial_condition_advection_sphere(x, t, equations::ShallowWaterEquations3D)
     # Gaussian density
     rho = 1.0 + exp(-20 * (x[1]^2 + x[3]^2))
-    # Constant pressure
-    p = 1.0
 
     # Spherical coordinates for the point x
     if sign(x[2]) == 0.0
@@ -52,36 +52,38 @@ function initial_condition_advection_sphere(x, t, equations::CompressibleEulerEq
     v2 = -cos(colat) * sin(phi) * v_lat + cos(phi) * v_long
     v3 = sin(colat) * v_lat
 
-    return prim2cons(SVector(rho, v1, v2, v3, p), equations)
+    return prim2cons(SVector(rho, v1, v2, v3, 0), equations)
 end
 
-# Source term function to transform the Euler equations into the linear advection equations with variable advection velocity
-function source_terms_convert_to_linear_advection(u, du, x, t,
-                                                  equations::CompressibleEulerEquations3D,
-                                                  normal_direction)
-    v1 = u[2] / u[1]
-    v2 = u[3] / u[1]
-    v3 = u[4] / u[1]
+# Source term function to apply the entropy correction term and the Lagrange multiplier to the semi-discretization.
+# The vector contravariant_normal_vector contains the normal contravariant vectors scaled with the inverse Jacobian.
+# The Lagrange multiplier is applied with the vector x, which contains the exact normal direction to the 2D manifold.
+function source_terms_entropy_correction(u, du, x, t,
+                                         equations::ShallowWaterEquations3D,
+                                         contravariant_normal_vector)
 
-    s2 = du[1] * v1 - du[2]
-    s3 = du[1] * v2 - du[3]
-    s4 = du[1] * v3 - du[4]
-    s5 = 0.5 * (s2 * v1 + s3 * v2 + s4 * v3) - du[5]
+    # Entropy correction term
+    s2 = -contravariant_normal_vector[1] * equations.gravity * u[1]^2
+    s3 = -contravariant_normal_vector[2] * equations.gravity * u[1]^2
+    s4 = -contravariant_normal_vector[3] * equations.gravity * u[1]^2
 
-    return SVector(0.0, s2, s3, s4, s5)
+    new_du = SVector(du[1], du[2] + s2, du[3] + s3, du[4] + s4, du[5])
+
+    # Apply Lagrange multipliers using the exact normal vector to the 2D manifold (x)
+    s = source_terms_lagrange_multiplier(u, new_du, x, t, equations, x)
+
+    return SVector(s[1], s[2] + s2, s[3] + s3, s[4] + s4, s[5])
 end
 
 initial_condition = initial_condition_advection_sphere
 
-element_local_mapping = false
-
-mesh = P4estMeshCubedSphere2D(5, 1.0, polydeg = polydeg,
-                              initial_refinement_level = 0,
-                              element_local_mapping = element_local_mapping)
+mesh = P4estMeshCubedSphere2D(5, 2.0, polydeg = polydeg,
+                              initial_refinement_level = 0)
 
 # A semidiscretization collects data structures and functions for the spatial discretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
-                                    source_terms = source_terms_convert_to_linear_advection)
+                                    metric_terms = MetricTermsInvariantCurl(),
+                                    source_terms = source_terms_entropy_correction)
 
 ###############################################################################
 # ODE solvers, callbacks etc.
@@ -98,7 +100,7 @@ summary_callback = SummaryCallback()
 analysis_callback = AnalysisCallback(semi, interval = 10,
                                      save_analysis = true,
                                      extra_analysis_errors = (:conservation_error,),
-                                     extra_analysis_integrals = (Trixi.density,))
+                                     extra_analysis_integrals = (waterheight, energy_total))
 
 # The SaveSolutionCallback allows to save the solution to a file in regular intervals
 save_solution = SaveSolutionCallback(interval = 10,
