@@ -3,12 +3,6 @@
 
 using Trixi: AbstractEquations
 
-# Physical constants
-const EARTH_RADIUS = 6.37122  # m
-const EARTH_GRAVITATIONAL_ACCELERATION = 9.80616  # m/s²
-const EARTH_ROTATION_RATE = 7.292e-5  # rad/s
-const SECONDS_PER_DAY = 8.64e4
-
 @doc raw"""
     AbstractCovariantEquations{NDIMS, 
                                NDIMS_AMBIENT, 
@@ -63,8 +57,10 @@ end
     return 0.5f0 * (flux_ll + flux_rr)
 end
 
-include("covariant_advection.jl")
 abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:
               AbstractEquations{NDIMS, NVARS} end
+include("reference_data.jl")
+include("covariant_advection.jl")
 include("compressible_moist_euler_2d_lucas.jl")
+include("shallow_water_3d.jl")
 end # @muladd

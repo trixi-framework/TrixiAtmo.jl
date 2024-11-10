@@ -12,8 +12,9 @@ function Trixi.SemidiscretizationHyperbolic(mesh::P4estMesh{2},
                                             # `RealT` is used as real type for node locations etc.
                                             # while `uEltype` is used as element type of solutions etc.
                                             RealT = real(solver), uEltype = RealT,
-                                            initial_cache = NamedTuple())
-    cache = (; Trixi.create_cache(mesh, equations, solver, RealT, uEltype)...,
+                                            initial_cache = NamedTuple(),
+                                            metric_terms = MetricTermsCrossProduct())
+    cache = (; Trixi.create_cache(mesh, equations, solver, RealT, metric_terms, uEltype)...,
              initial_cache...)
     _boundary_conditions = Trixi.digest_boundary_conditions(boundary_conditions, mesh,
                                                             solver,

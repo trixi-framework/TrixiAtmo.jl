@@ -1,3 +1,5 @@
+@muladd begin
+#! format: noindent
 
 function Trixi.analyze(::typeof(Trixi.entropy_timederivative), du, u, t,
                        mesh::P4estMesh{2},
@@ -49,3 +51,4 @@ function Trixi.calc_error_norms(func, u, t, analyzer, mesh::P4estMesh{2},
 
     return l2_error, linf_error
 end
+end # muladd

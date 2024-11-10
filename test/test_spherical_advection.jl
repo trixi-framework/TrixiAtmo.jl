@@ -15,14 +15,14 @@ EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
                             0.008234141170177999,
                             0.0018421064842753803,
                             0.0,
-                            0.06443024298066,
+                            0.06443024298066
                         ],
                         linf=[
                             0.09489504882003308,
                             0.09648119517743559,
                             0.013745339970863746,
                             0.0,
-                            0.40932299941471895,
+                            0.40932299941471895
                         ])
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
