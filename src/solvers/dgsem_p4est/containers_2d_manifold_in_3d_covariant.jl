@@ -19,7 +19,7 @@ Contains the following geometric information:
   vectors  $\vec{a}_m = \partial \vec{X} / \partial \xi^m$ expanded in terms of a global  
   tangent basis (i.e. zonal and meridional components in the case of a spherical shell), 
   where $\vec{X}$ denotes the mapping from the reference element to the physical element.
-  he first index is the global component index $l$, the second index is the local
+  The first index is the global component index $l$, the second index is the local
   component index $m$, the next `NDIMS` indices are tensor-product node indices ($i$, $j$, 
   for `NDIMS = 2` or $i$, $j$, $k$, for `NDIMS = 3`), and the last is the element index.
 - `inverse_jacobian::Array{RealT, NDIMSP1}`: Nodal values of $1/J$, where 
