@@ -318,7 +318,6 @@ function Trixi.max_dt(u, t, mesh::P4estMesh{2}, constant_speed::False,
 
         max_scaled_speed = max(max_scaled_speed, max_lambda1 + max_lambda2)
     end
-
     return 2 / (nnodes(dg) * max_scaled_speed)
 end
 end # @muladd

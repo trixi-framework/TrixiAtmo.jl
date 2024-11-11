@@ -5,48 +5,18 @@
 using OrdinaryDiffEq, Trixi, TrixiAtmo
 
 ###############################################################################
-# Problem definition
-
-function initial_condition_advection_earth(x, t, ::CovariantLinearAdvectionEquation2D)
-    RealT = eltype(x)
-
-    # set parameters
-    a = EARTH_RADIUS  # radius of the sphere in metres
-    V = convert(RealT, 2π) * a / (12 * SECONDS_PER_DAY)  # speed of rotation
-    alpha = convert(RealT, π / 4)  # angle of rotation
-    h_0 = 1000.0f0  # bump height in metres
-    b_0 = 5.0f0 / (a^2)  # bump width
-    lon_0, lat_0 = convert(RealT, 3π / 2), 0.0f0  # initial bump location
-
-    # convert initial position to Cartesian coordinates
-    x_0 = SVector(a * cos(lat_0) * cos(lon_0), a * cos(lat_0) * sin(lon_0), a * sin(lat_0))
-
-    # compute Gaussian bump profile
-    h = h_0 * exp(-b_0 * ((x[1] - x_0[1])^2 + (x[2] - x_0[2])^2 + (x[3] - x_0[3])^2))
-
-    # get zonal and meridional components of the velocity
-    lon, lat = atan(x[2], x[1]), asin(x[3] / a)
-    v_lon = V * (cos(lat) * cos(alpha) + sin(lat) * cos(lon) * sin(alpha))
-    v_lat = -V * sin(lon) * sin(alpha)
-
-    return SVector(h, v_lon, v_lat)
-end
-
-###############################################################################
 # Spatial discretization
 
 polydeg = 3
-cells_per_dimension = 2
-
+cells_per_dimension = 5
 element_local_mapping = true
+initial_condition = initial_condition_gaussian
 
-mesh = P4estMeshCubedSphere2D(5, EARTH_RADIUS, polydeg = polydeg,
+mesh = P4estMeshCubedSphere2D(cells_per_dimension, EARTH_RADIUS, polydeg = polydeg,
                               initial_refinement_level = 0,
                               element_local_mapping = element_local_mapping)
 
 equations = CovariantLinearAdvectionEquation2D()
-
-initial_condition = initial_condition_advection_earth
 
 # Local Lax-Friedrichs surface flux
 surface_flux = flux_lax_friedrichs
@@ -81,7 +51,7 @@ save_solution = SaveSolutionCallback(interval = 10,
                                      solution_variables = cons2cons)
 
 # The StepsizeCallback handles the re-calculation of the maximum Δt after each time step
-stepsize_callback = StepsizeCallback(cfl = 0.4)
+stepsize_callback = StepsizeCallback(cfl = 0.7)
 
 # Create a CallbackSet to collect all callbacks such that they can be passed to the ODE solver
 callbacks = CallbackSet(summary_callback, analysis_callback, save_solution,

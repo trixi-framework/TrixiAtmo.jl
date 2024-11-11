@@ -1,7 +1,3 @@
-# By default, Julia/LLVM does not use fused multiply-add operations (FMAs).
-# Since these FMAs can increase the performance of many numerical algorithms,
-# we need to opt-in explicitly.
-# See https://ranocha.de/blog/Optimizing_EC_Trixi for further details.
 @muladd begin
 #! format: noindent
 
@@ -267,8 +263,9 @@ end
     # Compute the wave celerity on the left and right
     h_ll = waterheight(u_ll, equations)
     h_rr = waterheight(u_rr, equations)
-    c_ll = sqrt(equations.gravity * h_ll)
-    c_rr = sqrt(equations.gravity * h_rr)
+
+    c_ll = sqrt(max(equations.gravity * h_ll, 0.0f0))
+    c_rr = sqrt(max(equations.gravity * h_rr, 0.0f0))
 
     # The normal velocities are already scaled by the norm
     return max(abs(v_ll), abs(v_rr)) + max(c_ll, c_rr) * norm(normal_direction)
@@ -382,5 +379,11 @@ end
 # Calculate potential energy for a conservative state `cons`
 @inline function energy_internal(cons, equations::ShallowWaterEquations3D)
     return energy_total(cons, equations) - energy_kinetic(cons, equations)
+end
+
+function initial_condition_gaussian(x, t, equations::ShallowWaterEquations3D)
+    h, vlon, vlat = initial_condition_gaussian(x, t)
+    v1, v2, v3 = spherical2cartesian(vlon, vlat, x)
+    return Trixi.prim2cons(SVector(h, v1, v2, v3, 0.0), equations)
 end
 end # @muladd

@@ -37,7 +37,8 @@ export velocity, waterheight, pressure, energy_total, energy_kinetic, energy_int
        clean_solution_lagrange_multiplier!
 export P4estCubedSphere2D, MetricTermsCrossProduct, MetricTermsInvariantCurl
 export EARTH_RADIUS, EARTH_GRAVITATIONAL_ACCELERATION,
-       EARTH_ROTATION_RATE, SECONDS_PER_DAY
+       EARTH_ROTATION_RATE, SECONDS_PER_DAY, spherical2cartesian
+export initial_condition_gaussian
 
 export examples_dir
 end # module TrixiAtmo
