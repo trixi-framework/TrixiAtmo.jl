@@ -70,12 +70,17 @@ end
 end
 
 # Volume element J = sqrt(det(G)), where G is the matrix of covariant metric components
-@inline function volume_element(elements, i, j, element)
+@inline function volume_element(elements::P4estElementContainerCovariant{2}, node,
+                                element)
+    i, j = node
     return 1 / elements.inverse_jacobian[i, j, element]
 end
 
 # Convert contravariant velocity/momentum components to zonal and meridional components
-@inline function contravariant2spherical(v_con_1, v_con_2, elements, i, j, element)
+@inline function contravariant2spherical(v_con_1::RealT, v_con_2::RealT,
+                                         elements::P4estElementContainerCovariant{2},
+                                         node, element) where {RealT <: Real}
+    i, j = node
     return elements.covariant_basis[1, 1, i, j, element] * v_con_1 +
            elements.covariant_basis[1, 2, i, j, element] * v_con_2,
            elements.covariant_basis[2, 1, i, j, element] * v_con_1 +
@@ -83,7 +88,10 @@ end
 end
 
 # Convert zonal and meridional velocity/momentum components to contravariant components
-@inline function spherical2contravariant(v_lon, v_lat, elements, i, j, element)
+@inline function spherical2contravariant(v_lon::RealT, v_lat::RealT,
+                                         elements::P4estElementContainerCovariant{2},
+                                         node, element) where {RealT <: Real}
+    i, j = node
     Jv_con_1 = elements.covariant_basis[2, 2, i, j, element] * v_lon -
                elements.covariant_basis[1, 2, i, j, element] * v_lat
     Jv_con_2 = -elements.covariant_basis[2, 1, i, j, element] * v_lon +

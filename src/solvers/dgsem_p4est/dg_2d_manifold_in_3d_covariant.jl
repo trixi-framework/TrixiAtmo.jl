@@ -73,8 +73,8 @@ function Trixi.compute_coefficients!(u, func, t, mesh::P4estMesh{2},
             x_node = Trixi.get_node_coords(cache.elements.node_coordinates,
                                            equations, dg, i, j, element)
             u_spherical = func(x_node, t, equations)
-            u_con = spherical2contravariant(u_spherical, equations,
-                                            cache.elements, i, j, element)
+            u_con = spherical2contravariant(u_spherical, equations, cache, (i, j),
+                                            element)
             Trixi.set_node_vars!(u, u_con, equations, dg, i, j, element)
         end
     end
@@ -92,8 +92,8 @@ end
     for j in eachnode(dg), i in eachnode(dg)
         u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
 
-        contravariant_flux1 = flux(u_node, 1, equations, cache.elements, i, j, element)
-        contravariant_flux2 = flux(u_node, 2, equations, cache.elements, i, j, element)
+        contravariant_flux1 = flux(u_node, 1, equations, cache, (i, j), element)
+        contravariant_flux2 = flux(u_node, 2, equations, cache, (i, j), element)
 
         for ii in eachnode(dg)
             Trixi.multiply_add_to_node_vars!(du, alpha * derivative_dhat[ii, i],
@@ -127,8 +127,8 @@ end
         # x direction
         for ii in (i + 1):nnodes(dg)
             u_node_ii = Trixi.get_node_vars(u, equations, dg, ii, j, element)
-            flux1 = volume_flux(u_node, u_node_ii, 1, equations,
-                                cache.elements, i, j, ii, j, element)
+            flux1 = volume_flux(u_node, u_node_ii, 1, equations, cache,
+                                (i, j), (ii, j), element)
             Trixi.multiply_add_to_node_vars!(du, alpha * derivative_split[i, ii], flux1,
                                              equations, dg, i, j, element)
             Trixi.multiply_add_to_node_vars!(du, alpha * derivative_split[ii, i], flux1,
@@ -138,8 +138,8 @@ end
         # y direction
         for jj in (j + 1):nnodes(dg)
             u_node_jj = Trixi.get_node_vars(u, equations, dg, i, jj, element)
-            flux2 = volume_flux(u_node, u_node_jj, 2, equations,
-                                cache.elements, i, j, i, jj, element)
+            flux2 = volume_flux(u_node, u_node_jj, 2, equations, cache,
+                                (i, j), (i, jj), element)
             Trixi.multiply_add_to_node_vars!(du, alpha * derivative_split[j, jj], flux2,
                                              equations, dg, i, j, element)
             Trixi.multiply_add_to_node_vars!(du, alpha * derivative_split[jj, j], flux2,
@@ -245,45 +245,40 @@ end
 
     u_ll, u_rr = Trixi.get_surface_node_vars(u, equations, dg, primary_node_index,
                                              interface_index)
+    # Gather multi-indices
+    node_ll = (i_primary, j_primary)
+    node_rr = (i_secondary, j_secondary)
 
     # Convert to spherical components on each element
-    u_ll_pol = contravariant2spherical(u_ll, equations, cache.elements,
-                                       i_primary, j_primary, primary_element_index)
-    u_rr_pol = contravariant2spherical(u_rr, equations, cache.elements,
-                                       i_secondary, j_secondary,
-                                       secondary_element_index)
-
+    u_ll_spherical = contravariant2spherical(u_ll, equations, cache, node_ll,
+                                             primary_element_index)
+    u_rr_spherical = contravariant2spherical(u_rr, equations, cache,
+                                             node_rr, secondary_element_index)
     # Evaluate u_rr in primary coordinate system 
-    u_rr_ll = spherical2contravariant(u_rr_pol, equations, cache.elements,
-                                      i_primary, j_primary, primary_element_index)
-
+    u_rr_transformed_to_ll = spherical2contravariant(u_rr_spherical, equations, cache,
+                                                     node_ll, primary_element_index)
     # Compute flux on primary element
     if isodd(primary_direction_index)
-        flux_primary = -surface_flux(u_rr_ll, u_ll, (primary_direction_index + 1) >> 1,
-                                     equations, cache.elements, i_primary, j_primary,
-                                     i_primary, j_primary, primary_element_index)
+        flux_primary = -surface_flux(u_rr_transformed_to_ll, u_ll,
+                                     (primary_direction_index + 1) >> 1, equations,
+                                     cache, node_ll, node_ll, primary_element_index)
     else
-        flux_primary = surface_flux(u_ll, u_rr_ll, (primary_direction_index + 1) >> 1,
-                                    equations, cache.elements, i_primary, j_primary,
-                                    i_primary, j_primary, primary_element_index)
+        flux_primary = surface_flux(u_ll, u_rr_transformed_to_ll,
+                                    (primary_direction_index + 1) >> 1, equations,
+                                    cache, node_ll, node_ll, primary_element_index)
     end
-
     # Evaluate u_ll in secondary coordinate system
-    u_ll_rr = spherical2contravariant(u_ll_pol, equations, cache.elements,
-                                      i_secondary, j_secondary, secondary_element_index)
+    u_ll_transformed_to_rr = spherical2contravariant(u_ll_spherical, equations, cache,
+                                                     node_rr, secondary_element_index)
     # Compute flux on secondary element
     if isodd(secondary_direction_index)
-        flux_secondary = -surface_flux(u_ll_rr, u_rr,
-                                       (secondary_direction_index + 1) >> 1,
-                                       equations, cache.elements, i_secondary,
-                                       j_secondary, i_secondary, j_secondary,
-                                       secondary_element_index)
+        flux_secondary = -surface_flux(u_ll_transformed_to_rr, u_rr,
+                                       (secondary_direction_index + 1) >> 1, equations,
+                                       cache, node_rr, node_rr, secondary_element_index)
     else
-        flux_secondary = surface_flux(u_rr, u_ll_rr,
-                                      (secondary_direction_index + 1) >> 1,
-                                      equations, cache.elements, i_secondary,
-                                      j_secondary, i_secondary, j_secondary,
-                                      secondary_element_index)
+        flux_secondary = surface_flux(u_rr, u_ll_transformed_to_rr,
+                                      (secondary_direction_index + 1) >> 1, equations,
+                                      cache, node_rr, node_rr, secondary_element_index)
     end
 
     # Now we can update the surface flux values, where all vector variables are stored 

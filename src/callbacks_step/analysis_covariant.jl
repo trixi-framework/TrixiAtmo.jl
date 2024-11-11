@@ -9,7 +9,7 @@ function Trixi.analyze(::typeof(Trixi.entropy_timederivative), du, u, t,
                                 du) do u, i, j, element, equations, dg, du
         u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
         du_node = Trixi.get_node_vars(du, equations, dg, i, j, element)
-        dot(cons2entropy(u_node, equations, cache.elements, i, j, element), du_node)
+        dot(cons2entropy(u_node, equations, cache, (i, j), element), du_node)
     end
 end
 
@@ -32,13 +32,13 @@ function Trixi.calc_error_norms(func, u, t, analyzer, mesh::P4estMesh{2},
             x = Trixi.get_node_coords(node_coordinates, equations, dg, i, j, element)
 
             u_exact = spherical2contravariant(initial_condition(x, t, equations),
-                                              equations, cache.elements, i, j, element)
+                                              equations, cache, (i, j), element)
 
             u_numerical = Trixi.get_node_vars(u, equations, dg, i, j, element)
 
             diff = func(u_exact, equations) - func(u_numerical, equations)
 
-            J = volume_element(cache.elements, i, j, element)
+            J = volume_element(cache.elements, (i, j), element)
 
             l2_error += diff .^ 2 * (weights[i] * weights[j] * J)
             linf_error = @. max(linf_error, abs(diff))

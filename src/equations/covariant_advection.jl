@@ -39,7 +39,7 @@ end
 
 # Compute the entropy variables (requires element container and indices)
 @inline function Trixi.cons2entropy(u, equations::CovariantLinearAdvectionEquation2D,
-                                    elements, i, j, element)
+                                    cache, node, element)
     z = zero(eltype(u))
     return SVector{3}(u[1], z, z)
 end
@@ -48,9 +48,9 @@ end
 # in order to give the flux access to the geometric information
 @inline function Trixi.flux(u, orientation::Integer,
                             ::CovariantLinearAdvectionEquation2D,
-                            elements, i, j, element)
+                            cache, node, element)
     z = zero(eltype(u))
-    J = volume_element(elements, i, j, element)
+    J = volume_element(cache.elements, node, element)
     return SVector(J * u[1] * u[orientation + 1], z, z)
 end
 
@@ -59,41 +59,42 @@ end
 @inline function (dissipation::DissipationLocalLaxFriedrichs)(u_ll, u_rr,
                                                               orientation_or_normal_direction,
                                                               equations::CovariantLinearAdvectionEquation2D,
-                                                              elements, i_ll, j_ll,
-                                                              i_rr, j_rr, element)
+                                                              cache, node_ll,
+                                                              node_rr, element)
     z = zero(eltype(u_ll))
-    J = volume_element(elements, i_ll, j_ll, element)
+    J = volume_element(cache.elements, node_ll, element)
     λ = dissipation.max_abs_speed(u_ll, u_rr, orientation_or_normal_direction,
-                                  equations, elements, i_ll, j_ll, i_rr, j_rr, element)
+                                  equations, cache, node_ll, node_rr, element)
     return -0.5f0 * J * λ * SVector(u_rr[1] - u_ll[1], z, z)
 end
 
 # Maximum wave speed with respect to the a specific orientation
 @inline function Trixi.max_abs_speed_naive(u_ll, u_rr, orientation::Integer,
                                            ::CovariantLinearAdvectionEquation2D,
-                                           elements, i_ll, j_ll, i_rr, j_rr, element)
+                                           cache, node_ll, node_rr, element)
     return max(abs(u_ll[orientation + 1]), abs(u_rr[orientation + 1]))
 end
 
 # Maximum wave speeds in each direction for CFL calculation
 @inline function Trixi.max_abs_speeds(u, ::CovariantLinearAdvectionEquation2D,
-                                      elements, i, j, element)
+                                      cache, node, element)
     return abs(u[2]), abs(u[3])
 end
 
 # Convert contravariant velocity/momentum components to zonal and meridional components
 @inline function contravariant2spherical(u::SVector{3},
                                          ::CovariantLinearAdvectionEquation2D,
-                                         elements, i, j, element)
-    v_lon, v_lat = contravariant2spherical(u[2], u[3], elements, i, j, element)
+                                         cache, node, element)
+    v_lon, v_lat = contravariant2spherical(u[2], u[3], cache.elements, node, element)
     return SVector(u[1], v_lon, v_lat)
 end
 
 # Convert zonal and meridional velocity/momentum components to contravariant components
 @inline function spherical2contravariant(u::SVector{3},
                                          ::CovariantLinearAdvectionEquation2D,
-                                         elements, i, j, element)
-    v_con_1, v_con_2 = spherical2contravariant(u[2], u[3], elements, i, j, element)
+                                         cache, node, element)
+    v_con_1, v_con_2 = spherical2contravariant(u[2], u[3], cache.elements, node,
+                                               element)
     return SVector(u[1], v_con_1, v_con_2)
 end
 end # @muladd
