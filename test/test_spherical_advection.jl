@@ -23,7 +23,8 @@ EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
                             0.00012059259301733672,
                             0.00038069583341091354,
                             0.0
-                        ])
+                        ], rtol=1.0e-7) # Higher rtol to account for different CI systems
+    # and small reference values
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let
