@@ -31,11 +31,32 @@ The mesh will have no boundaries.
   Appendix A of [Guba et al. (2014)](https://doi.org/10.5194/gmd-7-2803-2014). If set to 
   `true`, the four corner vertex positions for each element will be obtained through an 
   equiangular gnomonic projection [(Ronchi et al. 1996)](https://doi.org/10.1006/jcph.1996.
-  0047), and the tree node coordinates within the element will be obtained by first using 
-  a bilinear mapping based on the four corner vertices, and then projecting the bilinearly 
-  mapped nodes onto the spherical surface by normalizing the resulting Cartesian 
-  coordinates and scaling by  `radius`. If set to `false`, the equiangular gnomonic 
-  projection will be used for all node coordinates.
+  0047), and the tree node coordinates within the element (i.e. the field 
+  `tree_node_coordinates`) will be obtained by first using a bilinear mapping based on the 
+  four corner vertices, and then projecting the bilinearly mapped nodes onto the spherical 
+  surface by normalizing the resulting Cartesian coordinates and scaling by  `radius`. If 
+  set to `false`, the equiangular gnomonic projection will be used for all tree node 
+  coordinates.
+
+!!! note
+    When solving equations in Cartesian coordinates (i.e. the usual approach in Trixi.jl), 
+    the tree node coordinates are used to define a transformation which maps the solver's 
+    quadrature nodes from the reference element onto a piecewise polynomial manifold 
+    approximating the sphere. The `P4estMesh` solver for equations of type 
+    [`AbstractCovariantEquations`](@ref), however, only uses the corner vertices from 
+    `tree_node_coordinates` and connects them using great circles to form a tessellation of 
+    the *exact* spherical manifold. The quadrature nodes within each element are mapped 
+    onto the sphere using the element-local mapping described above, which allows for the 
+    covariant basis and metric tensor to be computed analytically for the spherical surface. 
+
+    The quadrature node positions from the two approaches described above will coincide 
+    when the mesh's `polydeg` field is taken to be  the same as that of the solver and 
+    `element_local_mapping` is set to `true`, as this ensures that the polynomial manifold  
+    interpolates the exact spherical manifold at the nodes obtained with the element-local 
+    mapping. However, we emphasize that [`P4estElementContainerCovariant`](@ref) uses only 
+    the corner tree nodes and will *always* use the element-local mapping to obtain the 
+    quadrature node positions within each element, regardless of the value of the 
+    `element_local_mapping` parameter.
 """
 function P4estMeshCubedSphere2D(trees_per_face_dimension, radius;
                                 polydeg, RealT = Float64,

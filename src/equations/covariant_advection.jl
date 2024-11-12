@@ -7,11 +7,11 @@
 A variable-coefficient linear advection equation can be defined on a two-dimensional
 manifold $S \subset \mathbb{R}^3$ as
 ```math
-\partial_t h + \nabla_S \cdot (h \vec{v}) = 0.
+\partial_t h + \nabla_S \cdot (h \vec{v}) = 0,
 ```
-We treat this problem as a system of equations in which the first variable is the scalar
-conserved quantity $h$, and the second two are the contravariant components $v^1$ and $v^2$ 
-used in the expansion 
+where $\nabla_S \cdot$ is the horizontal divergence operator on $S$. We treat this problem 
+as a system of equations in which the first variable is the scalar conserved quantity $h$, 
+and the second two are the contravariant components $v^1$ and $v^2$ used in the expansion 
 ```math
 \vec{v} = v^1 \vec{a}_1 + v^2 \vec{a}_2,
 ```
@@ -24,7 +24,7 @@ J \frac{\partial}{\partial t}\left[\begin{array}{c} h \\ v^1 \\ v^2 \end{array}\
 \frac{\partial}{\partial \xi^2} \left[\begin{array}{c} J h v^2 \\ 0 \\ 0 \end{array}\right] 
 = \left[\begin{array}{c} 0 \\ 0 \\ 0 \end{array}\right],
 ```
-where $J$ is the area element (see the documentation for [`P4estElementContainerCovariant`](@ref)).
+where $J$ is the area element (see the documentation for [`P4estElementContainerCovariant`](@ref)). 
 !!! note
     The initial condition should be prescribed as $[h, u, v]^{\mathrm{T}}$ in terms of the 
     global velocity components $u$ and $v$ (i.e. zonal and meridional components in the 

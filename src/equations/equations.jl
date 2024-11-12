@@ -13,6 +13,20 @@ and prognostic variables are stored and computed in terms of their contravariant
 defining their expansions in terms of the local covariant tangent basis. The type parameter
 `NDIMS` denotes the dimension of the manifold on which the equations are solved, while
 `NDIMS_AMBIENT` is the dimension of the ambient space in which such a manifold is embedded. 
+Some references on discontinuous Galerkin methods in covariant flux form are listed below:
+
+- M. Baldauf (2020). Discontinuous Galerkin solver for the shallow-water equations in
+  covariant form on the sphere and the ellipsoid. Journal of Computational Physics 
+  410:109384. [DOI: 10.1016/j.jcp.2020.109384](https://doi.org/10.1016/j.jcp.2020.109384) 
+- M. Baldauf (2021). A horizontally explicit, vertically implicit (HEVI) discontinuous
+  Galerkin scheme for the 2-dimensional Euler and Navier-Stokes equations using 
+  terrain-following coordinates. Journal of Computational Physics 446:110635. [DOI: 10.1016/
+  j.jcp.2021.110635](https://doi.org/10.1016/j.jcp.2021.110635)
+- L. Bao, R. D. Nair, and H. M. Tufo (2014). A mass and momentum flux-form high-order
+  discontinuous Galerkin shallow water model on the cubed-sphere. A mass and momentum 
+  flux-form high-order discontinuous Galerkin shallow water model on the cubed-sphere. 
+  Journal of Computational Physics 271:224-243. 
+  [DOI: 10.1016/j.jcp.2013.11.033](https://doi.org/10.1016/j.jcp.2013.11.033)
 
 !!! note 
     Components of vector-valued fields should be prescibed within the global coordinate 
@@ -57,6 +71,7 @@ end
 
 abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:
               AbstractEquations{NDIMS, NVARS} end
+
 include("reference_data.jl")
 include("covariant_advection.jl")
 include("compressible_moist_euler_2d_lucas.jl")

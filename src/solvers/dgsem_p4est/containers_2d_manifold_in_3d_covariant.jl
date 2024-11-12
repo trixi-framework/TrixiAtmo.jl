@@ -29,7 +29,8 @@ Contains the following geometric information:
   `NDIMS = 3`), and the last is the element index.
 
 !!! warning
-    The covariant solver currently only supports conforming meshes.
+    The covariant solver currently only supports conforming meshes, and the default 
+    behaviour assumes that the mesh is a spherical shell.
 """
 mutable struct P4estElementContainerCovariant{NDIMS, RealT <: Real, uEltype <: Real,
                                               NDIMSP1, NDIMSP2,

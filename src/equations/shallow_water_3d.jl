@@ -42,9 +42,9 @@ This affects the implementation and use of these equations in various ways:
 
 References:
 - J. Coté (1988). "A Lagrange multiplier approach for the metric terms of semi-Lagrangian models on the sphere". 
-  Quarterly Journal of the Royal Meteorological Society 114, 1347-1352. https://doi.org/10.1002/qj.49711448310
-- Giraldo (2001). "A spectral element shallow water model on spherical geodesic grids". 
-  https://doi.org/10.1002/1097-0363(20010430)35:8%3C869::AID-FLD116%3E3.0.CO;2-S
+  Quarterly Journal of the Royal Meteorological Society 114, 1347-1352. [DOI: 10.1002/qj.49711448310](https://doi.org/10.1002/qj.49711448310)
+- F. X. Giraldo (2001). "A spectral element shallow water model on spherical geodesic grids". 
+  [DOI: 10.1002/1097-0363(20010430)35:8<869::AID-FLD116>3.0.CO;2-S](https://doi.org/10.1002/1097-0363(20010430)35:8%3C869::AID-FLD116%3E3.0.CO;2-S)
 """
 struct ShallowWaterEquations3D{RealT <: Real} <:
        Trixi.AbstractShallowWaterEquations{3, 5}
