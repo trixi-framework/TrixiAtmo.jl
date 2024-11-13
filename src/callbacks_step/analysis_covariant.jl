@@ -31,8 +31,7 @@ function Trixi.calc_error_norms(func, u, t, analyzer, mesh::P4estMesh{2},
         for j in eachnode(dg), i in eachnode(dg)
             x = Trixi.get_node_coords(node_coordinates, equations, dg, i, j, element)
 
-            u_exact = spherical2contravariant(initial_condition(x, t, equations),
-                                              equations, cache, (i, j), element)
+            u_exact = initial_condition(x, t, equations, cache, (i, j), element)
 
             u_numerical = Trixi.get_node_vars(u, equations, dg, i, j, element)
 

@@ -18,7 +18,7 @@ equations = ShallowWaterEquations3D(gravity_constant = 0.0)
 # Create DG solver with polynomial degree = 3 and (local) Lax-Friedrichs/Rusanov flux as surface flux
 solver = DGSEM(polydeg = polydeg, surface_flux = flux_lax_friedrichs)
 
-# Source term function to transform the Euler equations into the linear advection equations with variable advection velocity
+# Source term function to transform the Euler equations into a linear advection equation with variable advection velocity
 function source_terms_convert_to_linear_advection(u, du, x, t,
                                                   equations::ShallowWaterEquations3D,
                                                   normal_direction)
@@ -37,8 +37,12 @@ mesh = P4estMeshCubedSphere2D(cells_per_dimension, EARTH_RADIUS, polydeg = polyd
                               initial_refinement_level = 0,
                               element_local_mapping = true)
 
+# Convert initial condition given in terms of zonal and meridional velocity components to 
+# one given in terms of Cartesian momentum components
+initial_condition_transformed = spherical2cartesian(initial_condition, equations)
+
 # A semidiscretization collects data structures and functions for the spatial discretization
-semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
+semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver,
                                     source_terms = source_terms_convert_to_linear_advection)
 
 ###############################################################################

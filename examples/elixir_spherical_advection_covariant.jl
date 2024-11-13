@@ -28,8 +28,12 @@ volume_integral = VolumeIntegralWeakForm()
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = volume_integral)
 
+# Convert initial condition given in terms of zonal and meridional velocity components to 
+# one given in terms of contravariant velocity components
+initial_condition_transformed = spherical2contravariant(initial_condition, equations)
+
 # A semidiscretization collects data structures and functions for the spatial discretization
-semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver)
+semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver)
 
 ###############################################################################
 # ODE solvers, callbacks etc.

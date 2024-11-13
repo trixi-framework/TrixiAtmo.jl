@@ -72,10 +72,8 @@ function Trixi.compute_coefficients!(u, func, t, mesh::P4estMesh{2},
         for j in eachnode(dg), i in eachnode(dg)
             x_node = Trixi.get_node_coords(cache.elements.node_coordinates,
                                            equations, dg, i, j, element)
-            u_spherical = func(x_node, t, equations)
-            u_con = spherical2contravariant(u_spherical, equations, cache, (i, j),
-                                            element)
-            Trixi.set_node_vars!(u, u_con, equations, dg, i, j, element)
+            u_node = func(x_node, t, equations, cache, (i, j), element)
+            Trixi.set_node_vars!(u, u_node, equations, dg, i, j, element)
         end
     end
 end
@@ -254,6 +252,7 @@ end
                                              primary_element_index)
     u_rr_spherical = contravariant2spherical(u_rr, equations, cache,
                                              node_rr, secondary_element_index)
+
     # Evaluate u_rr in primary coordinate system 
     u_rr_transformed_to_ll = spherical2contravariant(u_rr_spherical, equations, cache,
                                                      node_ll, primary_element_index)

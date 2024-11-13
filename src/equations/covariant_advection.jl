@@ -25,19 +25,15 @@ J \frac{\partial}{\partial t}\left[\begin{array}{c} h \\ v^1 \\ v^2 \end{array}\
 = \left[\begin{array}{c} 0 \\ 0 \\ 0 \end{array}\right],
 ```
 where $J$ is the area element (see the documentation for [`P4estElementContainerCovariant`](@ref)). 
-!!! note
-    The initial condition should be prescribed as $[h, u, v]^{\mathrm{T}}$ in terms of the 
-    global velocity components $u$ and $v$ (i.e. zonal and meridional components in the 
-    case of a spherical shell). The transformation to local contravariant components $v^1$ 
-    and $v^2$ is handled internally within `Trixi.compute_coefficients!`.
 """
 struct CovariantLinearAdvectionEquation2D <: AbstractCovariantEquations{2, 3, 3} end
 
 function Trixi.varnames(::typeof(cons2cons), ::CovariantLinearAdvectionEquation2D)
-    return ("scalar", "v_con_1", "v_con_2")
+    return ("scalar", "vcon1", "vcon2")
 end
 
-# Compute the entropy variables (requires element container and indices)
+# We will define the "entropy variables" here to just be the scalar variable in the first 
+# slot, with zeros in the second and third positions
 @inline function Trixi.cons2entropy(u, equations::CovariantLinearAdvectionEquation2D,
                                     cache, node, element)
     z = zero(eltype(u))
@@ -82,19 +78,17 @@ end
 end
 
 # Convert contravariant velocity/momentum components to zonal and meridional components
-@inline function contravariant2spherical(u::SVector{3},
-                                         ::CovariantLinearAdvectionEquation2D,
+@inline function contravariant2spherical(u, ::CovariantLinearAdvectionEquation2D,
                                          cache, node, element)
-    v_lon, v_lat = contravariant2spherical(u[2], u[3], cache.elements, node, element)
-    return SVector(u[1], v_lon, v_lat)
+    vlon, vlat = contravariant2spherical(u[2], u[3], cache.elements, node, element)
+    return SVector(u[1], vlon, vlat)
 end
 
 # Convert zonal and meridional velocity/momentum components to contravariant components
-@inline function spherical2contravariant(u::SVector{3},
-                                         ::CovariantLinearAdvectionEquation2D,
+@inline function spherical2contravariant(u, ::CovariantLinearAdvectionEquation2D,
                                          cache, node, element)
-    v_con_1, v_con_2 = spherical2contravariant(u[2], u[3], cache.elements, node,
-                                               element)
-    return SVector(u[1], v_con_1, v_con_2)
+    vcon1, vcon2 = spherical2contravariant(u[2], u[3], cache.elements, node,
+                                           element)
+    return SVector(u[1], vcon1, vcon2)
 end
 end # @muladd

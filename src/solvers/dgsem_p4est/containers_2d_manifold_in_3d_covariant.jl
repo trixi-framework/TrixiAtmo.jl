@@ -78,27 +78,27 @@ end
 end
 
 # Convert contravariant velocity/momentum components to zonal and meridional components
-@inline function contravariant2spherical(v_con_1::RealT, v_con_2::RealT,
+@inline function contravariant2spherical(vcon1::RealT, vcon2::RealT,
                                          elements::P4estElementContainerCovariant{2},
                                          node, element) where {RealT <: Real}
     i, j = node
-    return elements.covariant_basis[1, 1, i, j, element] * v_con_1 +
-           elements.covariant_basis[1, 2, i, j, element] * v_con_2,
-           elements.covariant_basis[2, 1, i, j, element] * v_con_1 +
-           elements.covariant_basis[2, 2, i, j, element] * v_con_2
+    return elements.covariant_basis[1, 1, i, j, element] * vcon1 +
+           elements.covariant_basis[1, 2, i, j, element] * vcon2,
+           elements.covariant_basis[2, 1, i, j, element] * vcon1 +
+           elements.covariant_basis[2, 2, i, j, element] * vcon2
 end
 
 # Convert zonal and meridional velocity/momentum components to contravariant components
-@inline function spherical2contravariant(v_lon::RealT, v_lat::RealT,
+@inline function spherical2contravariant(vlon::RealT, vlat::RealT,
                                          elements::P4estElementContainerCovariant{2},
                                          node, element) where {RealT <: Real}
     i, j = node
-    Jv_con_1 = elements.covariant_basis[2, 2, i, j, element] * v_lon -
-               elements.covariant_basis[1, 2, i, j, element] * v_lat
-    Jv_con_2 = -elements.covariant_basis[2, 1, i, j, element] * v_lon +
-               elements.covariant_basis[1, 1, i, j, element] * v_lat
-    return Jv_con_1 * elements.inverse_jacobian[i, j, element],
-           Jv_con_2 * elements.inverse_jacobian[i, j, element]
+    J_vcon1 = elements.covariant_basis[2, 2, i, j, element] * vlon -
+              elements.covariant_basis[1, 2, i, j, element] * vlat
+    J_vcon2 = -elements.covariant_basis[2, 1, i, j, element] * vlon +
+              elements.covariant_basis[1, 1, i, j, element] * vlat
+    return J_vcon1 * elements.inverse_jacobian[i, j, element],
+           J_vcon2 * elements.inverse_jacobian[i, j, element]
 end
 
 # Create element container and initialize element data for a mesh of dimension NDIMS in 

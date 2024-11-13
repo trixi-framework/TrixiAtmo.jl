@@ -28,23 +28,40 @@ Some references on discontinuous Galerkin methods in covariant flux form are lis
   Journal of Computational Physics 271:224-243. 
   [DOI: 10.1016/j.jcp.2013.11.033](https://doi.org/10.1016/j.jcp.2013.11.033)
 
-!!! note 
-    Components of vector-valued fields should be prescibed within the global coordinate 
-    system (i.e. zonal and meridional components in the case of a spherical shell). 
-    When dispatched on this type, the function `Trixi.compute_coefficients!` will 
-    internally use the `covariant_basis` field of the container type 
-    [`P4estElementContainerCovariant`](@ref) to obtain the local contravariant components
-    used in the solver. 
+When using this equation type, functions which are evaluated pointwise, such as fluxes, 
+source terms, and initial conditions take in the extra arguments `cache`, `node`, and 
+`element`, corresponding to the `cache` field of a `SemidiscretizationHyperbolic`, the node 
+index (for tensor-product elements, this should be a tuple of length `NDIMS`), and the 
+element index, respectively. To convert an initial condition given in terms of global 
+spherical velocity or momentum components to one given in terms of local contravariant 
+components, see [`spherical2contravariant`](@ref).
 """
 abstract type AbstractCovariantEquations{NDIMS,
                                          NDIMS_AMBIENT,
                                          NVARS} <: AbstractEquations{NDIMS, NVARS} end
 
+@doc raw"""
+    spherical2contravariant(initial_condition, ::AbstractCovariantEquations)
+
+Takes in a function with the signature `initial_condition(x, t)` which returns an initial 
+condition given in terms of zonal and meridional velocity or momentum components, and 
+returns another function with the signature  
+`initial_condition_transformed(x, t, equations, cache, node, element)` which returns
+the same initial condition with the velocity or momentum vector given in terms of 
+contravariant components.
+"""
+function spherical2contravariant(initial_condition, ::AbstractCovariantEquations)
+    function initial_condition_transformed(x, t, equations, cache, node, element)
+        return spherical2contravariant(initial_condition(x, t), equations, cache,
+                                       node, element)
+    end
+    return initial_condition_transformed
+end
 # Numerical flux plus dissipation which passes node/element indices and cache. 
 # We assume that u_ll and u_rr have been transformed into the same local coordinate system.
 @inline function (numflux::Trixi.FluxPlusDissipation)(u_ll, u_rr,
                                                       orientation_or_normal_direction,
-                                                      equations::AbstractCovariantEquations{2},
+                                                      equations::AbstractCovariantEquations,
                                                       cache, node_ll, node_rr, element)
 
     # The flux and dissipation need to be defined for the specific equation set
@@ -59,7 +76,7 @@ end
 # We assume that u_ll and u_rr have been transformed into the same local coordinate system.
 @inline function Trixi.flux_central(u_ll, u_rr,
                                     orientation_or_normal_direction,
-                                    equations::AbstractCovariantEquations{2},
+                                    equations::AbstractCovariantEquations,
                                     cache, node_ll, node_rr, element)
     flux_ll = Trixi.flux(u_ll, orientation_or_normal_direction, equations,
                          cache, node_ll, element)
