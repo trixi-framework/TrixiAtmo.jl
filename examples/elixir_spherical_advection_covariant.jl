@@ -7,26 +7,19 @@ using OrdinaryDiffEq, Trixi, TrixiAtmo
 ###############################################################################
 # Spatial discretization
 
-polydeg = 3
 cells_per_dimension = 5
-element_local_mapping = true
 initial_condition = initial_condition_gaussian
-
-mesh = P4estMeshCubedSphere2D(cells_per_dimension, EARTH_RADIUS, polydeg = polydeg,
-                              initial_refinement_level = 0,
-                              element_local_mapping = element_local_mapping)
 
 equations = CovariantLinearAdvectionEquation2D()
 
-# Local Lax-Friedrichs surface flux
-surface_flux = flux_lax_friedrichs
-
-# Standard weak-form volume integral
-volume_integral = VolumeIntegralWeakForm()
-
 # Create DG solver with polynomial degree = p and a local Lax-Friedrichs flux
-solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
-               volume_integral = volume_integral)
+solver = DGSEM(polydeg = 3, surface_flux = flux_lax_friedrichs,
+               volume_integral = VolumeIntegralWeakForm())
+
+# Create a 2D cubed sphere mesh the size of the Earth
+mesh = P4estMeshCubedSphere2D(cells_per_dimension, EARTH_RADIUS, polydeg = 3,
+                              initial_refinement_level = 0,
+                              element_local_mapping = true)
 
 # Convert initial condition given in terms of zonal and meridional velocity components to 
 # one given in terms of contravariant velocity components

@@ -6,17 +6,15 @@ using TrixiAtmo
 ###############################################################################
 # semidiscretization of the linear advection equation
 
-polydeg = 3
 cells_per_dimension = 5
 initial_condition = initial_condition_gaussian
-element_local_mapping = false
 
 # We use the ShallowWaterEquations3D equations structure but modify the rhs! function to
 # convert it to a variable-coefficient advection equation
 equations = ShallowWaterEquations3D(gravity_constant = 0.0)
 
 # Create DG solver with polynomial degree = 3 and (local) Lax-Friedrichs/Rusanov flux as surface flux
-solver = DGSEM(polydeg = polydeg, surface_flux = flux_lax_friedrichs)
+solver = DGSEM(polydeg = 3, surface_flux = flux_lax_friedrichs)
 
 # Source term function to transform the Euler equations into a linear advection equation with variable advection velocity
 function source_terms_convert_to_linear_advection(u, du, x, t,
@@ -33,9 +31,10 @@ function source_terms_convert_to_linear_advection(u, du, x, t,
     return SVector(0.0, s2, s3, s4, 0.0)
 end
 
-mesh = P4estMeshCubedSphere2D(cells_per_dimension, EARTH_RADIUS, polydeg = polydeg,
+# Create a 2D cubed sphere mesh the size of the Earth
+mesh = P4estMeshCubedSphere2D(cells_per_dimension, EARTH_RADIUS, polydeg = 3,
                               initial_refinement_level = 0,
-                              element_local_mapping = true)
+                              element_local_mapping = false)
 
 # Convert initial condition given in terms of zonal and meridional velocity components to 
 # one given in terms of Cartesian momentum components
