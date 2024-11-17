@@ -296,7 +296,6 @@ end
         error("rho vapour less than zero")
     end
     if ( rho_cloud < 0.0 )
-        display(rho_cloud)
         error("rho cloud less than zero")
     end
 
@@ -505,8 +504,13 @@ end
     S_auto_conversion = 0.001 * rho_cloud
     S_accretion       = 1.72 * rho_cloud * rho_rain^(0.875)
     S_rain            = S_auto_conversion + S_accretion - S_evaporation
+    S_groundwater     = 0.0
+    #=
+    if (x[2] < 100.0)
+        S_groundwater = rho_rain * (1 - (x[2] * 0.01)^2)
+    end=#
 
-    return SVector(0.0, -S_rain, S_rain, 0.0,
+    return SVector(0.0, -S_rain, S_rain - S_groundwater, 0.0,
                    -rho * g, -rho_v2 * g, 0.0, 0.0, 0.0)
 end
 
@@ -562,10 +566,9 @@ end
     else
         v_ll  = abs(v2_ll)
         v_rr  = abs(v2_rr)
-        v_rr += abs(v_r_rr)
     end
-
-    return max(v_ll, v_rr) + max(v_sound_ll, v_sound_rr)
+    # experimental
+    return max(v_ll, v_rr) + max(v_sound_ll, v_sound_rr) + max(abs(v_r_ll), abs(v_r_rr))
 end
 
 
@@ -877,8 +880,9 @@ end
     f_rhov2  = (f_dry + f_moist + f_rain) * v2_avg + normal_direction[2] * p_int #- rho_rain_mean * vr_dot_n_avg * v2_avg
     f_energy = ((        c_vd * inv_temperature_mean - K_avg)  *  f_dry    +
                 (ref_L + c_vv * inv_temperature_mean - K_avg)  *  f_vapour +
-                (         c_l * inv_temperature_mean - K_avg)  * (f_cloud  + f_rain)  + v1_avg * f_rhov1 + v2_avg * f_rhov2)
-    
+                (         c_l * inv_temperature_mean - K_avg)  * (f_cloud  + f_rain)  + v1_avg * f_rhov1 + v2_avg * f_rhov2) #-
+                #(         c_l * inv_temperature_mean + K_avg)  * rho_rain_mean * vr_dot_n_avg
+
     return SVector(f_dry, f_moist, f_rain, f_rhov1, f_rhov2, f_energy, 0.0, 0.0, 0.0)
 end
 

@@ -231,7 +231,7 @@ solver = DGSEM(basis, surface_flux)#, volume_integral)
 mesh = TreeMesh(coordinates_min, coordinates_max,
                 initial_refinement_level = 8,
                 periodicity = (true, false),
-                n_cells_max = 10_000_000)
+                n_cells_max = 1_000_000)
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition,
                                     source_terms = source_terms_rainy, solver,
@@ -261,11 +261,11 @@ amr_indicator = IndicatorMax(semi, variable=rain_density)
 amr_controller = ControllerThreeLevel(semi, amr_indicator,
                                       base_level = 8,
                                       med_level  = 10, med_threshold = 1e-6,
-                                      max_level  = 12, max_threshold = 5e-5)
+                                      max_level  = 11, max_threshold = 5e-5)
 
 amr_callback = AMRCallback(semi, amr_controller,
                            interval = 1,
-                           adapt_initial_condition = true,
+                           adapt_initial_condition = false,
                            adapt_initial_condition_only_refine = true)
 
 stepsize_callback = StepsizeCallback(cfl = 1.0)
