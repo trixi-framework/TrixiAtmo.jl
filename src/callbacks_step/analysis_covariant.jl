@@ -7,9 +7,11 @@ function Trixi.analyze(::typeof(Trixi.entropy_timederivative), du, u, t,
     # Calculate ∫(∂S/∂u ⋅ ∂u/∂t)dΩ
     Trixi.integrate_via_indices(u, mesh, equations, dg, cache,
                                 du) do u, i, j, element, equations, dg, du
+        aux_vars_node = get_node_aux_vars(cache.auxiliary_variables, equations,
+                                          dg, i, j, element)
         u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
         du_node = Trixi.get_node_vars(du, equations, dg, i, j, element)
-        dot(cons2entropy(u_node, equations, cache, (i, j), element), du_node)
+        dot(cons2entropy(u_node, aux_vars_node, equations), du_node)
     end
 end
 
@@ -31,17 +33,20 @@ function Trixi.calc_error_norms(func, u, t, analyzer, mesh::P4estMesh{2},
         for j in eachnode(dg), i in eachnode(dg)
             x = Trixi.get_node_coords(node_coordinates, equations, dg, i, j, element)
 
-            u_exact = initial_condition(x, t, equations, cache, (i, j), element)
+            aux_vars_node = get_node_aux_vars(cache.auxiliary_variables, equations,
+                                              dg, i, j, element )
+
+            u_exact = initial_condition(x, aux_vars_node, t, equations)
 
             u_numerical = Trixi.get_node_vars(u, equations, dg, i, j, element)
 
             diff = func(u_exact, equations) - func(u_numerical, equations)
 
-            J = volume_element(cache.elements, (i, j), element)
+            sqrtG = volume_element(aux_vars_node, equations)
 
-            l2_error += diff .^ 2 * (weights[i] * weights[j] * J)
+            l2_error += diff .^ 2 * (weights[i] * weights[j] * sqrtG)
             linf_error = @. max(linf_error, abs(diff))
-            total_volume += weights[i] * weights[j] * J
+            total_volume += weights[i] * weights[j] * sqrtG
         end
     end
 

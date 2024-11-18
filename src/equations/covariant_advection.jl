@@ -32,63 +32,63 @@ function Trixi.varnames(::typeof(cons2cons), ::CovariantLinearAdvectionEquation2
     return ("scalar", "vcon1", "vcon2")
 end
 
+function velocity(u, ::CovariantLinearAdvectionEquation2D)
+    return SVector(u[2], u[3])
+end
+
 # We will define the "entropy variables" here to just be the scalar variable in the first 
 # slot, with zeros in the second and third positions
-@inline function Trixi.cons2entropy(u, equations::CovariantLinearAdvectionEquation2D,
-                                    cache, node, element)
+@inline function Trixi.cons2entropy(u, aux_vars,
+                                    equations::CovariantLinearAdvectionEquation2D)
     z = zero(eltype(u))
     return SVector{3}(u[1], z, z)
 end
 
 # The flux for the covariant form takes in the element container and node/element indices
 # in order to give the flux access to the geometric information
-@inline function Trixi.flux(u, orientation::Integer,
-                            ::CovariantLinearAdvectionEquation2D,
-                            cache, node, element)
+@inline function Trixi.flux(u, aux_vars, orientation::Integer,
+                            ::CovariantLinearAdvectionEquation2D)
     z = zero(eltype(u))
-    J = volume_element(cache.elements, node, element)
-    return SVector(J * u[1] * u[orientation + 1], z, z)
+    return SVector(volume_element(aux_vars, equations) * u[1] * u[orientation + 1], z, z)
 end
 
 # Local Lax-Friedrichs dissipation which is not applied to the contravariant velocity 
 # components, as they should remain unchanged in time
-@inline function (dissipation::DissipationLocalLaxFriedrichs)(u_ll, u_rr,
+@inline function (dissipation::DissipationLocalLaxFriedrichs)(u_ll, u_rr, aux_vars_ll,
+                                                              aux_vars_rr,
                                                               orientation_or_normal_direction,
-                                                              equations::CovariantLinearAdvectionEquation2D,
-                                                              cache, node_ll,
-                                                              node_rr, element)
+                                                              equations::CovariantLinearAdvectionEquation2D)
     z = zero(eltype(u_ll))
-    J = volume_element(cache.elements, node_ll, element)
-    λ = dissipation.max_abs_speed(u_ll, u_rr, orientation_or_normal_direction,
-                                  equations, cache, node_ll, node_rr, element)
-    return -0.5f0 * J * λ * SVector(u_rr[1] - u_ll[1], z, z)
+    λ = dissipation.max_abs_speed(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
+                                  orientation_or_normal_direction, equations)
+    return -0.5f0 * volume_element(aux_vars, equations) * λ * SVector(u_rr[1] - u_ll[1], z, z)
 end
 
 # Maximum wave speed with respect to the a specific orientation
-@inline function Trixi.max_abs_speed_naive(u_ll, u_rr, orientation::Integer,
-                                           ::CovariantLinearAdvectionEquation2D,
-                                           cache, node_ll, node_rr, element)
-    return max(abs(u_ll[orientation + 1]), abs(u_rr[orientation + 1]))
+@inline function Trixi.max_abs_speed_naive(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
+                                           orientation::Integer,
+                                           equations::CovariantLinearAdvectionEquation2D)
+    return max(abs(velocity(u_ll, equations)[orientation]),
+               abs(velocity(u_rr, equations)[orientation]))
 end
 
 # Maximum wave speeds in each direction for CFL calculation
-@inline function Trixi.max_abs_speeds(u, ::CovariantLinearAdvectionEquation2D,
-                                      cache, node, element)
-    return abs(u[2]), abs(u[3])
+@inline function Trixi.max_abs_speeds(u, aux_vars, ::CovariantLinearAdvectionEquation2D)
+    return abs.(velocity(u, equations))
 end
 
 # Convert contravariant velocity/momentum components to zonal and meridional components
-@inline function contravariant2spherical(u, ::CovariantLinearAdvectionEquation2D,
-                                         cache, node, element)
-    vlon, vlat = contravariant2spherical(u[2], u[3], cache.elements, node, element)
+@inline function contravariant2spherical(u, aux_vars,
+                                         equations::CovariantLinearAdvectionEquation2D)
+    vlon, vlat = basis_covariant(aux_vars, equations) * velocity(u, equations)
     return SVector(u[1], vlon, vlat)
 end
 
 # Convert zonal and meridional velocity/momentum components to contravariant components
-@inline function spherical2contravariant(u, ::CovariantLinearAdvectionEquation2D,
-                                         cache, node, element)
-    vcon1, vcon2 = spherical2contravariant(u[2], u[3], cache.elements, node,
-                                           element)
+@inline function spherical2contravariant(u_spherical, aux_vars,
+                                         equations::CovariantLinearAdvectionEquation2D)
+    vcon1, vcon2 = basis_covariant(aux_vars, equations) \
+                   velocity(u_spherical, equatins)
     return SVector(u[1], vcon1, vcon2)
 end
 end # @muladd

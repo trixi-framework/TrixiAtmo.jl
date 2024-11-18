@@ -1,170 +1,29 @@
-@muladd begin
-#! format: noindent
-
-@doc raw"""
-    P4estElementContainerCovariant{NDIMS, RealT <: Real, uEltype <: Real,
-                                   NDIMSP1, NDIMSP2,
-                                   NDIMSP3} <: Trixi.AbstractContainer
-
-Specialized element container for equations in covariant form on a manifold of dimension
-`NDIMS`, created when `Trixi.init_elements` is dispatched on 
-`AbstractCovariantEquations{NDIMS, NDIMS_AMBIENT}` and `P4estMesh{NDIMS, NDIMS_AMBIENT`.
-Contains the following geometric information:
-- `node_coordinates::Array{RealT, NDIMSP2}:` Cartesian components of the node positions
-  within the ambient space of dimension `NDIMS_AMBIENT`, where the first index is the 
-  Cartesian component index, the next `NDIMS` indices are tensor-product node indices ($i$, 
-  $j$, for `NDIMS = 2` or $i$, $j$, $k$, for `NDIMS = 3`), and the last is the element
-  index.
-- `covariant_basis::Array{RealT, NDIMSP3}`: Components of the covariant tangent basis
-  vectors  $\vec{a}_m = \partial \vec{X} / \partial \xi^m$ expanded in terms of a global  
-  tangent basis (i.e. zonal and meridional components in the case of a spherical shell), 
-  where $\vec{X}$ denotes the mapping from the reference element to the physical element.
-  The first index is the global component index $l$, the second index is the local
-  component index $m$, the next `NDIMS` indices are tensor-product node indices ($i$, $j$, 
-  for `NDIMS = 2` or $i$, $j$, $k$, for `NDIMS = 3`), and the last is the element index.
-- `inverse_jacobian::Array{RealT, NDIMSP1}`: Nodal values of $1/J$, where 
-  $J = \sqrt{\mathrm{det}(\bm{G})}$, and $\bm{G}$ is the matrix of covariant metric tensor 
-  components $G_{lm} = \vec{a}_l \cdot \vec{a}_m$. The first `NDIMS` indices are 
-  tensor-product node indices ($i$, $j$, for `NDIMS = 2` or $i$, $j$, $k$, for 
-  `NDIMS = 3`), and the last is the element index.
-
-!!! warning
-    The covariant solver currently only supports conforming meshes, and the default 
-    behaviour assumes that the mesh is a spherical shell.
-"""
-mutable struct P4estElementContainerCovariant{NDIMS, RealT <: Real, uEltype <: Real,
-                                              NDIMSP1, NDIMSP2,
-                                              NDIMSP3} <: Trixi.AbstractContainer
-    # Physical Cartesian coordinates at each node
-    # [orientation, node_i, node_j, node_k, element]
-    node_coordinates::Array{RealT, NDIMSP2}
-    # Covariant basis for the tangent space, expanded with respect to the spherical basis
-    covariant_basis::Array{RealT, NDIMSP3}  # [:, :, i, node_i, node_j, node_k, element]
-    inverse_jacobian::Array{RealT, NDIMSP1}  # [node_i, node_j, node_k, element]
-    surface_flux_values::Array{uEltype, NDIMSP2} # [variable, i, j, direction, element]
-
-    # internal `resize!`able storage
-    _node_coordinates::Vector{RealT}
-    _covariant_basis::Vector{RealT}
-    _inverse_jacobian::Vector{RealT}
-    _surface_flux_values::Vector{uEltype}
+@inline function get_node_aux_vars(auxiliary_variables, equations, solver::DG, indices...)
+    SVector(ntuple(@inline(v->auxiliary_variables[v, indices...]),
+                   Val(nauxvars(equations))))
 end
 
-@inline function Trixi.nelements(elements::P4estElementContainerCovariant)
-    size(elements.node_coordinates, ndims(elements) + 2)
-end
-@inline Base.ndims(::P4estElementContainerCovariant{NDIMS}) where {NDIMS} = NDIMS
-@inline function Base.eltype(::P4estElementContainerCovariant{NDIMS, RealT,
-                                                              uEltype}) where {NDIMS,
-                                                                               RealT,
-                                                                               uEltype}
-    return uEltype
-end
-
-# Get Cartesian node positions, dispatching on the dimension of the equation system
-@inline function Trixi.get_node_coords(x,
-                                       ::AbstractCovariantEquations{NDIMS,
-                                                                    NDIMS_AMBIENT},
-                                       ::DG,
-                                       indices...) where {NDIMS, NDIMS_AMBIENT}
-    return SVector(ntuple(@inline(idx->x[idx, indices...]), NDIMS_AMBIENT))
-end
-
-# Volume element J = sqrt(det(G)), where G is the matrix of covariant metric components
-@inline function volume_element(elements::P4estElementContainerCovariant{2}, node,
-                                element)
-    i, j = node
-    return 1 / elements.inverse_jacobian[i, j, element]
-end
-
-# Convert contravariant velocity/momentum components to zonal and meridional components
-@inline function contravariant2spherical(vcon1::RealT, vcon2::RealT,
-                                         elements::P4estElementContainerCovariant{2},
-                                         node, element) where {RealT <: Real}
-    i, j = node
-    return elements.covariant_basis[1, 1, i, j, element] * vcon1 +
-           elements.covariant_basis[1, 2, i, j, element] * vcon2,
-           elements.covariant_basis[2, 1, i, j, element] * vcon1 +
-           elements.covariant_basis[2, 2, i, j, element] * vcon2
-end
-
-# Convert zonal and meridional velocity/momentum components to contravariant components
-@inline function spherical2contravariant(vlon::RealT, vlat::RealT,
-                                         elements::P4estElementContainerCovariant{2},
-                                         node, element) where {RealT <: Real}
-    i, j = node
-    J_vcon1 = elements.covariant_basis[2, 2, i, j, element] * vlon -
-              elements.covariant_basis[1, 2, i, j, element] * vlat
-    J_vcon2 = -elements.covariant_basis[2, 1, i, j, element] * vlon +
-              elements.covariant_basis[1, 1, i, j, element] * vlat
-    return J_vcon1 * elements.inverse_jacobian[i, j, element],
-           J_vcon2 * elements.inverse_jacobian[i, j, element]
-end
-
-# Create element container and initialize element data for a mesh of dimension NDIMS in 
-# an ambient space of dimension NDIMS_AMBIENT, with the equations expressed in covariant 
-# form
-function Trixi.init_elements(mesh::P4estMesh{NDIMS, NDIMS_AMBIENT, RealT},
-                             equations::AbstractCovariantEquations{NDIMS,
-                                                                   NDIMS_AMBIENT},
-                             basis,
-                             ::Type{uEltype}) where {NDIMS,
-                                                     NDIMS_AMBIENT,
-                                                     RealT <: Real,
-                                                     uEltype <: Real}
-    nelements = Trixi.ncells(mesh)
-
-    _node_coordinates = Vector{RealT}(undef,
-                                      NDIMS_AMBIENT * nnodes(basis)^NDIMS * nelements)
-    node_coordinates = Trixi.unsafe_wrap(Array, pointer(_node_coordinates),
-                                         (NDIMS_AMBIENT,
-                                          ntuple(_ -> nnodes(basis), NDIMS)...,
-                                          nelements))
-
-    _covariant_basis = Vector{RealT}(undef,
-                                     NDIMS * NDIMS * nnodes(basis)^NDIMS *
-                                     nelements)
-    covariant_basis = Trixi.unsafe_wrap(Array, pointer(_covariant_basis),
-                                        (NDIMS, NDIMS,
-                                         ntuple(_ -> nnodes(basis), NDIMS)...,
-                                         nelements))
-
-    _inverse_jacobian = Vector{RealT}(undef, nnodes(basis)^NDIMS * nelements)
-    inverse_jacobian = Trixi.unsafe_wrap(Array, pointer(_inverse_jacobian),
-                                         (ntuple(_ -> nnodes(basis), NDIMS)...,
-                                          nelements))
-
-    _surface_flux_values = Vector{uEltype}(undef,
-                                           nvariables(equations) *
-                                           nnodes(basis)^(NDIMS - 1) * (NDIMS * 2) *
-                                           nelements)
-    surface_flux_values = Trixi.unsafe_wrap(Array, pointer(_surface_flux_values),
-                                            (nvariables(equations),
-                                             ntuple(_ -> nnodes(basis), NDIMS - 1)...,
-                                             NDIMS * 2, nelements))
-
-    elements = P4estElementContainerCovariant{NDIMS, RealT, uEltype, NDIMS + 1,
-                                              NDIMS + 2,
-                                              NDIMS + 3}(node_coordinates,
-                                                         covariant_basis,
-                                                         inverse_jacobian,
-                                                         surface_flux_values,
-                                                         _node_coordinates,
-                                                         _covariant_basis,
-                                                         _inverse_jacobian,
-                                                         _surface_flux_values)
-
-    Trixi.init_elements!(elements, mesh, equations, basis)
-
-    return elements
+@inline function get_surface_node_aux_vars(auxiliary_variables, equations, solver::DG,
+                                           indices...)
+    # There is a cut-off at `n == 10` inside of the method
+    # `ntuple(f::F, n::Integer) where F` in Base at ntuple.jl:17
+    # in Julia `v1.5`, leading to type instabilities if
+    # more than ten variables are used. That's why we use
+    # `Val(...)` below.
+    aux_vars_ll = SVector(ntuple(@inline(v->auxiliary_variables[1, v, indices...]),
+                                 Val(nauxvars(equations))))
+    aux_vars_rr = SVector(ntuple(@inline(v->auxiliary_variables[2, v, indices...]),
+                                 Val(nauxvars(equations))))
+    return aux_vars_ll, aux_vars_rr
 end
 
 # Compute the node positions and metric terms for the covariant form, assuming that the
 # domain is a spherical shell. We do not make any assumptions on the mesh topology.
-function Trixi.init_elements!(elements, mesh::P4estMesh{2, 3},
-                              equations::AbstractCovariantEquations{2, 3},
-                              basis::LobattoLegendreBasis)
-    (; node_coordinates, covariant_basis, inverse_jacobian) = elements
+function compute_auxiliary_variables!(elements, mesh::P4estMesh{2, 3},
+                                      equations::AbstractCovariantEquations{2, 3},
+                                      dg::DG)
+    (; inverse_jacobian, auxiliary_variables) = elements
+    (; basis) = dg
 
     # The tree node coordinates are assumed to be on the spherical shell centred around the # origin. Therefore, we can compute the radius once and use it throughout.
     radius = sqrt(mesh.tree_node_coordinates[1, 1, 1, 1]^2 +
@@ -231,20 +90,134 @@ function Trixi.init_elements!(elements, mesh::P4estMesh{2, 3},
                               -1 + xi1, -1 - xi1, 1 + xi1, 1 - xi1)
 
             # Set variables in the cache
-            node_coordinates[1, i, j, element] = x[1]
-            node_coordinates[2, i, j, element] = x[2]
-            node_coordinates[3, i, j, element] = x[3]
-
-            covariant_basis[1, 1, i, j, element] = A[1, 1]
-            covariant_basis[2, 1, i, j, element] = A[2, 1]
-            covariant_basis[1, 2, i, j, element] = A[1, 2]
-            covariant_basis[2, 2, i, j, element] = A[2, 2]
-
-            inverse_jacobian[i, j, element] = 1 /
-                                              (A[1, 1] * A[2, 2] - A[1, 2] * A[2, 1])
+            auxiliary_variables[1, i, j, element] = 1 / inverse_jacobian[i, j, element]
+            auxiliary_variables[2:5, i, j, element] = A
         end
     end
 
     return nothing
 end
-end # @muladd
+
+mutable struct P4estInterfaceContainerVariableCoefficient{NDIMS, uEltype <: Real,
+                                                          NDIMSP2} <: Trixi.AbstractContainer
+    u::Array{uEltype, NDIMSP2}       # [primary/secondary, variable, i, j, interface]
+    auxiliary_variables::Array{uEltype, NDIMSP2} # [primary/secondary, variable, i, j, interface]
+    neighbor_ids::Matrix{Int}                   # [primary/secondary, interface]
+    node_indices::Matrix{NTuple{NDIMS, Symbol}} # [primary/secondary, interface]
+
+    # internal `resize!`able storage
+    _u::Vector{uEltype}
+    _auxiliary_variables::Vector{uEltype}
+    _neighbor_ids::Vector{Int}
+    _node_indices::Vector{NTuple{NDIMS, Symbol}}
+end
+
+@inline function Trixi.ninterfaces(interfaces::P4estInterfaceContainerVariableCoefficient)
+    size(interfaces.neighbor_ids, 2)
+end
+@inline Base.ndims(::P4estInterfaceContainerVariableCoefficient{NDIMS}) where {NDIMS} = NDIMS
+
+# Create interface container and initialize interface data.
+function Trixi.init_interfaces(mesh::Union{P4estMesh, T8codeMesh},
+                               equations::AbstractCovariantEquations, basis, elements)
+    NDIMS = ndims(elements)
+    uEltype = eltype(elements)
+
+    # Initialize container
+    n_interfaces = Trixi.count_required_surfaces(mesh).interfaces
+
+    _u = Vector{uEltype}(undef,
+                         2 * nvariables(equations) * nnodes(basis)^(NDIMS - 1) *
+                         n_interfaces)
+    u = Trixi.unsafe_wrap(Array, pointer(_u),
+                          (2, nvariables(equations),
+                           ntuple(_ -> nnodes(basis), NDIMS - 1)...,
+                           n_interfaces))
+
+    _auxiliary_variables = Vector{uEltype}(undef,
+                                           2 * nauxvars(equations) *
+                                           nnodes(basis)^(NDIMS - 1) *
+                                           n_interfaces)
+    auxiliary_variables = Trixi.unsafe_wrap(Array, pointer(_u),
+                                            (2, nauxvars(equations),
+                                             ntuple(_ -> nnodes(basis), NDIMS - 1)...,
+                                             n_interfaces))
+
+    _neighbor_ids = Vector{Int}(undef, 2 * n_interfaces)
+    neighbor_ids = Trixi.unsafe_wrap(Array, pointer(_neighbor_ids), (2, n_interfaces))
+
+    _node_indices = Vector{NTuple{NDIMS, Symbol}}(undef, 2 * n_interfaces)
+    node_indices = Trixi.unsafe_wrap(Array, pointer(_node_indices), (2, n_interfaces))
+
+    interfaces = P4estInterfaceContainerVariableCoefficient{NDIMS, uEltype, NDIMS + 2}(u,
+                                                                                       auxiliary_variables,
+                                                                                       neighbor_ids,
+                                                                                       node_indices,
+                                                                                       _u,
+                                                                                       _auxiliary_variables,
+                                                                                       _neighbor_ids,
+                                                                                       _node_indices)
+
+    Trixi.init_interfaces!(interfaces, mesh)
+
+    return interfaces
+end
+
+function prolong2interfaces_auxiliary!(cache, mesh::Union{P4estMesh{2}, T8codeMesh{2}},
+                                       equations, surface_integral, dg::DG)
+    (; elements, interfaces) = cache
+    index_range = eachnode(dg)
+
+    Trixi.@threaded for interface in eachinterface(dg, cache)
+        # Copy solution data from the primary element using "delayed indexing" with
+        # a start value and a step size to get the correct face and orientation.
+        # Note that in the current implementation, the interface will be
+        # "aligned at the primary element", i.e., the index of the primary side
+        # will always run forwards.
+        primary_element = interfaces.neighbor_ids[1, interface]
+        primary_indices = interfaces.node_indices[1, interface]
+
+        i_primary_start, i_primary_step = Trixi.index_to_start_step_2d(primary_indices[1],
+                                                                       index_range)
+        j_primary_start, j_primary_step = Trixi.index_to_start_step_2d(primary_indices[2],
+                                                                       index_range)
+
+        i_primary = i_primary_start
+        j_primary = j_primary_start
+        for i in eachnode(dg)
+            for v in axes(auxiliary_variables, 1)
+                interfaces.auxiliary_variables[1, v, i, interface] = elements.auxiliary_variables[v,
+                                                                                                  i_primary,
+                                                                                                  j_primary,
+                                                                                                  primary_element]
+            end
+            i_primary += i_primary_step
+            j_primary += j_primary_step
+        end
+
+        # Copy solution data from the secondary element using "delayed indexing" with
+        # a start value and a step size to get the correct face and orientation.
+        secondary_element = interfaces.neighbor_ids[2, interface]
+        secondary_indices = interfaces.node_indices[2, interface]
+
+        i_secondary_start, i_secondary_step = Trixi.index_to_start_step_2d(secondary_indices[1],
+                                                                           index_range)
+        j_secondary_start, j_secondary_step = Trixi.index_to_start_step_2d(secondary_indices[2],
+                                                                           index_range)
+
+        i_secondary = i_secondary_start
+        j_secondary = j_secondary_start
+        for i in eachnode(dg)
+            for v in axes(auxiliary_variables, 1)
+                interfaces.auxiliary_variables[2, v, i, interface] = elements.auxiliary_variables[v,
+                                                                                                  i_secondary,
+                                                                                                  j_secondary,
+                                                                                                  secondary_element]
+            end
+            i_secondary += i_secondary_step
+            j_secondary += j_secondary_step
+        end
+    end
+
+    return nothing
+end

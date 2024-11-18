@@ -4,7 +4,9 @@
 # AbstractEquations{3} for 3D equations. This change is necessary to support the Cartesian implementation 
 # of a 2D manifold embedded in a 3D space.
 function Trixi.SemidiscretizationHyperbolic(mesh::P4estMesh{2},
-                                            equations::AbstractEquations{3},
+                                            equations::Union{AbstractEquations{3},
+                                                             AbstractCovariantEquations{2,
+                                                                                        3}},
                                             initial_condition,
                                             solver;
                                             source_terms = nothing,

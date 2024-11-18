@@ -40,6 +40,10 @@ abstract type AbstractCovariantEquations{NDIMS,
                                          NDIMS_AMBIENT,
                                          NVARS} <: AbstractEquations{NDIMS, NVARS} end
 
+@inline nauxvars(equations::AbstractCovariantEquations{NDIMS}) where {NDIMS} = NDIMS^2 +
+                                                                               1
+@inline nauxvars(equations::AbstractEquations) = 0
+
 @doc raw"""
     spherical2contravariant(initial_condition, ::AbstractCovariantEquations)
 
@@ -51,40 +55,39 @@ the same initial condition with the velocity or momentum vector given in terms o
 contravariant components.
 """
 function spherical2contravariant(initial_condition, ::AbstractCovariantEquations)
-    function initial_condition_transformed(x, t, equations, cache, node, element)
-        return spherical2contravariant(initial_condition(x, t), equations, cache,
-                                       node, element)
+    function initial_condition_transformed(x, t, aux_vars, equations)
+        return spherical2contravariant(initial_condition(x, t), aux_vars, equations)
     end
     return initial_condition_transformed
 end
 # Numerical flux plus dissipation which passes node/element indices and cache. 
 # We assume that u_ll and u_rr have been transformed into the same local coordinate system.
 @inline function (numflux::Trixi.FluxPlusDissipation)(u_ll, u_rr,
+                                                      aux_vars_ll, aux_vars_rr,
                                                       orientation_or_normal_direction,
-                                                      equations::AbstractCovariantEquations,
-                                                      cache, node_ll, node_rr, element)
+                                                      equations::AbstractCovariantEquations)
 
     # The flux and dissipation need to be defined for the specific equation set
-    flux = numflux.numerical_flux(u_ll, u_rr, orientation_or_normal_direction,
-                                  equations, cache, node_ll, node_rr, element)
-    diss = numflux.dissipation(u_ll, u_rr, orientation_or_normal_direction, equations,
-                               cache, node_ll, node_rr, element)
+    flux = numflux.numerical_flux(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
+                                  orientation_or_normal_direction, equations)
+    diss = numflux.dissipation(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
+                               orientation_or_normal_direction, equations)
     return flux + diss
 end
 
 # Central flux which passes node/element indices and cache. 
 # We assume that u_ll and u_rr have been transformed into the same local coordinate system.
-@inline function Trixi.flux_central(u_ll, u_rr,
+@inline function Trixi.flux_central(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
                                     orientation_or_normal_direction,
-                                    equations::AbstractCovariantEquations,
-                                    cache, node_ll, node_rr, element)
-    flux_ll = Trixi.flux(u_ll, orientation_or_normal_direction, equations,
-                         cache, node_ll, element)
-    flux_rr = Trixi.flux(u_rr, orientation_or_normal_direction, equations,
-                         cache, node_rr, element)
-
+                                    equations::AbstractCovariantEquations)
+    flux_ll = Trixi.flux(u_ll, aux_vars_ll, orientation_or_normal_direction, equations)
+    flux_rr = Trixi.flux(u_rr, aux_vars_rr, orientation_or_normal_direction, equations)
     return 0.5f0 * (flux_ll + flux_rr)
 end
+
+# Extract geometric information from auxiliary variables
+@inline volume_element(aux_vars, ::AbstractCovariantEquations{2}) = aux_vars[1]
+@inline basis_covariant(aux_vars, ::AbstractCovariantEquations{2}) = SMatrix{2, 2}(aux_vars[2:5])
 
 abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:
               AbstractEquations{NDIMS, NVARS} end

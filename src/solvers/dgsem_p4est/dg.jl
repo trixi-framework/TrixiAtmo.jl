@@ -23,7 +23,7 @@ function Trixi.create_cache(mesh::P4estMesh, equations::AbstractEquations, dg::D
 end
 
 include("containers_2d_manifold_in_3d_cartesian.jl")
-include("dg_2d_manifold_in_3d_cartesian.jl")
-
 include("containers_2d_manifold_in_3d_covariant.jl")
+
+include("dg_2d_manifold_in_3d_cartesian.jl")
 include("dg_2d_manifold_in_3d_covariant.jl")
