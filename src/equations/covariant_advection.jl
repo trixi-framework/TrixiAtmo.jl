@@ -47,7 +47,7 @@ end
 # The flux for the covariant form takes in the element container and node/element indices
 # in order to give the flux access to the geometric information
 @inline function Trixi.flux(u, aux_vars, orientation::Integer,
-                            ::CovariantLinearAdvectionEquation2D)
+                            equations::CovariantLinearAdvectionEquation2D)
     z = zero(eltype(u))
     return SVector(volume_element(aux_vars, equations) * u[1] * u[orientation + 1], z, z)
 end
@@ -61,7 +61,8 @@ end
     z = zero(eltype(u_ll))
     λ = dissipation.max_abs_speed(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
                                   orientation_or_normal_direction, equations)
-    return -0.5f0 * volume_element(aux_vars, equations) * λ * SVector(u_rr[1] - u_ll[1], z, z)
+    return -0.5f0 * volume_element(aux_vars_ll, equations) * λ *
+           SVector(u_rr[1] - u_ll[1], z, z)
 end
 
 # Maximum wave speed with respect to the a specific orientation
@@ -73,7 +74,8 @@ end
 end
 
 # Maximum wave speeds in each direction for CFL calculation
-@inline function Trixi.max_abs_speeds(u, aux_vars, ::CovariantLinearAdvectionEquation2D)
+@inline function Trixi.max_abs_speeds(u, aux_vars, 
+                                      equations::CovariantLinearAdvectionEquation2D)
     return abs.(velocity(u, equations))
 end
 
@@ -87,8 +89,7 @@ end
 # Convert zonal and meridional velocity/momentum components to contravariant components
 @inline function spherical2contravariant(u_spherical, aux_vars,
                                          equations::CovariantLinearAdvectionEquation2D)
-    vcon1, vcon2 = basis_covariant(aux_vars, equations) \
-                   velocity(u_spherical, equatins)
-    return SVector(u[1], vcon1, vcon2)
+    vcon1, vcon2 = basis_covariant(aux_vars, equations) \ velocity(u_spherical, equations)
+    return SVector(u_spherical[1], vcon1, vcon2)
 end
 end # @muladd

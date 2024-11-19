@@ -73,6 +73,6 @@ for Cartesian and covariant formulations.
     vlat = -V * sin(lon) * sin(alpha)
 
     # the last variable is the bottom topography, which we set to zero
-    return SVector(h, vlon, vlat, 0.0)
+    return SVector(h, vlon, vlat)
 end
 end # muladd

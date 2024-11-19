@@ -17,6 +17,7 @@ using StaticArrayInterface: static_size
 using LinearAlgebra: norm, dot
 using Reexport: @reexport
 using LoopVectorization: @turbo
+
 @reexport using StaticArrays: SVector, SMatrix
 
 include("auxiliary/auxiliary.jl")

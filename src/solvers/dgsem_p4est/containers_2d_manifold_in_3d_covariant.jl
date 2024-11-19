@@ -1,29 +1,8 @@
-@inline function get_node_aux_vars(auxiliary_variables, equations, solver::DG, indices...)
-    SVector(ntuple(@inline(v->auxiliary_variables[v, indices...]),
-                   Val(nauxvars(equations))))
-end
-
-@inline function get_surface_node_aux_vars(auxiliary_variables, equations, solver::DG,
-                                           indices...)
-    # There is a cut-off at `n == 10` inside of the method
-    # `ntuple(f::F, n::Integer) where F` in Base at ntuple.jl:17
-    # in Julia `v1.5`, leading to type instabilities if
-    # more than ten variables are used. That's why we use
-    # `Val(...)` below.
-    aux_vars_ll = SVector(ntuple(@inline(v->auxiliary_variables[1, v, indices...]),
-                                 Val(nauxvars(equations))))
-    aux_vars_rr = SVector(ntuple(@inline(v->auxiliary_variables[2, v, indices...]),
-                                 Val(nauxvars(equations))))
-    return aux_vars_ll, aux_vars_rr
-end
-
-# Compute the node positions and metric terms for the covariant form, assuming that the
+# Compute the auxiliary metric terms for the covariant form, assuming that the
 # domain is a spherical shell. We do not make any assumptions on the mesh topology.
 function compute_auxiliary_variables!(elements, mesh::P4estMesh{2, 3},
-                                      equations::AbstractCovariantEquations{2, 3},
-                                      dg::DG)
+                                      equations::AbstractCovariantEquations{2, 3}, basis)
     (; inverse_jacobian, auxiliary_variables) = elements
-    (; basis) = dg
 
     # The tree node coordinates are assumed to be on the spherical shell centred around the # origin. Therefore, we can compute the radius once and use it throughout.
     radius = sqrt(mesh.tree_node_coordinates[1, 1, 1, 1]^2 +
@@ -91,15 +70,41 @@ function compute_auxiliary_variables!(elements, mesh::P4estMesh{2, 3},
 
             # Set variables in the cache
             auxiliary_variables[1, i, j, element] = 1 / inverse_jacobian[i, j, element]
-            auxiliary_variables[2:5, i, j, element] = A
+            auxiliary_variables[2:5, i, j, element] = SVector(A)
         end
     end
 
     return nothing
 end
 
+# Get Cartesian node positions, dispatching on the dimension of the equation system
+@inline function Trixi.get_node_coords(x,
+                                       ::AbstractCovariantEquations{NDIMS,
+                                                                    NDIMS_AMBIENT},
+                                       ::DG,
+                                       indices...) where {NDIMS, NDIMS_AMBIENT}
+    return SVector(ntuple(@inline(idx->x[idx, indices...]), NDIMS_AMBIENT))
+end
+
+# Return the auxiliary variables at a given volume node index
+@inline function get_node_aux_vars(auxiliary_variables, equations, solver::DG, indices...)
+    SVector(ntuple(@inline(v->auxiliary_variables[v, indices...]),
+                   Val(nauxvars(equations))))
+end
+
+# Return the auxiliary variables at a given surface node index
+@inline function get_surface_node_aux_vars(auxiliary_variables, equations, solver::DG,
+                                           indices...)
+    aux_vars_ll = SVector(ntuple(@inline(v->auxiliary_variables[1, v, indices...]),
+                                 Val(nauxvars(equations))))
+    aux_vars_rr = SVector(ntuple(@inline(v->auxiliary_variables[2, v, indices...]),
+                                 Val(nauxvars(equations))))
+    return aux_vars_ll, aux_vars_rr
+end
+
 mutable struct P4estInterfaceContainerVariableCoefficient{NDIMS, uEltype <: Real,
-                                                          NDIMSP2} <: Trixi.AbstractContainer
+                                                          NDIMSP2} <:
+               Trixi.AbstractContainer
     u::Array{uEltype, NDIMSP2}       # [primary/secondary, variable, i, j, interface]
     auxiliary_variables::Array{uEltype, NDIMSP2} # [primary/secondary, variable, i, j, interface]
     neighbor_ids::Matrix{Int}                   # [primary/secondary, interface]
@@ -138,7 +143,7 @@ function Trixi.init_interfaces(mesh::Union{P4estMesh, T8codeMesh},
                                            2 * nauxvars(equations) *
                                            nnodes(basis)^(NDIMS - 1) *
                                            n_interfaces)
-    auxiliary_variables = Trixi.unsafe_wrap(Array, pointer(_u),
+    auxiliary_variables = Trixi.unsafe_wrap(Array, pointer(_auxiliary_variables),
                                             (2, nauxvars(equations),
                                              ntuple(_ -> nnodes(basis), NDIMS - 1)...,
                                              n_interfaces))
@@ -163,12 +168,46 @@ function Trixi.init_interfaces(mesh::Union{P4estMesh, T8codeMesh},
     return interfaces
 end
 
+# Initialize node_indices of interface container (this is copied from Trixi.jl)
+@inline function Trixi.init_interface_node_indices!(interfaces::P4estInterfaceContainerVariableCoefficient{2},
+                                                    faces, orientation, interface_id)
+    # Iterate over primary and secondary element
+    for side in 1:2
+        # Align interface in positive coordinate direction of primary element.
+        # For orientation == 1, the secondary element needs to be indexed backwards
+        # relative to the interface.
+        if side == 1 || orientation == 0
+            # Forward indexing
+            i = :i_forward
+        else
+            # Backward indexing
+            i = :i_backward
+        end
+
+        if faces[side] == 0
+            # Index face in negative x-direction
+            interfaces.node_indices[side, interface_id] = (:begin, i)
+        elseif faces[side] == 1
+            # Index face in positive x-direction
+            interfaces.node_indices[side, interface_id] = (:end, i)
+        elseif faces[side] == 2
+            # Index face in negative y-direction
+            interfaces.node_indices[side, interface_id] = (i, :begin)
+        else # faces[side] == 3
+            # Index face in positive y-direction
+            interfaces.node_indices[side, interface_id] = (i, :end)
+        end
+    end
+
+    return interfaces
+end
+
 function prolong2interfaces_auxiliary!(cache, mesh::Union{P4estMesh{2}, T8codeMesh{2}},
-                                       equations, surface_integral, dg::DG)
+                                       dg::DG)
     (; elements, interfaces) = cache
     index_range = eachnode(dg)
 
-    Trixi.@threaded for interface in eachinterface(dg, cache)
+    Trixi.@threaded for interface in Trixi.eachinterface(dg, cache)
         # Copy solution data from the primary element using "delayed indexing" with
         # a start value and a step size to get the correct face and orientation.
         # Note that in the current implementation, the interface will be
@@ -185,7 +224,7 @@ function prolong2interfaces_auxiliary!(cache, mesh::Union{P4estMesh{2}, T8codeMe
         i_primary = i_primary_start
         j_primary = j_primary_start
         for i in eachnode(dg)
-            for v in axes(auxiliary_variables, 1)
+            for v in axes(elements.auxiliary_variables, 1)
                 interfaces.auxiliary_variables[1, v, i, interface] = elements.auxiliary_variables[v,
                                                                                                   i_primary,
                                                                                                   j_primary,
@@ -208,7 +247,7 @@ function prolong2interfaces_auxiliary!(cache, mesh::Union{P4estMesh{2}, T8codeMe
         i_secondary = i_secondary_start
         j_secondary = j_secondary_start
         for i in eachnode(dg)
-            for v in axes(auxiliary_variables, 1)
+            for v in axes(elements.auxiliary_variables, 1)
                 interfaces.auxiliary_variables[2, v, i, interface] = elements.auxiliary_variables[v,
                                                                                                   i_secondary,
                                                                                                   j_secondary,

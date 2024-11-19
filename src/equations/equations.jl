@@ -60,6 +60,7 @@ function spherical2contravariant(initial_condition, ::AbstractCovariantEquations
     end
     return initial_condition_transformed
 end
+
 # Numerical flux plus dissipation which passes node/element indices and cache. 
 # We assume that u_ll and u_rr have been transformed into the same local coordinate system.
 @inline function (numflux::Trixi.FluxPlusDissipation)(u_ll, u_rr,

@@ -1,7 +1,8 @@
 @muladd begin
 #! format: noindent
 
-# New p4est element container that allows the use of a PtrArray for the contravariant_vectors
+# New p4est element container that allows the use of a PtrArray for the 
+# contravariant_vectors, and stores the auxiliary_variables as an additional field
 mutable struct P4estElementContainerPtrArray{NDIMS, RealT <: Real, uEltype <: Real,
                                              NDIMSP1,
                                              NDIMSP2, NDIMSP3,
@@ -59,7 +60,8 @@ end
 # This function dispatches on the dimensions of the mesh and the equation (AbstractEquations{3})
 function Trixi.init_elements(mesh::Union{P4estMesh{2, 3, RealT},
                                          T8codeMesh{2}},
-                             equations::AbstractEquations{3},
+                             equations::Union{AbstractEquations{3},
+                                              AbstractCovariantEquations{2, 3}},
                              basis,
                              metric_terms,
                              ::Type{uEltype}) where {RealT <: Real, uEltype <: Real}
@@ -108,7 +110,7 @@ function Trixi.init_elements(mesh::Union{P4estMesh{2, 3, RealT},
     _auxiliary_variables = Vector{uEltype}(undef,
                                            nauxvars(equations) *
                                            nnodes(basis)^NDIMS * nelements)
-    auxiliary_variables = Trixi.unsafe_wrap(Array, pointer(_surface_flux_values),
+    auxiliary_variables = Trixi.unsafe_wrap(Array, pointer(_auxiliary_variables),
                                             (nauxvars(equations),
                                              ntuple(_ -> nnodes(basis), NDIMS)...,
                                              nelements))
