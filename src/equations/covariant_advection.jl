@@ -18,13 +18,14 @@ and the second two are the contravariant components $v^1$ and $v^2$ used in the 
 which are spatially varying but remain constant in time (i.e. no flux or dissipation is 
 applied to such variables). The resulting system is then given on the reference element as 
 ```math
-J \frac{\partial}{\partial t}\left[\begin{array}{c} h \\ v^1 \\ v^2 \end{array}\right] +
-\frac{\partial}{\partial \xi^1} \left[\begin{array}{c} J h v^1 \\ 0 \\ 0 \end{array}\right]
+\sqrt{G} \frac{\partial}{\partial t}\left[\begin{array}{c} h \\ v^1 \\ v^2 \end{array}\right] +
+\frac{\partial}{\partial \xi^1} \left[\begin{array}{c} \sqrt{G} h v^1 \\ 0 \\ 0 \end{array}\right]
 + 
-\frac{\partial}{\partial \xi^2} \left[\begin{array}{c} J h v^2 \\ 0 \\ 0 \end{array}\right] 
+\frac{\partial}{\partial \xi^2} \left[\begin{array}{c} \sqrt{G} h v^2 \\ 0 \\ 0 \end{array}\right] 
 = \left[\begin{array}{c} 0 \\ 0 \\ 0 \end{array}\right],
 ```
-where $J$ is the area element (see the documentation for [`P4estElementContainerCovariant`](@ref)). 
+where $G$ is the determinant of the covariant metric tensor expressed as a matrix with 
+entries $G_{ij} =  \vec{a}_i \cdot \vec{a}_j$.
 """
 struct CovariantLinearAdvectionEquation2D <: AbstractCovariantEquations{2, 3, 3} end
 

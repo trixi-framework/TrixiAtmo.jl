@@ -37,26 +37,6 @@ The mesh will have no boundaries.
   surface by normalizing the resulting Cartesian coordinates and scaling by  `radius`. If 
   set to `false`, the equiangular gnomonic projection will be used for all tree node 
   coordinates.
-
-!!! note
-    When solving equations in Cartesian coordinates (i.e. the usual approach in Trixi.jl), 
-    the tree node coordinates are used to define a transformation which maps the solver's 
-    quadrature nodes from the reference element onto a piecewise polynomial manifold 
-    approximating the sphere. The `P4estMesh` solver for equations of type 
-    [`AbstractCovariantEquations`](@ref), however, only uses the corner vertices from 
-    `tree_node_coordinates` and connects them using great circles to form a tessellation of 
-    the *exact* spherical manifold. The quadrature nodes within each element are mapped 
-    onto the sphere using the element-local mapping described above, which allows for the 
-    covariant basis and metric tensor to be computed analytically for the spherical surface. 
-
-    The quadrature node positions from the two approaches described above will coincide 
-    when the mesh's `polydeg` field is taken to be  the same as that of the solver and 
-    `element_local_mapping` is set to `true`, as this ensures that the polynomial manifold  
-    interpolates the exact spherical manifold at the nodes obtained with the element-local 
-    mapping. However, we emphasize that [`P4estElementContainerCovariant`](@ref) uses only 
-    the corner tree nodes and will *always* use the element-local mapping to obtain the 
-    quadrature node positions within each element, regardless of the value of the 
-    `element_local_mapping` parameter.
 """
 function P4estMeshCubedSphere2D(trees_per_face_dimension, radius;
                                 polydeg, RealT = Float64,
