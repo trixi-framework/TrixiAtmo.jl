@@ -69,7 +69,7 @@ function Trixi.compute_coefficients!(u, func, t, mesh::P4estMesh{2},
                                      equations::AbstractCovariantEquations{2}, dg::DG,
                                      cache)
 
-    # Store the auxiliary variables at the volume quadrature nodes in cache.elements
+    # Initialize the auxiliary variables at the volume quadrature nodes in cache.elements
     compute_auxiliary_variables!(cache.elements, mesh, equations, dg)
 
     # Copy the appropriate interface values of the auxiliary variables into cache.interfaces
@@ -87,9 +87,8 @@ function Trixi.compute_coefficients!(u, func, t, mesh::P4estMesh{2},
     end
 end
 
-# Weak form kernel which uses contravariant flux components, passing the element container 
-# and node/element indices into the flux function to give the flux access to geometric 
-# quantities
+# Weak form kernel which uses contravariant flux components, passing the geometric 
+# information contained in the auxiliary variables to the flux function
 @inline function Trixi.weak_form_kernel!(du, u, element, mesh::P4estMesh{2},
                                          nonconservative_terms::False,
                                          equations::AbstractCovariantEquations{2},
@@ -98,9 +97,9 @@ end
 
     for j in eachnode(dg), i in eachnode(dg)
         u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
-
         aux_vars_node = get_node_aux_vars(cache.elements.auxiliary_variables,
                                           equations, dg, i, j, element)
+
         contravariant_flux1 = flux(u_node, aux_vars_node, 1, equations)
         contravariant_flux2 = flux(u_node, aux_vars_node, 2, equations)
 
@@ -120,9 +119,8 @@ end
     return nothing
 end
 
-# Flux differencing kernel which uses contravariant flux components, passing the element
-# container and node/element indices into the two-point volume flux function to give the 
-# flux access to geometric quantities
+# Flux differencing kernel which uses contravariant flux components, passing the geometric 
+# information contained in the auxiliary variables to the flux function
 @inline function Trixi.flux_differencing_kernel!(du, u, element, mesh::P4estMesh{2},
                                                  nonconservative_terms::False,
                                                  equations::AbstractCovariantEquations{2},
@@ -140,7 +138,6 @@ end
             u_node_ii = Trixi.get_node_vars(u, equations, dg, ii, j, element)
             aux_vars_node_ii = get_node_aux_vars(cache.elements.auxiliary_variables,
                                                  equations, dg, ii, j, element)
-
             flux1 = volume_flux(u_node, u_node_ii,
                                 aux_vars_node, aux_vars_node_ii, 1, equations)
             Trixi.multiply_add_to_node_vars!(du, alpha * derivative_split[i, ii], flux1,
@@ -154,7 +151,6 @@ end
             u_node_jj = Trixi.get_node_vars(u, equations, dg, i, jj, element)
             aux_vars_node_jj = get_node_aux_vars(cache.elements.auxiliary_variables,
                                                  equations, dg, i, jj, element)
-
             flux2 = volume_flux(u_node, u_node_jj,
                                 aux_vars_node, aux_vars_node_jj, 2, equations)
             Trixi.multiply_add_to_node_vars!(du, alpha * derivative_split[j, jj], flux2,
