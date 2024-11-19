@@ -63,14 +63,14 @@ function Trixi.rhs!(du, u, t, mesh::P4estMesh{2},
     return nothing
 end
 
-# Evaluate the initial condition in spherical vector components, then 
-# transform to contravariant components for use as prognostic variables
+# Evaluate the initial condition in spherical vector components, then transform to 
+# contravariant components for use as prognostic variables.
 function Trixi.compute_coefficients!(u, func, t, mesh::P4estMesh{2},
                                      equations::AbstractCovariantEquations{2}, dg::DG,
                                      cache)
 
     # Store the auxiliary variables at the volume quadrature nodes in cache.elements
-    compute_auxiliary_variables!(cache.elements, mesh, equations, dg.basis)
+    compute_auxiliary_variables!(cache.elements, mesh, equations, dg)
 
     # Copy the appropriate interface values of the auxiliary variables into cache.interfaces
     prolong2interfaces_auxiliary!(cache, mesh, dg)
@@ -85,7 +85,6 @@ function Trixi.compute_coefficients!(u, func, t, mesh::P4estMesh{2},
             Trixi.set_node_vars!(u, u_node, equations, dg, i, j, element)
         end
     end
-
 end
 
 # Weak form kernel which uses contravariant flux components, passing the element container 
@@ -188,13 +187,13 @@ end
     u_ll, u_rr = Trixi.get_surface_node_vars(u, equations, dg, primary_node_index,
                                              interface_index)
     aux_vars_ll, aux_vars_rr = get_surface_node_aux_vars(auxiliary_variables, equations,
-                                                         dg, primary_node_index, 
+                                                         dg, primary_node_index,
                                                          interface_index)
-  
+
     # Compute flux in the primary element's coordinate system
     u_rr_spherical = contravariant2spherical(u_rr, aux_vars_rr, equations)
-    u_rr_transformed_to_ll = spherical2contravariant(u_rr_spherical, aux_vars_ll, equations)
-
+    u_rr_transformed_to_ll = spherical2contravariant(u_rr_spherical, aux_vars_ll,
+                                                     equations)
     if isodd(primary_direction_index)
         flux_primary = -surface_flux(u_rr_transformed_to_ll, u_ll,
                                      aux_vars_ll, aux_vars_ll,
@@ -204,10 +203,10 @@ end
                                     aux_vars_ll, aux_vars_ll,
                                     (primary_direction_index + 1) >> 1, equations)
     end
-   
+
     # Compute flux in the secondary element's coordinate system
     u_ll_spherical = contravariant2spherical(u_ll, aux_vars_ll, equations)
-    u_ll_transformed_to_rr = spherical2contravariant(u_ll_spherical, aux_vars_rr,  
+    u_ll_transformed_to_rr = spherical2contravariant(u_ll_spherical, aux_vars_rr,
                                                      equations)
     if isodd(secondary_direction_index)
         flux_secondary = -surface_flux(u_ll_transformed_to_rr, u_rr,
@@ -226,5 +225,84 @@ end
         surface_flux_values[v, secondary_node_index, secondary_direction_index,
         secondary_element_index] = flux_secondary[v]
     end
+end
+
+# Apply the exact Jacobian stored in auxiliary variables
+function Trixi.apply_jacobian!(du, mesh::P4estMesh{2},
+                               equations::AbstractCovariantEquations{2},
+                               dg::DG, cache)
+    Trixi.@threaded for element in eachelement(dg, cache)
+        for j in eachnode(dg), i in eachnode(dg)
+            aux_vars_node = get_node_aux_vars(cache.elements.auxiliary_variables,
+                                              equations, dg, i, j, element)
+            factor = -1 / volume_element(aux_vars_node, equations)
+
+            for v in eachvariable(equations)
+                du[v, i, j, element] *= factor
+            end
+        end
+    end
+
+    return nothing
+end
+
+# Prolong the auxiliary variables and store in cache.interfaces
+function prolong2interfaces_auxiliary!(cache, mesh::Union{P4estMesh{2}, T8codeMesh{2}},
+                                       dg::DG)
+    (; elements, interfaces) = cache
+    index_range = eachnode(dg)
+
+    Trixi.@threaded for interface in Trixi.eachinterface(dg, cache)
+        # Copy solution data from the primary element using "delayed indexing" with
+        # a start value and a step size to get the correct face and orientation.
+        # Note that in the current implementation, the interface will be
+        # "aligned at the primary element", i.e., the index of the primary side
+        # will always run forwards.
+        primary_element = interfaces.neighbor_ids[1, interface]
+        primary_indices = interfaces.node_indices[1, interface]
+
+        i_primary_start, i_primary_step = Trixi.index_to_start_step_2d(primary_indices[1],
+                                                                       index_range)
+        j_primary_start, j_primary_step = Trixi.index_to_start_step_2d(primary_indices[2],
+                                                                       index_range)
+
+        i_primary = i_primary_start
+        j_primary = j_primary_start
+        for i in eachnode(dg)
+            for v in axes(elements.auxiliary_variables, 1)
+                interfaces.auxiliary_variables[1, v, i, interface] = elements.auxiliary_variables[v,
+                                                                                                  i_primary,
+                                                                                                  j_primary,
+                                                                                                  primary_element]
+            end
+            i_primary += i_primary_step
+            j_primary += j_primary_step
+        end
+
+        # Copy solution data from the secondary element using "delayed indexing" with
+        # a start value and a step size to get the correct face and orientation.
+        secondary_element = interfaces.neighbor_ids[2, interface]
+        secondary_indices = interfaces.node_indices[2, interface]
+
+        i_secondary_start, i_secondary_step = Trixi.index_to_start_step_2d(secondary_indices[1],
+                                                                           index_range)
+        j_secondary_start, j_secondary_step = Trixi.index_to_start_step_2d(secondary_indices[2],
+                                                                           index_range)
+
+        i_secondary = i_secondary_start
+        j_secondary = j_secondary_start
+        for i in eachnode(dg)
+            for v in axes(elements.auxiliary_variables, 1)
+                interfaces.auxiliary_variables[2, v, i, interface] = elements.auxiliary_variables[v,
+                                                                                                  i_secondary,
+                                                                                                  j_secondary,
+                                                                                                  secondary_element]
+            end
+            i_secondary += i_secondary_step
+            j_secondary += j_secondary_step
+        end
+    end
+
+    return nothing
 end
 end # @muladd

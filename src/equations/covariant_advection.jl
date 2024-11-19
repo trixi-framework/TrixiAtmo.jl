@@ -49,7 +49,8 @@ end
 @inline function Trixi.flux(u, aux_vars, orientation::Integer,
                             equations::CovariantLinearAdvectionEquation2D)
     z = zero(eltype(u))
-    return SVector(volume_element(aux_vars, equations) * u[1] * u[orientation + 1], z, z)
+    return SVector(volume_element(aux_vars, equations) * u[1] * u[orientation + 1], z,
+                   z)
 end
 
 # Local Lax-Friedrichs dissipation which is not applied to the contravariant velocity 
@@ -74,7 +75,7 @@ end
 end
 
 # Maximum wave speeds in each direction for CFL calculation
-@inline function Trixi.max_abs_speeds(u, aux_vars, 
+@inline function Trixi.max_abs_speeds(u, aux_vars,
                                       equations::CovariantLinearAdvectionEquation2D)
     return abs.(velocity(u, equations))
 end
@@ -89,7 +90,8 @@ end
 # Convert zonal and meridional velocity/momentum components to contravariant components
 @inline function spherical2contravariant(u_spherical, aux_vars,
                                          equations::CovariantLinearAdvectionEquation2D)
-    vcon1, vcon2 = basis_covariant(aux_vars, equations) \ velocity(u_spherical, equations)
+    vcon1, vcon2 = basis_covariant(aux_vars, equations) \
+                   velocity(u_spherical, equations)
     return SVector(u_spherical[1], vcon1, vcon2)
 end
 end # @muladd

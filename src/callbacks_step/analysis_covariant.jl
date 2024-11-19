@@ -33,7 +33,8 @@ function Trixi.calc_error_norms(func, u, t, analyzer, mesh::P4estMesh{2},
         for j in eachnode(dg), i in eachnode(dg)
             x = Trixi.get_node_coords(node_coordinates, equations, dg, i, j, element)
 
-            aux_vars_node = get_node_aux_vars(cache.elements.auxiliary_variables, equations,
+            aux_vars_node = get_node_aux_vars(cache.elements.auxiliary_variables,
+                                              equations,
                                               dg, i, j, element)
 
             u_exact = initial_condition(x, t, aux_vars_node, equations)

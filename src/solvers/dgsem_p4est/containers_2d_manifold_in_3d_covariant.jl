@@ -1,36 +1,36 @@
+@muladd begin
+#! format: noindent
+
 # Compute the auxiliary metric terms for the covariant form, assuming that the
 # domain is a spherical shell. We do not make any assumptions on the mesh topology.
 function compute_auxiliary_variables!(elements, mesh::P4estMesh{2, 3},
-                                      equations::AbstractCovariantEquations{2, 3}, basis)
-    (; inverse_jacobian, auxiliary_variables) = elements
+                                      equations::AbstractCovariantEquations{2, 3}, dg)
 
-    # The tree node coordinates are assumed to be on the spherical shell centred around the # origin. Therefore, we can compute the radius once and use it throughout.
+    # The tree node coordinates are assumed to be on the spherical shell centred around the 
+    # origin. Therefore, we can compute the radius once and use it throughout.
     radius = sqrt(mesh.tree_node_coordinates[1, 1, 1, 1]^2 +
                   mesh.tree_node_coordinates[2, 1, 1, 1]^2 +
                   mesh.tree_node_coordinates[3, 1, 1, 1]^2)
 
     for element in 1:Trixi.ncells(mesh)
 
-        # For now, we will only use the corner nodes from the P4estMesh, and construct the
-        # mapping and its associated metric terms analytically without any polynomial 
-        # approximation following the approach described in by Guba et al. (see 
-        # https://doi.org/10.5194/gmd-7-2803-2014, Appendix A). If the option 
-        # "element_local_mapping = true" is used when constructing the mesh using
-        # P4estMeshCubedSphere2D and the polynomial degree of the mesh is the same as that 
-        # of the solver, the node positions are equal to those obtained using the standard
-        # calc_node_coordinates! function.
+        # Check that the degree of the mesh matches that of the solver
+        @assert length(mesh.nodes) == nnodes(dg)
 
         # Extract the corner vertex positions from the P4estMesh
-        nnodes = length(mesh.nodes)
-        v1 = SVector{3}(view(mesh.tree_node_coordinates, :, 1, 1, element))
-        v2 = SVector{3}(view(mesh.tree_node_coordinates, :, nnodes, 1, element))
-        v3 = SVector{3}(view(mesh.tree_node_coordinates, :, nnodes, nnodes, element))
-        v4 = SVector{3}(view(mesh.tree_node_coordinates, :, 1, nnodes, element))
+        v1 = Trixi.get_node_coords(mesh.tree_node_coordinates, equations, dg,
+                                   1, 1, element)
+        v2 = Trixi.get_node_coords(mesh.tree_node_coordinates, equations, dg,
+                                   nnodes(dg), 1, element)
+        v3 = Trixi.get_node_coords(mesh.tree_node_coordinates, equations, dg,
+                                   nnodes(dg), nnodes(dg), element)
+        v4 = Trixi.get_node_coords(mesh.tree_node_coordinates, equations, dg,
+                                   1, nnodes(dg), element)
 
-        for j in eachnode(basis), i in eachnode(basis)
+        for j in eachnode(dg), i in eachnode(dg)
 
             # get reference node coordinates
-            xi1, xi2 = basis.nodes[i], basis.nodes[j]
+            xi1, xi2 = dg.basis.nodes[i], dg.basis.nodes[j]
 
             # Construct a bilinear mapping based on the four corner vertices
             x_bilinear = 0.25f0 *
@@ -61,16 +61,20 @@ function compute_auxiliary_variables!(elements, mesh::P4estMesh{2, 3},
             # covariant metric tensor and a_i = A[1,i] * e_lon + A[2,i] * e_lat denotes 
             # the covariant tangent basis, where e_lon and e_lat are the unit basis vectors
             # in the longitudinal and latitudinal directions, respectively.
-            A = 0.25f0 * scaling_factor * SMatrix{2, 3}(-sinlon, 0, coslon, 0, 0, 1) *
-                SMatrix{3, 3}(a11, a21, a31, a12, a22, a32, a13, a23, a33) *
-                SMatrix{3, 4}(v1[1], v1[2], v1[3], v2[1], v2[2], v2[3],
-                              v3[1], v3[2], v3[3], v4[1], v4[2], v4[3]) *
-                SMatrix{4, 2}(-1 + xi2, 1 - xi2, 1 + xi2, -1 - xi2,
-                              -1 + xi1, -1 - xi1, 1 + xi1, 1 - xi1)
+            basis_covariant = 0.25f0 * scaling_factor *
+                              SMatrix{2, 3}(-sinlon, 0, coslon, 0, 0, 1) *
+                              SMatrix{3, 3}(a11, a21, a31, a12, a22, a32, a13, a23,
+                                            a33) *
+                              SMatrix{3, 4}(v1[1], v1[2], v1[3], v2[1], v2[2], v2[3],
+                                            v3[1], v3[2], v3[3], v4[1], v4[2], v4[3]) *
+                              SMatrix{4, 2}(-1 + xi2, 1 - xi2, 1 + xi2, -1 - xi2,
+                                            -1 + xi1, -1 - xi1, 1 + xi1, 1 - xi1)
 
             # Set variables in the cache
-            auxiliary_variables[1, i, j, element] = 1 / inverse_jacobian[i, j, element]
-            auxiliary_variables[2:5, i, j, element] = SVector(A)
+            elements.auxiliary_variables[1, i, j, element] = basis_covariant[1, 1]
+            elements.auxiliary_variables[2, i, j, element] = basis_covariant[2, 1]
+            elements.auxiliary_variables[3, i, j, element] = basis_covariant[1, 2]
+            elements.auxiliary_variables[4, i, j, element] = basis_covariant[2, 2]
         end
     end
 
@@ -87,7 +91,8 @@ end
 end
 
 # Return the auxiliary variables at a given volume node index
-@inline function get_node_aux_vars(auxiliary_variables, equations, solver::DG, indices...)
+@inline function get_node_aux_vars(auxiliary_variables, equations, solver::DG,
+                                   indices...)
     SVector(ntuple(@inline(v->auxiliary_variables[v, indices...]),
                    Val(nauxvars(equations))))
 end
@@ -102,6 +107,7 @@ end
     return aux_vars_ll, aux_vars_rr
 end
 
+# Interface container storing surface values of the auxiliary variables
 mutable struct P4estInterfaceContainerVariableCoefficient{NDIMS, uEltype <: Real,
                                                           NDIMSP2} <:
                Trixi.AbstractContainer
@@ -117,9 +123,8 @@ mutable struct P4estInterfaceContainerVariableCoefficient{NDIMS, uEltype <: Real
     _node_indices::Vector{NTuple{NDIMS, Symbol}}
 end
 
-@inline function Trixi.ninterfaces(interfaces::P4estInterfaceContainerVariableCoefficient)
-    size(interfaces.neighbor_ids, 2)
-end
+@inline Trixi.ninterfaces(interfaces::P4estInterfaceContainerVariableCoefficient) = size(interfaces.neighbor_ids,
+                                                                                         2)
 @inline Base.ndims(::P4estInterfaceContainerVariableCoefficient{NDIMS}) where {NDIMS} = NDIMS
 
 # Create interface container and initialize interface data.
@@ -201,62 +206,4 @@ end
 
     return interfaces
 end
-
-function prolong2interfaces_auxiliary!(cache, mesh::Union{P4estMesh{2}, T8codeMesh{2}},
-                                       dg::DG)
-    (; elements, interfaces) = cache
-    index_range = eachnode(dg)
-
-    Trixi.@threaded for interface in Trixi.eachinterface(dg, cache)
-        # Copy solution data from the primary element using "delayed indexing" with
-        # a start value and a step size to get the correct face and orientation.
-        # Note that in the current implementation, the interface will be
-        # "aligned at the primary element", i.e., the index of the primary side
-        # will always run forwards.
-        primary_element = interfaces.neighbor_ids[1, interface]
-        primary_indices = interfaces.node_indices[1, interface]
-
-        i_primary_start, i_primary_step = Trixi.index_to_start_step_2d(primary_indices[1],
-                                                                       index_range)
-        j_primary_start, j_primary_step = Trixi.index_to_start_step_2d(primary_indices[2],
-                                                                       index_range)
-
-        i_primary = i_primary_start
-        j_primary = j_primary_start
-        for i in eachnode(dg)
-            for v in axes(elements.auxiliary_variables, 1)
-                interfaces.auxiliary_variables[1, v, i, interface] = elements.auxiliary_variables[v,
-                                                                                                  i_primary,
-                                                                                                  j_primary,
-                                                                                                  primary_element]
-            end
-            i_primary += i_primary_step
-            j_primary += j_primary_step
-        end
-
-        # Copy solution data from the secondary element using "delayed indexing" with
-        # a start value and a step size to get the correct face and orientation.
-        secondary_element = interfaces.neighbor_ids[2, interface]
-        secondary_indices = interfaces.node_indices[2, interface]
-
-        i_secondary_start, i_secondary_step = Trixi.index_to_start_step_2d(secondary_indices[1],
-                                                                           index_range)
-        j_secondary_start, j_secondary_step = Trixi.index_to_start_step_2d(secondary_indices[2],
-                                                                           index_range)
-
-        i_secondary = i_secondary_start
-        j_secondary = j_secondary_start
-        for i in eachnode(dg)
-            for v in axes(elements.auxiliary_variables, 1)
-                interfaces.auxiliary_variables[2, v, i, interface] = elements.auxiliary_variables[v,
-                                                                                                  i_secondary,
-                                                                                                  j_secondary,
-                                                                                                  secondary_element]
-            end
-            i_secondary += i_secondary_step
-            j_secondary += j_secondary_step
-        end
-    end
-
-    return nothing
-end
+end # muladd

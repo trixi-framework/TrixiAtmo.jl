@@ -29,19 +29,20 @@ Some references on discontinuous Galerkin methods in covariant flux form are lis
   [DOI: 10.1016/j.jcp.2013.11.033](https://doi.org/10.1016/j.jcp.2013.11.033)
 
 When using this equation type, functions which are evaluated pointwise, such as fluxes, 
-source terms, and initial conditions take in the extra arguments `cache`, `node`, and 
-`element`, corresponding to the `cache` field of a `SemidiscretizationHyperbolic`, the node 
-index (for tensor-product elements, this should be a tuple of length `NDIMS`), and the 
-element index, respectively. To convert an initial condition given in terms of global 
-spherical velocity or momentum components to one given in terms of local contravariant 
-components, see [`spherical2contravariant`](@ref).
+source terms, and initial conditions take in the extra argument `aux_vars`, which contains 
+the geometric information needed for the covariant form. To convert an initial condition 
+given in terms of global spherical velocity or momentum components to one given in terms of 
+local contravariant components, see [`spherical2contravariant`](@ref).
 """
 abstract type AbstractCovariantEquations{NDIMS,
                                          NDIMS_AMBIENT,
                                          NVARS} <: AbstractEquations{NDIMS, NVARS} end
 
-@inline nauxvars(equations::AbstractCovariantEquations{NDIMS}) where {NDIMS} = NDIMS^2 +
-                                                                               1
+# For the covariant form, the auxiliary variables are the the NDIMS^2 entries of the 
+# covariant basis matrix
+@inline nauxvars(equations::AbstractCovariantEquations{NDIMS}) where {NDIMS} = NDIMS^2
+
+# By default, there are no auxiliary variables
 @inline nauxvars(equations::AbstractEquations) = 0
 
 @doc raw"""
@@ -49,10 +50,8 @@ abstract type AbstractCovariantEquations{NDIMS,
 
 Takes in a function with the signature `initial_condition(x, t)` which returns an initial 
 condition given in terms of zonal and meridional velocity or momentum components, and 
-returns another function with the signature  
-`initial_condition_transformed(x, t, equations, cache, node, element)` which returns
-the same initial condition with the velocity or momentum vector given in terms of 
-contravariant components.
+returns another function with the signature  `initial_condition_transformed(x, t, aux_vars, 
+equations)` which returns the same initial condition with the velocity or momentum vector given in terms of contravariant components.
 """
 function spherical2contravariant(initial_condition, ::AbstractCovariantEquations)
     function initial_condition_transformed(x, t, aux_vars, equations)
@@ -87,8 +86,12 @@ end
 end
 
 # Extract geometric information from auxiliary variables
-@inline volume_element(aux_vars, ::AbstractCovariantEquations{2}) = aux_vars[1]
-@inline basis_covariant(aux_vars, ::AbstractCovariantEquations{2}) = SMatrix{2, 2}(aux_vars[2:5])
+@inline function basis_covariant(aux_vars, ::AbstractCovariantEquations{2})
+    return SMatrix{2, 2}(aux_vars[1], aux_vars[2], aux_vars[3], aux_vars[4])
+end
+@inline function volume_element(aux_vars, ::AbstractCovariantEquations{2})
+    return abs(aux_vars[1] * aux_vars[4] - aux_vars[2] * aux_vars[3])
+end
 
 abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:
               AbstractEquations{NDIMS, NVARS} end
