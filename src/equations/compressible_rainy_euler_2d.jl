@@ -4,7 +4,8 @@ import  Trixi: varnames,
                cons2prim, cons2entropy,
                flux, flux_chandrashekar,
                max_abs_speeds, max_abs_speed_naive,
-               boundary_condition_slip_wall
+               boundary_condition_slip_wall,
+               LaplaceDiffusion2D
 
 
 
@@ -670,6 +671,18 @@ end
     # compute and return the flux using `boundary_condition_slip_wall` routine above
     return boundary_condition_slip_wall(u_inner, normal_direction, direction,
                                         x, t, surface_flux_function, equations)
+end
+
+
+# for parabolic terms (LaplaceDiffusion2D)
+@inline function boundary_condition_laplace(flux_inner, u_inner, normal::AbstractVector, x, t, operator_type::Trixi.Gradient,
+                                            equations_parabolic::LaplaceDiffusion2D)
+    return u_inner
+end
+
+@inline function boundary_condition_laplace(flux_inner, u_inner, normal::AbstractVector, x, t, operator_type::Trixi.Divergence,
+                                            equations_parabolic::LaplaceDiffusion2D)
+    return flux_inner
 end
 
 
