@@ -7,7 +7,7 @@ using StaticArrays
 @muladd begin
 
 function nonlinear_solve_dg_2d!(u, residual, jacobian, variables_index_vector, tolerance,
-                                equations::CompressibleRainyEulerEquations2D, dg::DGSEM, cache, mesh)
+                                equations::AbstractCompressibleRainyEulerEquations, dg::DGSEM, cache, mesh)
     max_iterations = 20
     rain_threshold = 1e-4
     #=threshold = 0.0

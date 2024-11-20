@@ -21,7 +21,8 @@ bar() = false
 baz() = Trixi.examples_dir()
 
 include("equations/equations.jl")
-export CompressibleMoistEulerEquations2D, CompressibleRainyEulerEquations2D
+export CompressibleMoistEulerEquations2D, CompressibleRainyEulerEquations2D,
+       CompressibleRainyEulerPotentialTemperatureEquations2D
 
 include("callbacks_stage/callbacks_stage.jl")
 export NonlinearSolveDG

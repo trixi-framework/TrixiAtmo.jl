@@ -17,13 +17,13 @@ import  Trixi: varnames,
 # 112713,
 # ISSN 0021-9991
 
-
+### WARNING: Potential temperature implementation does not include rainFALL yet.
 
 @muladd begin
 
 ###  equation, parameters and constants  ###
 
-struct CompressibleRainyEulerEquations2D{RealT <: Real} <: AbstractCompressibleRainyEulerEquations{2, 9}
+struct CompressibleRainyEulerPotentialTemperatureEquations2D{RealT <: Real} <: AbstractCompressibleRainyEulerEquations{2, 9}
     # Specific heat capacities:
     c_liquid_water             ::RealT
     c_dry_air_const_pressure   ::RealT
@@ -49,7 +49,7 @@ struct CompressibleRainyEulerEquations2D{RealT <: Real} <: AbstractCompressibleR
 end
 
 
-function CompressibleRainyEulerEquations2D(; RealT = Float64)
+function CompressibleRainyEulerPotentialTemperatureEquations2D(; RealT = Float64)
     # Specific heat capacities:
     c_liquid_water           = 4186.0
     c_dry_air_const_pressure = 1004.0
@@ -73,7 +73,7 @@ function CompressibleRainyEulerEquations2D(; RealT = Float64)
     rain_water_distr = 8e6
     v_mean_rain      = 130.0
 
-    return CompressibleRainyEulerEquations2D{RealT}(c_liquid_water, c_dry_air_const_pressure, c_dry_air_const_volume, 
+    return CompressibleRainyEulerPotentialTemperatureEquations2D{RealT}(c_liquid_water, c_dry_air_const_pressure, c_dry_air_const_volume, 
                           c_vapour_const_pressure, c_vapour_const_volume, R_dry_air, 
                           R_vapour, eps, ref_saturation_pressure, ref_temperature,
                           ref_latent_heat_vap_temp, ref_pressure, gravity, 
@@ -84,7 +84,7 @@ end
 
 ###  conversion  ###
 
-@inline function cons2prim(u, equations::CompressibleRainyEulerEquations2D)
+@inline function cons2prim(u, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
     # densities
     rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
 
@@ -101,14 +101,14 @@ end
 end
 
 
-@inline function cons2entropy(u, equations::CompressibleRainyEulerEquations2D)
+@inline function cons2entropy(u, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
     #TODO
     return SVector(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
 end
 
 
 # adapted from compressible_moist_euler_2d.jl
-@inline function cons2eq_pot_temp(u, equations::CompressibleRainyEulerEquations2D)
+@inline function cons2eq_pot_temp(u, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
     # constants
     c_l      = equations.c_liquid_water
     c_pd     = equations.c_dry_air_const_pressure
@@ -124,9 +124,6 @@ end
 
     # velocity
     v1, v2 = velocities(u, rho_inv, equations)
-
-    # energy density
-    energy = energy_density(u, equations)
 
     # nonlinear system
     rho_vapour, rho_cloud, temperature = cons2nonlinearsystemsol(u, equations)
@@ -153,52 +150,26 @@ end
 end
 
 
-@inline function cons2nonlinearsystemsol(u, equations::CompressibleRainyEulerEquations2D)
-    # constants
-    c_vd     = equations.c_dry_air_const_volume
-    #ref_temp = equations.ref_temperature
-
-    # densities
-    rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
-
-    # velocity
-    v1, v2 = velocities(u, rho_inv, equations)
-
-    # energy density
-    energy = energy_density(u, equations)
-
-    # recover temperature explicitly from energy when other variables are zero
-    if (rho_moist == 0.0 && rho_rain == 0.0)
-        # energy density definition without ref_temp for dry case
-        energy_kinetic = 0.5 * (v1^2 + v2^2) * rho
-        temperature = (energy - energy_kinetic) / (c_vd * rho) #+ ref_temp
-
-        if (temperature < 0.0)
-            error("temp negative")
-        end
-
-        return SVector(0.0, 0.0, temperature)
-    else
-        # experimental and overly simple positivity check
-        rho_vapour  = u[7]
-        rho_cloud   = u[8]
-        temperature = u[9]
+@inline function cons2nonlinearsystemsol(u, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
+    # experimental and simple positivity check
+    rho_vapour  = u[7]
+    rho_cloud   = u[8]
+    temperature = u[9]
         
-        if (rho_vapour < 0.0 && isapprox(rho_vapour, 0.0, atol = 1e-15))
-            rho_vapour = 0.0
-        end
-
-        if (rho_cloud < 0.0 && isapprox(rho_cloud, 0.0, atol = 1e-15))
-            rho_cloud = 0.0
-        end
-
-        return SVector(rho_vapour, rho_cloud, temperature)
+    if (rho_vapour < 0.0 && isapprox(rho_vapour, 0.0, atol = 1e-15))
+        rho_vapour = 0.0
     end
+
+    if (rho_cloud < 0.0 && isapprox(rho_cloud, 0.0, atol = 1e-15))
+        rho_cloud = 0.0
+    end
+
+    return SVector(rho_vapour, rho_cloud, temperature)
 end
 
 
 # for convenience
-@inline function cons2speeds(u, equations::CompressibleRainyEulerEquations2D)
+@inline function cons2speeds(u, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
     # densities
     rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
 
@@ -218,18 +189,18 @@ end
 
 ###  varnames  ###
 
-varnames(::typeof(cons2cons), ::CompressibleRainyEulerEquations2D) = ("rho_dry", "rho_moist", "rho_rain",
+varnames(::typeof(cons2cons), ::CompressibleRainyEulerPotentialTemperatureEquations2D) = ("rho_dry", "rho_moist", "rho_rain",
                                                                         "rho_v1", "rho_v2",
-                                                                        "potential_temperature",
+                                                                        "potential_temperature_density",
                                                                         "rho_vapour", "rho_cloud", "temperature")
 
 
-varnames(::typeof(cons2prim), ::CompressibleRainyEulerEquations2D) = ("rho_dry", "rho_moist", "rho_rain",
+varnames(::typeof(cons2prim), ::CompressibleRainyEulerPotentialTemperatureEquations2D) = ("rho_dry", "rho_moist", "rho_rain",
                                                                         "v1", "v2",
                                                                         "energy_density",
                                                                         "rho_vapour", "rho_cloud", "temperature")
 
-varnames(::typeof(cons2eq_pot_temp), ::CompressibleRainyEulerEquations2D) = ("rho", "r_vapour",
+varnames(::typeof(cons2eq_pot_temp), ::CompressibleRainyEulerPotentialTemperatureEquations2D) = ("rho", "r_vapour",
                                                                              "r_cloud", "r_rain", 
                                                                              "v1", "v2", "eq_pot_temp",
                                                                              "pressure")
@@ -238,7 +209,7 @@ varnames(::typeof(cons2eq_pot_temp), ::CompressibleRainyEulerEquations2D) = ("rh
 
 ###  physics variables  ###
 
-@inline function densities(u, equations::CompressibleRainyEulerEquations2D)
+@inline function densities(u, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
     # densities
     rho_dry    = u[1]
     rho_moist  = u[2]
@@ -249,37 +220,76 @@ varnames(::typeof(cons2eq_pot_temp), ::CompressibleRainyEulerEquations2D) = ("rh
     return SVector(rho_dry, rho_moist, rho_rain, rho, rho_inv)
 end
 
-@inline function rain_density(u, equations::CompressibleRainyEulerEquations2D) 
+@inline function rain_density(u, equations::CompressibleRainyEulerPotentialTemperatureEquations2D) 
     return u[3]
 end
 
-@inline function velocities(u, rho_inv, equations::CompressibleRainyEulerEquations2D)
+@inline function velocities(u, rho_inv, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
     return SVector(u[4] * rho_inv, u[5] * rho_inv)
 end
 
 
-@inline function energy_density(u, equations::CompressibleRainyEulerEquations2D)
-    return u[6]
-end
-
-
-@inline function pressure(u, equations::CompressibleRainyEulerEquations2D)
-    # constants
-    R_d = equations.R_dry_air
-    R_v = equations.R_vapour
+@inline function energy_density(u, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
+    c_vd = equations.c_dry_air_const_volume
+    c_vv = equations.c_vapour_const_volume
+    c_l  = equations.c_liquid_water
+    ref_L = equations.ref_latent_heat_vap_temp
 
     # densities
     rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
 
-    rho_vapour, _, temperature = cons2nonlinearsystemsol(u, equations)
-  
-    p = (R_d * rho_dry + R_v * rho_vapour) * temperature
+    rho_vapour, rho_cloud, temperature = cons2nonlinearsystemsol(u, equations)
+
+    # velocity
+    v1, v2 = velocities(u, rho_inv, equations)
+
+    inner_energy_density   = (c_vd * rho_dry + c_vv * rho_vapour + c_l * (rho_cloud + rho_rain)) * temperature 
+    inner_energy_density  += rho_vapour * ref_L
+    kinetic_energy_density = 0.5 * rho * (v1^2 + v2^2)
+
+    return inner_energy_density + kinetic_energy_density
+end
+
+
+@inline function pressure(u, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
+    # constants
+    c_pd = equations.c_dry_air_const_pressure
+    c_vd = equations.c_dry_air_const_volume
+    c_pv = equations.c_vapour_const_pressure
+    c_vv = equations.c_vapour_const_volume
+    c_l  = equations.c_liquid_water
+    R_d  = equations.R_dry_air
+    R_v  = equations.R_vapour
+    eps  = equations.eps
+    ref_pressure = equations.ref_pressure
+
+    # densities
+    rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
+
+    rho_vapour, rho_cloud, temperature = cons2nonlinearsystemsol(u, equations)
+
+    # potential temperature density
+    rho_pot_temp = potential_temperature_density(u, equations)
+
+    r_v =  rho_vapour            / rho_dry
+    r_l = (rho_cloud + rho_rain) / rho_dry
+
+    kappa_m = (R_d + r_v * R_v) / (c_pd + r_v * c_pv + r_l * c_l)
+
+    rho_theta = rho_pot_temp * (rho_dry + rho_vapour / eps) * rho_inv
+    
+    p = ((R_d * rho_theta) / (ref_pressure^kappa_m))^(1 / (1 - kappa_m))
 
     return p
 end
 
 
-@inline function speed_of_sound(u, equations::CompressibleRainyEulerEquations2D)
+@inline function potential_temperature_density(u, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
+    return u[6]
+end
+
+
+@inline function speed_of_sound(u, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
     # constants
     c_l      = equations.c_liquid_water
     c_vd     = equations.c_dry_air_const_volume
@@ -318,7 +328,7 @@ end
 end
 
 
-@inline function terminal_velocity_rain(rho_moist, rho_rain, equations::CompressibleRainyEulerEquations2D)
+@inline function terminal_velocity_rain(rho_moist, rho_rain, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
     # constants
     N_0 = equations.rain_water_distr
     v_0 = equations.v_mean_rain
@@ -334,7 +344,7 @@ end
 end
 
 
-@inline function saturation_vapour_pressure(temperature, equations::CompressibleRainyEulerEquations2D)
+@inline function saturation_vapour_pressure(temperature, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
     # constants
     c_l      = equations.c_liquid_water
     c_pv     = equations.c_vapour_const_pressure
@@ -357,7 +367,7 @@ end
 end
 
 
-@inline function saturation_vapour_pressure_derivative(temperature, equations::CompressibleRainyEulerEquations2D)
+@inline function saturation_vapour_pressure_derivative(temperature, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
     # constants
     c_l      = equations.c_liquid_water
     c_pv     = equations.c_vapour_const_pressure
@@ -386,25 +396,25 @@ end
 
 ###  pde discretization  ###
 
-@inline function flux(u, orientation::Integer, equations::CompressibleRainyEulerEquations2D)
+@inline function flux(u, orientation::Integer, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
     # constants
-    c_l      = equations.c_liquid_water
+    #c_l = equations.c_liquid_water
 
     #densities
     rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
 
     # recover rho_vapour, rho_cloud, temperature from nonlinear system
-    rho_vapour, _, temperature = cons2nonlinearsystemsol(u, equations)
+    #rho_vapour, _, temperature = cons2nonlinearsystemsol(u, equations)
 
     # velocity
     v1, v2 = velocities(u, rho_inv, equations)
-    v_r    = terminal_velocity_rain(rho_moist, rho_rain, equations)
+    #v_r    = terminal_velocity_rain(rho_moist, rho_rain, equations)
 
     # pressure
     p = pressure(u, equations)
 
-    # energy density
-    energy = energy_density(u, equations)
+    # potential temperature density
+    rho_pot_temp = potential_temperature_density(u, equations)
 
     # flux for orientation cases 
     if (orientation == 1)
@@ -417,21 +427,20 @@ end
         f4 = rho       * v1 * v1 + p
         f5 = rho       * v1 * v2
 
-        # "energy"
-        f6 = (energy + p) * v1
-
+        # "potential temperature"
+        f6 = rho_pot_temp * v1
     else
         # "mass"
         f1 = rho_dry   *  v2
         f2 = rho_moist *  v2
-        f3 = rho_rain  * (v2 - v_r)
+        f3 = rho_rain  *  v2 #- v_r)
 
         # "momentum"
-        f4 = rho       * v1 * v2      - rho_rain * v_r * v1
-        f5 = rho       * v2 * v2  + p - rho_rain * v_r * v2
+        f4 = rho       * v1 * v2      #- rho_rain * v_r * v1
+        f5 = rho       * v2 * v2  + p #- rho_rain * v_r * v2
 
         # "energy"
-        f6 = (energy + p) * v2 - (c_l * temperature + 0.5 * (v1^2 + v2^2)) * rho_rain * v_r
+        f6 = rho_pot_temp * v2 #- (c_l * temperature + 0.5 * (v1^2 + v2^2)) * rho_rain * v_r
     end
 
     return SVector(f1, f2, f3, f4, f5, f6, 
@@ -439,42 +448,42 @@ end
 end
 
 
-@inline function flux(u, normal_direction::AbstractVector, equations::CompressibleRainyEulerEquations2D)
+@inline function flux(u, normal_direction::AbstractVector, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
     # constants
-    c_l      = equations.c_liquid_water
+    #c_l = equations.c_liquid_water
 
     # densities
     rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
 
     # recover rho_vapour, rho_cloud, temperature from nonlinear system
-    rho_vapour, _, temperature = cons2nonlinearsystemsol(u, equations)
+    #rho_vapour, _, temperature = cons2nonlinearsystemsol(u, equations)
 
     # velocity
     v1, v2 = velocities(u, rho_inv, equations)
-    v_r    = terminal_velocity_rain(rho_moist, rho_rain, equations)
+    #v_r    = terminal_velocity_rain(rho_moist, rho_rain, equations)
 
     # normal velocities
     v_normal   = v1  * normal_direction[1] +  v2 * normal_direction[2]
-    v_r_normal =                             v_r * normal_direction[2]
+    #v_r_normal =                             v_r * normal_direction[2]
 
     # pressure
     p = pressure(u, equations)
 
-    # energy density
-    energy = energy_density(u, equations)
+    # potential temperature density
+    rho_pot_temp = potential_temperature_density(u, equations)
 
     # flux
     # "mass"
     f1 = rho_dry   *  v_normal
     f2 = rho_moist *  v_normal
-    f3 = rho_rain  * (v_normal - v_r_normal)
+    f3 = rho_rain  *  v_normal #- v_r_normal)
 
     # "momentum"
-    f4 = rho       * v_normal * v1 + p * normal_direction[1] - rho_rain * v_r_normal * v1
-    f5 = rho       * v_normal * v2 + p * normal_direction[2] - rho_rain * v_r_normal * v2 
+    f4 = rho       * v_normal * v1 + p * normal_direction[1] #- rho_rain * v_r_normal * v1
+    f5 = rho       * v_normal * v2 + p * normal_direction[2] #- rho_rain * v_r_normal * v2 
 
     # "energy"
-    f6 = (energy + p) * v_normal - (c_l * temperature + 0.5 * (v1^2 + v2^2)) * rho_rain * v_r_normal
+    f6 = rho_pot_temp * v_normal #- (c_l * temperature + 0.5 * (v1^2 + v2^2)) * rho_rain * v_r_normal
 
     return SVector(f1, f2, f3, f4, f5, f6, 
                    0.0, 0.0, 0.0)
@@ -482,7 +491,7 @@ end
 
 
 # no Coriolis term
-@inline function source_terms_rainy(u, x, t, equations::CompressibleRainyEulerEquations2D)
+@inline function source_terms_rainy(u, x, t, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
     # constants
     R_v      = equations.R_vapour
     ref_temp = equations.ref_temperature
@@ -517,22 +526,19 @@ end
 
 
 # no phase changes and no Coriolis term
-@inline function source_terms_no_phase_change(u, x, t, equations::CompressibleRainyEulerEquations2D)
+@inline function source_terms_no_phase_change(u, x, t, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
     # constants
     g = equations.gravity
-    
-    # name needed variables
-    rho_v2 = u[5]
 
     # densities
     rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
 
     return SVector(0.0, 0.0, 0.0, 0.0,
-                   -g * rho, -g * rho_v2, 0.0, 0.0, 0.0) 
+                   -g * rho, 0.0, 0.0, 0.0, 0.0) 
 end
 
 
-@inline function max_abs_speeds(u, equations::CompressibleRainyEulerEquations2D)
+@inline function max_abs_speeds(u, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
     # name needed variables
     v1, v2, v_sound, v_r = cons2speeds(u, equations)
 
@@ -540,36 +546,36 @@ end
 end
 
 
-@inline function max_abs_speed_naive(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleRainyEulerEquations2D)
+@inline function max_abs_speed_naive(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
     # name needed variables
     v1_ll, v2_ll, v_sound_ll, v_r_ll = cons2speeds(u_ll, equations)
     v1_rr, v2_rr, v_sound_rr, v_r_rr = cons2speeds(u_rr, equations)
 
     # calculate upper bounds for left and right speed
     v_ll_max  = abs(v1_ll * normal_direction[1] +  v2_ll * normal_direction[2])
-    v_ll_max += abs(                              v_r_ll * normal_direction[2])
+    #v_ll_max += abs(                              v_r_ll * normal_direction[2])
 
     v_rr_max  = abs(v1_rr * normal_direction[1] +  v2_rr * normal_direction[2])
-    v_rr_max += abs(                              v_r_rr * normal_direction[2])
+    #v_rr_max += abs(                              v_r_rr * normal_direction[2])
 
     return max(v_ll_max, v_rr_max) + max(v_sound_ll, v_sound_rr) * norm(normal_direction)
 end
 
 
-@inline function max_abs_speed_naive(u_ll, u_rr, orientation::Integer, equations::CompressibleRainyEulerEquations2D)
+@inline function max_abs_speed_naive(u_ll, u_rr, orientation::Integer, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
     # name needed variables
     v1_ll, v2_ll, v_sound_ll, v_r_ll = cons2speeds(u_ll, equations)
     v1_rr, v2_rr, v_sound_rr, v_r_rr = cons2speeds(u_rr, equations)
 
     if (orientation == 1)
-        v_ll  = abs(v1_ll)
-        v_rr  = abs(v1_rr)
+        v_ll = abs(v1_ll)
+        v_rr = abs(v1_rr)
     else
-        v_ll  = abs(v2_ll)
-        v_rr  = abs(v2_rr)
+        v_ll = abs(v2_ll)
+        v_rr = abs(v2_rr)
     end
 
-    return max(v_ll, v_rr) + max(v_sound_ll, v_sound_rr) + max(abs(v_r_ll), abs(v_r_rr))
+    return max(v_ll, v_rr) + max(v_sound_ll, v_sound_rr) #+ max(abs(v_r_ll), abs(v_r_rr))
 end
 
 
@@ -577,7 +583,7 @@ end
 
 # adapted from compressible_moist_euler_2d.jl which was probably adapted from compressible_euler_2d.jl
 @inline function boundary_condition_slip_wall(u_inner, normal_direction::AbstractVector, x, t, 
-                                              surface_flux_function, equations::CompressibleRainyEulerEquations2D)
+                                              surface_flux_function, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
 
     norm_ = norm(normal_direction)
     # Normalize the vector without using `normalize` since we need to multiply by the `norm_` later
@@ -626,7 +632,7 @@ end
 
 # same as in compressible_euler_2d.jl
 @inline function boundary_condition_slip_wall(u_inner, normal_direction::AbstractVector, direction, x, t,
-                                              surface_flux_function, equations::CompressibleRainyEulerEquations2D)
+                                              surface_flux_function, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
     # flip sign of normal to make it outward pointing, then flip the sign of the normal flux back
     # to be inward pointing on the -x and -y sides due to the orientation convention used by StructuredMesh
     if isodd(direction)
@@ -644,7 +650,7 @@ end
 
 
 # same as in compressible_euler_2d.jl
-@inline function rotate_to_x(u, normal_vector, equations::CompressibleRainyEulerEquations2D)
+@inline function rotate_to_x(u, normal_vector, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
     # cos and sin of the angle between the x-axis and the normalized normal_vector are
     # the normalized vector's x and y coordinates respectively (see unit circle).
     c = normal_vector[1]
@@ -659,7 +665,7 @@ end
 
 # should be used together with TreeMesh (adapted from compressible_euler_2d.jl)
 @inline function boundary_condition_slip_wall(u_inner, orientation, direction, x, t, surface_flux_function,
-                                              equations::CompressibleRainyEulerEquations2D)
+                                              equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
     # get the appropriate normal vector from the orientation
     RealT = eltype(u_inner)
     if orientation == 1
@@ -677,48 +683,38 @@ end
 ###  Nonlinear System Residual  ###
 
 # in preparation for a callback to solve the nonlinear system
-@inline function saturation_residual(u, guess, equations::CompressibleRainyEulerEquations2D)
+@inline function saturation_residual(u, guess, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
     # constants
-    c_l      = equations.c_liquid_water
-    c_vd     = equations.c_dry_air_const_volume
-    c_vv     = equations.c_vapour_const_volume
-    R_v      = equations.R_vapour
-    L_ref    = equations.ref_latent_heat_vap_temp
+    R_v = equations.R_vapour
+    eps = equations.eps
 
     # densities
     rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
 
-    # velocity
-    v1, v2 = velocities(u, rho_inv, equations)
-
-    # energy density
-    energy = energy_density(u, equations)
+    # potential temperature density
+    rho_pot_temp = potential_temperature_density(u, equations)
 
     # define residual
-    residual1  = (c_vd * rho_dry + c_vv * guess[1] + c_l * (guess[2] + rho_rain)) * guess[3]
-    residual1 += guess[1] * L_ref
-    residual1 -= (energy - rho * 0.5 * (v1^2 + v2^2))
+    residual1  = guess[3] * (rho_dry + guess[1] / eps) / (rho_dry + guess[1] + guess[2] + rho_rain)
+    residual1 -= rho_pot_temp * rho_inv
 
     residual2  = min(saturation_vapour_pressure(guess[3], equations) / (R_v * guess[3]), rho_moist)
     residual2 -= guess[1]
-    residual2 *= 1e7
+    residual2 *= 1e4
 
     residual3  = rho_moist
     residual3 -= guess[1] + guess[2]
-    residual3 *= 1e7
+    residual3 *= 1e4
 
     return SVector(residual1, residual2, residual3)
 end
 
 
 
-@inline function saturation_residual_jacobian(u, guess, equations::CompressibleRainyEulerEquations2D)
+@inline function saturation_residual_jacobian(u, guess, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
     # constants
-    c_l      = equations.c_liquid_water
-    c_vd     = equations.c_dry_air_const_volume
-    c_vv     = equations.c_vapour_const_volume
-    R_v      = equations.R_vapour
-    L_ref    = equations.ref_latent_heat_vap_temp
+    R_v = equations.R_vapour
+    eps = equations.eps
 
     # densities
     rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
@@ -727,22 +723,26 @@ end
     svp   = saturation_vapour_pressure(guess[3], equations)
     svp_t = saturation_vapour_pressure_derivative(guess[3], equations)
 
-    # define jacobian
-    J_11 = c_vv * guess[3] + L_ref
-    J_12 = c_l  * guess[3]
-    J_13 = c_vd * rho_dry + c_vv * guess[1] + c_l * (guess[2] + rho_rain)
+    # helper variables
+    rho_help = rho_dry + guess[1] + guess[2] + rho_rain
+    inv_eps  = inv(eps)
 
-    J_21 = -1e7
+    # define jacobian
+    J_11 =  guess[3] * ((inv_eps - 1) * rho_dry + inv_eps * (guess[2] + rho_rain)) / (rho_help^2)
+    J_12 = -guess[3] * (rho_dry + guess[1] * inv_eps) / (rho_help^2)
+    J_13 =             (rho_dry + guess[1] * inv_eps) /  rho_help
+
+    J_21 = -1e4
     J_22 =  0.0
         
     if (svp / (R_v * guess[3]) < rho_moist)
-        J_23 = (svp_t * guess[3] - svp) / (R_v * guess[3]^2) * 1e7
+        J_23 = (svp_t * guess[3] - svp) / (R_v * guess[3]^2) * 1e4
     else
         J_23 = 0.0
     end
 
-    J_31 = -1e7
-    J_32 = -1e7
+    J_31 = -1e4
+    J_32 = -1e4
     J_33 =  0.0
 
     return SMatrix{3, 3}(J_11, J_21, J_31, J_12, J_22, J_32, J_13, J_23, J_33)
@@ -757,9 +757,9 @@ end
 # Lin, A Control-Volume Model of the Compressible Euler Equations with a Vertical Lagrangian
 # Coordinate Monthly Weather Review Vol. 141.7, pages 2526–2544, 2013,
 # https://journals.ametsoc.org/view/journals/mwre/141/7/mwr-d-12-00129.1.xml.
-@inline function flux_LMARS(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleRainyEulerEquations2D)
+@inline function flux_LMARS(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleRainyEulerPotentialTemperatureEquations2D)
     # constants
-    a = 360.0
+    a = 340.0
 
     # densities
     rho_dry_ll, rho_moist_ll, rho_rain_ll, rho_ll, rho_inv_ll = densities(u_ll, equations)
@@ -787,10 +787,8 @@ end
     
     if (v_interface > 0)
         f1, f2, f3, f4, f5, f6, _, _, _ = u_ll * v_interface
-        f6 += p_ll * v_interface
     else
         f1, f2, f3, f4, f5, f6, _, _, _ = u_rr * v_interface
-        f6 += p_rr * v_interface
     end
     
     return SVector(f1, f2, f3,
