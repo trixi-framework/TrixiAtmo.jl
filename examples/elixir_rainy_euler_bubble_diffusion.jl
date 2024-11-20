@@ -192,6 +192,10 @@ function initial_condition_bubble_rainy(x, t, equations::CompressibleRainyEulerE
         n = n - 1
     end
 
+    if (n == 0)
+        n = 1
+    end
+
     # check height consistency
     if (z > total_height && !(isapprox(z, total_height)))
         error("The atmosphere does not match the simulation domain")
@@ -216,7 +220,7 @@ end
 ###############################################################################
 # semidiscretization of the compressible rainy Euler equations
 
-diffusivity = 0.4
+diffusivity = 0.6
 equations_parabolic = LaplaceDiffusion2D(diffusivity, equations)
 
 
@@ -243,7 +247,7 @@ solver = DGSEM(basis, surface_flux)#, volume_integral)
 initial_condition = initial_condition_bubble_rainy
 source_terms      = source_terms_rainy
 
-mesh = TreeMesh(coordinates_min, coordinates_max, initial_refinement_level = 7, periodicity = (true, false), n_cells_max = 1_000_000)
+mesh = TreeMesh(coordinates_min, coordinates_max, initial_refinement_level = 8, periodicity = (true, false), n_cells_max = 1_000_000)
 
 semi = SemidiscretizationHyperbolicParabolic(mesh, (equations, equations_parabolic), initial_condition, solver; source_terms,
                                              boundary_conditions = (boundary_conditions, boundary_conditions_parabolic))
