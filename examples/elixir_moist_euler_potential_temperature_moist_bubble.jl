@@ -2,7 +2,7 @@ using OrdinaryDiffEq
 using Trixi, TrixiAtmo
 using Plots
 using TrixiAtmo: cons2aeqpot, saturation_pressure, source_terms_moist_bubble,
-                 flux_LMARS, flux_shima_etal, flux_theta
+                 flux_LMARS
 using NLsolve: nlsolve
 
 ###############################################################################
@@ -245,16 +245,13 @@ source_term = source_terms_moist_bubble
 polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
 
-surface_flux = flux_lax_friedrichs
-#volume_flux = flux_theta
-#volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
+surface_flux = flux_LMARS
 
-solver = DGSEM(basis, surface_flux)#, volume_integral)
-#solver = DGSEM(basis, surface_flux)
+solver = DGSEM(basis, surface_flux)
 coordinates_min = (0.0, 0.0)
 coordinates_max = (20000.0, 10000.0)
 
-cells_per_dimension = (64, 32)
+cells_per_dimension = (201, 100)
 
 # Create curved mesh with 64 x 32 elements
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
@@ -287,7 +284,7 @@ save_solution = SaveSolutionCallback(interval = 1000,
                                      save_final_solution = true,
                                      solution_variables = solution_variables)
 
-stepsize_callback = StepsizeCallback(cfl = 0.2)
+stepsize_callback = StepsizeCallback(cfl = 1.0)
 
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,

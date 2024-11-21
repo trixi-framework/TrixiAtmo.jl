@@ -314,8 +314,8 @@ end
     # Unpack left and right state
     rho_ll, rho_v1_ll, rho_v2_ll, rho_theta_ll, rho_qv_ll, rho_ql_ll = u_ll
     rho_rr, rho_v1_rr, rho_v2_rr, rho_theta_rr, rho_qv_rr, rho_ql_rr = u_rr
-    p_ll = equations.K * (rho_theta_ll)^equations.gamma
-    p_rr = equations.K * (rho_theta_rr)^equations.gamma
+    p_ll = pressure(u_ll, equations)
+    p_rr = pressure(u_rr, equations)
     v1_ll = rho_v1_ll / rho_ll
     v2_ll = rho_v2_ll / rho_ll
     v1_rr = rho_v1_rr / rho_rr
