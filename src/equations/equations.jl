@@ -83,7 +83,7 @@ function spherical2contravariant(initial_condition, ::AbstractCovariantEquations
 end
 
 # Numerical flux plus dissipation for abstract covariant equations as a function of the 
-# state vectors u_ll and u_rr, as well as the auxiliary variables aux_vars_ll and 
+# state vectors u_ll and u_rr, as well as the auxiliary variable vectors aux_vars_ll and 
 # aux_vars_rr, which contain the geometric information. We assume that u_ll and u_rr have 
 # been transformed into the same local coordinate system.
 @inline function (numflux::Trixi.FluxPlusDissipation)(u_ll, u_rr,
@@ -100,9 +100,9 @@ end
 end
 
 # Central flux for abstract covariant equations as a function of the state vectors u_ll and 
-# u_rr, as well as the auxiliary variables aux_vars_ll and aux_vars_rr, which contain the 
-# geometric information. We assume that u_ll and u_rr have been transformed into the same 
-# local coordinate system.
+# u_rr, as well as the auxiliary variable vectors aux_vars_ll and aux_vars_rr, which 
+# contain the geometric information. We assume that u_ll and u_rr have been transformed 
+# into the same  local coordinate system.
 @inline function Trixi.flux_central(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
                                     orientation_or_normal_direction,
                                     equations::AbstractCovariantEquations)
