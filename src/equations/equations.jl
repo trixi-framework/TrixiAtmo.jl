@@ -75,7 +75,8 @@ end
 Takes in a function with the signature `initial_condition(x, t)` which returns an initial 
 condition given in terms of zonal and meridional velocity or momentum components, and 
 returns another function with the signature  `initial_condition_transformed(x, t, aux_vars, 
-equations)` which returns the same initial condition with the velocity or momentum vector given in terms of contravariant components.
+equations)` which returns the same initial condition with the velocity or momentum vector
+given in terms of contravariant components.
 """
 function transform_to_contravariant(initial_condition, ::AbstractCovariantEquations)
     function initial_condition_transformed(x, t, aux_vars, equations)
