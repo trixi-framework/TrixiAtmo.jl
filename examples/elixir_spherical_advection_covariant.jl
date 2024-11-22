@@ -20,7 +20,7 @@ solver = DGSEM(polydeg = 3, surface_flux = flux_lax_friedrichs,
 # properly, we currently need polydeg to equal that of the solver, 
 # initial_refinement_level = 0, and element_local_mapping = true.
 mesh = P4estMeshCubedSphere2D(cells_per_dimension, EARTH_RADIUS,
-                              polydeg = polydeg(solver),
+                              polydeg = Trixi.polydeg(solver),
                               initial_refinement_level = 0,
                               element_local_mapping = true)
 
