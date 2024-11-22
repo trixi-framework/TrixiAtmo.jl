@@ -229,7 +229,6 @@ function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 
 
             # Set auxiliary node variables in the cache
             auxiliary_variables.aux_node_vars[1:4, i, j, element] = SVector(basis_covariant)
-            auxiliary_variables.aux_node_vars[5:8, i, j, element] = SVector(inv(basis_covariant))
         end
     end
 
