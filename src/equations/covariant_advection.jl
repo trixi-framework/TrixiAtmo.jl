@@ -16,9 +16,12 @@ with respect to the covariant basis vectors $\vec{a}_1$ and $\vec{a}_2$ as
 ```math
 \vec{v} = v^1 \vec{a}_1 + v^2 \vec{a}_2.
 ```
-The velocity components are spatially varying but assumed to be constant in time, so we do 
-not apply any flux or dissipation to such variables. The resulting system is then given on 
-the reference element as 
+where $\vec{a}_1 = \partial \vec{x} / \partial \xi^1$ and 
+$\vec{a}_2 = \partial \vec{x} / \partial \xi^2$ are the so-called covariant basis vectors, 
+and $\xi^1$ and $\xi^2$ are the local reference space coordinates. The velocity components 
+are spatially varying but assumed to be constant in time, so we do not apply any flux or 
+dissipation to such variables. The resulting system is then given on the reference element 
+as 
 ```math
 \sqrt{G} \frac{\partial}{\partial t}\left[\begin{array}{c} h \\ v^1 \\ v^2 \end{array}\right] 
 +
@@ -57,7 +60,7 @@ end
 @inline function Trixi.flux(u, aux_vars, orientation::Integer,
                             equations::CovariantLinearAdvectionEquation2D)
     z = zero(eltype(u))
-    return SVector(volume_element(aux_vars, equations) * u[1] * u[orientation + 1], z,
+    return SVector(area_element(aux_vars, equations) * u[1] * u[orientation + 1], z,
                    z)
 end
 
@@ -70,7 +73,7 @@ end
     z = zero(eltype(u_ll))
     λ = dissipation.max_abs_speed(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
                                   orientation_or_normal_direction, equations)
-    return -0.5f0 * volume_element(aux_vars_ll, equations) * λ *
+    return -0.5f0 * area_element(aux_vars_ll, equations) * λ *
            SVector(u_rr[1] - u_ll[1], z, z)
 end
 

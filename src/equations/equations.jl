@@ -59,11 +59,13 @@ dispatching on the return type.
             "basis_covariant[1,2]", "basis_covariant[2,2]")
 end
 
-# Extract geometric information from auxiliary variables for 2D covariant form
+# Extract the covariant basis vectors a_i from the auxiliary variables as a matrix A, 
+# where a_i = A[:, i] denotes the covariant tangent basis in a spherical/ellipsoidal 
+# coordinate system.
 @inline function basis_covariant(aux_vars, ::AbstractCovariantEquations{2})
     return SMatrix{2, 2}(aux_vars[1], aux_vars[2], aux_vars[3], aux_vars[4])
 end
-@inline function volume_element(aux_vars, ::AbstractCovariantEquations{2})
+@inline function area_element(aux_vars, ::AbstractCovariantEquations{2})
     return abs(aux_vars[1] * aux_vars[4] - aux_vars[2] * aux_vars[3])
 end
 

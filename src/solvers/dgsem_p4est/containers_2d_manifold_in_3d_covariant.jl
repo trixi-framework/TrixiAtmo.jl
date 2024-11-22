@@ -161,6 +161,9 @@ function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 
                                         equations::AbstractCovariantEquations{2, 3}, dg,
                                         elements)
 
+    # Check that the degree of the mesh matches that of the solver
+    @assert length(mesh.nodes) == nnodes(dg)
+
     # The tree node coordinates are assumed to be on the spherical shell centred around the 
     # origin. Therefore, we can compute the radius once and use it throughout.
     radius = sqrt(mesh.tree_node_coordinates[1, 1, 1, 1]^2 +
@@ -168,9 +171,6 @@ function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 
                   mesh.tree_node_coordinates[3, 1, 1, 1]^2)
 
     Trixi.@threaded for element in 1:Trixi.ncells(mesh)
-
-        # Check that the degree of the mesh matches that of the solver
-        @assert length(mesh.nodes) == nnodes(dg)
 
         # Extract the corner vertex positions from the P4estMesh
         v1 = Trixi.get_node_coords(mesh.tree_node_coordinates, equations, dg,

@@ -182,7 +182,7 @@ function Trixi.apply_jacobian!(du, mesh::P4estMesh{2},
     Trixi.@threaded for element in eachelement(dg, cache)
         for j in eachnode(dg), i in eachnode(dg)
             a_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
-            factor = -1 / volume_element(a_node, equations)
+            factor = -1 / area_element(a_node, equations)
 
             for v in eachvariable(equations)
                 du[v, i, j, element] *= factor

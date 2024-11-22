@@ -52,7 +52,7 @@ function Trixi.calc_error_norms(func, u, t, analyzer, mesh::P4estMesh{2},
             diff = func(u_exact, equations) - func(u_numerical, equations)
 
             # For the L2 error, integrate with respect to volume element stored in aux vars 
-            sqrtG = volume_element(a_node, equations)
+            sqrtG = area_element(a_node, equations)
             l2_error += diff .^ 2 * (weights[i] * weights[j] * sqrtG)
 
             # Compute Linf error as usual
