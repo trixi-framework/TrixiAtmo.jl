@@ -12,20 +12,26 @@ manifold $S \subset \mathbb{R}^3$ as
 where $\nabla_S \cdot$ is the horizontal divergence operator on $S$. We treat this problem 
 as a system of equations in which the first variable is the scalar conserved quantity $h$, 
 and the second two are the contravariant components $v^1$ and $v^2$ used in the expansion 
+with respect to the covariant basis vectors $\vec{a}_1$ and $\vec{a}_2$ as
 ```math
-\vec{v} = v^1 \vec{a}_1 + v^2 \vec{a}_2,
+\vec{v} = v^1 \vec{a}_1 + v^2 \vec{a}_2.
 ```
-which are spatially varying but remain constant in time (i.e. no flux or dissipation is 
-applied to such variables). The resulting system is then given on the reference element as 
+The velocity components are spatially varying but assumed to be constant in time, so we do 
+not apply any flux or dissipation to such variables. The resulting system is then given on 
+the reference element as 
 ```math
-\sqrt{G} \frac{\partial}{\partial t}\left[\begin{array}{c} h \\ v^1 \\ v^2 \end{array}\right] +
+\sqrt{G} \frac{\partial}{\partial t}\left[\begin{array}{c} h \\ v^1 \\ v^2 \end{array}\right] 
++
 \frac{\partial}{\partial \xi^1} \left[\begin{array}{c} \sqrt{G} h v^1 \\ 0 \\ 0 \end{array}\right]
 + 
 \frac{\partial}{\partial \xi^2} \left[\begin{array}{c} \sqrt{G} h v^2 \\ 0 \\ 0 \end{array}\right] 
-= \left[\begin{array}{c} 0 \\ 0 \\ 0 \end{array}\right],
+= 
+\left[\begin{array}{c} 0 \\ 0 \\ 0 \end{array}\right],
 ```
 where $G$ is the determinant of the covariant metric tensor expressed as a matrix with 
-entries $G_{ij} =  \vec{a}_i \cdot \vec{a}_j$.
+entries $G_{ij} =  \vec{a}_i \cdot \vec{a}_j$. Note that the variable advection velocity 
+components could also be stored as auxiliary variables, similarly to the geometric 
+information.
 """
 struct CovariantLinearAdvectionEquation2D <: AbstractCovariantEquations{2, 3, 3} end
 

@@ -1,10 +1,165 @@
 @muladd begin
 #! format: noindent
 
+# Container for storing values of auxiliary variables at volume/surface quadrature nodes
+struct P4estAuxiliaryNodeVariableContainer{NDIMS, uEltype <: Real, NDIMSP2}
+    aux_node_vars::Array{uEltype, NDIMSP2} # [variable, i, j, k, element]
+    aux_surface_node_vars::Array{uEltype, NDIMSP2} # [variable, i, j, k, element]
+
+    # internal `resize!`able storage
+    _aux_node_vars::Vector{uEltype}
+    _aux_surface_node_vars::Vector{uEltype}
+end
+
+# Return the auxiliary variables at a given volume node index
+@inline function get_node_aux_vars(aux_node_vars, equations, ::DG, indices...)
+    return SVector(ntuple(@inline(v->aux_node_vars[v, indices...]),
+                          Val(n_aux_node_vars(equations))))
+end
+
+# Return the auxiliary variables at a given surface node index
+@inline function get_surface_node_aux_vars(aux_surface_node_vars, equations, ::DG,
+                                           indices...)
+    aux_vars_ll = SVector(ntuple(@inline(v->aux_surface_node_vars[1, v, indices...]),
+                                 Val(n_aux_node_vars(equations))))
+    aux_vars_rr = SVector(ntuple(@inline(v->aux_surface_node_vars[2, v, indices...]),
+                                 Val(n_aux_node_vars(equations))))
+    return aux_vars_ll, aux_vars_rr
+end
+
+# Create auxiliary node variable container and initialize auxiliary variables
+function init_auxiliary_node_variables(mesh::Union{P4estMesh, T8codeMesh},
+                                       equations, dg, elements, interfaces)
+    nelements = Trixi.ncells(mesh)
+    ninterfaces = Trixi.count_required_surfaces(mesh).interfaces
+    NDIMS = ndims(elements)
+    uEltype = eltype(elements)
+
+    _aux_node_vars = Vector{uEltype}(undef,
+                                     n_aux_node_vars(equations) *
+                                     nnodes(dg)^NDIMS * nelements)
+    aux_node_vars = Trixi.unsafe_wrap(Array, pointer(_aux_node_vars),
+                                      (n_aux_node_vars(equations),
+                                       ntuple(_ -> nnodes(dg), NDIMS)...,
+                                       nelements))
+    _aux_surface_node_vars = Vector{uEltype}(undef,
+                                             2 * n_aux_node_vars(equations) *
+                                             nnodes(dg)^(NDIMS - 1) *
+                                             ninterfaces)
+    aux_surface_node_vars = Trixi.unsafe_wrap(Array,
+                                              pointer(_aux_surface_node_vars),
+                                              (2, n_aux_node_vars(equations),
+                                               ntuple(_ -> nnodes(dg),
+                                                      NDIMS - 1)...,
+                                               ninterfaces))
+
+    auxiliary_variables = P4estAuxiliaryNodeVariableContainer{NDIMS,
+                                                              uEltype,
+                                                              NDIMS + 2}(aux_node_vars,
+                                                                         aux_surface_node_vars,
+                                                                         _aux_node_vars,
+                                                                         _aux_surface_node_vars)
+
+    init_auxiliary_node_variables!(auxiliary_variables, mesh, equations, dg, elements)
+    init_auxiliary_surface_node_variables!(auxiliary_variables, mesh, equations, dg,
+                                           interfaces)
+    return auxiliary_variables
+end
+
+# By default, the auxiliary surface node variables are just the volume node variables 
+# evaluated at the surface nodes, similarly to prolong2interfaces. This could, however, be 
+# specialized for other applications.
+function init_auxiliary_surface_node_variables!(auxiliary_variables::P4estAuxiliaryNodeVariableContainer{2},
+                                                mesh::Union{P4estMesh{2},
+                                                            T8codeMesh{2}}, equations,
+                                                dg::DG, interfaces)
+    (; aux_node_vars, aux_surface_node_vars) = auxiliary_variables
+    index_range = eachnode(dg)
+
+    Trixi.@threaded for interface in axes(interfaces.node_indices, 2)
+        # Copy solution data from the primary element using "delayed indexing" with
+        # a start value and a step size to get the correct face and orientation.
+        # Note that in the current implementation, the interface will be
+        # "aligned at the primary element", i.e., the index of the primary side
+        # will always run forwards.
+        primary_element = interfaces.neighbor_ids[1, interface]
+        primary_indices = interfaces.node_indices[1, interface]
+
+        i_primary_start, i_primary_step = Trixi.index_to_start_step_2d(primary_indices[1],
+                                                                       index_range)
+        j_primary_start, j_primary_step = Trixi.index_to_start_step_2d(primary_indices[2],
+                                                                       index_range)
+
+        i_primary = i_primary_start
+        j_primary = j_primary_start
+        for i in eachnode(dg)
+            for v in axes(aux_node_vars, 1)
+                aux_surface_node_vars[1, v, i, interface] = aux_node_vars[v,
+                                                                          i_primary,
+                                                                          j_primary,
+                                                                          primary_element]
+            end
+            i_primary += i_primary_step
+            j_primary += j_primary_step
+        end
+
+        # Copy solution data from the secondary element using "delayed indexing" with
+        # a start value and a step size to get the correct face and orientation.
+        secondary_element = interfaces.neighbor_ids[2, interface]
+        secondary_indices = interfaces.node_indices[2, interface]
+
+        i_secondary_start, i_secondary_step = Trixi.index_to_start_step_2d(secondary_indices[1],
+                                                                           index_range)
+        j_secondary_start, j_secondary_step = Trixi.index_to_start_step_2d(secondary_indices[2],
+                                                                           index_range)
+
+        i_secondary = i_secondary_start
+        j_secondary = j_secondary_start
+        for i in eachnode(dg)
+            for v in axes(aux_node_vars, 1)
+                aux_surface_node_vars[2, v, i, interface] = aux_node_vars[v,
+                                                                          i_secondary,
+                                                                          j_secondary,
+                                                                          secondary_element]
+            end
+            i_secondary += i_secondary_step
+            j_secondary += j_secondary_step
+        end
+    end
+
+    return nothing
+end
+
+# Get Cartesian node positions for the covariant form, dispatching on the dimension of the 
+# manifold as well as the ambient dimension
+@inline function Trixi.get_node_coords(x,
+                                       ::AbstractCovariantEquations{NDIMS,
+                                                                    NDIMS_AMBIENT},
+                                       ::DG,
+                                       indices...) where {NDIMS, NDIMS_AMBIENT}
+    return SVector(ntuple(@inline(idx->x[idx, indices...]), NDIMS_AMBIENT))
+end
+
 # Compute the auxiliary metric terms for the covariant form, assuming that the
-# domain is a spherical shell. We do not make any assumptions on the mesh topology.
-function compute_auxiliary_variables!(elements, mesh::P4estMesh{2, 3},
-                                      equations::AbstractCovariantEquations{2, 3}, dg)
+# domain is a spherical shell. We do not make any assumptions on the mesh topology, but we 
+# require that the elements are constructed using the element-local mapping from the 
+# following paper:
+#
+# O. Guba, M. A. Taylor, P. A. Ullrich, J. R. Overfelt, and M. N. Levy (2014). The spectral
+# element method (SEM) on variable-resolution grids: evaluating grid sensitivity and 
+# resolution-aware numerical viscosity. Geoscientific Model Development 7(6) 2803–2816.
+# DOI: 10.5194/gmd-7-2803-2014
+# 
+# When creating a cubed sphere mesh using P4estMeshCubedSphere2D, this is enabled by 
+# passing the keyword argument "element_local_mapping = true" to the constructor and 
+# ensuring that the polynomial degree of the mesh is equal to that of the solver.
+#
+# Otherwise, the mesh's tree node coordinates will be interpolated to the solver's 
+# physical node coordinates, and this would introduce a polynomial approximation of the 
+# geometry, making the analytical metric terms computed here no longer correct.
+function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 3},
+                                        equations::AbstractCovariantEquations{2, 3}, dg,
+                                        elements)
 
     # The tree node coordinates are assumed to be on the spherical shell centred around the 
     # origin. Therefore, we can compute the radius once and use it throughout.
@@ -12,7 +167,7 @@ function compute_auxiliary_variables!(elements, mesh::P4estMesh{2, 3},
                   mesh.tree_node_coordinates[2, 1, 1, 1]^2 +
                   mesh.tree_node_coordinates[3, 1, 1, 1]^2)
 
-    for element in 1:Trixi.ncells(mesh)
+    Trixi.@threaded for element in 1:Trixi.ncells(mesh)
 
         # Check that the degree of the mesh matches that of the solver
         @assert length(mesh.nodes) == nnodes(dg)
@@ -37,11 +192,11 @@ function compute_auxiliary_variables!(elements, mesh::P4estMesh{2, 3},
                          ((1 - xi1) * (1 - xi2) * v1 + (1 + xi1) * (1 - xi2) * v2 +
                           (1 + xi1) * (1 + xi2) * v3 + (1 - xi1) * (1 + xi2) * v4)
 
-            # Project the mapped local coordinates onto the sphere 
+            # Project the mapped local coordinates onto the sphere using a simple scaling
             scaling_factor = radius / norm(x_bilinear)
             x = scaling_factor * x_bilinear
 
-            # Convert to longitude and latitude
+            # Convert Cartesian coordinates to longitude and latitude
             lon, lat = atan(x[2], x[1]), asin(x[3] / radius)
 
             # Compute trigonometric terms needed for analytical metrics
@@ -60,7 +215,9 @@ function compute_auxiliary_variables!(elements, mesh::P4estMesh{2, 3},
             # Analytically compute the transformation matrix A, such that G = AᵀA is the 
             # covariant metric tensor and a_i = A[1,i] * e_lon + A[2,i] * e_lat denotes 
             # the covariant tangent basis, where e_lon and e_lat are the unit basis vectors
-            # in the longitudinal and latitudinal directions, respectively.
+            # in the longitudinal and latitudinal directions, respectively. This formula is 
+            # taken from Guba et al. (2014), and it is not specific to the cubed sphere nor
+            # and does it result in any singularity at the poles.
             basis_covariant = 0.25f0 * scaling_factor *
                               SMatrix{2, 3}(-sinlon, 0, coslon, 0, 0, 1) *
                               SMatrix{3, 3}(a11, a21, a31, a12, a22, a32, a13, a23,
@@ -70,140 +227,12 @@ function compute_auxiliary_variables!(elements, mesh::P4estMesh{2, 3},
                               SMatrix{4, 2}(-1 + xi2, 1 - xi2, 1 + xi2, -1 - xi2,
                                             -1 + xi1, -1 - xi1, 1 + xi1, 1 - xi1)
 
-            # Set variables in the cache
-            elements.auxiliary_variables[1, i, j, element] = basis_covariant[1, 1]
-            elements.auxiliary_variables[2, i, j, element] = basis_covariant[2, 1]
-            elements.auxiliary_variables[3, i, j, element] = basis_covariant[1, 2]
-            elements.auxiliary_variables[4, i, j, element] = basis_covariant[2, 2]
+            # Set auxiliary node variables in the cache
+            auxiliary_variables.aux_node_vars[1:4, i, j, element] = SVector(basis_covariant)
+            auxiliary_variables.aux_node_vars[5:8, i, j, element] = SVector(inv(basis_covariant))
         end
     end
 
     return nothing
-end
-
-# Get Cartesian node positions, dispatching on the dimension of the equation system
-@inline function Trixi.get_node_coords(x,
-                                       ::AbstractCovariantEquations{NDIMS,
-                                                                    NDIMS_AMBIENT},
-                                       ::DG,
-                                       indices...) where {NDIMS, NDIMS_AMBIENT}
-    return SVector(ntuple(@inline(idx->x[idx, indices...]), NDIMS_AMBIENT))
-end
-
-# Return the auxiliary variables at a given volume node index
-@inline function get_node_aux_vars(auxiliary_variables, equations, solver::DG,
-                                   indices...)
-    SVector(ntuple(@inline(v->auxiliary_variables[v, indices...]),
-                   Val(nauxvars(equations))))
-end
-
-# Return the auxiliary variables at a given surface node index
-@inline function get_surface_node_aux_vars(auxiliary_variables, equations, solver::DG,
-                                           indices...)
-    aux_vars_ll = SVector(ntuple(@inline(v->auxiliary_variables[1, v, indices...]),
-                                 Val(nauxvars(equations))))
-    aux_vars_rr = SVector(ntuple(@inline(v->auxiliary_variables[2, v, indices...]),
-                                 Val(nauxvars(equations))))
-    return aux_vars_ll, aux_vars_rr
-end
-
-# Interface container storing surface values of the auxiliary variables
-mutable struct P4estInterfaceContainerVariableCoefficient{NDIMS, uEltype <: Real,
-                                                          NDIMSP2} <:
-               Trixi.AbstractContainer
-    u::Array{uEltype, NDIMSP2}       # [primary/secondary, variable, i, j, interface]
-    auxiliary_variables::Array{uEltype, NDIMSP2} # [primary/secondary, variable, i, j, interface]
-    neighbor_ids::Matrix{Int}                   # [primary/secondary, interface]
-    node_indices::Matrix{NTuple{NDIMS, Symbol}} # [primary/secondary, interface]
-
-    # internal `resize!`able storage
-    _u::Vector{uEltype}
-    _auxiliary_variables::Vector{uEltype}
-    _neighbor_ids::Vector{Int}
-    _node_indices::Vector{NTuple{NDIMS, Symbol}}
-end
-
-@inline Trixi.ninterfaces(interfaces::P4estInterfaceContainerVariableCoefficient) = size(interfaces.neighbor_ids,
-                                                                                         2)
-@inline Base.ndims(::P4estInterfaceContainerVariableCoefficient{NDIMS}) where {NDIMS} = NDIMS
-
-# Create interface container and initialize interface data.
-function Trixi.init_interfaces(mesh::Union{P4estMesh, T8codeMesh},
-                               equations::AbstractCovariantEquations, basis, elements)
-    NDIMS = ndims(elements)
-    uEltype = eltype(elements)
-
-    # Initialize container
-    n_interfaces = Trixi.count_required_surfaces(mesh).interfaces
-
-    _u = Vector{uEltype}(undef,
-                         2 * nvariables(equations) * nnodes(basis)^(NDIMS - 1) *
-                         n_interfaces)
-    u = Trixi.unsafe_wrap(Array, pointer(_u),
-                          (2, nvariables(equations),
-                           ntuple(_ -> nnodes(basis), NDIMS - 1)...,
-                           n_interfaces))
-
-    _auxiliary_variables = Vector{uEltype}(undef,
-                                           2 * nauxvars(equations) *
-                                           nnodes(basis)^(NDIMS - 1) *
-                                           n_interfaces)
-    auxiliary_variables = Trixi.unsafe_wrap(Array, pointer(_auxiliary_variables),
-                                            (2, nauxvars(equations),
-                                             ntuple(_ -> nnodes(basis), NDIMS - 1)...,
-                                             n_interfaces))
-
-    _neighbor_ids = Vector{Int}(undef, 2 * n_interfaces)
-    neighbor_ids = Trixi.unsafe_wrap(Array, pointer(_neighbor_ids), (2, n_interfaces))
-
-    _node_indices = Vector{NTuple{NDIMS, Symbol}}(undef, 2 * n_interfaces)
-    node_indices = Trixi.unsafe_wrap(Array, pointer(_node_indices), (2, n_interfaces))
-
-    interfaces = P4estInterfaceContainerVariableCoefficient{NDIMS, uEltype, NDIMS + 2}(u,
-                                                                                       auxiliary_variables,
-                                                                                       neighbor_ids,
-                                                                                       node_indices,
-                                                                                       _u,
-                                                                                       _auxiliary_variables,
-                                                                                       _neighbor_ids,
-                                                                                       _node_indices)
-
-    Trixi.init_interfaces!(interfaces, mesh)
-
-    return interfaces
-end
-
-# Initialize node_indices of interface container (this is copied from Trixi.jl)
-@inline function Trixi.init_interface_node_indices!(interfaces::P4estInterfaceContainerVariableCoefficient{2},
-                                                    faces, orientation, interface_id)
-    # Iterate over primary and secondary element
-    for side in 1:2
-        # Align interface in positive coordinate direction of primary element.
-        # For orientation == 1, the secondary element needs to be indexed backwards
-        # relative to the interface.
-        if side == 1 || orientation == 0
-            # Forward indexing
-            i = :i_forward
-        else
-            # Backward indexing
-            i = :i_backward
-        end
-
-        if faces[side] == 0
-            # Index face in negative x-direction
-            interfaces.node_indices[side, interface_id] = (:begin, i)
-        elseif faces[side] == 1
-            # Index face in positive x-direction
-            interfaces.node_indices[side, interface_id] = (:end, i)
-        elseif faces[side] == 2
-            # Index face in negative y-direction
-            interfaces.node_indices[side, interface_id] = (i, :begin)
-        else # faces[side] == 3
-            # Index face in positive y-direction
-            interfaces.node_indices[side, interface_id] = (i, :end)
-        end
-    end
-
-    return interfaces
 end
 end # muladd

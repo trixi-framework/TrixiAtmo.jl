@@ -38,12 +38,34 @@ abstract type AbstractCovariantEquations{NDIMS,
                                          NDIMS_AMBIENT,
                                          NVARS} <: AbstractEquations{NDIMS, NVARS} end
 
+"""
+    have_aux_node_vars(equations)
+
+Trait function determining whether `equations` requires the use of auxiliary variables.
+Classical conservation laws such as the
+[`CompressibleEulerEquations2D`](@ref) do not require auxiliary variables. 
+The return value will be `True()` or `False()` to allow dispatching on the return type.
+"""
+@inline have_aux_node_vars(::AbstractEquations) = False()
+
 # For the covariant form, the auxiliary variables are the the NDIMS^2 entries of the 
 # covariant basis matrix
-@inline nauxvars(equations::AbstractCovariantEquations{NDIMS}) where {NDIMS} = NDIMS^2
+@inline have_aux_node_vars(::AbstractCovariantEquations) = True()
+@inline n_aux_node_vars(::AbstractCovariantEquations{NDIMS}) where {NDIMS} = NDIMS^2
 
-# By default, there are no auxiliary variables
-@inline nauxvars(equations::AbstractEquations) = 0
+# Return auxiliary variable names for 2D covariant form
+@inline function auxvarnames(::AbstractCovariantEquations{2})
+    return ("basis_covariant[1,1]", "basis_covariant[2,1]",
+            "basis_covariant[1,2]", "basis_covariant[2,2]")
+end
+
+# Extract geometric information from auxiliary variables for 2D covariant form
+@inline function basis_covariant(aux_vars, ::AbstractCovariantEquations{2})
+    return SMatrix{2, 2}(aux_vars[1], aux_vars[2], aux_vars[3], aux_vars[4])
+end
+@inline function volume_element(aux_vars, ::AbstractCovariantEquations{2})
+    return abs(aux_vars[1] * aux_vars[4] - aux_vars[2] * aux_vars[3])
+end
 
 @doc raw"""
     spherical2contravariant(initial_condition, ::AbstractCovariantEquations)
@@ -60,7 +82,7 @@ function spherical2contravariant(initial_condition, ::AbstractCovariantEquations
     return initial_condition_transformed
 end
 
-# Numerical flux plus dissipation which passes node/element indices and cache. 
+# Numerical flux plus dissipation which passes auxiliary variables.
 # We assume that u_ll and u_rr have been transformed into the same local coordinate system.
 @inline function (numflux::Trixi.FluxPlusDissipation)(u_ll, u_rr,
                                                       aux_vars_ll, aux_vars_rr,
@@ -75,7 +97,7 @@ end
     return flux + diss
 end
 
-# Central flux which passes node/element indices and cache. 
+# Central flux which passes passes auxiliary variables.
 # We assume that u_ll and u_rr have been transformed into the same local coordinate system.
 @inline function Trixi.flux_central(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
                                     orientation_or_normal_direction,
@@ -83,14 +105,6 @@ end
     flux_ll = Trixi.flux(u_ll, aux_vars_ll, orientation_or_normal_direction, equations)
     flux_rr = Trixi.flux(u_rr, aux_vars_rr, orientation_or_normal_direction, equations)
     return 0.5f0 * (flux_ll + flux_rr)
-end
-
-# Extract geometric information from auxiliary variables
-@inline function basis_covariant(aux_vars, ::AbstractCovariantEquations{2})
-    return SMatrix{2, 2}(aux_vars[1], aux_vars[2], aux_vars[3], aux_vars[4])
-end
-@inline function volume_element(aux_vars, ::AbstractCovariantEquations{2})
-    return abs(aux_vars[1] * aux_vars[4] - aux_vars[2] * aux_vars[3])
 end
 
 abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:

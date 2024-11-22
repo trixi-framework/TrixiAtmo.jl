@@ -21,8 +21,6 @@ mutable struct P4estElementContainerPtrArray{NDIMS, RealT <: Real, uEltype <: Re
     inverse_jacobian::Array{RealT, NDIMSP1}   # [node_i, node_j, node_k, element]
     # Buffer for calculated surface flux
     surface_flux_values::Array{uEltype, NDIMSP2} # [variable, i, j, direction, element]
-    # Auxiliary variables
-    auxiliary_variables::Array{uEltype, NDIMSP2} # [variable, i, j, direction, element]
 
     # internal `resize!`able storage
     _node_coordinates::Vector{RealT}
@@ -30,7 +28,6 @@ mutable struct P4estElementContainerPtrArray{NDIMS, RealT <: Real, uEltype <: Re
     _contravariant_vectors::Vector{RealT}
     _inverse_jacobian::Vector{RealT}
     _surface_flux_values::Vector{uEltype}
-    _auxiliary_variables::Vector{uEltype}
 end
 
 @inline function Trixi.nelements(elements::P4estElementContainerPtrArray)
@@ -107,14 +104,6 @@ function Trixi.init_elements(mesh::Union{P4estMesh{2, 3, RealT},
                                              ntuple(_ -> nnodes(basis), NDIMS - 1)...,
                                              NDIMS * 2, nelements))
 
-    _auxiliary_variables = Vector{uEltype}(undef,
-                                           nauxvars(equations) *
-                                           nnodes(basis)^NDIMS * nelements)
-    auxiliary_variables = Trixi.unsafe_wrap(Array, pointer(_auxiliary_variables),
-                                            (nauxvars(equations),
-                                             ntuple(_ -> nnodes(basis), NDIMS)...,
-                                             nelements))
-
     ContravariantVectors = typeof(contravariant_vectors)
     elements = P4estElementContainerPtrArray{NDIMS, RealT, uEltype, NDIMS + 1,
                                              NDIMS + 2,
@@ -124,13 +113,11 @@ function Trixi.init_elements(mesh::Union{P4estMesh{2, 3, RealT},
                                                                    contravariant_vectors,
                                                                    inverse_jacobian,
                                                                    surface_flux_values,
-                                                                   auxiliary_variables,
                                                                    _node_coordinates,
                                                                    _jacobian_matrix,
                                                                    _contravariant_vectors,
                                                                    _inverse_jacobian,
-                                                                   _surface_flux_values,
-                                                                   _auxiliary_variables)
+                                                                   _surface_flux_values)
 
     init_elements_2d_manifold_in_3d!(elements, mesh, basis, metric_terms)
     return elements

@@ -47,6 +47,7 @@ end
 function Trixi.max_dt(u, t, mesh::P4estMesh{2}, constant_speed::False,
                       equations::AbstractCovariantEquations{2},
                       dg::DG, cache)
+    (; aux_node_vars) = cache.auxiliary_variables
 
     # to avoid a division by zero if the speed vanishes everywhere,
     # e.g. for steady-state linear advection
@@ -58,9 +59,8 @@ function Trixi.max_dt(u, t, mesh::P4estMesh{2}, constant_speed::False,
         max_lambda1 = max_lambda2 = zero(max_scaled_speed)
         for j in eachnode(dg), i in eachnode(dg)
             u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
-            aux_vars_node = get_node_aux_vars(cache.elements.auxiliary_variables,
-                                              equations, dg, i, j, element)
-            lambda1, lambda2 = Trixi.max_abs_speeds(u_node, aux_vars_node, equations)
+            a_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
+            lambda1, lambda2 = Trixi.max_abs_speeds(u_node, a_node, equations)
             max_lambda1 = max(max_lambda1, lambda1)
             max_lambda2 = max(max_lambda2, lambda2)
         end
