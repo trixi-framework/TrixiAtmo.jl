@@ -32,7 +32,7 @@ When using this equation type, functions which are evaluated pointwise, such as 
 source terms, and initial conditions take in the extra argument `aux_vars`, which contains 
 the geometric information needed for the covariant form. To convert an initial condition 
 given in terms of global spherical velocity or momentum components to one given in terms of 
-local contravariant components, see [`spherical2contravariant`](@ref).
+local contravariant components, see [`transform_to_contravariant`](@ref).
 """
 abstract type AbstractCovariantEquations{NDIMS,
                                          NDIMS_AMBIENT,
