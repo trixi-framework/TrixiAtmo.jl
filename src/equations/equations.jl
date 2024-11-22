@@ -42,9 +42,9 @@ abstract type AbstractCovariantEquations{NDIMS,
     have_aux_node_vars(equations)
 
 Trait function determining whether `equations` requires the use of auxiliary variables.
-Classical conservation laws such as the
-[`CompressibleEulerEquations2D`](@ref) do not require auxiliary variables. 
-The return value will be `True()` or `False()` to allow dispatching on the return type.
+Classical conservation laws such as the [`CompressibleEulerEquations2D`](@ref) do not 
+require auxiliary variables. The return value will be `True()` or `False()` to allow 
+dispatching on the return type.
 """
 @inline have_aux_node_vars(::AbstractEquations) = False()
 
@@ -82,8 +82,10 @@ function spherical2contravariant(initial_condition, ::AbstractCovariantEquations
     return initial_condition_transformed
 end
 
-# Numerical flux plus dissipation which passes auxiliary variables.
-# We assume that u_ll and u_rr have been transformed into the same local coordinate system.
+# Numerical flux plus dissipation for abstract covariant equations as a function of the 
+# state vectors u_ll and u_rr, as well as the auxiliary variables aux_vars_ll and 
+# aux_vars_rr, which contain the geometric information. We assume that u_ll and u_rr have 
+# been transformed into the same local coordinate system.
 @inline function (numflux::Trixi.FluxPlusDissipation)(u_ll, u_rr,
                                                       aux_vars_ll, aux_vars_rr,
                                                       orientation_or_normal_direction,
@@ -97,8 +99,10 @@ end
     return flux + diss
 end
 
-# Central flux which passes passes auxiliary variables.
-# We assume that u_ll and u_rr have been transformed into the same local coordinate system.
+# Central flux for abstract covariant equations as a function of the state vectors u_ll and 
+# u_rr, as well as the auxiliary variables aux_vars_ll and aux_vars_rr, which contain the 
+# geometric information. We assume that u_ll and u_rr have been transformed into the same 
+# local coordinate system.
 @inline function Trixi.flux_central(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
                                     orientation_or_normal_direction,
                                     equations::AbstractCovariantEquations)

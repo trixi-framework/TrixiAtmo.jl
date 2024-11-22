@@ -51,8 +51,9 @@ end
     return SVector{3}(u[1], z, z)
 end
 
-# The flux for the covariant form takes in the element container and node/element indices
-# in order to give the flux access to the geometric information
+# Numerical flux plus dissipation for abstract covariant equations as a function of the 
+# state vector u, as well as the auxiliary variables aux_vars, which contain the geometric 
+# information.
 @inline function Trixi.flux(u, aux_vars, orientation::Integer,
                             equations::CovariantLinearAdvectionEquation2D)
     z = zero(eltype(u))
