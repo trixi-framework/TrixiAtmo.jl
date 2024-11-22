@@ -407,7 +407,7 @@ function spherical2cartesian(vlon, vlat, x)
 end
 
 @doc raw"""
-    spherical2cartesian(initial_condition, equations)
+    transform_to_cartesian(initial_condition, equations)
 
 Takes in a function with the signature `initial_condition(x, t)` which returns an initial 
 condition given in terms of zonal and meridional velocity or momentum components, and 
@@ -415,7 +415,7 @@ returns another function with the signature
 `initial_condition_transformed(x, t, equations)` which returns the same initial condition 
 with the velocity or momentum vector given in terms of Cartesian components.
 """
-function spherical2cartesian(initial_condition, ::ShallowWaterEquations3D)
+function transform_to_cartesian(initial_condition, ::ShallowWaterEquations3D)
     function initial_condition_transformed(x, t, equations)
         h, vlon, vlat, b = initial_condition(x, t)
         v1, v2, v3 = spherical2cartesian(vlon, vlat, x)

@@ -45,8 +45,8 @@ the test suite described in the following paper:
 
 This function returns `SVector(h, vlon, vlat, b)`, where the first three entries are the 
 height, zonal velocity, and meridional velocity. The fourth entry, representing variable 
-bottom topography, is set to zero. The functions [`spherical2cartesian`](@ref) and 
-[`spherical2contravariant`](@ref) are available for converting to the prognostic variables 
+bottom topography, is set to zero. The functions [`transform_to_contravariant`](@ref) and 
+[`transform_to_cartesian`](@ref) are available for converting to the prognostic variables 
 for Cartesian and covariant formulations.
 """
 @inline function initial_condition_gaussian(x, t)
