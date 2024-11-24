@@ -42,8 +42,17 @@ function Trixi.varnames(::typeof(cons2cons), ::CovariantLinearAdvectionEquation2
     return ("scalar", "vcon1", "vcon2")
 end
 
+# Convenience function to extract the velocity
 function velocity(u, ::CovariantLinearAdvectionEquation2D)
     return SVector(u[2], u[3])
+end
+
+# We will define the "entropy variables" here to just be the scalar variable in the first 
+# slot, with zeros in the second and third positions
+@inline function Trixi.cons2entropy(u, aux_vars,
+                                    equations::CovariantLinearAdvectionEquation2D)
+    z = zero(eltype(u))
+    return SVector{3}(u[1], z, z)
 end
 
 # We will define the "entropy variables" here to just be the scalar variable in the first 
