@@ -55,14 +55,6 @@ end
     return SVector{3}(u[1], z, z)
 end
 
-# We will define the "entropy variables" here to just be the scalar variable in the first 
-# slot, with zeros in the second and third positions
-@inline function Trixi.cons2entropy(u, aux_vars,
-                                    equations::CovariantLinearAdvectionEquation2D)
-    z = zero(eltype(u))
-    return SVector{3}(u[1], z, z)
-end
-
 # Numerical flux plus dissipation for abstract covariant equations as a function of the 
 # state vector u, as well as the auxiliary variables aux_vars, which contain the geometric 
 # information.
