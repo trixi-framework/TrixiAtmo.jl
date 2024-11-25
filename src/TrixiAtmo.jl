@@ -10,7 +10,9 @@ module TrixiAtmo
 
 using Reexport: @reexport
 using Trixi
+using HDF5: HDF5, h5open, attributes
 using MuladdMacro: @muladd
+using Printf: @sprintf
 using Static: True, False
 using StrideArrays: PtrArray
 using StaticArrayInterface: static_size
