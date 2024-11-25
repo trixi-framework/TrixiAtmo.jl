@@ -1,6 +1,7 @@
 # This method is called when a SemidiscretizationHyperbolic is constructed.
 # It constructs the basic `cache` used throughout the simulation to compute
-# the RHS etc.
+# the RHS etc, and is modified here to use custom metric terms as well as provide the 
+# option to # use auxiliary variables. 
 function Trixi.create_cache(mesh::P4estMesh, equations::AbstractEquations, dg::DG, ::Any,
                             metric_terms, ::Type{uEltype}) where {uEltype <: Real}
     # Make sure to balance the `p4est` before creating any containers
@@ -19,14 +20,30 @@ function Trixi.create_cache(mesh::P4estMesh, equations::AbstractEquations, dg::D
              Trixi.create_cache(mesh, equations, dg.volume_integral, dg, uEltype)...)
     cache = (; cache..., Trixi.create_cache(mesh, equations, dg.mortar, uEltype)...)
 
+    # Add specialized parts of the cache for auxiliary node variables
+    cache = (; cache...,
+             create_cache_auxiliary(mesh, equations,
+                                    have_aux_node_vars(equations),
+                                    dg, elements, interfaces)...)
     return cache
 end
 
-# Extract contravariant vector Ja^i (i = index) as SVector
-# This function dispatches on the type of contravariant_vectors
-static2val(::Trixi.StaticInt{N}) where {N} = Val{N}()
-@inline function Trixi.get_contravariant_vector(index, contravariant_vectors::PtrArray,
-                                                indices...)
-    SVector(ntuple(@inline(dim->contravariant_vectors[dim, index, indices...]),
-                   static2val(static_size(contravariant_vectors, Trixi.StaticInt(1)))))
+# If there are auxiliary variables, initialize them
+function create_cache_auxiliary(mesh, equations, have_aux_node_vars::True, dg, elements,
+                                interfaces)
+    auxiliary_variables = init_auxiliary_node_variables(mesh, equations, dg, elements,
+                                                        interfaces)
+    return (; auxiliary_variables)
 end
+
+# Do nothing if there are no auxiliary variables
+function create_cache_auxiliary(mesh, equations, have_aux_node_vars::False, dg, elements,
+                                interfaces)
+    return NamedTuple()
+end
+
+include("containers_2d_manifold_in_3d_cartesian.jl")
+include("containers_2d_manifold_in_3d_covariant.jl")
+
+include("dg_2d_manifold_in_3d_cartesian.jl")
+include("dg_2d_manifold_in_3d_covariant.jl")

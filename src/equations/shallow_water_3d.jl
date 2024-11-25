@@ -1,7 +1,3 @@
-# By default, Julia/LLVM does not use fused multiply-add operations (FMAs).
-# Since these FMAs can increase the performance of many numerical algorithms,
-# we need to opt-in explicitly.
-# See https://ranocha.de/blog/Optimizing_EC_Trixi for further details.
 @muladd begin
 #! format: noindent
 
@@ -46,9 +42,9 @@ This affects the implementation and use of these equations in various ways:
 
 References:
 - J. Coté (1988). "A Lagrange multiplier approach for the metric terms of semi-Lagrangian models on the sphere". 
-  Quarterly Journal of the Royal Meteorological Society 114, 1347-1352. https://doi.org/10.1002/qj.49711448310
-- Giraldo (2001). "A spectral element shallow water model on spherical geodesic grids". 
-  https://doi.org/10.1002/1097-0363(20010430)35:8%3C869::AID-FLD116%3E3.0.CO;2-S
+  Quarterly Journal of the Royal Meteorological Society 114, 1347-1352. [DOI: 10.1002/qj.49711448310](https://doi.org/10.1002/qj.49711448310)
+- F. X. Giraldo (2001). "A spectral element shallow water model on spherical geodesic grids". 
+  [DOI: 10.1002/1097-0363(20010430)35:8<869::AID-FLD116>3.0.CO;2-S](https://doi.org/10.1002/1097-0363(20010430)35:8%3C869::AID-FLD116%3E3.0.CO;2-S)
 """
 struct ShallowWaterEquations3D{RealT <: Real} <:
        Trixi.AbstractShallowWaterEquations{3, 5}
@@ -208,7 +204,7 @@ Details are available in Eq. (4.1) in the paper:
 end
 
 """
-         source_terms_lagrange_multiplier(u, du, x, t,
+    source_terms_lagrange_multiplier(u, du, x, t,
                                           equations::ShallowWaterEquations3D,
                                           normal_direction)
 
@@ -267,8 +263,9 @@ end
     # Compute the wave celerity on the left and right
     h_ll = waterheight(u_ll, equations)
     h_rr = waterheight(u_rr, equations)
-    c_ll = sqrt(equations.gravity * h_ll)
-    c_rr = sqrt(equations.gravity * h_rr)
+
+    c_ll = sqrt(max(equations.gravity * h_ll, 0.0f0))
+    c_rr = sqrt(max(equations.gravity * h_rr, 0.0f0))
 
     # The normal velocities are already scaled by the norm
     return max(abs(v_ll), abs(v_rr)) + max(c_ll, c_rr) * norm(normal_direction)
@@ -382,5 +379,48 @@ end
 # Calculate potential energy for a conservative state `cons`
 @inline function energy_internal(cons, equations::ShallowWaterEquations3D)
     return energy_total(cons, equations) - energy_kinetic(cons, equations)
+end
+
+# Transform zonal and meridional velocity/momentum components to Cartesian components
+function spherical2cartesian(vlon, vlat, x)
+    # Co-latitude
+    colat = acos(x[3] / sqrt(x[1]^2 + x[2]^2 + x[3]^2))
+
+    # Longitude
+    if sign(x[2]) == 0.0
+        signy = 1.0
+    else
+        signy = sign(x[2])
+    end
+    r_xy = sqrt(x[1]^2 + x[2]^2)
+    if r_xy == 0.0
+        lon = pi / 2
+    else
+        lon = signy * acos(x[1] / r_xy)
+    end
+
+    v1 = -cos(colat) * cos(lon) * vlat - sin(lon) * vlon
+    v2 = -cos(colat) * sin(lon) * vlat + cos(lon) * vlon
+    v3 = sin(colat) * vlat
+
+    return SVector(v1, v2, v3)
+end
+
+@doc raw"""
+    transform_to_cartesian(initial_condition, equations)
+
+Takes in a function with the signature `initial_condition(x, t)` which returns an initial 
+condition given in terms of zonal and meridional velocity or momentum components, and 
+returns another function with the signature 
+`initial_condition_transformed(x, t, equations)` which returns the same initial condition 
+with the velocity or momentum vector given in terms of Cartesian components.
+"""
+function transform_to_cartesian(initial_condition, ::ShallowWaterEquations3D)
+    function initial_condition_transformed(x, t, equations)
+        h, vlon, vlat, b = initial_condition(x, t)
+        v1, v2, v3 = spherical2cartesian(vlon, vlat, x)
+        return Trixi.prim2cons(SVector(h, v1, v2, v3, b), equations)
+    end
+    return initial_condition_transformed
 end
 end # @muladd

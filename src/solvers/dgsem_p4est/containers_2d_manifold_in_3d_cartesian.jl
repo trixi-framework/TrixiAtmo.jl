@@ -1,12 +1,14 @@
 @muladd begin
 #! format: noindent
 
-# New p4est element container that allows the use of a PtrArray for the contravariant_vectors
+# New p4est element container that allows the use of a PtrArray for the 
+# contravariant_vectors, and stores the auxiliary_variables as an additional field
 mutable struct P4estElementContainerPtrArray{NDIMS, RealT <: Real, uEltype <: Real,
                                              NDIMSP1,
                                              NDIMSP2, NDIMSP3,
                                              ContravariantVectors <:
-                                             AbstractArray{RealT, NDIMSP3}} <:
+                                             AbstractArray{RealT,
+                                                           NDIMSP3}} <:
                Trixi.AbstractContainer
     # Physical coordinates at each node
     node_coordinates::Array{RealT, NDIMSP2}   # [orientation, node_i, node_j, node_k, element]
@@ -29,7 +31,7 @@ mutable struct P4estElementContainerPtrArray{NDIMS, RealT <: Real, uEltype <: Re
 end
 
 @inline function Trixi.nelements(elements::P4estElementContainerPtrArray)
-    size(elements.node_coordinates, ndims(elements) + 2)
+    return size(elements.node_coordinates, ndims(elements) + 2)
 end
 @inline Base.ndims(::P4estElementContainerPtrArray{NDIMS}) where {NDIMS} = NDIMS
 @inline function Base.eltype(::P4estElementContainerPtrArray{NDIMS,
@@ -38,14 +40,25 @@ end
                                                                                      RealT,
                                                                                      uEltype
                                                                                      }
-    uEltype
+    return uEltype
+end
+
+# Extract contravariant vector Ja^i (i = index) as SVector
+# This function dispatches on the type of contravariant_vectors
+static2val(::Trixi.StaticInt{N}) where {N} = Val{N}()
+@inline function Trixi.get_contravariant_vector(index, contravariant_vectors::PtrArray,
+                                                indices...)
+    return SVector(ntuple(@inline(dim->contravariant_vectors[dim, index, indices...]),
+                          static2val(static_size(contravariant_vectors,
+                                                 Trixi.StaticInt(1)))))
 end
 
 # Create element container and initialize element data.
 # This function dispatches on the dimensions of the mesh and the equation (AbstractEquations{3})
 function Trixi.init_elements(mesh::Union{P4estMesh{2, 3, RealT},
                                          T8codeMesh{2}},
-                             equations::AbstractEquations{3},
+                             equations::Union{AbstractEquations{3},
+                                              AbstractCovariantEquations{2, 3}},
                              basis,
                              metric_terms,
                              ::Type{uEltype}) where {RealT <: Real, uEltype <: Real}
@@ -91,24 +104,26 @@ function Trixi.init_elements(mesh::Union{P4estMesh{2, 3, RealT},
                                              ntuple(_ -> nnodes(basis), NDIMS - 1)...,
                                              NDIMS * 2, nelements))
 
+    ContravariantVectors = typeof(contravariant_vectors)
     elements = P4estElementContainerPtrArray{NDIMS, RealT, uEltype, NDIMS + 1,
                                              NDIMS + 2,
-                                             NDIMS + 3, typeof(contravariant_vectors)}(node_coordinates,
-                                                                                       jacobian_matrix,
-                                                                                       contravariant_vectors,
-                                                                                       inverse_jacobian,
-                                                                                       surface_flux_values,
-                                                                                       _node_coordinates,
-                                                                                       _jacobian_matrix,
-                                                                                       _contravariant_vectors,
-                                                                                       _inverse_jacobian,
-                                                                                       _surface_flux_values)
+                                             NDIMS + 3,
+                                             ContravariantVectors}(node_coordinates,
+                                                                   jacobian_matrix,
+                                                                   contravariant_vectors,
+                                                                   inverse_jacobian,
+                                                                   surface_flux_values,
+                                                                   _node_coordinates,
+                                                                   _jacobian_matrix,
+                                                                   _contravariant_vectors,
+                                                                   _inverse_jacobian,
+                                                                   _surface_flux_values)
 
     init_elements_2d_manifold_in_3d!(elements, mesh, basis, metric_terms)
-
     return elements
 end
 
+# This assumes a sphere, although the radius can be arbitrary, and general mesh topologies are supported.
 function init_elements_2d_manifold_in_3d!(elements,
                                           mesh::Union{P4estMesh{2}, T8codeMesh{2}},
                                           basis::LobattoLegendreBasis,
@@ -202,8 +217,7 @@ function calc_node_coordinates_2d_shell!(node_coordinates,
             Trixi.multiply_dimensionwise!(view(node_coordinates, :, :, :, element),
                                           matrix1, matrix2,
                                           view(mesh.tree_node_coordinates, :, :, :,
-                                               tree),
-                                          tmp1)
+                                               tree), tmp1)
         end
     end
 

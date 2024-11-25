@@ -7,23 +7,24 @@ include("test_trixiatmo.jl")
 
 EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
 
-@trixiatmo_testset "Spherical advection, Cartesian form with standard mapping" begin
+@trixiatmo_testset "Spherical advection, Cartesian weak form, LLF surface flux" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_spherical_advection_cartesian.jl"),
+                                 "elixir_shallowwater_cubed_sphere_shell_advection.jl"),
                         l2=[
-                            8.44498914e-03,
-                            8.23407970e-03,
-                            1.84210216e-03,
-                            0.00000000e+00,
-                            6.44302432e-02
+                            0.7963221028128544,
+                            20.317489255709344,
+                            8.811382597221147,
+                            20.317512894705885,
+                            0.0
                         ],
                         linf=[
-                            9.48946345e-02,
-                            9.64807833e-02,
-                            1.37450721e-02,
-                            0.00000000e+00,
-                            0.40932295554303133
-                        ], element_local_mapping=false)
+                            10.872101730749478,
+                            289.65159632622454,
+                            95.16499199537975,
+                            289.65159632621726,
+                            0.0
+                        ])
+    # and small reference values
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let
@@ -34,23 +35,75 @@ EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
     end
 end
 
-@trixiatmo_testset "Spherical advection, Cartesian form with element-local mapping" begin
+@trixiatmo_testset "Spherical advection, Cartesian weak form, element-local mapping" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_spherical_advection_cartesian.jl"),
+                                 "elixir_shallowwater_cubed_sphere_shell_advection.jl"),
                         l2=[
-                            0.00897499647958351,
-                            0.008743150662795171,
-                            0.001993813300529814,
-                            0.0,
-                            0.06452666141326718
+                            0.8933384470346987,
+                            22.84334163690791,
+                            9.776600357597692,
+                            22.843351937152637,
+                            0.0
                         ],
                         linf=[
-                            0.10136306017376362,
-                            0.10308252591097666,
-                            0.014142319489653277,
-                            0.0,
-                            0.41047171697830986
+                            14.289456304666146,
+                            380.6958334078372,
+                            120.59259301636666,
+                            380.6958334078299,
+                            0.0
                         ], element_local_mapping=true)
+    # and small reference values
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    let
+        t = sol.t[end]
+        u_ode = sol.u[end]
+        du_ode = similar(u_ode)
+        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
+    end
+end
+
+@trixiatmo_testset "Spherical advection, covariant weak form, LLF surface flux" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_spherical_advection_covariant.jl"),
+                        l2=[1.0007043506351705, 0.0, 0.0],
+                        linf=[14.235905681508598, 0.0, 0.0])
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    let
+        t = sol.t[end]
+        u_ode = sol.u[end]
+        du_ode = similar(u_ode)
+        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
+    end
+end
+
+# The covariant flux-differencing form should be equivalent to the weak form when the 
+# arithmetic mean is used as the two-point flux
+@trixiatmo_testset "Spherical advection, covariant flux-differencing, central/LLF" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_spherical_advection_covariant.jl"),
+                        l2=[1.0007043506351412, 0.0, 0.0],
+                        linf=[14.23590568150928, 0.0, 0.0],
+                        volume_integral=VolumeIntegralFluxDifferencing(flux_central))
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    let
+        t = sol.t[end]
+        u_ode = sol.u[end]
+        du_ode = similar(u_ode)
+        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
+    end
+end
+
+# Version with arithmetic mean used for both the volume and surface fluxes
+@trixiatmo_testset "Spherical advection, covariant flux-differencing, central/central" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_spherical_advection_covariant.jl"),
+                        l2=[2.499889861385917, 0.0, 0.0],
+                        linf=[38.085244441156085, 0.0, 0.0],
+                        volume_integral=VolumeIntegralFluxDifferencing(flux_central),
+                        surface_flux=flux_central)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let

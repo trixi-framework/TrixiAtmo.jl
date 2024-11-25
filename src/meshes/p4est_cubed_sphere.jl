@@ -31,11 +31,19 @@ The mesh will have no boundaries.
   Appendix A of [Guba et al. (2014)](https://doi.org/10.5194/gmd-7-2803-2014). If set to 
   `true`, the four corner vertex positions for each element will be obtained through an 
   equiangular gnomonic projection [(Ronchi et al. 1996)](https://doi.org/10.1006/jcph.1996.
-  0047), and the tree node coordinates within the element will be obtained by first using 
-  a bilinear mapping based on the four corner vertices, and then projecting the bilinearly 
-  mapped nodes onto the spherical surface by normalizing the resulting Cartesian 
-  coordinates and scaling by  `radius`. If set to `false`, the equiangular gnomonic 
-  projection will be used for all node coordinates.
+  0047), and the tree node coordinates within the element (i.e. the field 
+  `tree_node_coordinates`) will be obtained by first using a bilinear mapping based on the 
+  four corner vertices, and then projecting the bilinearly mapped nodes onto the spherical 
+  surface by normalizing the resulting Cartesian coordinates and scaling by  `radius`. If 
+  set to `false`, the equiangular gnomonic projection will be used for all tree node 
+  coordinates.
+
+!!! warning 
+    Adaptivity and MPI parallelization are not yet supported for equations in covariant 
+    form, and we require `initial_refinement_level = 0` for such cases. Furthermore, the 
+    calculation of the metric terms for the covariant form currently requires `polydeg` to 
+    be equal to the polynomial degree of the solver, and `element_local_mapping = true`.
+!!!
 """
 function P4estMeshCubedSphere2D(trees_per_face_dimension, radius;
                                 polydeg, RealT = Float64,

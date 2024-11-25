@@ -41,12 +41,12 @@ function initial_condition_advection_sphere(x, t, equations::ShallowWaterEquatio
     v0 = 1.0 # Velocity at the "equator"
     alpha = 0.0 #pi / 4
     v_long = v0 * (cos(lat) * cos(alpha) + sin(lat) * cos(phi) * sin(alpha))
-    v_lat = -v0 * sin(phi) * sin(alpha)
+    vlat = -v0 * sin(phi) * sin(alpha)
 
     # Transform to Cartesian coordinate system
-    v1 = -cos(colat) * cos(phi) * v_lat - sin(phi) * v_long
-    v2 = -cos(colat) * sin(phi) * v_lat + cos(phi) * v_long
-    v3 = sin(colat) * v_lat
+    v1 = -cos(colat) * cos(phi) * vlat - sin(phi) * v_long
+    v2 = -cos(colat) * sin(phi) * vlat + cos(phi) * v_long
+    v3 = sin(colat) * vlat
 
     return prim2cons(SVector(rho, v1, v2, v3, 0), equations)
 end
