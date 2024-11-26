@@ -18,10 +18,12 @@ StrideArrays = "d1fa6d79-ef01-42a6-86c9-f7c551f8593b"
 Trixi = "a7f1ee26-1774-49b1-8366-f1abc58fbfcb"
 
 [compat]
+HDF5 = "0.17"
 LinearAlgebra = "1"
 LoopVectorization = "0.12.118"
 MuladdMacro = "0.2.2"
 NLsolve = "4.5.1"
+Printf = "1"
 Reexport = "1.0"
 Static = "0.8, 1"
 StaticArrayInterface = "1.5.1"

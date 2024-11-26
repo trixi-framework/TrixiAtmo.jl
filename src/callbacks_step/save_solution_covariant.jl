@@ -1,4 +1,33 @@
-# Saves all solution variables in addition to the relative vorticity
+# Convert to another set of variables using a solution_variables function that depends on 
+# auxiliary variables
+function convert_variables(u, solution_variables, mesh::P4estMesh{2},
+                           equations, dg, cache)
+    (; aux_node_vars) = cache.auxiliary_variables
+
+    # Extract the number of solution variables to be output 
+    # (may be different than the number of conservative variables) 
+    n_vars = length(solution_variables(Trixi.get_node_vars(u, equations, dg, 1, 1, 1),
+                                       get_node_aux_vars(aux_node_vars, equations, dg, 1, 1,
+                                                         1), equations))
+    # Allocate storage for output
+    data = Array{eltype(u)}(undef, n_vars, nnodes(dg), nnodes(dg), nelements(dg, cache))
+
+    # Loop over all nodes and convert variables, passing in auxiliary variables
+    Trixi.@threaded for element in eachelement(dg, cache)
+        for j in eachnode(dg), i in eachnode(dg)
+            u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
+            a_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
+            u_node_converted = solution_variables(u_node, a_node, equations)
+            for v in 1:n_vars
+                data[v, i, j, element] = u_node_converted[v]
+            end
+        end
+    end
+    return data
+end
+
+# Version of save solution file that supports a solution_variables function that depends on 
+# auxiliary variables
 function Trixi.save_solution_file(u, time, dt, timestep,
                                   mesh::Union{Trixi.SerialTreeMesh, StructuredMesh,
                                               StructuredMeshView,
@@ -11,7 +40,6 @@ function Trixi.save_solution_file(u, time, dt, timestep,
                                   node_variables = Dict{Symbol, Any}();
                                   system = "")
     (; output_directory, solution_variables) = solution_callback
-    (; aux_node_vars) = cache.auxiliary_variables
 
     # Filename based on current time step
     if isempty(system)
@@ -24,20 +52,10 @@ function Trixi.save_solution_file(u, time, dt, timestep,
     # Convert to different set of variables if requested
     if solution_variables === cons2cons
         data = u
-        n_vars_cons = nvariables(equations)
     else
-        # Reinterpret the solution array as an array of conservative variables,
-        # compute the solution variables via broadcasting, and reinterpret the
-        # result as a plain array of floating point numbers
-        data = Array(reinterpret(eltype(u),
-                                 solution_variables.(reinterpret(SVector{nvariables(equations),
-                                                                         eltype(u)},
-                                                                 u, aux_node_vars),
-                                                     Ref(equations))))
-
-        # Find out variable count by looking at output from `solution_variables` function
-        n_vars_cons = size(data, 1)
+        data = convert_variables(u, solution_variables, mesh, equations, dg, cache)
     end
+    n_vars = size(data, 1)
 
     # Open file (clobber existing content)
     h5open(filename, "w") do file
@@ -45,7 +63,7 @@ function Trixi.save_solution_file(u, time, dt, timestep,
         attributes(file)["ndims"] = ndims(mesh)
         attributes(file)["equations"] = Trixi.get_name(equations)
         attributes(file)["polydeg"] = Trixi.polydeg(dg)
-        attributes(file)["n_vars"] = n_vars_cons + 1
+        attributes(file)["n_vars"] = n_vars
         attributes(file)["n_elements"] = nelements(dg, cache)
         attributes(file)["mesh_type"] = Trixi.get_name(mesh)
         attributes(file)["mesh_file"] = splitdir(mesh.current_filename)[2]
@@ -54,7 +72,7 @@ function Trixi.save_solution_file(u, time, dt, timestep,
         attributes(file)["timestep"] = timestep
 
         # Store each variable of the solution data
-        for v in 1:n_vars_cons
+        for v in 1:n_vars
             # Convert to 1D array
             file["variables_$v"] = vec(data[v, .., :])
 
