@@ -26,8 +26,8 @@ function convert_variables(u, solution_variables, mesh::P4estMesh{2},
     return data
 end
 
-# Version of save_solution_file that supports a solution_variables function that depends on 
-# auxiliary variables
+# Specialized save_solution_file method that supports a solution_variables function 
+# depending on auxiliary variables
 function Trixi.save_solution_file(u, time, dt, timestep,
                                   mesh::Union{Trixi.SerialTreeMesh, StructuredMesh,
                                               StructuredMeshView,
