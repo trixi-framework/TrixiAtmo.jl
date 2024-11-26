@@ -7,7 +7,7 @@ include("test_trixiatmo.jl")
 
 EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
 
-@trixiatmo_testset "Spherical advection, Cartesian weak form, LLF surface flux" begin
+@trixiatmo_testset "Spherical advection (cubed sphere), Cartesian weak form, LLF surface flux" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_cubed_sphere_shell_advection.jl"),
                         l2=[
@@ -22,6 +22,34 @@ EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
                             289.65159632622454,
                             95.16499199537975,
                             289.65159632621726,
+                            0.0
+                        ])
+    # and small reference values
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    let
+        t = sol.t[end]
+        u_ode = sol.u[end]
+        du_ode = similar(u_ode)
+        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
+    end
+end
+
+@trixiatmo_testset "Spherical advection (quad icosahedron), Cartesian weak form, LLF surface flux" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_shallowwater_quad_icosahedron_shell_advection.jl"),
+                        l2=[
+                            1.8407728405357193,
+                            33.896971556215654,
+                            14.365741070429909,
+                            33.895196216486305,
+                            0.0
+                        ],
+                        linf=[
+                            34.15213600054404,
+                            601.2676604837784,
+                            208.32483362278194,
+                            601.2676604838791,
                             0.0
                         ])
     # and small reference values

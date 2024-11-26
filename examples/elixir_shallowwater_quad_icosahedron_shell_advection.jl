@@ -7,7 +7,6 @@ using TrixiAtmo
 # semidiscretization of the linear advection equation
 
 initial_condition = initial_condition_gaussian
-initial_refinement_level = 1
 
 # We use the ShallowWaterEquations3D equations structure but modify the rhs! function to
 # convert it to a variable-coefficient advection equation
@@ -33,7 +32,7 @@ end
 
 # Create a 2D cubed sphere mesh the size of the Earth
 mesh = P4estMeshQuadIcosahedron2D(EARTH_RADIUS, polydeg = 3,
-                                  initial_refinement_level = initial_refinement_level)
+                                  initial_refinement_level = 1)
 
 # Convert initial condition given in terms of zonal and meridional velocity components to 
 # one given in terms of Cartesian momentum components
