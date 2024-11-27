@@ -2,6 +2,48 @@
 #! format: noindent
 
 # Using element_local mapping
+"""
+    P4estMeshCubedSphere2D(trees_per_face_dimension, radius;
+                            polydeg, RealT=Float64,
+                            initial_refinement_level=0, unsaved_changes=true,
+                            p4est_partition_allow_for_coarsening=true)
+
+Build a quad-based icosahedral mesh as a 2D `P4estMesh` with
+`60 * trees_per_face_dimension^2` trees (20 triangular faces of the icosahedron,
+each subdivided into 3 parent quads, each of which subdivided into `trees_per_face_dimension^2` trees).
+
+The node coordinates of the trees will be obtained using the element-local mapping from
+Appendix A of [Guba et al. (2014)](https://doi.org/10.5194/gmd-7-2803-2014). The four corner vertex 
+positions for each tree will be obtained through an equiangular gnomonic projection 
+[(Ronchi et al. 1996)](https://doi.org/10.1006/jcph.1996. 0047), and the tree node coordinates within 
+the element (i.e. the field `tree_node_coordinates`) will be obtained by first using a bilinear mapping 
+based on the four corner vertices, and then projecting the bilinearly mapped nodes onto the spherical 
+surface by normalizing the resulting Cartesian coordinates and scaling by `radius`.
+
+The mesh will have no boundaries.
+
+# Arguments
+- `trees_per_face_dimension::Integer`: the number of trees in the two local dimensions of
+                                       each parent quad.
+- `radius::Integer`: the radius of the sphere.
+- `polydeg::Integer`: polynomial degree used to store the geometry of the mesh.
+                      The mapping will be approximated by an interpolation polynomial
+                      of the specified degree for each tree.
+- `RealT::Type`: the type that should be used for coordinates.
+- `initial_refinement_level::Integer`: refine the mesh uniformly to this level before the
+  simulation starts.
+- `unsaved_changes::Bool`: if set to `true`, the mesh will be saved to a mesh file.
+- `p4est_partition_allow_for_coarsening::Bool`: Must be `true` when using AMR to make mesh
+  adaptivity independent of domain partitioning. Should be `false` for static meshes to
+  permit more fine-grained partitioning.
+
+!!! warning 
+    Adaptivity and MPI parallelization are not yet supported for equations in covariant 
+    form, and we require `initial_refinement_level = 0` for such cases. Furthermore, the 
+    calculation of the metric terms for the covariant form currently requires `polydeg` to 
+    be equal to the polynomial degree of the solver.
+!!!
+"""
 function P4estMeshQuadIcosahedron2D(trees_per_face_dimension, radius;
                                     polydeg, RealT = Float64,
                                     initial_refinement_level = 0,
@@ -101,17 +143,17 @@ function connectivity_icosahedron_2D(trees_per_face_dimension)
 
     # Connectivities for the first 5 (1:5) and the last 5 (16:20) triangular faces
     # Notes:
-    # - We subtract 1 because `p4est` uses zero-based indexing)
+    # - We subtract 1 because `p4est` uses zero-based indexing
     # - We use circshift to do a circular shift in the triangle list of the 5 triangles that 
-    #   are connected (useful due to periodicity)
+    #   are connected to each pole (useful due to periodicity)
     # - We use triangle_offset_base to store the offset for the connections along the base of the 
     #   triangles. For example, triangle 1 is connected to 6 (offset = +5), and triangle 16
     #   is connected to 11 (offset = -5)
     # - We use triangle_offset_13 to store the offset for the connections along the edge of the 
     #   triangles where quads 1 and 3 are, and triangle_offset_23 to store the offset for the connections
-    #   along the edge of the triangles where quads 1 and 2 are. For example, triangle 1 is connected to 5 
-    #   along the side where quads 1 and 3 are (triangle_offset_13 = +4), and triangle 1 is also 
-    #   connected to 2 along the side where quads 2 and 3 are (triangle_offset_23 = 1)
+    #   along the edge of the triangles where quads 1 and 2 are. For example, triangle 1 is connected to 
+    #   triangle 5 along the side where quads 1 and 3 are (triangle_offset_13 = +4), and triangle 1 is also 
+    #   connected to triangle 2 along the side where quads 2 and 3 are (triangle_offset_23 = 1)
     triangle_list = Vector(101:105)
     triangle_list_1 = Vector(1:5)
     triangle_list_2 = Vector(16:20)
@@ -293,7 +335,7 @@ function connectivity_icosahedron_2D(trees_per_face_dimension)
 
     # Connectivities for the triangular faces 6:15
     # Notes
-    # - We subtract 1 because `p4est` uses zero-based indexing)
+    # - We subtract 1 because `p4est` uses zero-based indexing
     # - We use triangle_connectivity_n* to store the triangle connectivity along edges
     # - We use circshift to do a circular shift in the triangle list of triangles 6:15
     #   (useful due to periodicity)
@@ -504,25 +546,29 @@ function calc_tree_node_coordinates_quad_icosahedron_local!(node_coordinates::Ab
                                     num_triangles))
 
     triangle_vertices = Array{eltype(node_coordinates), 2}(undef, 3, 7)
-    icosahedron_vertices = calc_icosahedron_vertices(radius)
+    icosahedron_vertices = calc_node_coordinates_icosahedron_vertices(radius)
 
     # Get cell length in reference mesh
     dx = 2 / n_cells
     dy = 2 / n_cells
 
+    # Loop over all the triangles of the mesh
     for triangle in 1:num_triangles
-        calc_icosahedron_triangle_vertices!(triangle_vertices, icosahedron_vertices,
-                                            radius, triangle)
+        calc_node_coordinates_triangle_vertices!(triangle_vertices,
+                                                 icosahedron_vertices,
+                                                 radius, triangle)
 
+        # Loop over each parent quad in each triangle
         for local_tree in 1:3
             idx = tree_vertices_idx(local_tree)
 
-            # Vertices for bilinear mapping
+            # Vertices of the parent quad
             v1_quad = triangle_vertices[:, idx[1]]
             v2_quad = triangle_vertices[:, idx[2]]
             v3_quad = triangle_vertices[:, idx[3]]
             v4_quad = triangle_vertices[:, idx[4]]
 
+            # Loop over the cells/trees in each parent quad
             for cell_y in 1:n_cells, cell_x in 1:n_cells
                 tree = linear_indices[cell_x, cell_y, local_tree, triangle]
 
@@ -531,6 +577,7 @@ function calc_tree_node_coordinates_quad_icosahedron_local!(node_coordinates::Ab
                 x_1 = -1 + cell_x * dx
                 y_1 = -1 + cell_y * dy
 
+                # Obtain the coordinates of the corner nodes for the tree
                 v1 = local_mapping(x_0, y_0, v1_quad, v2_quad, v3_quad, v4_quad, radius)
                 v2 = local_mapping(x_1, y_0, v1_quad, v2_quad, v3_quad, v4_quad, radius)
                 v3 = local_mapping(x_1, y_1, v1_quad, v2_quad, v3_quad, v4_quad, radius)
@@ -570,7 +617,7 @@ end
 #                                             `. |  ,'    
 #                                               `|,'
 #                                                9
-function calc_icosahedron_vertices(radius; RealT = Float64)
+function calc_node_coordinates_icosahedron_vertices(radius; RealT = Float64)
     vertices = Array{RealT, 2}(undef, 3, 12)
 
     vertices[:, 1] = [0, 0, 1]
@@ -665,9 +712,10 @@ function icosahedron_triangle_vertices_idx(triangle)
     end
 end
 
-function calc_icosahedron_triangle_vertices!(triangle_vertices, icosahedron_vertices,
-                                             radius, triangle)
-    # Retrieve triangle vertives
+function calc_node_coordinates_triangle_vertices!(triangle_vertices,
+                                                  icosahedron_vertices,
+                                                  radius, triangle)
+    # Retrieve triangle vertices
     corners_triangle = icosahedron_vertices[:,
                                             icosahedron_triangle_vertices_idx(triangle)]
 
