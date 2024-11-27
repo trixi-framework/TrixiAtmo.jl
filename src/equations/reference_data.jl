@@ -71,8 +71,9 @@ for Cartesian and covariant formulations.
     lon, lat = atan(x[2], x[1]), asin(x[3] / a)
     vlon = V * (cos(lat) * cos(alpha) + sin(lat) * cos(lon) * sin(alpha))
     vlat = -V * sin(lon) * sin(alpha)
+    vrad = 0.0f0
 
     # the last variable is the bottom topography, which we set to zero
-    return SVector(h, vlon, vlat, 0.0)
+    return SVector(h, vlon, vlat, vrad, 0.0)
 end
 end # muladd

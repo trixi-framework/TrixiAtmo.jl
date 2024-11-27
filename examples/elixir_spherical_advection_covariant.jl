@@ -48,7 +48,7 @@ analysis_callback = AnalysisCallback(semi, interval = 10,
 
 # The SaveSolutionCallback allows to save the solution to a file in regular intervals
 save_solution = SaveSolutionCallback(interval = 10,
-                                     solution_variables = contravariant2spherical)
+                                     solution_variables = contravariant2global)
 
 # The StepsizeCallback handles the re-calculation of the maximum Δt after each time step
 stepsize_callback = StepsizeCallback(cfl = 0.7)

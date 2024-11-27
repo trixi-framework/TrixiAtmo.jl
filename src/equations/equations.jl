@@ -51,39 +51,59 @@ dispatching on the return type.
 # cons2cons method which takes in unused aux_vars variable
 @inline Trixi.cons2cons(u, aux_vars, equations) = u
 
-# For the covariant form, the auxiliary variables are the the NDIMS^2 entries of the 
-# covariant basis matrix
+# For the covariant form, the auxiliary variables are the the NDIMS*NDIMS_AMBIENT entries 
+# of the covariant basis matrix
 @inline have_aux_node_vars(::AbstractCovariantEquations) = True()
-@inline n_aux_node_vars(::AbstractCovariantEquations{NDIMS}) where {NDIMS} = NDIMS^2
-
+@inline n_aux_node_vars(::AbstractCovariantEquations{NDIMS,NDIMS_AMBIENT}) where {NDIMS, 
+                                                                                  NDIMS_AMBIENT} =  2*NDIMS*NDIMS_AMBIENT+1
 # Return auxiliary variable names for 2D covariant form
 @inline function auxvarnames(::AbstractCovariantEquations{2})
-    return ("basis_covariant[1,1]", "basis_covariant[2,1]",
-            "basis_covariant[1,2]", "basis_covariant[2,2]")
+    return ("basis_covariant[1,1]", 
+            "basis_covariant[2,1]", 
+            "basis_covariant[3,1]",
+            "basis_covariant[1,2]",
+            "basis_covariant[2,2]", 
+            "basis_covariant[3,2]", 
+            "basis_contravariant[1,1]", 
+            "basis_contravariant[2,1]", 
+            "basis_contravariant[3,1]",
+            "basis_contravariant[1,2]", 
+            "basis_contravariant[2,2]", 
+            "basis_contravariant[3,2]",
+            "area_element")
 end
 
 # Extract the covariant basis vectors a_i from the auxiliary variables as a matrix A, 
 # where a_i = A[:, i] denotes the covariant tangent basis in a spherical/ellipsoidal 
 # coordinate system.
 @inline function basis_covariant(aux_vars, ::AbstractCovariantEquations{2})
-    return SMatrix{2, 2}(aux_vars[1], aux_vars[2], aux_vars[3], aux_vars[4])
+    return SMatrix{3, 2}(aux_vars[1], aux_vars[2], aux_vars[3], 
+                         aux_vars[4], aux_vars[5], aux_vars[6])
 end
+
+@inline function basis_contravariant(aux_vars, ::AbstractCovariantEquations{2})
+    return SMatrix{2, 3}(aux_vars[7], aux_vars[8], 
+                         aux_vars[9], aux_vars[10], 
+                         aux_vars[11], aux_vars[12])
+end
+
+# Slow computation of the area element
 @inline function area_element(aux_vars, ::AbstractCovariantEquations{2})
-    return abs(aux_vars[1] * aux_vars[4] - aux_vars[2] * aux_vars[3])
+    return aux_vars[13]
 end
 
 @doc raw"""
     transform_to_contravariant(initial_condition, equations)
 
 Takes in a function with the signature `initial_condition(x, t)` which returns an initial 
-condition given in terms of zonal and meridional velocity or momentum components, and 
-returns another function with the signature  `initial_condition_transformed(x, t, aux_vars, 
-equations)` which returns the same initial condition with the velocity or momentum vector
-given in terms of contravariant components.
+condition given in terms of global velocity or momentum components, and returns another
+function with the signature  `initial_condition_transformed(x, t, aux_vars, equations)` 
+which returns the same initial condition with the velocity or momentum vector given in
+terms of contravariant components.
 """
 function transform_to_contravariant(initial_condition, ::AbstractCovariantEquations)
     function initial_condition_transformed(x, t, aux_vars, equations)
-        return spherical2contravariant(initial_condition(x, t), aux_vars, equations)
+        return global2contravariant(initial_condition(x, t), aux_vars, equations)
     end
     return initial_condition_transformed
 end

@@ -48,23 +48,24 @@ function velocity(u, ::CovariantLinearAdvectionEquation2D)
 end
 
 # Convert contravariant velocity/momentum components to zonal and meridional components
-@inline function contravariant2spherical(u, aux_vars,
+@inline function contravariant2global(u, aux_vars,
                                          equations::CovariantLinearAdvectionEquation2D)
-    vlon, vlat = basis_covariant(aux_vars, equations) * velocity(u, equations)
-    return SVector(u[1], vlon, vlat)
+    v = basis_covariant(aux_vars, equations) * velocity(u, equations)
+    return SVector(u[1], v[1], v[2], v[3])
 end
 
 # Convert zonal and meridional velocity/momentum components to contravariant components
-@inline function spherical2contravariant(u_spherical, aux_vars,
+@inline function global2contravariant(u_spherical, aux_vars,
                                          equations::CovariantLinearAdvectionEquation2D)
-    vcon1, vcon2 = basis_covariant(aux_vars, equations) \
-                   velocity(u_spherical, equations)
+    vcon1, vcon2 = basis_contravariant(aux_vars, equations) * SVector(u_spherical[2], 
+                                                                      u_spherical[3], 
+                                                                      u_spherical[4])
     return SVector(u_spherical[1], vcon1, vcon2)
 end
 
-function Trixi.varnames(::typeof(contravariant2spherical),
+function Trixi.varnames(::typeof(contravariant2global),
                         ::CovariantLinearAdvectionEquation2D)
-    return ("scalar", "vlon", "vlat")
+    return ("scalar", "u", "v", "w")
 end
 
 # We will define the "entropy variables" here to just be the scalar variable in the first 

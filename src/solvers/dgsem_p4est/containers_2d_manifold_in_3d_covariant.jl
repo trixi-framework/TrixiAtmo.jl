@@ -29,7 +29,7 @@ end
 
 # Create auxiliary node variable container and initialize auxiliary variables
 function init_auxiliary_node_variables(mesh::Union{P4estMesh, T8codeMesh},
-                                       equations, dg, elements, interfaces)
+                                       equations, dg, elements, interfaces, metric_terms)
     nelements = Trixi.ncells(mesh)
     ninterfaces = Trixi.count_required_surfaces(mesh).interfaces
     NDIMS = ndims(elements)
@@ -60,7 +60,8 @@ function init_auxiliary_node_variables(mesh::Union{P4estMesh, T8codeMesh},
                                                                          _aux_node_vars,
                                                                          _aux_surface_node_vars)
 
-    init_auxiliary_node_variables!(auxiliary_variables, mesh, equations, dg, elements)
+    init_auxiliary_node_variables!(auxiliary_variables, mesh, equations, dg, elements, 
+                                   metric_terms)
     init_auxiliary_surface_node_variables!(auxiliary_variables, mesh, equations, dg,
                                            interfaces)
     return auxiliary_variables
@@ -159,8 +160,11 @@ end
 # geometry, making the analytical metric terms computed here no longer correct.
 function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 3},
                                         equations::AbstractCovariantEquations{2, 3}, dg,
-                                        elements)
+                                        elements, metric_terms)
     (; tree_node_coordinates) = mesh
+    (; aux_node_vars) = auxiliary_variables
+    NDIMS = 2
+    NDIMS_AMBIENT = 3
 
     # Check that the degree of the mesh matches that of the solver
     @assert length(mesh.nodes) == nnodes(dg)
@@ -183,11 +187,20 @@ function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 
         # Compute the auxiliary metric information at each node
         for j in eachnode(dg), i in eachnode(dg)
             # compute the covariant basis matrix
-            basis_covariant = basis_covariant_guba_etal(v1, v2, v3, v4,
-                                                        dg.basis.nodes[i],
-                                                        dg.basis.nodes[j], radius)
-            # Set auxiliary node variables in the cache
-            auxiliary_variables.aux_node_vars[1:4, i, j, element] = SVector(basis_covariant)
+            A = calc_basis_covariant(v1, v2, v3, v4, dg.basis.nodes[i],
+                                                dg.basis.nodes[j], 
+                                                radius, metric_terms)
+          
+            # Covariant basis
+            aux_node_vars[1:NDIMS*NDIMS_AMBIENT, i, j, element] = SVector(A)  
+            # Covariant metric tensor (not used for now)
+            G = A' * A
+            # Contravariant basis
+            aux_node_vars[NDIMS*NDIMS_AMBIENT+1:2*NDIMS*NDIMS_AMBIENT, 
+                          i, j, element] = SVector(inv(G) *A')
+            # Area element
+            aux_node_vars[2*NDIMS*NDIMS_AMBIENT+1, 
+                          i, j, element] = sqrt(G[1,1]*G[2,2] - G[1,2]^2)
         end
     end
 
@@ -200,7 +213,8 @@ end
 # in the longitudinal and latitudinal directions, respectively. This formula is 
 # taken from Guba et al. (2014), and it is not specific to the cubed sphere nor
 # is the resulting matrix singular at the poles
-@inline function basis_covariant_guba_etal(v1, v2, v3, v4, xi1, xi2, radius)
+@inline function calc_basis_covariant(v1, v2, v3, v4, xi1, xi2, radius, 
+                                      metric_terms)
     # Construct a bilinear mapping based on the four corner vertices
     x_bilinear = 0.25f0 *
                  ((1 - xi1) * (1 - xi2) * v1 + (1 + xi1) * (1 - xi2) * v2 +
@@ -226,12 +240,16 @@ end
     a33 = coslat
 
     # Compute the matrix A containing spherical components of the covariant basis
-    return 0.25f0 * scaling_factor *
+    A = 0.25f0 * scaling_factor *
            SMatrix{2, 3}(-sinlon, 0, coslon, 0, 0, 1) *
            SMatrix{3, 3}(a11, a21, a31, a12, a22, a32, a13, a23, a33) *
            SMatrix{3, 4}(v1[1], v1[2], v1[3], v2[1], v2[2], v2[3],
                          v3[1], v3[2], v3[3], v4[1], v4[2], v4[3]) *
            SMatrix{4, 2}(-1 + xi2, 1 - xi2, 1 + xi2, -1 - xi2,
                          -1 + xi1, -1 - xi1, 1 + xi1, 1 - xi1)
+
+    # Make zero component in the radial direction
+    return SMatrix{3,2}(A[1,1], A[2,1], 0.0f0, A[1,2], A[2,2], 0.0f0)
+
 end
 end # muladd
