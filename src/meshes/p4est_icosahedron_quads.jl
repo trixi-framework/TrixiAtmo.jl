@@ -2,14 +2,14 @@
 #! format: noindent
 
 # Using element_local mapping
-function P4estMeshQuadIcosahedron2D(radius;
+function P4estMeshQuadIcosahedron2D(trees_per_face_dimension, radius;
                                     polydeg, RealT = Float64,
                                     initial_refinement_level = 0,
                                     unsaved_changes = true,
                                     p4est_partition_allow_for_coarsening = true)
-    connectivity = connectivity_icosahedron_2D()
+    connectivity = connectivity_icosahedron_2D(trees_per_face_dimension)
 
-    n_trees = 60 # 20 triangles subdivided into 3 quads each
+    n_trees = 60 * trees_per_face_dimension^2 # 20 triangles subdivided into 3 quads each
 
     basis = LobattoLegendreBasis(RealT, polydeg)
     nodes = basis.nodes
@@ -18,7 +18,7 @@ function P4estMeshQuadIcosahedron2D(radius;
                                             ntuple(_ -> length(nodes), 2)...,
                                             n_trees)
     calc_tree_node_coordinates_quad_icosahedron_local!(tree_node_coordinates, nodes,
-                                                       radius)
+                                                       trees_per_face_dimension, radius)
 
     p4est = Trixi.new_p4est(connectivity, initial_refinement_level)
 
@@ -29,7 +29,7 @@ function P4estMeshQuadIcosahedron2D(radius;
                         p4est_partition_allow_for_coarsening)
 end
 
-function connectivity_icosahedron_2D()
+function connectivity_icosahedron_2D(trees_per_face_dimension)
     # Illustration of the unfolded icosahedron with the numbering of the triangular faces
     #
     #           ,'|.     
@@ -75,17 +75,21 @@ function connectivity_icosahedron_2D()
     #     /  /             | |               \
     #    /  -------->ξ     | └------->ξ       \
     #   /__________________|___________________\
+    #
+    # Each of those quadrilaterlas is subdivided into trees_per_face_dimension^2 trees
 
     num_triangles = 20
     trees_per_triangle = 3
+    n_cells = trees_per_face_dimension
 
-    linear_indices = LinearIndices((trees_per_triangle, num_triangles))
+    linear_indices = LinearIndices((n_cells, n_cells, trees_per_triangle,
+                                    num_triangles))
 
     # Vertices represent the coordinates of the forest. This is used by `p4est`
     # to write VTK files.
     # Trixi.jl doesn't use the coordinates from `p4est`, so the vertices can be empty.
     n_vertices = 0
-    n_trees = trees_per_triangle * num_triangles
+    n_trees = n_cells * n_cells * trees_per_triangle * num_triangles
 
     # No corner connectivity is needed
     n_corners = 0
@@ -132,75 +136,159 @@ function connectivity_icosahedron_2D()
 
         # Quad 1
         ########
-        tree = linear_indices[1, triangle]
+        for cell_y in 1:n_cells, cell_x in 1:n_cells
+            tree = linear_indices[cell_x, cell_y, 1, triangle]
 
-        # Negative xi-direction
-        tree_to_tree[1, tree] = linear_indices[2,
-                                               circshift(triangle_list,
-                                                         -triangle_offset_13)[triangle - offset]] -
-                                1
-        tree_to_face[1, tree] = 1
+            # Negative xi-direction
+            if cell_x > 1 # Connect to tree at the same quad
+                tree_to_tree[1, tree] = linear_indices[cell_x - 1, cell_y, 1,
+                                                       triangle] - 1
+                tree_to_face[1, tree] = 1
+            else
+                tree_to_tree[1, tree] = linear_indices[end, cell_y, 2,
+                                                       circshift(triangle_list,
+                                                                 -triangle_offset_13)[triangle - offset]] -
+                                        1
+                tree_to_face[1, tree] = 1
+            end
 
-        # Positive xi-direction
-        tree_to_tree[2, tree] = linear_indices[2, triangle] - 1
-        tree_to_face[2, tree] = 0
+            # Positive xi-direction
+            if cell_x < n_cells # Connect to tree at the same quad
+                tree_to_tree[2, tree] = linear_indices[cell_x + 1, cell_y, 1,
+                                                       triangle] - 1
+                tree_to_face[2, tree] = 0
+            else
+                tree_to_tree[2, tree] = linear_indices[1, cell_y, 2, triangle] - 1
+                tree_to_face[2, tree] = 0
+            end
 
-        # Negative eta-direction
-        tree_to_tree[3, tree] = linear_indices[2, triangle + triangle_offset_base] - 1
-        tree_to_face[3, tree] = 6 # first face dimensions are oppositely oriented, add 4
+            # Negative eta-direction
+            if cell_y > 1 # Connect to tree at the same quad
+                tree_to_tree[3, tree] = linear_indices[cell_x, cell_y - 1, 1,
+                                                       triangle] - 1
+                tree_to_face[3, tree] = 3
+            else
+                tree_to_tree[3, tree] = linear_indices[n_cells - cell_x + 1, 1, 2,
+                                                       triangle + triangle_offset_base] -
+                                        1
+                tree_to_face[3, tree] = 6 # first face dimensions are oppositely oriented, add 4
+            end
 
-        # Positive eta-direction
-        tree_to_tree[4, tree] = linear_indices[3, triangle] - 1
-        tree_to_face[4, tree] = 4 # first face dimensions are oppositely oriented, add 4
+            # Positive eta-direction
+            if cell_y < n_cells # Connect to tree at the same quad
+                tree_to_tree[4, tree] = linear_indices[cell_x, cell_y + 1, 1,
+                                                       triangle] - 1
+                tree_to_face[4, tree] = 2
+            else
+                tree_to_tree[4, tree] = linear_indices[1, n_cells - cell_x + 1, 3,
+                                                       triangle] - 1
+                tree_to_face[4, tree] = 4 # first face dimensions are oppositely oriented, add 4
+            end
+        end
 
         # Quad 2
         ########
-        tree = linear_indices[2, triangle]
+        for cell_y in 1:n_cells, cell_x in 1:n_cells
+            tree = linear_indices[cell_x, cell_y, 2, triangle]
 
-        # Negative xi-direction
-        tree_to_tree[1, tree] = linear_indices[1, triangle] - 1
-        tree_to_face[1, tree] = 1
+            # Negative xi-direction
+            if cell_x > 1 # Connect to tree at the same quad
+                tree_to_tree[1, tree] = linear_indices[cell_x - 1, cell_y, 2,
+                                                       triangle] - 1
+                tree_to_face[1, tree] = 1
+            else
+                tree_to_tree[1, tree] = linear_indices[end, cell_y, 1, triangle] - 1
+                tree_to_face[1, tree] = 1
+            end
 
-        # Positive xi-direction
-        tree_to_tree[2, tree] = linear_indices[1,
-                                               circshift(triangle_list,
-                                                         -triangle_offset_23)[triangle - offset]] -
-                                1
-        tree_to_face[2, tree] = 0
+            # Positive xi-direction
+            if cell_x < n_cells # Connect to tree at the same quad
+                tree_to_tree[2, tree] = linear_indices[cell_x + 1, cell_y, 2,
+                                                       triangle] - 1
+                tree_to_face[2, tree] = 0
+            else
+                tree_to_tree[2, tree] = linear_indices[1, cell_y, 1,
+                                                       circshift(triangle_list,
+                                                                 -triangle_offset_23)[triangle - offset]] -
+                                        1
+                tree_to_face[2, tree] = 0
+            end
 
-        # Negative eta-direction
-        tree_to_tree[3, tree] = linear_indices[1, triangle + triangle_offset_base] - 1
-        tree_to_face[3, tree] = 6 # first face dimensions are oppositely oriented, add 4
+            # Negative eta-direction
+            if cell_y > 1 # Connect to tree at the same quad
+                tree_to_tree[3, tree] = linear_indices[cell_x, cell_y - 1, 2,
+                                                       triangle] - 1
+                tree_to_face[3, tree] = 3
+            else
+                tree_to_tree[3, tree] = linear_indices[n_cells - cell_x + 1, 1, 1,
+                                                       triangle + triangle_offset_base] -
+                                        1
+                tree_to_face[3, tree] = 6 # first face dimensions are oppositely oriented, add 4
+            end
 
-        # Positive eta-direction
-        tree_to_tree[4, tree] = linear_indices[3, triangle] - 1
-        tree_to_face[4, tree] = 2
+            # Positive eta-direction
+            if cell_y < n_cells # Connect to tree at the same quad
+                tree_to_tree[4, tree] = linear_indices[cell_x, cell_y + 1, 2,
+                                                       triangle] - 1
+                tree_to_face[4, tree] = 2
+            else
+                tree_to_tree[4, tree] = linear_indices[cell_x, 1, 3, triangle] - 1
+                tree_to_face[4, tree] = 2
+            end
+        end
 
         # Quad 3
         ########
-        tree = linear_indices[3, triangle]
+        for cell_y in 1:n_cells, cell_x in 1:n_cells
+            tree = linear_indices[cell_x, cell_y, 3, triangle]
 
-        # Negative xi-direction
-        tree_to_tree[1, tree] = linear_indices[1, triangle] - 1
-        tree_to_face[1, tree] = 7 # first face dimensions are oppositely oriented, add 4
+            # Negative xi-direction
+            if cell_x > 1 # Connect to tree at the same quad
+                tree_to_tree[1, tree] = linear_indices[cell_x - 1, cell_y, 3,
+                                                       triangle] - 1
+                tree_to_face[1, tree] = 1
+            else
+                tree_to_tree[1, tree] = linear_indices[n_cells - cell_y + 1, end, 1,
+                                                       triangle] - 1
+                tree_to_face[1, tree] = 7 # first face dimensions are oppositely oriented, add 4
+            end
 
-        # Positive xi-direction
-        tree_to_tree[2, tree] = linear_indices[3,
-                                               circshift(triangle_list,
-                                                         -triangle_offset_23)[triangle - offset]] -
-                                1
-        tree_to_face[2, tree] = 3
+            # Positive xi-direction
+            if cell_x < n_cells # Connect to tree at the same quad
+                tree_to_tree[2, tree] = linear_indices[cell_x + 1, cell_y, 3,
+                                                       triangle] - 1
+                tree_to_face[2, tree] = 0
+            else
+                tree_to_tree[2, tree] = linear_indices[cell_y, end, 3,
+                                                       circshift(triangle_list,
+                                                                 -triangle_offset_23)[triangle - offset]] -
+                                        1
+                tree_to_face[2, tree] = 3
+            end
 
-        # Negative eta-direction
-        tree_to_tree[3, tree] = linear_indices[2, triangle] - 1
-        tree_to_face[3, tree] = 3
+            # Negative eta-direction
+            if cell_y > 1 # Connect to tree at the same quad
+                tree_to_tree[3, tree] = linear_indices[cell_x, cell_y - 1, 3,
+                                                       triangle] - 1
+                tree_to_face[3, tree] = 3
+            else
+                tree_to_tree[3, tree] = linear_indices[cell_x, end, 2, triangle] - 1
+                tree_to_face[3, tree] = 3
+            end
 
-        # Positive eta-direction
-        tree_to_tree[4, tree] = linear_indices[3,
-                                               circshift(triangle_list,
-                                                         -triangle_offset_13)[triangle - offset]] -
-                                1
-        tree_to_face[4, tree] = 1
+            # Positive eta-direction
+            if cell_y < n_cells # Connect to tree at the same quad
+                tree_to_tree[4, tree] = linear_indices[cell_x, cell_y + 1, 3,
+                                                       triangle] - 1
+                tree_to_face[4, tree] = 2
+            else
+                tree_to_tree[4, tree] = linear_indices[end, cell_x, 3,
+                                                       circshift(triangle_list,
+                                                                 -triangle_offset_13)[triangle - offset]] -
+                                        1
+                tree_to_face[4, tree] = 1
+            end
+        end
     end
 
     # Connectivities for the triangular faces 6:15
@@ -230,71 +318,155 @@ function connectivity_icosahedron_2D()
 
         # Quad 1
         ########
-        tree = linear_indices[1, triangle]
+        for cell_y in 1:n_cells, cell_x in 1:n_cells
+            tree = linear_indices[cell_x, cell_y, 1, triangle]
 
-        # Negative xi-direction
-        tree_to_tree[1, tree] = linear_indices[3,
-                                               triangle_connectivity_ne[triangle - 5]] -
-                                1
-        tree_to_face[1, tree] = 7 # first face dimensions are oppositely oriented, add 4
+            # Negative xi-direction
+            if cell_x > 1 # Connect to tree at the same quad
+                tree_to_tree[1, tree] = linear_indices[cell_x - 1, cell_y, 1,
+                                                       triangle] - 1
+                tree_to_face[1, tree] = 1
+            else
+                tree_to_tree[1, tree] = linear_indices[n_cells - cell_y + 1, end, 3,
+                                                       triangle_connectivity_ne[triangle - 5]] -
+                                        1
+                tree_to_face[1, tree] = 7 # first face dimensions are oppositely oriented, add 4
+            end
 
-        # Positive xi-direction
-        tree_to_tree[2, tree] = linear_indices[2, triangle] - 1
-        tree_to_face[2, tree] = 0
+            # Positive xi-direction
+            if cell_x < n_cells # Connect to tree at the same quad
+                tree_to_tree[2, tree] = linear_indices[cell_x + 1, cell_y, 1,
+                                                       triangle] - 1
+                tree_to_face[2, tree] = 0
+            else
+                tree_to_tree[2, tree] = linear_indices[1, cell_y, 2, triangle] - 1
+                tree_to_face[2, tree] = 0
+            end
 
-        # Negative eta-direction
-        tree_to_tree[3, tree] = linear_indices[2, triangle + triangle_offset_base] - 1
-        tree_to_face[3, tree] = 6 # first face dimensions are oppositely oriented, add 4
+            # Negative eta-direction
+            if cell_y > 1 # Connect to tree at the same quad
+                tree_to_tree[3, tree] = linear_indices[cell_x, cell_y - 1, 1,
+                                                       triangle] - 1
+                tree_to_face[3, tree] = 3
+            else
+                tree_to_tree[3, tree] = linear_indices[n_cells - cell_x + 1, 1, 2,
+                                                       triangle + triangle_offset_base] -
+                                        1
+                tree_to_face[3, tree] = 6 # first face dimensions are oppositely oriented, add 4
+            end
 
-        # Positive eta-direction
-        tree_to_tree[4, tree] = linear_indices[3, triangle] - 1
-        tree_to_face[4, tree] = 4 # first face dimensions are oppositely oriented, add 4
+            # Positive eta-direction
+            if cell_y < n_cells # Connect to tree at the same quad
+                tree_to_tree[4, tree] = linear_indices[cell_x, cell_y + 1, 1,
+                                                       triangle] - 1
+                tree_to_face[4, tree] = 2
+            else
+                tree_to_tree[4, tree] = linear_indices[1, n_cells - cell_x + 1, 3,
+                                                       triangle] - 1
+                tree_to_face[4, tree] = 4 # first face dimensions are oppositely oriented, add 4
+            end
+        end
 
         # Quad 2
         ########
-        tree = linear_indices[2, triangle]
+        for cell_y in 1:n_cells, cell_x in 1:n_cells
+            tree = linear_indices[cell_x, cell_y, 2, triangle]
 
-        # Negative xi-direction
-        tree_to_tree[1, tree] = linear_indices[1, triangle] - 1
-        tree_to_face[1, tree] = 1
+            # Negative xi-direction
+            if cell_x > 1 # Connect to tree at the same quad
+                tree_to_tree[1, tree] = linear_indices[cell_x - 1, cell_y, 2,
+                                                       triangle] - 1
+                tree_to_face[1, tree] = 1
+            else
+                tree_to_tree[1, tree] = linear_indices[end, cell_y, 1, triangle] - 1
+                tree_to_face[1, tree] = 1
+            end
 
-        # Positive xi-direction
-        tree_to_tree[2, tree] = linear_indices[3,
-                                               triangle_connectivity_nw[triangle - 5]] -
-                                1
-        tree_to_face[2, tree] = 5 # first face dimensions are oppositely oriented, add 4
+            # Positive xi-direction
+            if cell_x < n_cells # Connect to tree at the same quad
+                tree_to_tree[2, tree] = linear_indices[cell_x + 1, cell_y, 2,
+                                                       triangle] - 1
+                tree_to_face[2, tree] = 0
+            else
+                tree_to_tree[2, tree] = linear_indices[end, n_cells - cell_y + 1, 3,
+                                                       triangle_connectivity_nw[triangle - 5]] -
+                                        1
+                tree_to_face[2, tree] = 5 # first face dimensions are oppositely oriented, add 4
+            end
 
-        # Negative eta-direction
-        tree_to_tree[3, tree] = linear_indices[1, triangle + triangle_offset_base] - 1
-        tree_to_face[3, tree] = 6 # first face dimensions are oppositely oriented, add 4
+            # Negative eta-direction
+            if cell_y > 1 # Connect to tree at the same quad
+                tree_to_tree[3, tree] = linear_indices[cell_x, cell_y - 1, 2,
+                                                       triangle] - 1
+                tree_to_face[3, tree] = 3
+            else
+                tree_to_tree[3, tree] = linear_indices[n_cells - cell_x + 1, 1, 1,
+                                                       triangle + triangle_offset_base] -
+                                        1
+                tree_to_face[3, tree] = 6 # first face dimensions are oppositely oriented, add 4
+            end
 
-        # Positive eta-direction
-        tree_to_tree[4, tree] = linear_indices[3, triangle] - 1
-        tree_to_face[4, tree] = 2
+            # Positive eta-direction
+            if cell_y < n_cells # Connect to tree at the same quad
+                tree_to_tree[4, tree] = linear_indices[cell_x, cell_y + 1, 2,
+                                                       triangle] - 1
+                tree_to_face[4, tree] = 2
+            else
+                tree_to_tree[4, tree] = linear_indices[cell_x, 1, 3, triangle] - 1
+                tree_to_face[4, tree] = 2
+            end
+        end
 
         # Quad 3
         ########
-        tree = linear_indices[3, triangle]
+        for cell_y in 1:n_cells, cell_x in 1:n_cells
+            tree = linear_indices[cell_x, cell_y, 3, triangle]
 
-        # Negative xi-direction
-        tree_to_tree[1, tree] = linear_indices[1, triangle] - 1
-        tree_to_face[1, tree] = 7 # first face dimensions are oppositely oriented, add 4
+            # Negative xi-direction
+            if cell_x > 1 # Connect to tree at the same quad
+                tree_to_tree[1, tree] = linear_indices[cell_x - 1, cell_y, 3,
+                                                       triangle] - 1
+                tree_to_face[1, tree] = 1
+            else
+                tree_to_tree[1, tree] = linear_indices[n_cells - cell_y + 1, end, 1,
+                                                       triangle] - 1
+                tree_to_face[1, tree] = 7 # first face dimensions are oppositely oriented, add 4
+            end
 
-        # Positive xi-direction
-        tree_to_tree[2, tree] = linear_indices[2,
-                                               triangle_connectivity_nw[triangle - 5]] -
-                                1
-        tree_to_face[2, tree] = 5 # first face dimensions are oppositely oriented, add 4
+            # Positive xi-direction
+            if cell_x < n_cells # Connect to tree at the same quad
+                tree_to_tree[2, tree] = linear_indices[cell_x + 1, cell_y, 3,
+                                                       triangle] - 1
+                tree_to_face[2, tree] = 0
+            else
+                tree_to_tree[2, tree] = linear_indices[end, n_cells - cell_y + 1, 2,
+                                                       triangle_connectivity_nw[triangle - 5]] -
+                                        1
+                tree_to_face[2, tree] = 5 # first face dimensions are oppositely oriented, add 4
+            end
 
-        # Negative eta-direction
-        tree_to_tree[3, tree] = linear_indices[2, triangle] - 1
-        tree_to_face[3, tree] = 3
+            # Negative eta-direction
+            if cell_y > 1 # Connect to tree at the same quad
+                tree_to_tree[3, tree] = linear_indices[cell_x, cell_y - 1, 3,
+                                                       triangle] - 1
+                tree_to_face[3, tree] = 3
+            else
+                tree_to_tree[3, tree] = linear_indices[cell_x, end, 2, triangle] - 1
+                tree_to_face[3, tree] = 3
+            end
 
-        # Positive eta-direction
-        tree_to_tree[4, tree] = linear_indices[1,
-                                               triangle_connectivity_ne[triangle - 5]] -
-                                1
-        tree_to_face[4, tree] = 4 # first face dimensions are oppositely oriented, add 4
+            # Positive eta-direction
+            if cell_y < n_cells # Connect to tree at the same quad
+                tree_to_tree[4, tree] = linear_indices[cell_x, cell_y + 1, 3,
+                                                       triangle] - 1
+                tree_to_face[4, tree] = 2
+            else
+                tree_to_tree[4, tree] = linear_indices[1, n_cells - cell_x + 1, 1,
+                                                       triangle_connectivity_ne[triangle - 5]] -
+                                        1
+                tree_to_face[4, tree] = 4 # first face dimensions are oppositely oriented, add 4
+            end
+        end
     end
 
     tree_to_corner = Trixi.C_NULL
@@ -321,34 +493,55 @@ end
 # Appendix A). 
 function calc_tree_node_coordinates_quad_icosahedron_local!(node_coordinates::AbstractArray{<:Any,
                                                                                             4},
-                                                            nodes, radius)
+                                                            nodes,
+                                                            trees_per_face_dimension,
+                                                            radius)
     num_triangles = 20
     trees_per_triangle = 3
+    n_cells = trees_per_face_dimension
 
-    linear_indices = LinearIndices((trees_per_triangle, num_triangles))
+    linear_indices = LinearIndices((n_cells, n_cells, trees_per_triangle,
+                                    num_triangles))
 
     triangle_vertices = Array{eltype(node_coordinates), 2}(undef, 3, 7)
     icosahedron_vertices = calc_icosahedron_vertices(radius)
+
+    # Get cell length in reference mesh
+    dx = 2 / n_cells
+    dy = 2 / n_cells
 
     for triangle in 1:num_triangles
         calc_icosahedron_triangle_vertices!(triangle_vertices, icosahedron_vertices,
                                             radius, triangle)
 
         for local_tree in 1:3
-            tree = linear_indices[local_tree, triangle]
-
             idx = tree_vertices_idx(local_tree)
 
             # Vertices for bilinear mapping
-            v1 = triangle_vertices[:, idx[1]]
-            v2 = triangle_vertices[:, idx[2]]
-            v3 = triangle_vertices[:, idx[3]]
-            v4 = triangle_vertices[:, idx[4]]
+            v1_quad = triangle_vertices[:, idx[1]]
+            v2_quad = triangle_vertices[:, idx[2]]
+            v3_quad = triangle_vertices[:, idx[3]]
+            v4_quad = triangle_vertices[:, idx[4]]
 
-            for j in eachindex(nodes), i in eachindex(nodes)
-                # node_coordinates are the mapped reference node coordinates
-                node_coordinates[:, i, j, tree] .= local_mapping(nodes[i], nodes[j],
-                                                                 v1, v2, v3, v4, radius)
+            for cell_y in 1:n_cells, cell_x in 1:n_cells
+                tree = linear_indices[cell_x, cell_y, local_tree, triangle]
+
+                x_0 = -1 + (cell_x - 1) * dx
+                y_0 = -1 + (cell_y - 1) * dy
+                x_1 = -1 + cell_x * dx
+                y_1 = -1 + cell_y * dy
+
+                v1 = local_mapping(x_0, y_0, v1_quad, v2_quad, v3_quad, v4_quad, radius)
+                v2 = local_mapping(x_1, y_0, v1_quad, v2_quad, v3_quad, v4_quad, radius)
+                v3 = local_mapping(x_1, y_1, v1_quad, v2_quad, v3_quad, v4_quad, radius)
+                v4 = local_mapping(x_0, y_1, v1_quad, v2_quad, v3_quad, v4_quad, radius)
+
+                for j in eachindex(nodes), i in eachindex(nodes)
+                    # node_coordinates are the mapped reference node coordinates
+                    node_coordinates[:, i, j, tree] .= local_mapping(nodes[i], nodes[j],
+                                                                     v1, v2, v3, v4,
+                                                                     radius)
+                end
             end
         end
     end
