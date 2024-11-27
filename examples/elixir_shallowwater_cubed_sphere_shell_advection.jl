@@ -3,11 +3,22 @@ using OrdinaryDiffEq
 using Trixi
 using TrixiAtmo
 
+# To run a convergence test, we have two options:
+# 1. Use the p4est initial_refinement_level:
+#    - To do this, line 47 ("initial_refinement_level = 0") must NOT be a comment
+#    - Call convergence_test("../examples/elixir_shallowwater_cubed_sphere_shell_advection.jl", 4, initial_refinement_level = 0)
+#    - NOT OPTIMAL: Good convergence the first iterations, but then stagnates. Reason: The geometry does not improve with refinement
+# 2. Use the trees_per_face_dimension of the P4estMeshCubedSphere2D
+#    - To do this, line 47 ("initial_refinement_level = 0") MUST BE commented/removed
+#    - Call convergence_test("../examples/elixir_shallowwater_cubed_sphere_shell_advection.jl", 4, cells_per_dimension = (3,3))
+#    - OPTIMAL convergence of polydeg + 1. Reason: The geometry improves with refinement
+
 ###############################################################################
 # semidiscretization of the linear advection equation
 
-cells_per_dimension = 5
+#
 initial_condition = initial_condition_gaussian
+cells_per_dimension = (5, 5)
 
 # We use the ShallowWaterEquations3D equations structure but modify the rhs! function to
 # convert it to a variable-coefficient advection equation
@@ -32,9 +43,9 @@ function source_terms_convert_to_linear_advection(u, du, x, t,
 end
 
 # Create a 2D cubed sphere mesh the size of the Earth
-mesh = P4estMeshCubedSphere2D(cells_per_dimension, EARTH_RADIUS, polydeg = 3,
-                              initial_refinement_level = 0,
-                              element_local_mapping = false)
+mesh = P4estMeshCubedSphere2D(cells_per_dimension[1], EARTH_RADIUS, polydeg = 3,
+                              #initial_refinement_level = 0, # Comment to use cells_per_dimension in the convergence test
+                              element_local_mapping = true)
 
 # Convert initial condition given in terms of zonal and meridional velocity components to 
 # one given in terms of Cartesian momentum components
@@ -54,12 +65,12 @@ ode = semidiscretize(semi, (0.0, 12 * SECONDS_PER_DAY))
 summary_callback = SummaryCallback()
 
 # The AnalysisCallback allows to analyse the solution in regular intervals and prints the results
-analysis_callback = AnalysisCallback(semi, interval = 10,
+analysis_callback = AnalysisCallback(semi, interval = 100,
                                      save_analysis = true,
                                      extra_analysis_errors = (:conservation_error,))
 
 # The SaveSolutionCallback allows to save the solution to a file in regular intervals
-save_solution = SaveSolutionCallback(interval = 10,
+save_solution = SaveSolutionCallback(interval = 100,
                                      solution_variables = cons2prim)
 
 # The StepsizeCallback handles the re-calculation of the maximum Δt after each time step
