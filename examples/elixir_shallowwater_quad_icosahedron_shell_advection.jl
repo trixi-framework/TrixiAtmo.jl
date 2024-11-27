@@ -41,7 +41,7 @@ function source_terms_convert_to_linear_advection(u, du, x, t,
     return SVector(0.0, s2, s3, s4, 0.0)
 end
 
-# Create a 2D cubed sphere mesh the size of the Earth
+# Create a 2D quad-based icosahedral mesh the size of the Earth
 mesh = P4estMeshQuadIcosahedron2D(cells_per_dimension[1], EARTH_RADIUS,
                                   #initial_refinement_level = 0,
                                   polydeg = polydeg)
