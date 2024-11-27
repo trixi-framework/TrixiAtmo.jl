@@ -8,13 +8,18 @@ using TrixiAtmo
 
 cells_per_dimension = 5
 initial_condition = initial_condition_gaussian
+polydeg = 3
 
 # We use the ShallowWaterEquations3D equations structure but modify the rhs! function to
 # convert it to a variable-coefficient advection equation
 equations = ShallowWaterEquations3D(gravity_constant = 0.0)
 
-# Create DG solver with polynomial degree = 3 and (local) Lax-Friedrichs/Rusanov flux as surface flux
-solver = DGSEM(polydeg = 3, surface_flux = flux_lax_friedrichs)
+volume_flux = (flux_central, flux_nonconservative_fjordholm_etal)
+surface_flux = (flux_lax_friedrichs, flux_nonconservative_fjordholm_etal)
+
+solver = DGSEM(polydeg = polydeg,
+               surface_flux = surface_flux,
+               volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
 
 # Source term function to transform the Euler equations into a linear advection equation with variable advection velocity
 function source_terms_convert_to_linear_advection(u, du, x, t,

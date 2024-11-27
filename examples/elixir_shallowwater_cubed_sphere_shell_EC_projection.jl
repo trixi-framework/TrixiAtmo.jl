@@ -12,8 +12,9 @@ equations = ShallowWaterEquations3D(gravity_constant = 9.81)
 
 # Create DG solver with polynomial degree = 3 and Wintemeyer et al.'s flux as surface flux
 polydeg = 3
-volume_flux = flux_wintermeyer_etal # flux_fjordholm_etal 
-surface_flux = flux_wintermeyer_etal # flux_fjordholm_etal #flux_lax_friedrichs
+volume_flux = (flux_wintermeyer_etal, flux_nonconservative_wintermeyer_etal)
+surface_flux = (flux_wintermeyer_etal, flux_nonconservative_wintermeyer_etal)
+
 solver = DGSEM(polydeg = polydeg,
                surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
@@ -45,7 +46,7 @@ function initial_condition_advection_sphere(x, t, equations::ShallowWaterEquatio
     # Compute the velocity of a rotating solid body
     # (alpha is the angle between the rotation axis and the polar axis of the spherical coordinate system)
     v0 = 1.0 # Velocity at the "equator"
-    alpha = 0.0 #pi / 4
+    alpha = pi / 4
     v_long = v0 * (cos(lat) * cos(alpha) + sin(lat) * cos(phi) * sin(alpha))
     vlat = -v0 * sin(phi) * sin(alpha)
 
@@ -54,7 +55,10 @@ function initial_condition_advection_sphere(x, t, equations::ShallowWaterEquatio
     v2 = -cos(colat) * sin(phi) * vlat + cos(phi) * v_long
     v3 = sin(colat) * vlat
 
-    return prim2cons(SVector(rho, v1, v2, v3, 0), equations)
+    # Non-constant topography
+    b = 0.1 * cos(10 * lat)
+
+    return prim2cons(SVector(rho, v1, v2, v3, b), equations)
 end
 
 initial_condition = initial_condition_advection_sphere
