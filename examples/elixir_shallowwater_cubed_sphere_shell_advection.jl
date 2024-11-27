@@ -5,18 +5,17 @@ using TrixiAtmo
 
 # To run a convergence test, we have two options:
 # 1. Use the p4est initial_refinement_level:
-#    - To do this, line 47 ("initial_refinement_level = 0") must NOT be a comment
+#    - To do this, line 46 ("initial_refinement_level = 0") must NOT be a comment
 #    - Call convergence_test("../examples/elixir_shallowwater_cubed_sphere_shell_advection.jl", 4, initial_refinement_level = 0)
 #    - NOT OPTIMAL: Good convergence the first iterations, but then stagnates. Reason: The geometry does not improve with refinement
 # 2. Use the trees_per_face_dimension of the P4estMeshCubedSphere2D
-#    - To do this, line 47 ("initial_refinement_level = 0") MUST BE commented/removed
+#    - To do this, line 46 ("initial_refinement_level = 0") MUST BE commented/removed
 #    - Call convergence_test("../examples/elixir_shallowwater_cubed_sphere_shell_advection.jl", 4, cells_per_dimension = (3,3))
 #    - OPTIMAL convergence of polydeg + 1. Reason: The geometry improves with refinement
 
 ###############################################################################
 # semidiscretization of the linear advection equation
 
-#
 initial_condition = initial_condition_gaussian
 cells_per_dimension = (5, 5)
 
@@ -45,7 +44,7 @@ end
 # Create a 2D cubed sphere mesh the size of the Earth
 mesh = P4estMeshCubedSphere2D(cells_per_dimension[1], EARTH_RADIUS, polydeg = 3,
                               #initial_refinement_level = 0, # Comment to use cells_per_dimension in the convergence test
-                              element_local_mapping = true)
+                              element_local_mapping = false)
 
 # Convert initial condition given in terms of zonal and meridional velocity components to 
 # one given in terms of Cartesian momentum components
