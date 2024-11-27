@@ -120,5 +120,6 @@ abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:
 include("reference_data.jl")
 include("covariant_advection.jl")
 include("compressible_moist_euler_2d_lucas.jl")
+include("compressible_euler_2d_paula.jl")
 include("shallow_water_3d.jl")
 end # @muladd
