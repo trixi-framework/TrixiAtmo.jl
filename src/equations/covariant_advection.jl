@@ -40,7 +40,7 @@ direction normal to the surface, is set to zero when solving equations on two-di
 surfaces, and will remain zero throughout the simulation.
 """
 struct CovariantLinearAdvectionEquation2D{GlobalCoordinateSystem} <:
-       AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 4}
+    AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 4}
     global_coordinate_system::GlobalCoordinateSystem
     function CovariantLinearAdvectionEquation2D(global_coordinate_system::GlobalCoordinateSystem = GlobalSphericalCoordinates()) where {GlobalCoordinateSystem}
         return new{GlobalCoordinateSystem}(global_coordinate_system)
@@ -97,7 +97,7 @@ end
 @inline function Trixi.flux(u, aux_vars, orientation::Integer,
                             equations::CovariantLinearAdvectionEquation2D)
     z = zero(eltype(u))
-    return SVector(area_element(aux_vars, equations) * u[1] * u[orientation + 1],
+    return SVector(area_element(aux_vars, equations) * u[1] * u[orientation + 1], 
                    z, z, z)
 end
 

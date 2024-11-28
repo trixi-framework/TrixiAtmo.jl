@@ -193,11 +193,9 @@ function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 
                 A = calc_basis_covariant(v1, v2, v3, v4, dg.basis.nodes[i],
                                          dg.basis.nodes[j], radius)
             else
-                # If the polynomial differentiation matrix is used to compute the Jacobian 
-                # matrix, the resulting matrix entries are the Cartesian components of the 
-                # covariant basis vectors for the tangent space to the polynomial manifold 
-                # approximating the true geometry
-                A = SMatrix{3, 2}(view(jacobian_matrix, :, :, i, j, element))
+                A = calc_basis_covariant_cartesian(v1, v2, v3, v4, dg.basis.nodes[i],
+                dg.basis.nodes[j], radius)
+                # A = SMatrix{3, 2}(view(jacobian_matrix, :, :, i, j, element))
             end
 
             # Covariant basis
@@ -257,5 +255,25 @@ end
 
     # Make zero component in the radial direction
     return SMatrix{3, 2}(A[1, 1], A[2, 1], 0.0f0, A[1, 2], A[2, 2], 0.0f0)
+end
+
+
+@inline function calc_basis_covariant_cartesian(v1, v2, v3, v4, xi1, xi2, radius)
+
+    # Construct a bilinear mapping based on the four corner vertices
+    xe = 0.25f0 * ((1 - xi1) * (1 - xi2) * v1 + (1 + xi1) * (1 - xi2) * v2 +
+                  (1 + xi1) * (1 + xi2) * v3 + (1 - xi1) * (1 + xi2) * v4)
+    norm_e = norm(xe)
+
+    # Derivatives of bilinear map
+    dxedxi1 = 0.25f0 * (-(1-xi2) * v1 + (1-xi2) * v2 + (1+xi2) * v3 - (1+xi2) * v4)
+    dxedxi2 = 0.25f0 * (-(1-xi1) * v1 - (1+xi1) * v2 + (1+xi1) * v3 + (1-xi1) * v4)
+    
+    # Use product/quotient rule on the projection
+    dxdxi1 = radius * (dxedxi1/norm_e - dot(xe, dxedxi1)/(norm_e^3) * xe)
+    dxdxi2 = radius * (dxedxi2/norm_e - dot(xe, dxedxi2)/(norm_e^3) * xe)
+
+    return SMatrix{3, 2}(dxdxi1[1],dxdxi1[2],dxdxi1[3],
+                         dxdxi2[1],dxdxi2[2],dxdxi2[3])
 end
 end # muladd
