@@ -54,21 +54,21 @@ dispatching on the return type.
 # For the covariant form, the auxiliary variables are the the NDIMS*NDIMS_AMBIENT entries 
 # of the covariant basis matrix
 @inline have_aux_node_vars(::AbstractCovariantEquations) = True()
-@inline n_aux_node_vars(::AbstractCovariantEquations{NDIMS,NDIMS_AMBIENT}) where {NDIMS, 
-                                                                                  NDIMS_AMBIENT} =  2*NDIMS*NDIMS_AMBIENT+1
+@inline n_aux_node_vars(::AbstractCovariantEquations{NDIMS, NDIMS_AMBIENT}) where {NDIMS,
+NDIMS_AMBIENT} = 2 * NDIMS * NDIMS_AMBIENT + 1
 # Return auxiliary variable names for 2D covariant form
 @inline function auxvarnames(::AbstractCovariantEquations{2})
-    return ("basis_covariant[1,1]", 
-            "basis_covariant[2,1]", 
+    return ("basis_covariant[1,1]",
+            "basis_covariant[2,1]",
             "basis_covariant[3,1]",
             "basis_covariant[1,2]",
-            "basis_covariant[2,2]", 
-            "basis_covariant[3,2]", 
-            "basis_contravariant[1,1]", 
-            "basis_contravariant[2,1]", 
+            "basis_covariant[2,2]",
+            "basis_covariant[3,2]",
+            "basis_contravariant[1,1]",
+            "basis_contravariant[2,1]",
             "basis_contravariant[3,1]",
-            "basis_contravariant[1,2]", 
-            "basis_contravariant[2,2]", 
+            "basis_contravariant[1,2]",
+            "basis_contravariant[2,2]",
             "basis_contravariant[3,2]",
             "area_element")
 end
@@ -77,13 +77,13 @@ end
 # where a_i = A[:, i] denotes the covariant tangent basis in a spherical/ellipsoidal 
 # coordinate system.
 @inline function basis_covariant(aux_vars, ::AbstractCovariantEquations{2})
-    return SMatrix{3, 2}(aux_vars[1], aux_vars[2], aux_vars[3], 
+    return SMatrix{3, 2}(aux_vars[1], aux_vars[2], aux_vars[3],
                          aux_vars[4], aux_vars[5], aux_vars[6])
 end
 
 @inline function basis_contravariant(aux_vars, ::AbstractCovariantEquations{2})
-    return SMatrix{2, 3}(aux_vars[7], aux_vars[8], 
-                         aux_vars[9], aux_vars[10], 
+    return SMatrix{2, 3}(aux_vars[7], aux_vars[8],
+                         aux_vars[9], aux_vars[10],
                          aux_vars[11], aux_vars[12])
 end
 
@@ -93,7 +93,7 @@ end
 end
 
 @doc raw"""
-    transform_to_contravariant(initial_condition, equations)
+    transform_initial_condition(initial_condition, equations)
 
 Takes in a function with the signature `initial_condition(x, t)` which returns an initial 
 condition given in terms of global velocity or momentum components, and returns another
@@ -101,9 +101,16 @@ function with the signature  `initial_condition_transformed(x, t, aux_vars, equa
 which returns the same initial condition with the velocity or momentum vector given in
 terms of contravariant components.
 """
-function transform_to_contravariant(initial_condition, ::AbstractCovariantEquations)
+function transform_initial_condition(initial_condition, ::AbstractCovariantEquations)
     function initial_condition_transformed(x, t, aux_vars, equations)
         return global2contravariant(initial_condition(x, t), aux_vars, equations)
+    end
+    return initial_condition_transformed
+end
+
+function transform_initial_condition(initial_condition, ::AbstractEquations)
+    function initial_condition_transformed(x, t, equations)
+        return Trixi.prim2cons(initial_condition(x, t), equations)
     end
     return initial_condition_transformed
 end
@@ -136,7 +143,6 @@ end
     flux_rr = Trixi.flux(u_rr, aux_vars_rr, orientation_or_normal_direction, equations)
     return 0.5f0 * (flux_ll + flux_rr)
 end
-
 abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:
               AbstractEquations{NDIMS, NVARS} end
 

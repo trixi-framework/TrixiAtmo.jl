@@ -49,17 +49,17 @@ end
 
 # Convert contravariant velocity/momentum components to zonal and meridional components
 @inline function contravariant2global(u, aux_vars,
-                                         equations::CovariantLinearAdvectionEquation2D)
+                                      equations::CovariantLinearAdvectionEquation2D)
     v = basis_covariant(aux_vars, equations) * velocity(u, equations)
     return SVector(u[1], v[1], v[2], v[3])
 end
 
 # Convert zonal and meridional velocity/momentum components to contravariant components
 @inline function global2contravariant(u_spherical, aux_vars,
-                                         equations::CovariantLinearAdvectionEquation2D)
-    vcon1, vcon2 = basis_contravariant(aux_vars, equations) * SVector(u_spherical[2], 
-                                                                      u_spherical[3], 
-                                                                      u_spherical[4])
+                                      equations::CovariantLinearAdvectionEquation2D)
+    vcon1, vcon2 = basis_contravariant(aux_vars, equations) * SVector(u_spherical[2],
+                           u_spherical[3],
+                           u_spherical[4])
     return SVector(u_spherical[1], vcon1, vcon2)
 end
 

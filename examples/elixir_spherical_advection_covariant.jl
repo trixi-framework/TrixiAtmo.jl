@@ -24,9 +24,7 @@ mesh = P4estMeshCubedSphere2D(cells_per_dimension, EARTH_RADIUS,
                               initial_refinement_level = 0,
                               element_local_mapping = true)
 
-# Convert initial condition given in terms of zonal and meridional velocity components to 
-# one given in terms of contravariant velocity components
-initial_condition_transformed = transform_to_contravariant(initial_condition, equations)
+initial_condition_transformed = transform_initial_condition(initial_condition, equations)
 
 # A semidiscretization collects data structures and functions for the spatial discretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver)

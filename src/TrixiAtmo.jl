@@ -39,12 +39,12 @@ export flux_chandrashekar, flux_LMARS
 export velocity, waterheight, pressure, energy_total, energy_kinetic, energy_internal,
        lake_at_rest_error, source_terms_lagrange_multiplier,
        clean_solution_lagrange_multiplier!
-export P4estMeshCubedSphere2D, MetricTermsCrossProduct, MetricTermsInvariantCurl, 
-       MetricTermsSpherical, MetricTermsCartesian
+export P4estMeshCubedSphere2D, MetricTermsCrossProduct, MetricTermsInvariantCurl,
+       MetricTermsExactSpherical, MetricTermsExactCartesian
 export EARTH_RADIUS, EARTH_GRAVITATIONAL_ACCELERATION,
        EARTH_ROTATION_RATE, SECONDS_PER_DAY
 export global2contravariant, contravariant2global, spherical2cartesian,
-       transform_to_cartesian, transform_to_contravariant
+       transform_initial_condition
 export initial_condition_gaussian
 
 export examples_dir

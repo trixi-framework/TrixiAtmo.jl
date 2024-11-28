@@ -42,12 +42,6 @@ the test suite described in the following paper:
   standard test set for numerical approximations to the shallow water equations in
   spherical geometry. Journal of Computational Physics, 102(1):211-224. 
   [DOI: 10.1016/S0021-9991(05)80016-6](https://doi.org/10.1016/S0021-9991(05)80016-6)
-
-This function returns `SVector(h, vlon, vlat, b)`, where the first three entries are the 
-height, zonal velocity, and meridional velocity. The fourth entry, representing variable 
-bottom topography, is set to zero. The functions [`transform_to_contravariant`](@ref) and 
-[`transform_to_cartesian`](@ref) are available for converting to the prognostic variables 
-for Cartesian and covariant formulations.
 """
 @inline function initial_condition_gaussian(x, t)
     RealT = eltype(x)
@@ -71,9 +65,7 @@ for Cartesian and covariant formulations.
     lon, lat = atan(x[2], x[1]), asin(x[3] / a)
     vlon = V * (cos(lat) * cos(alpha) + sin(lat) * cos(lon) * sin(alpha))
     vlat = -V * sin(lon) * sin(alpha)
-    vrad = 0.0f0
-
-    # the last variable is the bottom topography, which we set to zero
-    return SVector(h, vlon, vlat, vrad, 0.0)
+    vx, vy, vz = spherical2cartesian(vlon, vlat, x)
+    return SVector(h, vx, vy, vz, 0.0)
 end
 end # muladd

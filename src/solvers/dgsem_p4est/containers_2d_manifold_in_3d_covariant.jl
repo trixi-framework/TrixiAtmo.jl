@@ -29,7 +29,8 @@ end
 
 # Create auxiliary node variable container and initialize auxiliary variables
 function init_auxiliary_node_variables(mesh::Union{P4estMesh, T8codeMesh},
-                                       equations, dg, elements, interfaces, metric_terms)
+                                       equations, dg, elements, interfaces,
+                                       metric_terms)
     nelements = Trixi.ncells(mesh)
     ninterfaces = Trixi.count_required_surfaces(mesh).interfaces
     NDIMS = ndims(elements)
@@ -60,7 +61,7 @@ function init_auxiliary_node_variables(mesh::Union{P4estMesh, T8codeMesh},
                                                                          _aux_node_vars,
                                                                          _aux_surface_node_vars)
 
-    init_auxiliary_node_variables!(auxiliary_variables, mesh, equations, dg, elements, 
+    init_auxiliary_node_variables!(auxiliary_variables, mesh, equations, dg, elements,
                                    metric_terms)
     init_auxiliary_surface_node_variables!(auxiliary_variables, mesh, equations, dg,
                                            interfaces)
@@ -162,7 +163,9 @@ function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 
                                         equations::AbstractCovariantEquations{2, 3}, dg,
                                         elements, metric_terms)
     (; tree_node_coordinates) = mesh
+    (; jacobian_matrix) = elements
     (; aux_node_vars) = auxiliary_variables
+
     NDIMS = 2
     NDIMS_AMBIENT = 3
 
@@ -186,21 +189,27 @@ function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 
 
         # Compute the auxiliary metric information at each node
         for j in eachnode(dg), i in eachnode(dg)
+
             # compute the covariant basis matrix
-            A = calc_basis_covariant(v1, v2, v3, v4, dg.basis.nodes[i],
-                                                dg.basis.nodes[j], 
-                                                radius, metric_terms)
-          
+            # A = calc_basis_covariant(v1, v2, v3, v4, dg.basis.nodes[i],
+            #                          dg.basis.nodes[j], radius, metric_terms)
+
+            # If the polynomial differentiation matrix is used to compute the Jacobian 
+            # matrix, the resulting matrix entries are the Cartesian components of the 
+            # covariant basis vectors for the tangent space to the polynomial manifold 
+            # approximating the true geometry
+            A = SMatrix{3, 2}(view(jacobian_matrix, :, :, i, j, element))
+
             # Covariant basis
-            aux_node_vars[1:NDIMS*NDIMS_AMBIENT, i, j, element] = SVector(A)  
+            aux_node_vars[1:(NDIMS * NDIMS_AMBIENT), i, j, element] = SVector(A)
             # Covariant metric tensor (not used for now)
             G = A' * A
             # Contravariant basis
-            aux_node_vars[NDIMS*NDIMS_AMBIENT+1:2*NDIMS*NDIMS_AMBIENT, 
-                          i, j, element] = SVector(inv(G) *A')
+            aux_node_vars[(NDIMS * NDIMS_AMBIENT + 1):(2 * NDIMS * NDIMS_AMBIENT),
+            i, j, element] = SVector(inv(G) * A')
             # Area element
-            aux_node_vars[2*NDIMS*NDIMS_AMBIENT+1, 
-                          i, j, element] = sqrt(G[1,1]*G[2,2] - G[1,2]^2)
+            aux_node_vars[2 * NDIMS * NDIMS_AMBIENT + 1,
+            i, j, element] = sqrt(G[1, 1] * G[2, 2] - G[1, 2]^2)
         end
     end
 
@@ -212,9 +221,8 @@ end
 # the covariant tangent basis, where e_lon and e_lat are the unit basis vectors
 # in the longitudinal and latitudinal directions, respectively. This formula is 
 # taken from Guba et al. (2014), and it is not specific to the cubed sphere nor
-# is the resulting matrix singular at the poles
-@inline function calc_basis_covariant(v1, v2, v3, v4, xi1, xi2, radius, 
-                                      metric_terms)
+# is the resulting matrix singular at the poles.
+@inline function calc_basis_covariant(v1, v2, v3, v4, xi1, xi2, radius)
     # Construct a bilinear mapping based on the four corner vertices
     x_bilinear = 0.25f0 *
                  ((1 - xi1) * (1 - xi2) * v1 + (1 + xi1) * (1 - xi2) * v2 +
@@ -241,15 +249,14 @@ end
 
     # Compute the matrix A containing spherical components of the covariant basis
     A = 0.25f0 * scaling_factor *
-           SMatrix{2, 3}(-sinlon, 0, coslon, 0, 0, 1) *
-           SMatrix{3, 3}(a11, a21, a31, a12, a22, a32, a13, a23, a33) *
-           SMatrix{3, 4}(v1[1], v1[2], v1[3], v2[1], v2[2], v2[3],
-                         v3[1], v3[2], v3[3], v4[1], v4[2], v4[3]) *
-           SMatrix{4, 2}(-1 + xi2, 1 - xi2, 1 + xi2, -1 - xi2,
-                         -1 + xi1, -1 - xi1, 1 + xi1, 1 - xi1)
+        SMatrix{2, 3}(-sinlon, 0, coslon, 0, 0, 1) *
+        SMatrix{3, 3}(a11, a21, a31, a12, a22, a32, a13, a23, a33) *
+        SMatrix{3, 4}(v1[1], v1[2], v1[3], v2[1], v2[2], v2[3],
+                      v3[1], v3[2], v3[3], v4[1], v4[2], v4[3]) *
+        SMatrix{4, 2}(-1 + xi2, 1 - xi2, 1 + xi2, -1 - xi2,
+                      -1 + xi1, -1 - xi1, 1 + xi1, 1 - xi1)
 
     # Make zero component in the radial direction
-    return SMatrix{3,2}(A[1,1], A[2,1], 0.0f0, A[1,2], A[2,2], 0.0f0)
-
+    return SMatrix{3, 2}(A[1, 1], A[2, 1], 0.0f0, A[1, 2], A[2, 2], 0.0f0)
 end
 end # muladd
