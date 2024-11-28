@@ -53,13 +53,14 @@ dispatching on the return type.
 
 # If no auxiliary variables are passed into the conversion to spherical coordinates, do not 
 # do any conversion.
-@inline contravariant2spherical(u, equations) = u
+@inline contravariant2global(u, equations) = u
 
 # For the covariant form, the auxiliary variables are the the NDIMS*NDIMS_AMBIENT entries 
 # of the covariant basis matrix
 @inline have_aux_node_vars(::AbstractCovariantEquations) = True()
 @inline n_aux_node_vars(::AbstractCovariantEquations{NDIMS, NDIMS_AMBIENT}) where {NDIMS,
 NDIMS_AMBIENT} = 2 * NDIMS * NDIMS_AMBIENT + 1
+
 # Return auxiliary variable names for 2D covariant form
 @inline function auxvarnames(::AbstractCovariantEquations{2})
     return ("basis_covariant[1,1]",
