@@ -189,16 +189,16 @@ function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 
 
         # Compute the auxiliary metric information at each node
         for j in eachnode(dg), i in eachnode(dg)
-
-            # compute the covariant basis matrix
-            # A = calc_basis_covariant(v1, v2, v3, v4, dg.basis.nodes[i],
-            #                          dg.basis.nodes[j], radius, metric_terms)
-
-            # If the polynomial differentiation matrix is used to compute the Jacobian 
-            # matrix, the resulting matrix entries are the Cartesian components of the 
-            # covariant basis vectors for the tangent space to the polynomial manifold 
-            # approximating the true geometry
-            A = SMatrix{3, 2}(view(jacobian_matrix, :, :, i, j, element))
+            if equations.global_coordinate_system isa GlobalSphericalCoordinates
+                A = calc_basis_covariant(v1, v2, v3, v4, dg.basis.nodes[i],
+                                         dg.basis.nodes[j], radius)
+            else
+                # If the polynomial differentiation matrix is used to compute the Jacobian 
+                # matrix, the resulting matrix entries are the Cartesian components of the 
+                # covariant basis vectors for the tangent space to the polynomial manifold 
+                # approximating the true geometry
+                A = SMatrix{3, 2}(view(jacobian_matrix, :, :, i, j, element))
+            end
 
             # Covariant basis
             aux_node_vars[1:(NDIMS * NDIMS_AMBIENT), i, j, element] = SVector(A)
@@ -208,8 +208,7 @@ function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 
             aux_node_vars[(NDIMS * NDIMS_AMBIENT + 1):(2 * NDIMS * NDIMS_AMBIENT),
             i, j, element] = SVector(inv(G) * A')
             # Area element
-            aux_node_vars[2 * NDIMS * NDIMS_AMBIENT + 1,
-            i, j, element] = sqrt(G[1, 1] * G[2, 2] - G[1, 2]^2)
+            aux_node_vars[n_aux_node_vars(equations), i, j, element] = sqrt(det(G))
         end
     end
 

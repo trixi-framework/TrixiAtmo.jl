@@ -2,7 +2,8 @@
 #! format: noindent
 
 @doc raw"""
-    CovariantLinearAdvectionEquation2D <: AbstractCovariantEquations{2, 3, 4}
+    CovariantLinearAdvectionEquation2D{GlobalCoordinateSystem} <: 
+    AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 4}
 
 A variable-coefficient linear advection equation can be defined on a two-dimensional
 manifold $S \subset \mathbb{R}^3$ as
@@ -38,7 +39,13 @@ information. The third velocity component $v^3$, representing the velocity compo
 direction normal to the surface, is set to zero when solving equations on two-dimensional 
 surfaces, and will remain zero throughout the simulation.
 """
-struct CovariantLinearAdvectionEquation2D <: AbstractCovariantEquations{2, 3, 4} end
+struct CovariantLinearAdvectionEquation2D{GlobalCoordinateSystem} <:
+       AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 4}
+    global_coordinate_system::GlobalCoordinateSystem
+    function CovariantLinearAdvectionEquation2D(global_coordinate_system::GlobalCoordinateSystem = GlobalSphericalCoordinates()) where {GlobalCoordinateSystem}
+        return new{GlobalCoordinateSystem}(global_coordinate_system)
+    end
+end
 
 function Trixi.varnames(::typeof(cons2cons), ::CovariantLinearAdvectionEquation2D)
     return ("scalar", "vcon1", "vcon2", "vcon3")
@@ -90,7 +97,7 @@ end
 @inline function Trixi.flux(u, aux_vars, orientation::Integer,
                             equations::CovariantLinearAdvectionEquation2D)
     z = zero(eltype(u))
-    return SVector(area_element(aux_vars, equations) * u[1] * u[orientation + 1], 
+    return SVector(area_element(aux_vars, equations) * u[1] * u[orientation + 1],
                    z, z, z)
 end
 

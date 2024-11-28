@@ -31,12 +31,12 @@ end
 # aux_vars, equations), and an additional method must be defined as solution_variables(u,
 # equations) = u, such that no conversion is done when auxiliary variables are not provided.
 function Trixi.save_solution_file(u_ode, t, dt, iter,
-    semi::SemidiscretizationHyperbolic{<:Trixi.AbstractMesh, <:AbstractCovariantEquations},
-    solution_callback,
-    element_variables = Dict{Symbol, Any}(),
-    node_variables = Dict{Symbol, Any}();
-    system = "")
-
+                                  semi::SemidiscretizationHyperbolic{<:Trixi.AbstractMesh,
+                                                                     <:AbstractCovariantEquations},
+                                  solution_callback,
+                                  element_variables = Dict{Symbol, Any}(),
+                                  node_variables = Dict{Symbol, Any}();
+                                  system = "")
     mesh, equations, solver, cache = Trixi.mesh_equations_solver_cache(semi)
     u = Trixi.wrap_array_native(u_ode, semi)
 
@@ -48,6 +48,6 @@ function Trixi.save_solution_file(u_ode, t, dt, iter,
     # equations). Since the variables are already converted above, we therefore require 
     # solution_variables(u, equations) = u.
     Trixi.save_solution_file(data, t, dt, iter, mesh, equations, solver, cache,
-                       solution_callback, element_variables, 
-                       node_variables, system = system)
+                             solution_callback, element_variables,
+                             node_variables, system = system)
 end

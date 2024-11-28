@@ -23,7 +23,3 @@ contravariant vectors are computed using the invariant curl form.
   [DOI: 10.1142/9789812810793_0008](https://doi.org/10.1142/9789812810793_0008)
 """
 struct MetricTermsInvariantCurl end
-
-struct MetricTermsExactSpherical end
-
-struct MetricTermsExactCartesian end

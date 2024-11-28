@@ -39,12 +39,12 @@ export velocity, waterheight, pressure, energy_total, energy_kinetic, energy_int
        lake_at_rest_error, source_terms_lagrange_multiplier,
        clean_solution_lagrange_multiplier!
 export P4estMeshCubedSphere2D, MetricTermsCrossProduct, MetricTermsInvariantCurl,
-       MetricTermsExactSpherical, MetricTermsExactCartesian
+       GlobalCartesianCoordinates, GlobalSphericalCoordinates
 export EARTH_RADIUS, EARTH_GRAVITATIONAL_ACCELERATION,
        EARTH_ROTATION_RATE, SECONDS_PER_DAY
 export global2contravariant, contravariant2global, spherical2cartesian,
        transform_initial_condition
-export initial_condition_gaussian
+export initial_condition_gaussian, initial_condition_gaussian_cartesian
 
 export examples_dir
 end # module TrixiAtmo

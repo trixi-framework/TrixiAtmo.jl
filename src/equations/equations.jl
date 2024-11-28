@@ -6,6 +6,7 @@ using Trixi: AbstractEquations
 @doc raw"""
     AbstractCovariantEquations{NDIMS, 
                                NDIMS_AMBIENT, 
+                               GlobalCoordinateSystem,
                                NVARS} <: AbstractEquations{NDIMS, NVARS} 
 
 Abstract type used to dispatch on systems of equations in covariant form, in which fluxes
@@ -36,7 +37,12 @@ local contravariant components, see [`transform_to_contravariant`](@ref).
 """
 abstract type AbstractCovariantEquations{NDIMS,
                                          NDIMS_AMBIENT,
+                                         GlobalCoordinateSystem,
                                          NVARS} <: AbstractEquations{NDIMS, NVARS} end
+
+# Coordinate systems
+struct GlobalCartesianCoordinates end
+struct GlobalSphericalCoordinates end
 
 """
     have_aux_node_vars(equations)
@@ -92,9 +98,33 @@ end
                          aux_vars[11], aux_vars[12])
 end
 
-# Slow computation of the area element
 @inline function area_element(aux_vars, ::AbstractCovariantEquations{2})
     return aux_vars[13]
+end
+
+# Transform zonal and meridional velocity/momentum components to Cartesian components
+function spherical2cartesian(vlon, vlat, x)
+    # Co-latitude
+    colat = acos(x[3] / sqrt(x[1]^2 + x[2]^2 + x[3]^2))
+
+    # Longitude
+    if sign(x[2]) == 0.0
+        signy = 1.0
+    else
+        signy = sign(x[2])
+    end
+    r_xy = sqrt(x[1]^2 + x[2]^2)
+    if r_xy == 0.0
+        lon = pi / 2
+    else
+        lon = signy * acos(x[1] / r_xy)
+    end
+
+    v1 = -cos(colat) * cos(lon) * vlat - sin(lon) * vlon
+    v2 = -cos(colat) * sin(lon) * vlat + cos(lon) * vlon
+    v3 = sin(colat) * vlat
+
+    return SVector(v1, v2, v3)
 end
 
 @doc raw"""

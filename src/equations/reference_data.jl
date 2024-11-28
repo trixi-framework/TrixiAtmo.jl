@@ -65,7 +65,15 @@ the test suite described in the following paper:
     lon, lat = atan(x[2], x[1]), asin(x[3] / a)
     vlon = V * (cos(lat) * cos(alpha) + sin(lat) * cos(lon) * sin(alpha))
     vlat = -V * sin(lon) * sin(alpha)
+
+    # Prescribe the spherical velocity components
+    return SVector(h, vlon, vlat, 0.0f0, 0.0f0)
+end
+
+# Version for global Cartesian coordinates
+@inline function initial_condition_gaussian_cartesian(x, t)
+    h, vlon, vlat = initial_condition_gaussian(x, t)
     vx, vy, vz = spherical2cartesian(vlon, vlat, x)
-    return SVector(h, vx, vy, vz, 0.0)
+    return SVector(h, vx, vy, vz, 0.0f0)
 end
 end # muladd

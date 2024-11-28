@@ -380,29 +380,4 @@ end
 @inline function energy_internal(cons, equations::ShallowWaterEquations3D)
     return energy_total(cons, equations) - energy_kinetic(cons, equations)
 end
-
-# Transform zonal and meridional velocity/momentum components to Cartesian components
-function spherical2cartesian(vlon, vlat, x)
-    # Co-latitude
-    colat = acos(x[3] / sqrt(x[1]^2 + x[2]^2 + x[3]^2))
-
-    # Longitude
-    if sign(x[2]) == 0.0
-        signy = 1.0
-    else
-        signy = sign(x[2])
-    end
-    r_xy = sqrt(x[1]^2 + x[2]^2)
-    if r_xy == 0.0
-        lon = pi / 2
-    else
-        lon = signy * acos(x[1] / r_xy)
-    end
-
-    v1 = -cos(colat) * cos(lon) * vlat - sin(lon) * vlon
-    v2 = -cos(colat) * sin(lon) * vlat + cos(lon) * vlon
-    v3 = sin(colat) * vlat
-
-    return SVector(v1, v2, v3)
-end
 end # @muladd
