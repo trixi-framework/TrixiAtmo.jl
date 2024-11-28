@@ -16,8 +16,8 @@ function convert_variables(u, solution_variables, mesh::P4estMesh{2},
     Trixi.@threaded for element in eachelement(dg, cache)
         for j in eachnode(dg), i in eachnode(dg)
             u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
-            a_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
-            u_node_converted = solution_variables(u_node, a_node, equations)
+            aux_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
+            u_node_converted = solution_variables(u_node, aux_node, equations)
             for v in 1:n_vars
                 data[v, i, j, element] = u_node_converted[v]
             end

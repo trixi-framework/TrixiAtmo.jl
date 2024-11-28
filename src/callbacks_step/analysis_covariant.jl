@@ -11,13 +11,13 @@ function Trixi.analyze(::typeof(Trixi.entropy_timederivative), du, u, t,
     Trixi.integrate_via_indices(u, mesh, equations, dg, cache,
                                 du) do u, i, j, element, equations, dg, du_node
         # Get auxiliary variables, solution variables, and time derivative at given node
-        a_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
+        aux_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
         u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
         du_node = Trixi.get_node_vars(du, equations, dg, i, j, element)
 
         # compute ∂S/∂u ⋅ ∂u/∂t, where the entropy variables ∂S/∂u depend on the solution 
         # and auxiliary variables
-        dot(cons2entropy(u_node, a_node, equations), du_node)
+        dot(cons2entropy(u_node, aux_node, equations), du_node)
     end
 end
 
@@ -44,15 +44,15 @@ function Trixi.calc_error_norms(func, u, t, analyzer, mesh::P4estMesh{2},
 
             # Convert exact solution into contravariant components using geometric
             # information stored in aux vars
-            a_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
-            u_exact = initial_condition(x_node, t, a_node, equations)
+            aux_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
+            u_exact = initial_condition(x_node, t, aux_node, equations)
 
             # Compute the difference as usual
             u_numerical = Trixi.get_node_vars(u, equations, dg, i, j, element)
             diff = func(u_exact, equations) - func(u_numerical, equations)
 
             # For the L2 error, integrate with respect to volume element stored in aux vars 
-            sqrtG = area_element(a_node, equations)
+            sqrtG = area_element(aux_node, equations)
             l2_error += diff .^ 2 * (weights[i] * weights[j] * sqrtG)
 
             # Compute Linf error as usual
