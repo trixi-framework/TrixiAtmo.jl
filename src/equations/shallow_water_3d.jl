@@ -61,7 +61,7 @@ function ShallowWaterEquations3D(; gravity_constant, H0 = zero(gravity_constant)
     ShallowWaterEquations3D(gravity_constant, H0)
 end
 
-Trixi.have_nonconservative_terms(::ShallowWaterEquations3D) = True() # Deactivate non-conservative terms for the moment...
+Trixi.have_nonconservative_terms(::ShallowWaterEquations3D) = True()
 Trixi.varnames(::typeof(cons2cons), ::ShallowWaterEquations3D) = ("h", "h_v1", "h_v2",
                                                                   "h_v3", "b")
 # Note, we use the total water height, H = h + b, as the first primitive variable for easier
