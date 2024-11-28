@@ -51,6 +51,10 @@ dispatching on the return type.
 # cons2cons method which takes in unused aux_vars variable
 @inline Trixi.cons2cons(u, aux_vars, equations) = u
 
+# If no auxiliary variables are passed into the conversion to spherical coordinates, do not 
+# do any conversion.
+@inline contravariant2spherical(u, equations) = u
+
 # For the covariant form, the auxiliary variables are the the NDIMS^2 entries of the 
 # covariant basis matrix
 @inline have_aux_node_vars(::AbstractCovariantEquations) = True()

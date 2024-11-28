@@ -4,7 +4,6 @@ authors = ["Benedict Geihe <bgeihe@uni-koeln.de>", "Tristan Montoya <montoya.tri
 version = "0.1.0-DEV"
 
 [deps]
-HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 LoopVectorization = "bdcacae8-1622-11e9-2a5c-532679323890"
 MuladdMacro = "46d2c3a1-f734-5fdb-9937-b9b9aeba4221"
@@ -18,7 +17,6 @@ StrideArrays = "d1fa6d79-ef01-42a6-86c9-f7c551f8593b"
 Trixi = "a7f1ee26-1774-49b1-8366-f1abc58fbfcb"
 
 [compat]
-HDF5 = "0.17"
 LinearAlgebra = "1"
 LoopVectorization = "0.12.118"
 MuladdMacro = "0.2.2"
