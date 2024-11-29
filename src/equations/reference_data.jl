@@ -8,7 +8,7 @@ const EARTH_ROTATION_RATE = 7.292e-5  # rad/s
 const SECONDS_PER_DAY = 8.64e4
 
 @doc raw"""
-    initial_condition_gaussian(x, t)
+    initial_condition_gaussian(x, t, equations)
 
 This Gaussian bell case is a smooth initial condition suitable for testing the convergence 
 of discretizations of the linear advection equation on a spherical domain of radius $a = 6.
@@ -43,7 +43,37 @@ the test suite described in the following paper:
   spherical geometry. Journal of Computational Physics, 102(1):211-224. 
   [DOI: 10.1016/S0021-9991(05)80016-6](https://doi.org/10.1016/S0021-9991(05)80016-6)
 """
-@inline function initial_condition_gaussian(x, t)
+@inline function initial_condition_gaussian(x, t, ::AbstractEquations)
+    RealT = eltype(x)
+
+    a = EARTH_RADIUS  # radius of the sphere in metres
+    V = convert(RealT, 2π) * a / (12 * SECONDS_PER_DAY)  # speed of rotation
+    alpha = convert(RealT, π / 4)  # angle of rotation
+    h_0 = 1000.0f0  # bump height in metres
+    b_0 = 5.0f0 / (a^2)  # bump width
+    lon_0, lat_0 = convert(RealT, 3π / 2), 0.0f0  # initial bump location
+
+    # convert initial position to Cartesian coordinates
+    x_0 = SVector(a * cos(lat_0) * cos(lon_0),
+                  a * cos(lat_0) * sin(lon_0),
+                  a * sin(lat_0))
+
+    # compute Gaussian bump profile
+    h = h_0 * exp(-b_0 * ((x[1] - x_0[1])^2 + (x[2] - x_0[2])^2 + (x[3] - x_0[3])^2))
+
+    # get zonal and meridional components of the velocity
+    lon, lat = atan(x[2], x[1]), asin(x[3] / a)
+    vlon = V * (cos(lat) * cos(alpha) + sin(lat) * cos(lon) * sin(alpha))
+    vlat = -V * sin(lon) * sin(alpha)
+    vx, vy, vz = spherical2cartesian(vlon, vlat, x)
+
+    # Prescribe the Cartesian velocity components
+    return SVector(h, vx, vy, vz, 0.0f0)
+end
+
+@inline function initial_condition_gaussian(x, t,
+                                            ::AbstractCovariantEquations{2, 3,
+                                                                         GlobalSphericalCoordinates})
     RealT = eltype(x)
 
     a = EARTH_RADIUS  # radius of the sphere in metres
@@ -67,13 +97,6 @@ the test suite described in the following paper:
     vlat = -V * sin(lon) * sin(alpha)
 
     # Prescribe the spherical velocity components
-    return SVector(h, vlon, vlat, 0.0f0, 0.0f0)
-end
-
-# Version for global Cartesian coordinates
-@inline function initial_condition_gaussian_cartesian(x, t)
-    h, vlon, vlat = initial_condition_gaussian(x, t)
-    vx, vy, vz = spherical2cartesian(vlon, vlat, x)
-    return SVector(h, vx, vy, vz, 0.0f0)
+    return SVector(h, vlon, vlat, 0.0f0)
 end
 end # muladd

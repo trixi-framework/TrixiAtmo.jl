@@ -7,7 +7,7 @@ using TrixiAtmo
 # semidiscretization of the linear advection equation
 
 cells_per_dimension = 5
-initial_condition = initial_condition_gaussian_cartesian
+initial_condition = initial_condition_gaussian
 
 # We use the ShallowWaterEquations3D equations structure but modify the rhs! function to
 # convert it to a variable-coefficient advection equation

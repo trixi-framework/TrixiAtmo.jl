@@ -66,8 +66,24 @@ end
 @trixiatmo_testset "Spherical advection, covariant weak form, LLF surface flux" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_spherical_advection_covariant.jl"),
-                        l2=[1.0007043506351705, 0.0, 0.0],
-                        linf=[14.235905681508598, 0.0, 0.0])
+                        l2=[1.0007043506351705, 0.0, 0.0, 0.0],
+                        linf=[14.235905681508598, 0.0, 0.0, 0.0])
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    let
+        t = sol.t[end]
+        u_ode = sol.u[end]
+        du_ode = similar(u_ode)
+        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
+    end
+end
+
+@trixiatmo_testset "Spherical advection, covariant weak form, LLF surface flux, global spherical coords" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_spherical_advection_covariant.jl"),
+                        l2=[1.0007043506351705, 0.0, 0.0, 0.0],
+                        linf=[14.235905681508598, 0.0, 0.0, 0.0],
+                        global_coordinate_system=GlobalSphericalCoordinates())
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let
@@ -83,8 +99,8 @@ end
 @trixiatmo_testset "Spherical advection, covariant flux-differencing, central/LLF" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_spherical_advection_covariant.jl"),
-                        l2=[1.0007043506351412, 0.0, 0.0],
-                        linf=[14.23590568150928, 0.0, 0.0],
+                        l2=[1.0007043506351412, 0.0, 0.0, 0.0],
+                        linf=[14.23590568150928, 0.0, 0.0, 0.0],
                         volume_integral=VolumeIntegralFluxDifferencing(flux_central))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
@@ -100,8 +116,8 @@ end
 @trixiatmo_testset "Spherical advection, covariant flux-differencing, central/central" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_spherical_advection_covariant.jl"),
-                        l2=[2.499889861385917, 0.0, 0.0],
-                        linf=[38.085244441156085, 0.0, 0.0],
+                        l2=[2.499889861385917, 0.0, 0.0, 0.0],
+                        linf=[38.085244441156085, 0.0, 0.0, 0.0],
                         volume_integral=VolumeIntegralFluxDifferencing(flux_central),
                         surface_flux=flux_central)
     # Ensure that we do not have excessive memory allocations

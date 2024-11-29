@@ -40,10 +40,11 @@ direction normal to the surface, is set to zero when solving equations on two-di
 surfaces, and will remain zero throughout the simulation.
 """
 struct CovariantLinearAdvectionEquation2D{GlobalCoordinateSystem} <:
-    AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 4}
+       AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 4}
     global_coordinate_system::GlobalCoordinateSystem
-    function CovariantLinearAdvectionEquation2D(global_coordinate_system::GlobalCoordinateSystem = GlobalSphericalCoordinates()) where {GlobalCoordinateSystem}
-        return new{GlobalCoordinateSystem}(global_coordinate_system)
+    function CovariantLinearAdvectionEquation2D(;
+                                                global_coordinate_system = GlobalCartesianCoordinates())
+        return new{typeof(global_coordinate_system)}(global_coordinate_system)
     end
 end
 
@@ -51,14 +52,14 @@ function Trixi.varnames(::typeof(cons2cons), ::CovariantLinearAdvectionEquation2
     return ("scalar", "vcon1", "vcon2", "vcon3")
 end
 
-# Convenience function to extract the three-dimensional velocity
-function velocity(u, ::CovariantLinearAdvectionEquation2D)
-    return SVector(u[2], u[3], u[4])
-end
-
 # Convenience function to extract the horizontal velocity
 function velocity_horizontal(u, ::CovariantLinearAdvectionEquation2D)
     return SVector(u[2], u[3])
+end
+
+# Convenience function to extract the full three-dimensional velocity
+function velocity(u, ::CovariantLinearAdvectionEquation2D)
+    return SVector(u[2], u[3], u[4])
 end
 
 # Convert contravariant velocity/momentum components to the global coordinate system
@@ -76,11 +77,10 @@ end
     return SVector(u[1], vcon1, vcon2, zero(eltype(u)))
 end
 
-# The notation (u, v, w) is used here to denote generic components in the global coordinate
-# system
+# The notation (u, v, w) is used here to denote generic global vector components
 function Trixi.varnames(::typeof(contravariant2global),
                         ::CovariantLinearAdvectionEquation2D)
-    return ("scalar", "u", "v", "w")
+    return ("scalar", "vglo1", "vglo2", "vglo3")
 end
 
 # We will define the "entropy variables" here to just be the scalar variable in the first 
@@ -93,12 +93,13 @@ end
 
 # Numerical flux plus dissipation for abstract covariant equations as a function of the 
 # state vector u, as well as the auxiliary variables aux_vars, which contain the geometric 
-# information.
+# information required for the covariant form
 @inline function Trixi.flux(u, aux_vars, orientation::Integer,
                             equations::CovariantLinearAdvectionEquation2D)
     z = zero(eltype(u))
-    return SVector(area_element(aux_vars, equations) * u[1] * u[orientation + 1], 
-                   z, z, z)
+    sqrtG = area_element(aux_vars, equations)
+    vcon = velocity_horizontal(u, equations)
+    return SVector(sqrtG * u[1] * vcon[orientation], z, z, z)
 end
 
 # Local Lax-Friedrichs dissipation which is not applied to the contravariant velocity 
@@ -108,18 +109,19 @@ end
                                                               orientation_or_normal_direction,
                                                               equations::CovariantLinearAdvectionEquation2D)
     z = zero(eltype(u_ll))
+    sqrtG = area_element(aux_vars_ll, equations)
     λ = dissipation.max_abs_speed(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
                                   orientation_or_normal_direction, equations)
-    return -0.5f0 * area_element(aux_vars_ll, equations) * λ *
-           SVector(u_rr[1] - u_ll[1], z, z, z)
+    return -0.5f0 * sqrtG * λ * SVector(u_rr[1] - u_ll[1], z, z, z)
 end
 
-# Maximum wave speed with respect to the a specific orientation
+# Maximum contravariant wave speed with respect to specific basis vector
 @inline function Trixi.max_abs_speed_naive(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
                                            orientation::Integer,
                                            equations::CovariantLinearAdvectionEquation2D)
-    return max(abs(velocity_horizontal(u_ll, equations)[orientation]),
-               abs(velocity_horizontal(u_rr, equations)[orientation]))
+    vcon_ll = velocity_horizontal(u_ll, equations)  # Contravariant components on left side
+    vcon_rr = velocity_horizontal(u_rr, equations)  # Contravariant components on right side
+    return max(abs(vcon_ll[orientation]), abs(vcon_rr[orientation]))
 end
 
 # Maximum wave speeds in each direction for CFL calculation

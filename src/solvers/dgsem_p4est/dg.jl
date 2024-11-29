@@ -24,21 +24,21 @@ function Trixi.create_cache(mesh::P4estMesh, equations::AbstractEquations, dg::D
     cache = (; cache...,
              create_cache_auxiliary(mesh, equations,
                                     have_aux_node_vars(equations),
-                                    dg, elements, interfaces, metric_terms)...)
+                                    dg, elements, interfaces)...)
     return cache
 end
 
 # If there are auxiliary variables, initialize them
 function create_cache_auxiliary(mesh, equations, have_aux_node_vars::True, dg, elements,
-                                interfaces, metric_terms)
+                                interfaces)
     auxiliary_variables = init_auxiliary_node_variables(mesh, equations, dg, elements,
-                                                        interfaces, metric_terms)
+                                                        interfaces)
     return (; auxiliary_variables)
 end
 
 # Do nothing if there are no auxiliary variables
 function create_cache_auxiliary(mesh, equations, have_aux_node_vars::False, dg, elements,
-                                interfaces, metric_terms)
+                                interfaces)
     return NamedTuple()
 end
 

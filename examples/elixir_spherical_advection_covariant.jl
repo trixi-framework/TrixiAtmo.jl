@@ -9,9 +9,8 @@ using OrdinaryDiffEq, Trixi, TrixiAtmo
 
 cells_per_dimension = 5
 initial_condition = initial_condition_gaussian
-global_coordinate_system = GlobalSphericalCoordinates()
 
-equations = CovariantLinearAdvectionEquation2D(global_coordinate_system)
+equations = CovariantLinearAdvectionEquation2D(global_coordinate_system = GlobalCartesianCoordinates())
 
 # Create DG solver with polynomial degree = p and a local Lax-Friedrichs flux
 solver = DGSEM(polydeg = 3, surface_flux = flux_lax_friedrichs,

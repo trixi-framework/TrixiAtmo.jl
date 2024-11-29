@@ -29,8 +29,7 @@ end
 
 # Create auxiliary node variable container and initialize auxiliary variables
 function init_auxiliary_node_variables(mesh::Union{P4estMesh, T8codeMesh},
-                                       equations, dg, elements, interfaces,
-                                       metric_terms)
+                                       equations, dg, elements, interfaces)
     nelements = Trixi.ncells(mesh)
     ninterfaces = Trixi.count_required_surfaces(mesh).interfaces
     NDIMS = ndims(elements)
@@ -61,8 +60,7 @@ function init_auxiliary_node_variables(mesh::Union{P4estMesh, T8codeMesh},
                                                                          _aux_node_vars,
                                                                          _aux_surface_node_vars)
 
-    init_auxiliary_node_variables!(auxiliary_variables, mesh, equations, dg, elements,
-                                   metric_terms)
+    init_auxiliary_node_variables!(auxiliary_variables, mesh, equations, dg, elements)
     init_auxiliary_surface_node_variables!(auxiliary_variables, mesh, equations, dg,
                                            interfaces)
     return auxiliary_variables
@@ -161,9 +159,8 @@ end
 # geometry, making the analytical metric terms computed here no longer correct.
 function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 3},
                                         equations::AbstractCovariantEquations{2, 3}, dg,
-                                        elements, metric_terms)
+                                        elements)
     (; tree_node_coordinates) = mesh
-    (; jacobian_matrix) = elements
     (; aux_node_vars) = auxiliary_variables
 
     NDIMS = 2
@@ -189,45 +186,65 @@ function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 
 
         # Compute the auxiliary metric information at each node
         for j in eachnode(dg), i in eachnode(dg)
-            if equations.global_coordinate_system isa GlobalSphericalCoordinates
-                A = calc_basis_covariant(v1, v2, v3, v4, dg.basis.nodes[i],
-                                         dg.basis.nodes[j], radius)
-            else
-                A = calc_basis_covariant_cartesian(v1, v2, v3, v4, dg.basis.nodes[i],
-                dg.basis.nodes[j], radius)
-                # A = SMatrix{3, 2}(view(jacobian_matrix, :, :, i, j, element))
-            end
 
-            # Covariant basis
+            # Calculate the covariant basis in the desired global coordinate system
+            A = calc_basis_covariant(v1, v2, v3, v4,
+                                     dg.basis.nodes[i], dg.basis.nodes[j],
+                                     radius, equations.global_coordinate_system)
             aux_node_vars[1:(NDIMS * NDIMS_AMBIENT), i, j, element] = SVector(A)
-            # Covariant metric tensor (not used for now)
-            G = A' * A
+
+            G = A' * A  # Covariant metric tensor (not used for now)
+
             # Contravariant basis
             aux_node_vars[(NDIMS * NDIMS_AMBIENT + 1):(2 * NDIMS * NDIMS_AMBIENT),
             i, j, element] = SVector(inv(G) * A')
+
             # Area element
             aux_node_vars[n_aux_node_vars(equations), i, j, element] = sqrt(det(G))
         end
     end
-
     return nothing
+end
+
+# Analytically compute the transformation matrix A, such that G = AᵀA is the 
+# covariant metric tensor and a_i = A[1,i] * e_x + A[2,i] * e_y + A[3,i] * e_z denotes 
+# the covariant tangent basis, where e_x, e_y, and e_z are the Cartesian unit basis vectors.
+@inline function calc_basis_covariant(v1, v2, v3, v4, xi1, xi2, radius,
+                                      ::GlobalCartesianCoordinates)
+
+    # Construct a bilinear mapping based on the four corner vertices
+    xe = 0.25f0 * ((1 - xi1) * (1 - xi2) * v1 + (1 + xi1) * (1 - xi2) * v2 +
+          (1 + xi1) * (1 + xi2) * v3 + (1 - xi1) * (1 + xi2) * v4)
+
+    # Derivatives of bilinear map with respect to reference coordinates xi1, xi2
+    dxedxi1 = 0.25f0 *
+              (-(1 - xi2) * v1 + (1 - xi2) * v2 + (1 + xi2) * v3 - (1 + xi2) * v4)
+    dxedxi2 = 0.25f0 *
+              (-(1 - xi1) * v1 - (1 + xi1) * v2 + (1 + xi1) * v3 + (1 - xi1) * v4)
+
+    # Use product/quotient rule on the projection
+    norm_xe = norm(xe)
+    dxdxi1 = radius / norm_xe * (dxedxi1 - dot(xe, dxedxi1) / norm_xe^2 * xe)
+    dxdxi2 = radius / norm_xe * (dxedxi2 - dot(xe, dxedxi2) / norm_xe^2 * xe)
+
+    return SMatrix{3, 2}(dxdxi1[1], dxdxi1[2], dxdxi1[3],
+                         dxdxi2[1], dxdxi2[2], dxdxi2[3])
 end
 
 # Analytically compute the transformation matrix A, such that G = AᵀA is the 
 # covariant metric tensor and a_i = A[1,i] * e_lon + A[2,i] * e_lat denotes 
 # the covariant tangent basis, where e_lon and e_lat are the unit basis vectors
 # in the longitudinal and latitudinal directions, respectively. This formula is 
-# taken from Guba et al. (2014), and it is not specific to the cubed sphere nor
-# is the resulting matrix singular at the poles.
-@inline function calc_basis_covariant(v1, v2, v3, v4, xi1, xi2, radius)
+# taken from Guba et al. (2014).
+@inline function calc_basis_covariant(v1, v2, v3, v4, xi1, xi2, radius,
+                                      ::GlobalSphericalCoordinates)
     # Construct a bilinear mapping based on the four corner vertices
-    x_bilinear = 0.25f0 *
-                 ((1 - xi1) * (1 - xi2) * v1 + (1 + xi1) * (1 - xi2) * v2 +
-                  (1 + xi1) * (1 + xi2) * v3 + (1 - xi1) * (1 + xi2) * v4)
+    xe = 0.25f0 * ((1 - xi1) * (1 - xi2) * v1 + (1 + xi1) * (1 - xi2) * v2 +
+          (1 + xi1) * (1 + xi2) * v3 + (1 - xi1) * (1 + xi2) * v4)
 
     # Project the mapped local coordinates onto the sphere using a simple scaling
-    scaling_factor = radius / norm(x_bilinear)
-    x = scaling_factor * x_bilinear
+    scaling_factor = radius / norm(xe)
+    x = scaling_factor * xe
 
     # Convert Cartesian coordinates to longitude and latitude
     lon, lat = atan(x[2], x[1]), asin(x[3] / radius)
@@ -253,27 +270,7 @@ end
         SMatrix{4, 2}(-1 + xi2, 1 - xi2, 1 + xi2, -1 - xi2,
                       -1 + xi1, -1 - xi1, 1 + xi1, 1 - xi1)
 
-    # Make zero component in the radial direction
+    # Make zero component in the radial direction so the matrix has the right dimensions
     return SMatrix{3, 2}(A[1, 1], A[2, 1], 0.0f0, A[1, 2], A[2, 2], 0.0f0)
-end
-
-
-@inline function calc_basis_covariant_cartesian(v1, v2, v3, v4, xi1, xi2, radius)
-
-    # Construct a bilinear mapping based on the four corner vertices
-    xe = 0.25f0 * ((1 - xi1) * (1 - xi2) * v1 + (1 + xi1) * (1 - xi2) * v2 +
-                  (1 + xi1) * (1 + xi2) * v3 + (1 - xi1) * (1 + xi2) * v4)
-    norm_e = norm(xe)
-
-    # Derivatives of bilinear map
-    dxedxi1 = 0.25f0 * (-(1-xi2) * v1 + (1-xi2) * v2 + (1+xi2) * v3 - (1+xi2) * v4)
-    dxedxi2 = 0.25f0 * (-(1-xi1) * v1 - (1+xi1) * v2 + (1+xi1) * v3 + (1-xi1) * v4)
-    
-    # Use product/quotient rule on the projection
-    dxdxi1 = radius * (dxedxi1/norm_e - dot(xe, dxedxi1)/(norm_e^3) * xe)
-    dxdxi2 = radius * (dxedxi2/norm_e - dot(xe, dxedxi2)/(norm_e^3) * xe)
-
-    return SMatrix{3, 2}(dxdxi1[1],dxdxi1[2],dxdxi1[3],
-                         dxdxi2[1],dxdxi2[2],dxdxi2[3])
 end
 end # muladd
