@@ -47,6 +47,26 @@ function velocity(u, ::CovariantLinearAdvectionEquation2D)
     return SVector(u[2], u[3])
 end
 
+# Convert contravariant velocity/momentum components to zonal and meridional components
+@inline function contravariant2spherical(u, aux_vars,
+                                         equations::CovariantLinearAdvectionEquation2D)
+    vlon, vlat = basis_covariant(aux_vars, equations) * velocity(u, equations)
+    return SVector(u[1], vlon, vlat)
+end
+
+# Convert zonal and meridional velocity/momentum components to contravariant components
+@inline function spherical2contravariant(u_spherical, aux_vars,
+                                         equations::CovariantLinearAdvectionEquation2D)
+    vcon1, vcon2 = basis_covariant(aux_vars, equations) \
+                   velocity(u_spherical, equations)
+    return SVector(u_spherical[1], vcon1, vcon2)
+end
+
+function Trixi.varnames(::typeof(contravariant2spherical),
+                        ::CovariantLinearAdvectionEquation2D)
+    return ("scalar", "vlon", "vlat")
+end
+
 # We will define the "entropy variables" here to just be the scalar variable in the first 
 # slot, with zeros in the second and third positions
 @inline function Trixi.cons2entropy(u, aux_vars,
@@ -90,20 +110,5 @@ end
 @inline function Trixi.max_abs_speeds(u, aux_vars,
                                       equations::CovariantLinearAdvectionEquation2D)
     return abs.(velocity(u, equations))
-end
-
-# Convert contravariant velocity/momentum components to zonal and meridional components
-@inline function contravariant2spherical(u, aux_vars,
-                                         equations::CovariantLinearAdvectionEquation2D)
-    vlon, vlat = basis_covariant(aux_vars, equations) * velocity(u, equations)
-    return SVector(u[1], vlon, vlat)
-end
-
-# Convert zonal and meridional velocity/momentum components to contravariant components
-@inline function spherical2contravariant(u_spherical, aux_vars,
-                                         equations::CovariantLinearAdvectionEquation2D)
-    vcon1, vcon2 = basis_covariant(aux_vars, equations) \
-                   velocity(u_spherical, equations)
-    return SVector(u_spherical[1], vcon1, vcon2)
 end
 end # @muladd
