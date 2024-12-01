@@ -47,27 +47,32 @@ the test suite described in the following paper:
     RealT = eltype(x)
 
     a = sqrt(x[1]^2 + x[2]^2 + x[3]^2)  # radius of the sphere
-    V = convert(RealT, 2π) * a / (12 * SECONDS_PER_DAY)  # speed of rotation
+    omega = convert(RealT, 2π) / (12 * SECONDS_PER_DAY)  # angular velocity
     alpha = convert(RealT, π / 4)  # angle of rotation
     h_0 = 1000.0f0  # bump height in metres
     b_0 = 5.0f0 / (a^2)  # bump width
     lon_0, lat_0 = convert(RealT, 3π / 2), 0.0f0  # initial bump location
+
+    # axis of rotation
+    axis = SVector(-cos(alpha), 0.0f0, sin(alpha))
 
     # convert initial position to Cartesian coordinates
     x_0 = SVector(a * cos(lat_0) * cos(lon_0),
                   a * cos(lat_0) * sin(lon_0),
                   a * sin(lat_0))
 
+    # apply rotation using Rodrigues' formula 
+    axis_cross_x_0 = Trixi.cross(axis, x_0)
+    x_0 = x_0 + sin(omega * t) * axis_cross_x_0 +
+          (1 - cos(omega * t)) * Trixi.cross(axis, axis_cross_x_0)
+
     # compute Gaussian bump profile
     h = h_0 * exp(-b_0 * ((x[1] - x_0[1])^2 + (x[2] - x_0[2])^2 + (x[3] - x_0[3])^2))
 
-    # get zonal and meridional components of the velocity
-    lon, lat = atan(x[2], x[1]), asin(x[3] / a)
-    vlon = V * (cos(lat) * cos(alpha) + sin(lat) * cos(lon) * sin(alpha))
-    vlat = -V * sin(lon) * sin(alpha)
-    vx, vy, vz = spherical2cartesian(vlon, vlat, x)
+    # get Cartesian velocity components
+    vx, vy, vz = omega * Trixi.cross(axis, x)
 
-    # Prescribe the Cartesian velocity components
+    # Prescribe the rotated bell shape and Cartesian velocity components
     return SVector(h, vx, vy, vz, 0.0f0)
 end
 
@@ -78,24 +83,32 @@ end
     RealT = eltype(x)
 
     a = EARTH_RADIUS  # radius of the sphere in metres
-    V = convert(RealT, 2π) * a / (12 * SECONDS_PER_DAY)  # speed of rotation
+    omega = convert(RealT, 2π) / (12 * SECONDS_PER_DAY)  # angular velocity
     alpha = convert(RealT, π / 4)  # angle of rotation
     h_0 = 1000.0f0  # bump height in metres
     b_0 = 5.0f0 / (a^2)  # bump width
     lon_0, lat_0 = convert(RealT, 3π / 2), 0.0f0  # initial bump location
+
+    # axis of rotation
+    axis = SVector(-cos(alpha), 0.0f0, sin(alpha))
 
     # convert initial position to Cartesian coordinates
     x_0 = SVector(a * cos(lat_0) * cos(lon_0),
                   a * cos(lat_0) * sin(lon_0),
                   a * sin(lat_0))
 
+    # apply rotation using Rodrigues' formula 
+    axis_cross_x_0 = Trixi.cross(axis, x_0)
+    x_0 = x_0 + sin(omega * t) * axis_cross_x_0 +
+          (1 - cos(omega * t)) * Trixi.cross(axis, axis_cross_x_0)
+
     # compute Gaussian bump profile
     h = h_0 * exp(-b_0 * ((x[1] - x_0[1])^2 + (x[2] - x_0[2])^2 + (x[3] - x_0[3])^2))
 
     # get zonal and meridional components of the velocity
     lon, lat = atan(x[2], x[1]), asin(x[3] / a)
-    vlon = V * (cos(lat) * cos(alpha) + sin(lat) * cos(lon) * sin(alpha))
-    vlat = -V * sin(lon) * sin(alpha)
+    vlon = omega * a * (cos(lat) * cos(alpha) + sin(lat) * cos(lon) * sin(alpha))
+    vlat = -omega * a * sin(lon) * sin(alpha)
 
     # Prescribe the spherical velocity components
     return SVector(h, vlon, vlat, 0.0f0)

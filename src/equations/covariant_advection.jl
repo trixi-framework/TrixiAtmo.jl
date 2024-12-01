@@ -34,7 +34,7 @@ as
 ```
 where $G$ is the determinant of the covariant metric tensor expressed as a matrix with 
 entries $G_{ij} =  \vec{a}_i \cdot \vec{a}_j$. Note that the variable advection velocity 
-components could also be stored as auxiliary variables, similarly to the geometric 
+components could alternatively be stored as auxiliary variables, similarly to the geometric 
 information. The third velocity component $v^3$, representing the velocity component in the 
 direction normal to the surface, is set to zero when solving equations on two-dimensional 
 surfaces, and will remain zero throughout the simulation.
