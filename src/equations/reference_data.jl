@@ -71,6 +71,7 @@ the test suite described in the following paper:
     return SVector(h, vx, vy, vz, 0.0f0)
 end
 
+# Version for spherical coordinates
 @inline function initial_condition_gaussian(x, t,
                                             ::AbstractCovariantEquations{2, 3,
                                                                          GlobalSphericalCoordinates})
