@@ -1,8 +1,8 @@
 @muladd begin
 #! format: noindent
 
-# For the covariant form, we want to integrate using the exact area element
-# sqrtG = sqrt(det(G)), which is stored in cache.auxiliary_variables, not the approximate 
+# For the covariant form, we want to integrate using the exact area element 
+# sqrtG = √det(G), which is stored in cache.auxiliary_variables, not the approximate 
 # area element used in the Cartesian formulation, which stored in cache.elements.
 function Trixi.integrate_via_indices(func::Func, u,
                                      mesh::Union{StructuredMesh{2},

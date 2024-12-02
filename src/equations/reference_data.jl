@@ -15,7 +15,8 @@ of discretizations of the linear advection equation on a spherical domain of rad
 37122 \times 10^3\ \mathrm{m}$, representing the surface of the Earth. Denoting the 
 Euclidean norm as $\lVert \cdot \rVert$, the initial height field is given by
 ```math
-h(\vec{x}) = h_0 \exp\Big( -b_0 \big(\lVert \vec{x} - \vec{x}_0 \rVert / \lVert \vec{x} \rVert\big)^2 \Big),
+h(\vec{x}) = h_0 \exp
+\Big(-b_0 \big(\lVert \vec{x} - \vec{x}_0 \rVert / \lVert \vec{x} \rVert\big)^2 \Big),
 ```
 where $h_0 = 1 \times 10^3\ \mathrm{m}$ is the height of the bell, $b_0 = 5$ is the 
 width parameter, and $\vec{x}_0$ is the position of the centre of the bell, which is 
@@ -66,13 +67,13 @@ This problem is adapted from Case 1 of the test suite described in the following
     return SVector(h, vx, vy, vz, 0.0f0)
 end
 
-# Version for spherical coordinates
+# Version for spherical coordinates (note: the velocity is not well defined at the poles)
 @inline function initial_condition_gaussian(x, t,
                                             ::AbstractCovariantEquations{2, 3,
                                                                          GlobalSphericalCoordinates})
     RealT = eltype(x)
 
-    a = EARTH_RADIUS  # radius of the sphere in metres
+    a = sqrt(x[1]^2 + x[2]^2 + x[3]^2)  # radius of the sphere
     omega = convert(RealT, 2π) / (12 * SECONDS_PER_DAY)  # angular velocity
     alpha = convert(RealT, π / 4)  # angle of rotation
     h_0 = 1000.0f0  # bump height in metres

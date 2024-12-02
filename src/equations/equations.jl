@@ -78,9 +78,9 @@ returns another function `initial_condition_transformed(x, t, equations)` or
 `initial_condition_transformed(x, t, aux_vars, equations)` which returns the same initial 
 data, but transformed to the appropriate prognostic variables used internally by the 
 solver. For the covariant form, this involves a transformation of the global velocity 
-components to contravariant components using `aux_vars` as well as a conversion from 
-primitive to conservative variables. For standard Cartesian formulations, this simply 
-involves a conversion from  primitive to conservative variables. 
+components to contravariant components using [`global2contravariant`](@ref) as well as a 
+conversion from primitive to conservative variables. For standard Cartesian formulations, 
+this simply involves a conversion from  primitive to conservative variables. 
 !!! note 
     When using the covariant formulation, the initial velocity components should be defined 
     in the coordinate system specified by the `GlobalCoordinateSystem` type parameter in
@@ -95,7 +95,7 @@ function transform_initial_condition(initial_condition, ::AbstractCovariantEquat
     return initial_condition_transformed
 end
 
-# Version of transform 
+# Version for standard Cartesian formulations
 function transform_initial_condition(initial_condition, ::AbstractEquations)
     function initial_condition_transformed(x, t, equations)
         return Trixi.prim2cons(initial_condition(x, t, equations), equations)
@@ -103,16 +103,43 @@ function transform_initial_condition(initial_condition, ::AbstractEquations)
     return initial_condition_transformed
 end
 
-# cons2cons method which takes in unused aux_vars variable
-@inline Trixi.cons2cons(u, aux_vars, ::AbstractEquations) = u
-@inline Trixi.prim2cons(u, aux_vars, ::AbstractEquations) = u
+"""
+    contravariant2global(u, aux_vars, equations)
+
+Transform the vector `u` of solution variables with the momentum or velocity given in terms 
+of local contravariant components into the global coordinate system specified by the 
+`GlobalCoordinateSystem` type parameter in [`AbstractCovariantEquations`](@ref). `u` is a 
+vector type of the correct length `nvariables(equations)`. Notice the function doesn't 
+include any error checks for the purpose of efficiency, so please make sure your input is 
+correct. The inverse conversion is performed by [`global2contravariant`](@ref).
+"""
+function contravariant2global end
+
+"""
+    contravariant2global(u, aux_vars, equations)
+
+Transform the vector `u` of solution variables with momentum or velocity components
+given with respect to the global coordinate system into local contravariant components. The 
+global coordinate system is specified by the `GlobalCoordinateSystem` type parameter in 
+[`AbstractCovariantEquations`](@ref). `u` is a vector type of the correct length 
+`nvariables(equations)`. Notice the function doesn't include any error checks for the 
+purpose of efficiency, so please make sure your input is correct. The inverse conversion is 
+performed by [`contravariant2global`](@ref).
+"""
+function global2contravariant end
 
 # If no auxiliary variables are passed into the conversion to spherical coordinates, do not 
 # do any conversion.
 @inline contravariant2global(u, ::AbstractEquations) = u
 
+# cons2cons method which takes in unused aux_vars variable
+@inline Trixi.cons2cons(u, aux_vars, ::AbstractEquations) = u
+@inline Trixi.prim2cons(u, aux_vars, ::AbstractEquations) = u
+
 # For the covariant form, the auxiliary variables are the the NDIMS*NDIMS_AMBIENT entries 
-# of the covariant basis matrix
+# of the exact covariant basis matrix, the NDIMS*NDIMS_AMBIENT entries of the exact 
+# contravariant basis matrix, and the area element. In the future, we will add other terms 
+# such as Christoffel symbols.
 @inline have_aux_node_vars(::AbstractCovariantEquations) = True()
 @inline n_aux_node_vars(::AbstractCovariantEquations{NDIMS, NDIMS_AMBIENT}) where {NDIMS,
 NDIMS_AMBIENT} = 2 * NDIMS * NDIMS_AMBIENT + 1
@@ -184,6 +211,7 @@ end
     flux_rr = Trixi.flux(u_rr, aux_vars_rr, orientation_or_normal_direction, equations)
     return 0.5f0 * (flux_ll + flux_rr)
 end
+
 abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:
               AbstractEquations{NDIMS, NVARS} end
 

@@ -2,8 +2,8 @@
 #! format: noindent
 
 @doc raw"""
-    CovariantLinearAdvectionEquation2D{GlobalCoordinateSystem} <: 
-    AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 4}
+    CovariantLinearAdvectionEquation2D{GlobalCoordinateSystem} <:  
+        AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 4}
 
 A variable-coefficient linear advection equation can be defined on a two-dimensional
 manifold $S \subset \mathbb{R}^3$ as
@@ -15,29 +15,35 @@ as a system of equations in which the first variable is the scalar conserved qua
 and the second two are the contravariant components $v^1$ and $v^2$ used in the expansion 
 with respect to the covariant basis vectors $\vec{a}_1$ and $\vec{a}_2$ as
 ```math
-\vec{v} = v^1 \vec{a}_1 + v^2 \vec{a}_2.
+\vec{v} = v^1 \vec{a}_1 + v^2 \vec{a}_2,
 ```
 where $\vec{a}_1 = \partial \vec{x} / \partial \xi^1$ and 
 $\vec{a}_2 = \partial \vec{x} / \partial \xi^2$ are the so-called covariant basis vectors, 
-and $\xi^1$ and $\xi^2$ are the local reference space coordinates. The velocity components 
-are spatially varying but assumed to be constant in time, so we do not apply any flux or 
-dissipation to such variables. The resulting system is then given on the reference element 
-as 
+and $\xi^1$ and $\xi^2$ are the local reference space coordinates. The third velocity 
+component $v^3$, representing the velocity in the direction normal to the surface, is 
+stored as a fourth variable which is set to zero when solving equations on two-dimensional 
+surfaces in three-dimensional ambient space, and will remain zero throughout the simulation 
+(we use three velocity components to match the output of `contravariant2global`, which
+returns a three-dimensional velocity vector in the global Cartesian or spherical coordinate 
+system). The velocity components are spatially varying but assumed to be constant in time, 
+so we do not apply any flux or dissipation to such variables. The resulting system is then 
+given on the reference element as 
 ```math
-\sqrt{G} \frac{\partial}{\partial t}\left[\begin{array}{c} h \\ v^1 \\ v^2 \\ v^3 \end{array}\right] 
+\sqrt{G} \frac{\partial}{\partial t}
+\left[\begin{array}{c} h \\ v^1 \\ v^2 \\ v^3 \end{array}\right] 
 +
-\frac{\partial}{\partial \xi^1} \left[\begin{array}{c} \sqrt{G} h v^1 \\ 0 \\ 0 \\ 0 \end{array}\right]
+\frac{\partial}{\partial \xi^1} 
+\left[\begin{array}{c} \sqrt{G} h v^1 \\ 0 \\ 0 \\ 0 \end{array}\right]
 + 
-\frac{\partial}{\partial \xi^2} \left[\begin{array}{c} \sqrt{G} h v^2 \\ 0 \\ 0\\ 0 \end{array}\right] 
+\frac{\partial}{\partial \xi^2} 
+\left[\begin{array}{c} \sqrt{G} h v^2 \\ 0 \\ 0\\ 0 \end{array}\right] 
 = 
 \left[\begin{array}{c} 0 \\ 0 \\ 0 \\ 0 \end{array}\right],
 ```
 where $G$ is the determinant of the covariant metric tensor expressed as a matrix with 
 entries $G_{ij} =  \vec{a}_i \cdot \vec{a}_j$. Note that the variable advection velocity 
 components could alternatively be stored as auxiliary variables, similarly to the geometric 
-information. The third velocity component $v^3$, representing the velocity component in the 
-direction normal to the surface, is set to zero when solving equations on two-dimensional 
-surfaces, and will remain zero throughout the simulation.
+information.
 """
 struct CovariantLinearAdvectionEquation2D{GlobalCoordinateSystem} <:
        AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 4}
