@@ -6,25 +6,25 @@ using TrixiAtmo
 # To run a convergence test, we have two options:
 # 1. Use the p4est variable initial_refinement_level to refine the grid:
 #    - To do this, line 46 ("initial_refinement_level = 0") must NOT be a comment
-#    - Call convergence_test("../examples/elixir_shallowwater_cubed_sphere_shell_advection.jl", 4, initial_refinement_level = 0)
+#    - Call convergence_test("../examples/elixir_shallowwater_quad_icosahedron_shell_advection.jl", 4, initial_refinement_level = 0)
 #    - NOT OPTIMAL: Good convergence the first iterations, but then it stagnates. Reason: The geometry does not improve with refinement.
-# 2. Use the variable trees_per_face_dimension of P4estMeshCubedSphere2D
-#    - To do this, line 46 ("initial_refinement_level = 0") MUST BE commented/removed.
-#    - Call convergence_test("../examples/elixir_shallowwater_cubed_sphere_shell_advection.jl", 4, cells_per_dimension = (3,3))
+# 2. Use the variable trees_per_face_dimension of P4estMeshQuadIcosahedron2D
+#    - To do this, line 46 ("initial_refinement_level = 0") MUST BE commented/removed
+#    - Call convergence_test("../examples/elixir_shallowwater_quad_icosahedron_shell_advection.jl", 4, cells_per_dimension = (1,1))
 #    - OPTIMAL convergence of polydeg + 1. Reason: The geometry improves with refinement.
 
 ###############################################################################
 # semidiscretization of the linear advection equation
-
 initial_condition = initial_condition_gaussian
-cells_per_dimension = (5, 5)
+polydeg = 3
+cells_per_dimension = (2, 2)
 
 # We use the ShallowWaterEquations3D equations structure but modify the rhs! function to
 # convert it to a variable-coefficient advection equation
 equations = ShallowWaterEquations3D(gravity_constant = 0.0)
 
 # Create DG solver with polynomial degree = 3 and (local) Lax-Friedrichs/Rusanov flux as surface flux
-solver = DGSEM(polydeg = 3, surface_flux = flux_lax_friedrichs)
+solver = DGSEM(polydeg = polydeg, surface_flux = flux_lax_friedrichs)
 
 # Source term function to transform the Euler equations into a linear advection equation with variable advection velocity
 function source_terms_convert_to_linear_advection(u, du, x, t,
@@ -41,10 +41,10 @@ function source_terms_convert_to_linear_advection(u, du, x, t,
     return SVector(0.0, s2, s3, s4, 0.0)
 end
 
-# Create a 2D cubed sphere mesh the size of the Earth
-mesh = P4estMeshCubedSphere2D(cells_per_dimension[1], EARTH_RADIUS, polydeg = 3,
-                              #initial_refinement_level = 0, # Comment to use cells_per_dimension in the convergence test
-                              element_local_mapping = false)
+# Create a 2D quad-based icosahedral mesh the size of the Earth
+mesh = P4estMeshQuadIcosahedron2D(cells_per_dimension[1], EARTH_RADIUS,
+                                  #initial_refinement_level = 0,
+                                  polydeg = polydeg)
 
 # Convert initial condition given in terms of zonal and meridional velocity components to 
 # one given in terms of Cartesian momentum components
