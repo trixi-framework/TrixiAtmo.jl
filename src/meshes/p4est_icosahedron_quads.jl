@@ -3,22 +3,18 @@
 
 # Using element_local mapping
 """
-    P4estMeshCubedSphere2D(trees_per_face_dimension, radius;
-                            polydeg, RealT=Float64,
-                            initial_refinement_level=0, unsaved_changes=true,
-                            p4est_partition_allow_for_coarsening=true)
+    P4estMeshQuadIcosahedron2D(trees_per_face_dimension, radius;
+                               polydeg, RealT=Float64,
+                               initial_refinement_level=0, unsaved_changes=true,
+                               p4est_partition_allow_for_coarsening=true)
 
 Build a quad-based icosahedral mesh as a 2D `P4estMesh` with
 `60 * trees_per_face_dimension^2` trees (20 triangular faces of the icosahedron,
 each subdivided into 3 parent quads, each of which subdivided into `trees_per_face_dimension^2` trees).
 
 The node coordinates of the trees will be obtained using the element-local mapping from
-Appendix A of [Guba et al. (2014)](https://doi.org/10.5194/gmd-7-2803-2014). The four corner vertex 
-positions for each tree will be obtained through an equiangular gnomonic projection 
-[(Ronchi et al. 1996)](https://doi.org/10.1006/jcph.1996. 0047), and the tree node coordinates within 
-the element (i.e. the field `tree_node_coordinates`) will be obtained by first using a bilinear mapping 
-based on the four corner vertices, and then projecting the bilinearly mapped nodes onto the spherical 
-surface by normalizing the resulting Cartesian coordinates and scaling by `radius`.
+Appendix A of [Guba et al. (2014)](https://doi.org/10.5194/gmd-7-2803-2014). 
+See [`P4estMeshCubedSphere2D`](@ref) for more information about the element-local mapping.
 
 The mesh will have no boundaries.
 
@@ -71,55 +67,189 @@ function P4estMeshQuadIcosahedron2D(trees_per_face_dimension, radius;
                         p4est_partition_allow_for_coarsening)
 end
 
-function connectivity_icosahedron_2D(trees_per_face_dimension)
-    # Illustration of the unfolded icosahedron with the numbering of the triangular faces
-    #
-    #           ,'|.     
-    #         ,'  | `.   
-    #       ,' 4  | 3 `. 
-    #     ,'_____ |_____`.
-    #     \      /\      /
-    #      \ 5  /  \ 2  /
-    #       \  /  1 \  /
-    #        \/_______/_______________________________     
-    #         \      /\      /\      /\      /\      /\    
-    #          \ 6  /  \ 7  /  \ 8  /  \ 9  /  \ 10 /  \   
-    #           \  / 11 \  / 12 \  / 13 \  / 14 \  / 15 \  
-    #            \/_______/_______/_______/_______/______\
-    #                                            /\      /\   
-    #                                           /  \ 20 /  \  
-    #                                          / 19 \  / 16 \ 
-    #                                         /______\/______\
-    #                                          .     |      ,'
-    #                                           `.18 | 17 ,'  
-    #                                             `. |  ,'    
-    #                                               `|,'       
-    #
-    # Each triangle is subdivided into 3 quadrilaterals with the local coordinate system:
-    #
-    #                      /\
-    #                     /  \
-    #                    /    \
-    #                   /      \
-    #                  /        \
-    #                 /          \
-    #                /     3      \
-    #               /              \
-    #              /  η         ξ   \
-    #             /   ⎻⎼⎼⎽⎽ ⎽⎽⎼⎼⎻    \
-    #            /‾⎺⎺⎻⎻⎼⎼⎽⎽ ⎽⎽⎼⎼⎻⎻⎺⎺‾ \
-    #           /          |           \
-    #          /           |            \
-    #         /            |             \
-    #        /   η         | ↑η           \
-    #       /  /     1     | |      2      \ 
-    #      /  /            | |              \
-    #     /  /             | |               \
-    #    /  -------->ξ     | └------->ξ       \
-    #   /__________________|___________________\
-    #
-    # Each of those quadrilaterlas is subdivided into trees_per_face_dimension^2 trees
+# Fig 1: Illustration of the unfolded icosahedron with the numbering of the triangular faces
+#           ,'|.     
+#         ,'  | `.   
+#       ,' 4  | 3 `. 
+#     ,'_____ |_____`.
+#     \      /\      /
+#      \ 5  /  \ 2  /
+#       \  /  1 \  /
+#        \/_______/_______________________________     
+#         \      /\      /\      /\      /\      /\    
+#          \ 6  /  \ 7  /  \ 8  /  \ 9  /  \ 10 /  \   
+#           \  / 11 \  / 12 \  / 13 \  / 14 \  / 15 \  
+#            \/_______/_______/_______/_______/______\
+#                                            /\      /\   
+#                                           /  \ 20 /  \  
+#                                          / 19 \  / 16 \ 
+#                                         /______\/______\
+#                                          .     |      ,'
+#                                           `.18 | 17 ,'  
+#                                             `. |  ,'    
+#                                               `|,'       
+#
+# Each triangle is subdivided into 3 quadrilaterals with a local (ξ,η)-coordinate system.
+#
+# Fig 2:
+#                      /\
+#                     /  \
+#                    /    \
+#                   /      \
+#                  /        \
+#                 /          \
+#                /     3      \
+#               /              \
+#              /  η         ξ   \
+#             /   ⎻⎼⎼⎽⎽ ⎽⎽⎼⎼⎻    \
+#            /‾⎺⎺⎻⎻⎼⎼⎽⎽ ⎽⎽⎼⎼⎻⎻⎺⎺‾ \
+#           /          |           \
+#          /           |            \
+#         /            |             \
+#        /   η         | ↑η           \
+#       /  /     1     | |      2      \ 
+#      /  /            | |              \
+#     /  /             | |               \
+#    /  -------->ξ     | └------->ξ       \
+#   /__________________|___________________\
+#
+# Each of those quadrilaterlas is subdivided into trees_per_face_dimension^2 trees.
+#
+# We use the following numbering for the 12 vertices of the icosahedron
+# Fig 3:
+#            5
+#           ,'|.     
+#         ,'  | `.   
+#       ,'    |   `. 
+#    6,'_____1|_____`.4
+#     \      /\      /
+#      \    /  \    /
+#       \  /    \  /
+#       2\/______3/______4_______5_______6_______2     
+#         \      /\      /\      /\      /\      /\    
+#          \    /  \    /  \    /  \    /  \    /  \   
+#           \  /    \  /    \  /    \  /    \  /    \  
+#            \/_______/_______/_______/_______/______\7
+#            7       8       9      10      11\      /\   
+#                                           /  \    /  \  
+#                                          /    \  /    \ 
+#                                         /______\/______\
+#                                       10 .     |12    ,'8
+#                                           `.   |    ,'  
+#                                             `. |  ,'    
+#                                               `|,'
+#                                                9
 
+# Function to compute the vertices' coordinates of an icosahedron inscribed in a sphere of radius `radius`
+function calc_node_coordinates_icosahedron_vertices(radius; RealT = Float64)
+    vertices = Array{RealT, 2}(undef, 3, 12)
+
+    vertices[:, 1] = [0, 0, 1]
+    vertices[:, 2] = [
+        -sqrt(1 / 10 * (5 - sqrt(5))),
+        -1 / 2 - 1 / (2 * sqrt(5)),
+        1 / sqrt(5)
+    ]
+    vertices[:, 3] = [
+        sqrt(1 / 10 * (5 - sqrt(5))),
+        -1 / 2 - 1 / (2 * sqrt(5)),
+        1 / sqrt(5)
+    ]
+    vertices[:, 4] = [
+        sqrt(1 / 10 * (5 + sqrt(5))),
+        1 / 2 - 1 / (2 * sqrt(5)),
+        1 / sqrt(5)
+    ]
+    vertices[:, 5] = [0, 2 / sqrt(5), 1 / sqrt(5)]
+    vertices[:, 6] = [
+        -sqrt(1 / 10 * (5 + sqrt(5))),
+        1 / 2 - 1 / (2 * sqrt(5)),
+        1 / sqrt(5)
+    ]
+    vertices[:, 7] = [0, -2 / sqrt(5), -1 / sqrt(5)]
+    vertices[:, 8] = [
+        sqrt(1 / 10 * (5 + sqrt(5))),
+        1 / (2 * sqrt(5)) - 1 / 2,
+        -1 / sqrt(5)
+    ]
+    vertices[:, 9] = [
+        sqrt(1 / 10 * (5 - sqrt(5))),
+        1 / 2 + 1 / (2 * sqrt(5)),
+        -1 / sqrt(5)
+    ]
+    vertices[:, 10] = [
+        -sqrt(1 / 10 * (5 - sqrt(5))),
+        1 / 2 + 1 / (2 * sqrt(5)),
+        -1 / sqrt(5)
+    ]
+    vertices[:, 11] = [
+        -sqrt(1 / 10 * (5 + sqrt(5))),
+        1 / (2 * sqrt(5)) - 1 / 2,
+        -1 / sqrt(5)
+    ]
+    vertices[:, 12] = [0, 0, -1]
+
+    return vertices * radius
+end
+
+# Index map for the corner vertices of the triangular faces on the icosahedron (see Fig 1 and Fig 3)
+# We use a counter-clockwise numbering
+const icosahedron_triangle_vertices_idx_map = ([2, 3, 1], # Triangle 1
+                                               [3, 4, 1], # Triangle 2
+                                               [4, 5, 1], # Triangle 3
+                                               [5, 6, 1], # Triangle 4
+                                               [6, 2, 1], # Triangle 5
+                                               [3, 2, 7], # Triangle 6
+                                               [4, 3, 8], # Triangle 7
+                                               [5, 4, 9], # Triangle 8
+                                               [6, 5, 10], # Triangle 9
+                                               [2, 6, 11], # Triangle 10
+                                               [7, 8, 3], # Triangle 11
+                                               [8, 9, 4], # Triangle 12
+                                               [9, 10, 5], # Triangle 13
+                                               [10, 11, 6], # Triangle 14
+                                               [11, 7, 2], # Triangle 15
+                                               [8, 7, 12], # Triangle 16
+                                               [9, 8, 12], # Triangle 17
+                                               [10, 9, 12], # Triangle 18
+                                               [11, 10, 12], # Triangle 19
+                                               [7, 11, 12])
+
+# We use a local numbering to obtain the quad vertices of each triangular face
+#
+# Fig 4: Local quad vertex numbering for a triangular face (corner vertices of the triangular face in parenthesis)
+#                       5 (3)
+#                      /\
+#                     /  \
+#                    /    \
+#                   /      \
+#                  /        \
+#                 /          \
+#                /            \
+#               /              \
+#              /                \
+#            6/                 4\
+#            /⎺⎻⎼⎽          ⎽⎼⎻⎺  \
+#           /     ⎺⎻⎼⎽7 ⎽⎼⎻⎺       \
+#          /          ⎺|            \
+#         /            |             \
+#        /             |              \
+#       /              |               \ 
+#      /               |                \
+#     /                |                 \
+#    /                 |                  \
+#  1/_________________2|__________________3\
+#   (1)                                     (2)
+
+# Index map for the vertices of each quad on the triangular faces of the icosahedron (see Fig 4)
+const icosahedron_quad_vertices_idx_map = ([1, 2, 7, 6], # Quad 1
+                                           [2, 3, 4, 7], # Quad 2
+                                           [7, 4, 5, 6]) # Quad 3
+end
+
+# Function to innitialize the p4est connectivity for the icosahedral grid. 
+# For reference, see Fig 1 and Fig 2 above.
+function connectivity_icosahedron_2D(trees_per_face_dimension)
     num_triangles = 20
     trees_per_triangle = 3
     n_cells = trees_per_face_dimension
@@ -560,7 +690,7 @@ function calc_tree_node_coordinates_quad_icosahedron_local!(node_coordinates::Ab
 
         # Loop over each parent quad in each triangle
         for local_tree in 1:3
-            idx = tree_vertices_idx(local_tree)
+            idx = icosahedron_quad_vertices_idx_map[local_tree]
 
             # Vertices of the parent quad
             v1_quad = triangle_vertices[:, idx[1]]
@@ -594,154 +724,13 @@ function calc_tree_node_coordinates_quad_icosahedron_local!(node_coordinates::Ab
     end
 end
 
-# Icosahedron vertices
-#            5
-#           ,'|.     
-#         ,'  | `.   
-#       ,'    |   `. 
-#    6,'_____1|_____`.4
-#     \      /\      /
-#      \    /  \    /
-#       \  /    \  /
-#       2\/______3/______4_______5_______6_______2     
-#         \      /\      /\      /\      /\      /\    
-#          \    /  \    /  \    /  \    /  \    /  \   
-#           \  /    \  /    \  /    \  /    \  /    \  
-#            \/_______/_______/_______/_______/______\7
-#            7       8       9      10      11\      /\   
-#                                           /  \    /  \  
-#                                          /    \  /    \ 
-#                                         /______\/______\
-#                                       10 .     |12    ,'8
-#                                           `.   |    ,'  
-#                                             `. |  ,'    
-#                                               `|,'
-#                                                9
-function calc_node_coordinates_icosahedron_vertices(radius; RealT = Float64)
-    vertices = Array{RealT, 2}(undef, 3, 12)
-
-    vertices[:, 1] = [0, 0, 1]
-    vertices[:, 2] = [
-        -sqrt(1 / 10 * (5 - sqrt(5))),
-        -1 / 2 - 1 / (2 * sqrt(5)),
-        1 / sqrt(5)
-    ]
-    vertices[:, 3] = [
-        sqrt(1 / 10 * (5 - sqrt(5))),
-        -1 / 2 - 1 / (2 * sqrt(5)),
-        1 / sqrt(5)
-    ]
-    vertices[:, 4] = [
-        sqrt(1 / 10 * (5 + sqrt(5))),
-        1 / 2 - 1 / (2 * sqrt(5)),
-        1 / sqrt(5)
-    ]
-    vertices[:, 5] = [0, 2 / sqrt(5), 1 / sqrt(5)]
-    vertices[:, 6] = [
-        -sqrt(1 / 10 * (5 + sqrt(5))),
-        1 / 2 - 1 / (2 * sqrt(5)),
-        1 / sqrt(5)
-    ]
-    vertices[:, 7] = [0, -2 / sqrt(5), -1 / sqrt(5)]
-    vertices[:, 8] = [
-        sqrt(1 / 10 * (5 + sqrt(5))),
-        1 / (2 * sqrt(5)) - 1 / 2,
-        -1 / sqrt(5)
-    ]
-    vertices[:, 9] = [
-        sqrt(1 / 10 * (5 - sqrt(5))),
-        1 / 2 + 1 / (2 * sqrt(5)),
-        -1 / sqrt(5)
-    ]
-    vertices[:, 10] = [
-        -sqrt(1 / 10 * (5 - sqrt(5))),
-        1 / 2 + 1 / (2 * sqrt(5)),
-        -1 / sqrt(5)
-    ]
-    vertices[:, 11] = [
-        -sqrt(1 / 10 * (5 + sqrt(5))),
-        1 / (2 * sqrt(5)) - 1 / 2,
-        -1 / sqrt(5)
-    ]
-    vertices[:, 12] = [0, 0, -1]
-
-    return vertices * radius
-end
-
-function icosahedron_triangle_vertices_idx(triangle)
-    if triangle == 1
-        return [2, 3, 1]
-    elseif triangle == 2
-        return [3, 4, 1]
-    elseif triangle == 3
-        return [4, 5, 1]
-    elseif triangle == 4
-        return [5, 6, 1]
-    elseif triangle == 5
-        return [6, 2, 1]
-    elseif triangle == 6
-        return [3, 2, 7]
-    elseif triangle == 7
-        return [4, 3, 8]
-    elseif triangle == 8
-        return [5, 4, 9]
-    elseif triangle == 9
-        return [6, 5, 10]
-    elseif triangle == 10
-        return [2, 6, 11]
-    elseif triangle == 11
-        return [7, 8, 3]
-    elseif triangle == 12
-        return [8, 9, 4]
-    elseif triangle == 13
-        return [9, 10, 5]
-    elseif triangle == 14
-        return [10, 11, 6]
-    elseif triangle == 15
-        return [11, 7, 2]
-    elseif triangle == 16
-        return [8, 7, 12]
-    elseif triangle == 17
-        return [9, 8, 12]
-    elseif triangle == 18
-        return [10, 9, 12]
-    elseif triangle == 19
-        return [11, 10, 12]
-    elseif triangle == 20
-        return [7, 11, 12]
-    end
-end
-
 function calc_node_coordinates_triangle_vertices!(triangle_vertices,
                                                   icosahedron_vertices,
                                                   radius, triangle)
     # Retrieve triangle vertices
     corners_triangle = icosahedron_vertices[:,
-                                            icosahedron_triangle_vertices_idx(triangle)]
+                                            icosahedron_triangle_vertices_idx_map[triangle]]
 
-    # local vertex numbering for triangle (corners in parenthesis)
-    #                       5 (3)
-    #                      /\
-    #                     /  \
-    #                    /    \
-    #                   /      \
-    #                  /        \
-    #                 /          \
-    #                /            \
-    #               /              \
-    #              /                \
-    #            6/                 4\
-    #            /⎺⎻⎼⎽          ⎽⎼⎻⎺  \
-    #           /     ⎺⎻⎼⎽7 ⎽⎼⎻⎺       \
-    #          /          ⎺|            \
-    #         /            |             \
-    #        /             |              \
-    #       /              |               \ 
-    #      /               |                \
-    #     /                |                 \
-    #    /                 |                  \
-    #  1/_________________2|__________________3\
-    #   (1)                                     (2)
     triangle_vertices[:, 1] = corners_triangle[:, 1]
 
     v2_bilinear = 0.5 * (corners_triangle[:, 1] + corners_triangle[:, 2])
@@ -760,15 +749,4 @@ function calc_node_coordinates_triangle_vertices!(triangle_vertices,
     v7_bilinear = (corners_triangle[:, 1] + corners_triangle[:, 2] +
                    corners_triangle[:, 3]) / 3
     triangle_vertices[:, 7] = radius * v7_bilinear / norm(v7_bilinear)
-end
-
-function tree_vertices_idx(local_tree)
-    if local_tree == 1
-        return [1, 2, 7, 6]
-    elseif local_tree == 2
-        return [2, 3, 4, 7]
-    else
-        return [7, 4, 5, 6]
-    end
-end
 end
