@@ -11,33 +11,22 @@ const SECONDS_PER_DAY = 8.64e4
     initial_condition_gaussian(x, t, equations)
 
 This Gaussian bell case is a smooth initial condition suitable for testing the convergence 
-of discretizations of the linear advection equation on a spherical domain of radius $a = 6.
-37122 \times 10^3\ \mathrm{m}$, representing the surface of the Earth. The height field is 
-given in terms of the Cartesian coordinates $x$, $y$, $z$ as 
+of discretizations of the linear advection equation on a spherical domain of radius $6.
+37122 \times 10^3\ \mathrm{m}$, representing the surface of the Earth. Denoting the 
+Euclidean norm as $\lVert \cdot \rVert$, the initial height field is given by
 ```math
-h(x,y,z) = h_0 \exp\Big(-b_0 \big((x-x_0)^2 + (y-y_0)^2 + (z-z_0)^2\big) \Big),
+h(\vec{x}) = h_0 \exp\Big( -b_0 \big(\lVert \vec{x} - \vec{x}_0 \rVert / \lVert \vec{x} \rVert\big)^2 \Big),
 ```
-where $h_0 = 1 \times 10^3\ \mathrm{m}$ is the height of the bell, $b_0 = 5 / a$ is the 
-width parameter, and the Cartesian coordinates of the bell's centre at longitude 
-$\lambda_0 = 3\pi/2$ and latitude $\theta_0 = 0$ are given by 
+where $h_0 = 1 \times 10^3\ \mathrm{m}$ is the height of the bell, $b_0 = 5$ is the 
+width parameter, and $\vec{x}_0$ is the position of the centre of the bell, which is 
+initialized at a longitude of $3\pi/2$ and a latitude of zero. The velocity field 
+corresponds to a solid body rotation with a period of 12 days at an angle of 
+$\alpha = \pi/4$ from the polar axis. Denoting $\vec{\omega}$ as the corresponding angular
+velocity vector, the velocity is therefore initialized as
 ```math
-\begin{aligned}
-x_0 &= a\cos\theta_0\cos\lambda_0,\\
-y_0 &= a\cos\theta_0\sin\lambda_0,\\
-z_0 &= a\sin\theta_0.
-\end{aligned}
+\vec{v}(\vec{x}) = \vec{\omega} \times \vec{x}.
 ```
-The velocity field corresponds to a solid body rotation with a period of 12 days, at an 
-angle of $\alpha = \pi/4$ from the polar axis. The zonal and meridional components of the 
-velocity field are then given in terms of the longitude $\lambda$ and latitude $\theta$ as 
-```math
-\begin{aligned}
-u(\lambda,\theta) &= V (\cos\theta\cos\alpha + \sin\theta\cos\lambda\sin\alpha),\\
-v(\lambda,\theta)  &= -V \sin\lambda\sin\alpha,
-\end{aligned}
-```
-where we take $V = 2\pi a / 12\ \mathrm{days}$. This test case is adapted from Case 1 of 
-the test suite described in the following paper:
+This problem is adapted from Case 1 of the test suite described in the following paper:
 - D. L. Williamson, J. B. Drake, J. J. Hack, R. Jakob, and P. N. Swarztrauber (1992). A  
   standard test set for numerical approximations to the shallow water equations in
   spherical geometry. Journal of Computational Physics, 102(1):211-224. 
@@ -50,7 +39,7 @@ the test suite described in the following paper:
     omega = convert(RealT, 2π) / (12 * SECONDS_PER_DAY)  # angular velocity
     alpha = convert(RealT, π / 4)  # angle of rotation
     h_0 = 1000.0f0  # bump height in metres
-    b_0 = 5.0f0 / (a^2)  # bump width
+    b_0 = 5.0f0  # bump width parameter
     lon_0, lat_0 = convert(RealT, 3π / 2), 0.0f0  # initial bump location
 
     # axis of rotation
@@ -67,7 +56,8 @@ the test suite described in the following paper:
           (1 - cos(omega * t)) * Trixi.cross(axis, axis_cross_x_0)
 
     # compute Gaussian bump profile
-    h = h_0 * exp(-b_0 * ((x[1] - x_0[1])^2 + (x[2] - x_0[2])^2 + (x[3] - x_0[3])^2))
+    h = h_0 *
+        exp(-b_0 * ((x[1] - x_0[1])^2 + (x[2] - x_0[2])^2 + (x[3] - x_0[3])^2) / (a^2))
 
     # get Cartesian velocity components
     vx, vy, vz = omega * Trixi.cross(axis, x)
@@ -86,7 +76,7 @@ end
     omega = convert(RealT, 2π) / (12 * SECONDS_PER_DAY)  # angular velocity
     alpha = convert(RealT, π / 4)  # angle of rotation
     h_0 = 1000.0f0  # bump height in metres
-    b_0 = 5.0f0 / (a^2)  # bump width
+    b_0 = 5.0f0  # bump width parameter
     lon_0, lat_0 = convert(RealT, 3π / 2), 0.0f0  # initial bump location
 
     # axis of rotation
@@ -103,7 +93,8 @@ end
           (1 - cos(omega * t)) * Trixi.cross(axis, axis_cross_x_0)
 
     # compute Gaussian bump profile
-    h = h_0 * exp(-b_0 * ((x[1] - x_0[1])^2 + (x[2] - x_0[2])^2 + (x[3] - x_0[3])^2))
+    h = h_0 *
+        exp(-b_0 * ((x[1] - x_0[1])^2 + (x[2] - x_0[2])^2 + (x[3] - x_0[3])^2) / (a^2))
 
     # get zonal and meridional components of the velocity
     lon, lat = atan(x[2], x[1]), asin(x[3] / a)

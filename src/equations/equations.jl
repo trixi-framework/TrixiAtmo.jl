@@ -85,7 +85,6 @@ involves a conversion from  primitive to conservative variables.
     When using the covariant formulation, the initial velocity components should be defined 
     in the coordinate system specified by the `GlobalCoordinateSystem` type parameter in
     [`AbstractCovariantEquations`](@ref).
-!!!
 """
 function transform_initial_condition(initial_condition, ::AbstractCovariantEquations)
     function initial_condition_transformed(x, t, aux_vars, equations)
