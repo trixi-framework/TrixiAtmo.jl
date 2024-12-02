@@ -18,7 +18,6 @@ using StaticArrayInterface: static_size
 using LinearAlgebra: norm, dot, det
 using Reexport: @reexport
 using LoopVectorization: @turbo
-using Infiltrator
 
 @reexport using StaticArrays: SVector, SMatrix
 
