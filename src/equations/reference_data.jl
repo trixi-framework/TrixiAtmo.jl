@@ -52,7 +52,7 @@ for Cartesian and covariant formulations.
 @inline function initial_condition_gaussian(x, t)
     RealT = eltype(x)
 
-    a = EARTH_RADIUS  # radius of the sphere in metres
+    a = sqrt(x[1]^2 + x[2]^2 + x[3]^2) #radius of the sphere
     V = convert(RealT, 2π) * a / (12 * SECONDS_PER_DAY)  # speed of rotation
     alpha = convert(RealT, π / 4)  # angle of rotation
     h_0 = 1000.0f0  # bump height in metres
@@ -68,7 +68,14 @@ for Cartesian and covariant formulations.
     h = h_0 * exp(-b_0 * ((x[1] - x_0[1])^2 + (x[2] - x_0[2])^2 + (x[3] - x_0[3])^2))
 
     # get zonal and meridional components of the velocity
-    lon, lat = atan(x[2], x[1]), asin(x[3] / a)
+    r_xy = x[1]^2 + x[2]^2
+    if r_xy == 0.0
+        lon = pi / 2
+    else
+        lon = atan(x[2], x[1])
+    end
+
+    lat = asin(x[3] / a)
     vlon = V * (cos(lat) * cos(alpha) + sin(lat) * cos(lon) * sin(alpha))
     vlat = -V * sin(lon) * sin(alpha)
 
