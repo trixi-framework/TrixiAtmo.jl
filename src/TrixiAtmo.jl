@@ -11,6 +11,7 @@ module TrixiAtmo
 using Reexport: @reexport
 using Trixi
 using MuladdMacro: @muladd
+using Printf: @sprintf
 using Static: True, False
 using StrideArrays: PtrArray
 using StaticArrayInterface: static_size
