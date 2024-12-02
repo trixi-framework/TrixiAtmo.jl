@@ -247,7 +247,7 @@ const icosahedron_quad_vertices_idx_map = ([1, 2, 7, 6], # Quad 1
                                            [7, 4, 5, 6]) # Quad 3
 end
 
-# Function to innitialize the p4est connectivity for the icosahedral grid. 
+# Function to initialize the p4est connectivity for the icosahedral grid. 
 # For reference, see Fig 1 and Fig 2 above.
 function connectivity_icosahedron_2D(trees_per_face_dimension)
     num_triangles = 20
