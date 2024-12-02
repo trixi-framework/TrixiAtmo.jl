@@ -66,7 +66,7 @@ jobs:
 
       - name: Upload coverage data (Codecov)
         if: ${{ matrix.os == 'ubuntu-latest' }}
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}

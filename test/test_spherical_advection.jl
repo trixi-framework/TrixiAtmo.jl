@@ -7,14 +7,42 @@ include("test_trixiatmo.jl")
 
 EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
 
-@trixiatmo_testset "Spherical advection, Cartesian weak form, LLF surface flux" begin
+@trixiatmo_testset "Spherical advection (cubed sphere), Cartesian weak form, LLF surface flux" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_cubed_sphere_shell_advection.jl"),
                         l2=[
-                            0.7963216338636225,
-                            20.317829852541713,
-                            8.810001095824774,
-                            20.31782985254294,
+                            0.796321633853675,
+                            20.317829852384286,
+                            8.810001095524816,
+                            20.317829852393054,
+                            0.0
+                        ],
+                        linf=[
+                            10.872101731709677,
+                            289.6515963524798,
+                            95.1288712006542,
+                            289.65159635247255,
+                            0.0
+                        ])
+    # and small reference values
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    let
+        t = sol.t[end]
+        u_ode = sol.u[end]
+        du_ode = similar(u_ode)
+        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
+    end
+end
+
+@trixiatmo_testset "Spherical advection (quad icosahedron), Cartesian weak form, LLF surface flux" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_shallowwater_quad_icosahedron_shell_advection.jl"),
+                        l2=[
+                            0.4570227714893776,
+                            11.807355540221533,
+                            4.311881740776439,
+                            11.807355540221321,
                             0.0
                         ],
                         linf=[
