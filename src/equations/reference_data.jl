@@ -102,7 +102,7 @@ end
     lon, lat = atan(x[2], x[1]), asin(x[3] / a)
     vlon = omega * a * (cos(lat) * cos(alpha) + sin(lat) * cos(lon) * sin(alpha))
     vlat = -omega * a * sin(lon) * sin(alpha)
-    
+
     # Prescribe the rotated bell shape and spherical velocity components.
     # The last variable is the bottom topography, which we set to zero
     return SVector(h, vlon, vlat, 0.0f0, 0.0f0)

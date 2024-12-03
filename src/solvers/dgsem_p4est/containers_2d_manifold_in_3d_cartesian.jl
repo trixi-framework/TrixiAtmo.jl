@@ -131,6 +131,8 @@ function init_elements_2d_manifold_in_3d!(elements,
     (; node_coordinates, jacobian_matrix,
     contravariant_vectors, inverse_jacobian) = elements
 
+    # The standard calc_node_coordinates! can be used, since Trixi.jl now dispatches on
+    # P4estMesh{NDIMS, NDIMS_AMBIENT}.
     Trixi.calc_node_coordinates!(node_coordinates, mesh, basis)
 
     for element in 1:Trixi.ncells(mesh)
