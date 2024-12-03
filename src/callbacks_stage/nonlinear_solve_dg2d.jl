@@ -1,4 +1,4 @@
-using Trixi: get_node_vars, @batch, get_inverse_jacobian, set_node_vars!, get_node_coords, each_quad_node_global
+using Trixi: get_node_vars, @batch, get_inverse_jacobian, set_node_vars!, get_node_coords, each_quad_node
 using LinearAlgebra
 using StaticArrays
 
@@ -63,28 +63,36 @@ end
 function nonlinear_solve_dg_2d!(u, residual, jacobian, variables_index_vector, tolerance,
                                 equations::AbstractCompressibleRainyEulerEquations, dg::DGMulti, cache, mesh::DGMultiMesh)
     max_iterations = 20
-    @unpack u_values = cache
-    
+
     # iterate over every node
-    for j in each_quad_node_global(mesh, dg, cache)
+    @batch for element in eachelement(mesh, dg)
+        for j in each_quad_node(mesh, dg)
 
-        u_node = u_values[j]
-        guess = SVector(u_node[7], u_node[8], u_node[9])
-
-        # newton method
-        for iteration in range(1, max_iterations)
-            res_vector = residual(u_node, guess, equations)
-
-            if (maximum(abs.(res_vector)) < tolerance)
-                break
+            u_node = u[j, element]
+            
+            # keep rain positive
+            if (u_node[3] < 0.0)
+                u_node = SVector(u_node[1], u_node[2], 0.0, u_node[4], u_node[5], u_node[6],
+                                        u_node[7], u_node[8], u_node[9])
             end
 
-            jac_matrix = jacobian(u_node, guess, equations)
-            guess += - jac_matrix \ res_vector
+            guess  = SVector(u_node[7], u_node[8], u_node[9])
+
+            # newton method
+            for iteration in range(1, max_iterations)
+                res_vector = residual(u_node, guess, equations)
+
+                if (maximum(abs.(res_vector)) < tolerance)
+                    break
+                end
+
+                jac_matrix = jacobian(u_node, guess, equations)
+                guess += - jac_matrix \ res_vector
+            end
+
+            u[j, element] = SVector(u_node[1], u_node[2], u_node[3], u_node[4], u_node[5], u_node[6],
+                             guess[1],  guess[2],  guess[3])
         end
-            
-        u_values[j] = SVector(u_node[1], u_node[2], u_node[3], u_node[4], u_node[5],
-                              u_node[6], guess[1], guess[2], guess[3])
     end
 end
 
