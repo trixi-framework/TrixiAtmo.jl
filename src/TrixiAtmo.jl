@@ -31,6 +31,7 @@ include("callbacks_step/callbacks_step.jl")
 
 export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
        CovariantLinearAdvectionEquation2D
+export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
 export flux_chandrashekar, flux_LMARS
 
