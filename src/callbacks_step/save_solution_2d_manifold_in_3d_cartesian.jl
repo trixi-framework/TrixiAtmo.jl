@@ -1,8 +1,7 @@
 @muladd begin
 #! format: noindent
 
-# Convert to another set of variables using a solution_variables function that depends on 
-# auxiliary variables
+# Convert to another set of variables using a solution_variables function
 function convert_variables(u, solution_variables, mesh::P4estMesh{2},
                            equations::AbstractEquations{3}, dg, cache)
     (; contravariant_vectors) = cache.elements
@@ -16,10 +15,20 @@ function convert_variables(u, solution_variables, mesh::P4estMesh{2},
     # Loop over all nodes and convert variables, passing in auxiliary variables
     Trixi.@threaded for element in eachelement(dg, cache)
         for j in eachnode(dg), i in eachnode(dg)
-            
-            normal_vector_node = Trixi.get_contravariant_vector(3, contravariant_vectors, i, j, element)
+            normal_vector_node = Trixi.get_contravariant_vector(3,
+                                                                contravariant_vectors,
+                                                                i, j, element)
 
-            data_node = solution_variables(u, normal_vector_node, equations, dg, cache, i, j, element)
+            if applicable(solution_variables, u, normal_vector_node, equations, dg,
+                          cache, i, j, element)
+                # The solution_variables function depends on the solution on other nodes, the normal_vector_node, etc.
+                data_node = solution_variables(u, normal_vector_node, equations, dg,
+                                               cache, i, j, element)
+            else
+                # The solution_variables function depends on u_node and equations
+                u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
+                data_node = solution_variables(u_node, equations)
+            end
 
             for v in 1:n_vars
                 data[v, i, j, element] = data_node[v]
@@ -29,93 +38,13 @@ function convert_variables(u, solution_variables, mesh::P4estMesh{2},
     return data
 end
 
-# If no auxiliary variables are passed into the conversion to spherical coordinates, do not 
-# do any conversion.
-@inline cons2prim_plus_vorticity(u, equations) = u
-
-# # Specialized save_solution_file method that supports a solution_variables function which 
-# # depends on auxiliary variables. The conversion must be defined as solution_variables(u, 
-# # aux_vars, equations), and an additional method must be defined as solution_variables(u,
-# # equations) = u, such that no conversion is done when auxiliary variables are not provided.
-# function Trixi.save_solution_file(u_ode, t, dt, iter,
-#                                   semi::SemidiscretizationHyperbolic{<:Trixi.AbstractMesh{2},
-#                                                                      <:AbstractEquations{3}},
-#                                   solution_callback,
-#                                   element_variables = Dict{Symbol, Any}(),
-#                                   node_variables = Dict{Symbol, Any}();
-#                                   system = "")
-#     mesh, equations, solver, cache = Trixi.mesh_equations_solver_cache(semi)
-#     u = Trixi.wrap_array_native(u_ode, semi)
-
-#     # Perform the variable conversion at each node
-#     data = convert_variables(u, solution_callback.solution_variables, mesh, equations,
-#                              solver, cache)
-
-#     solution_callback2 = copy(solution_callback)
-#     solution_callback2
-#     # Call the existing Trixi.save_solution_file, which will use solution_variables(u, 
-#     # equations). Since the variables are already converted above, we therefore require 
-#     # solution_variables(u, equations) = u.
-#     Trixi.save_solution_file(data, t, dt, iter, mesh, equations, solver, cache,
-#                              solution_callback, element_variables,
-#                              node_variables, system = system)
-# end
-
-
-# Calculate the relative vorticity at a given node using the collocation derivative
-@inline function cons2prim_plus_vorticity(u, normal_vector, equations::ShallowWaterEquations3D,
-                                          dg::DGSEM, cache, i, j, element)
-    (; derivative_matrix) = dg.basis
-    (; contravariant_vectors, inverse_jacobian) = cache.elements
-
-    # Compute gradients in reference space
-    dv1dxi1 = dv1dxi2 = zero(eltype(u))
-    dv2dxi1 = dv2dxi2 = zero(eltype(u))
-    dv3dxi1 = dv3dxi2 = zero(eltype(u))
-    for ii in eachnode(dg)
-        h, hv_1, hv_2, hv_3, _ = Trixi.get_node_vars(u, equations, dg, ii, j, element)
-        dv1dxi1 += derivative_matrix[i, ii] * hv_1 / h
-        dv2dxi1 += derivative_matrix[i, ii] * hv_2 / h
-        dv3dxi1 += derivative_matrix[i, ii] * hv_3 / h
-    end
-
-    for jj in eachnode(dg)
-        h, hv_1, hv_2, hv_3, _ = Trixi.get_node_vars(u, equations, dg, i, jj, element)
-        dv1dxi2 += derivative_matrix[j, jj] * hv_1 / h
-        dv2dxi2 += derivative_matrix[j, jj] * hv_2 / h
-        dv3dxi2 += derivative_matrix[j, jj] * hv_3 / h
-    end
-
-    # Transform gradients to Cartesian space
-    Ja11, Ja12, Ja13 = Trixi.get_contravariant_vector(1, contravariant_vectors, i, j, element)
-    Ja21, Ja22, Ja23 = Trixi.get_contravariant_vector(2, contravariant_vectors, i, j, element)
-    
-    dv1dy = (Ja12 * dv1dxi1 + Ja22 * dv1dxi2) * inverse_jacobian[i, j, element]
-    dv1dz = (Ja13 * dv1dxi1 + Ja23 * dv1dxi2) * inverse_jacobian[i, j, element]
-    dv2dx = (Ja11 * dv2dxi1 + Ja21 * dv2dxi2) * inverse_jacobian[i, j, element]
-    dv2dz = (Ja13 * dv2dxi1 + Ja23 * dv2dxi2) * inverse_jacobian[i, j, element]
-    dv3dx = (Ja11 * dv3dxi1 + Ja21 * dv3dxi2) * inverse_jacobian[i, j, element]
-    dv3dy = (Ja12 * dv3dxi1 + Ja22 * dv3dxi2) * inverse_jacobian[i, j, element]
-
-    # compute the vorticity and project onto normal vector
-    vorticity = ((dv3dy - dv2dz) * normal_vector[1] + 
-                 (dv1dz - dv3dx) * normal_vector[2] + 
-                 (dv2dx - dv1dy) * normal_vector[3]) / norm(normal_vector)
-
-    u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
-
-    return SVector(cons2prim(u_node, equations)..., vorticity)
-end
-
-Trixi.varnames(::typeof(cons2prim_plus_vorticity), equations::ShallowWaterEquations3D) = (varnames(cons2prim, equations)..., "vorticity")
-
 function Trixi.save_solution_file(u, time, dt, timestep,
-                            mesh::P4estMesh{2},
-                            equations::AbstractEquations{3}, dg::DG, cache,
-                            solution_callback,
-                            element_variables = Dict{Symbol, Any}(),
-                            node_variables = Dict{Symbol, Any}();
-                            system = "")
+                                  mesh::P4estMesh{2},
+                                  equations::AbstractEquations{3}, dg::DG, cache,
+                                  solution_callback,
+                                  element_variables = Dict{Symbol, Any}(),
+                                  node_variables = Dict{Symbol, Any}();
+                                  system = "")
     @unpack output_directory, solution_variables = solution_callback
 
     # Filename based on current time step
@@ -133,17 +62,6 @@ function Trixi.save_solution_file(u, time, dt, timestep,
     else
         data = convert_variables(u, solution_variables, mesh, equations, dg, cache)
         n_vars = size(data, 1)
-    # else
-    #     # Reinterpret the solution array as an array of conservative variables,
-    #     # compute the solution variables via broadcasting, and reinterpret the
-    #     # result as a plain array of floating point numbers
-    #     data = Array(reinterpret(eltype(u),
-    #                              solution_variables.(reinterpret(SVector{nvariables(equations),
-    #                                                                      eltype(u)}, u),
-    #                                                  Ref(equations))))
-
-    #     # Find out variable count by looking at output from `solution_variables` function
-    #     n_vars = size(data, 1)
     end
 
     # Open file (clobber existing content)
@@ -194,4 +112,57 @@ function Trixi.save_solution_file(u, time, dt, timestep,
 
     return filename
 end
+
+# Calculate the primitive variables and the relative vorticity at a given node
+@inline function cons2prim_and_vorticity(u, normal_vector,
+                                         equations::ShallowWaterEquations3D,
+                                         dg::DGSEM, cache, i, j, element)
+    (; derivative_matrix) = dg.basis
+    (; contravariant_vectors, inverse_jacobian, node_coordinates) = cache.elements
+
+    # Compute gradients in reference space
+    dv1dxi1 = dv1dxi2 = zero(eltype(u))
+    dv2dxi1 = dv2dxi2 = zero(eltype(u))
+    dv3dxi1 = dv3dxi2 = zero(eltype(u))
+    for ii in eachnode(dg)
+        h, hv_1, hv_2, hv_3, _ = Trixi.get_node_vars(u, equations, dg, ii, j, element)
+        dv1dxi1 += derivative_matrix[i, ii] * hv_1 / h
+        dv2dxi1 += derivative_matrix[i, ii] * hv_2 / h
+        dv3dxi1 += derivative_matrix[i, ii] * hv_3 / h
+    end
+
+    for jj in eachnode(dg)
+        h, hv_1, hv_2, hv_3, _ = Trixi.get_node_vars(u, equations, dg, i, jj, element)
+        dv1dxi2 += derivative_matrix[j, jj] * hv_1 / h
+        dv2dxi2 += derivative_matrix[j, jj] * hv_2 / h
+        dv3dxi2 += derivative_matrix[j, jj] * hv_3 / h
+    end
+
+    # Transform gradients to Cartesian space
+    Ja11, Ja12, Ja13 = Trixi.get_contravariant_vector(1, contravariant_vectors, i, j,
+                                                      element)
+    Ja21, Ja22, Ja23 = Trixi.get_contravariant_vector(2, contravariant_vectors, i, j,
+                                                      element)
+
+    dv1dy = (Ja12 * dv1dxi1 + Ja22 * dv1dxi2) * inverse_jacobian[i, j, element]
+    dv1dz = (Ja13 * dv1dxi1 + Ja23 * dv1dxi2) * inverse_jacobian[i, j, element]
+    dv2dx = (Ja11 * dv2dxi1 + Ja21 * dv2dxi2) * inverse_jacobian[i, j, element]
+    dv2dz = (Ja13 * dv2dxi1 + Ja23 * dv2dxi2) * inverse_jacobian[i, j, element]
+    dv3dx = (Ja11 * dv3dxi1 + Ja21 * dv3dxi2) * inverse_jacobian[i, j, element]
+    dv3dy = (Ja12 * dv3dxi1 + Ja22 * dv3dxi2) * inverse_jacobian[i, j, element]
+
+    # compute the vorticity and project onto normal vector
+    vorticity = ((dv3dy - dv2dz) * normal_vector[1] +
+                 (dv1dz - dv3dx) * normal_vector[2] +
+                 (dv2dx - dv1dy) * normal_vector[3]) / norm(normal_vector)
+
+    u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
+
+    return SVector(cons2prim(u_node, equations)..., vorticity)
+end
+
+# Variable names for cons2prim_and_vorticity
+Trixi.varnames(::typeof(cons2prim_and_vorticity), equations::ShallowWaterEquations3D) = (varnames(cons2prim,
+                                                                                                  equations)...,
+                                                                                         "vorticity")
 end
