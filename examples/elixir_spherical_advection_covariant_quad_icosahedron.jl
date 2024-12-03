@@ -1,13 +1,15 @@
 ###############################################################################
 # DGSEM for the linear advection equation on the cubed sphere
 ###############################################################################
+# To run a convergence test, use
+# convergence_test("../examples/elixir_spherical_advection_covariant_quad_icosahedron.jl", 4, cells_per_dimension = (1,1))
 
 using OrdinaryDiffEq, Trixi, TrixiAtmo
 
 ###############################################################################
 # Spatial discretization
 
-cells_per_dimension = 5
+cells_per_dimension = (2, 2)
 initial_condition = initial_condition_gaussian
 
 equations = CovariantLinearAdvectionEquation2D(global_coordinate_system = GlobalCartesianCoordinates())
@@ -17,12 +19,10 @@ solver = DGSEM(polydeg = 3, surface_flux = flux_lax_friedrichs,
                volume_integral = VolumeIntegralWeakForm())
 
 # Create a 2D cubed sphere mesh the size of the Earth. For the covariant form to work 
-# properly, we currently need polydeg to equal that of the solver, 
-# initial_refinement_level = 0, and element_local_mapping = true.
-mesh = P4estMeshCubedSphere2D(cells_per_dimension, EARTH_RADIUS,
-                              polydeg = Trixi.polydeg(solver),
-                              initial_refinement_level = 0,
-                              element_local_mapping = true)
+# properly, we currently need polydeg to equal that of the solver, and
+# initial_refinement_level = 0 (default)
+mesh = P4estMeshQuadIcosahedron2D(cells_per_dimension[1], EARTH_RADIUS,
+                                  polydeg = Trixi.polydeg(solver))
 
 initial_condition_transformed = transform_initial_condition(initial_condition, equations)
 
