@@ -150,7 +150,11 @@ end
     eq_pot = (temperature * (ref_p / p_d)^(R_d / c_p) * H^(-r_v * R_v / c_p) *
                exp(L_v * r_v * inv(c_p * temperature)))
 
-    return SVector(rho, r_v, r_c, r_r, v1, v2, eq_pot, p)
+    #TODO
+    s_dry, s_vapour, s_cloud, s_rain, _, _, _, _, _ = cons2entropy(u, equations)
+    entropy = s_dry + s_vapour + s_cloud + s_rain
+
+    return SVector(rho_dry, rho_vapour, rho_cloud, rho_rain, v1, v2, eq_pot, p, entropy)
 end
 
 
@@ -230,8 +234,8 @@ varnames(::typeof(cons2prim), ::CompressibleRainyEulerEquations2D) = ("rho_dry",
                                                                         "energy_density",
                                                                         "rho_vapour", "rho_cloud", "temperature")
 
-varnames(::typeof(cons2eq_pot_temp), ::CompressibleRainyEulerEquations2D) = ("rho", "r_vapour",
-                                                                             "r_cloud", "r_rain", 
+varnames(::typeof(cons2eq_pot_temp), ::CompressibleRainyEulerEquations2D) = ("rho_dry", "rho_vapour",
+                                                                             "rho_cloud", "rho_rain", 
                                                                              "v1", "v2", "eq_pot_temp",
                                                                              "pressure")
 
@@ -506,10 +510,10 @@ end
     S_accretion       = 1.72 * rho_cloud * rho_rain^(0.875)
     S_rain            = S_auto_conversion + S_accretion - S_evaporation
     S_groundwater     = 0.0
-    #=
+    
     if (x[2] < 100.0)
         S_groundwater = rho_rain * (1 - (x[2] * 0.01)^2)
-    end=#
+    end
 
     return SVector(0.0, -S_rain, S_rain - S_groundwater, 0.0,
                    -rho * g, -rho_v2 * g, 0.0, 0.0, 0.0)

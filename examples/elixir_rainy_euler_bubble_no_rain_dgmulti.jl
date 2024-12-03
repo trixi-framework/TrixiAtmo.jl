@@ -5,7 +5,7 @@ using TrixiAtmo: source_terms_no_phase_change, saturation_residual,
                  saturation_residual_jacobian, NonlinearSolveDG,
                  cons2eq_pot_temp, flux_LMARS, flux_chandrashekar
 using NLsolve: nlsolve
-
+using Plots
 
 
 # Initial condition from elixir_moist_euler_bubble.jl
@@ -291,3 +291,6 @@ sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false, stage_limite
             save_everystep = false, callback = callbacks);
 
 summary_callback()
+
+pd = PlotData2D(sol; solution_variables = cons2eq_pot_temp);
+plot(pd["eq_pot_temp"], c = :vik, dpi = 1000)

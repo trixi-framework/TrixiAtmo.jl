@@ -3,8 +3,9 @@ using Trixi
 using TrixiAtmo
 using TrixiAtmo: source_terms_moist_bubble, saturation_residual,
                  saturation_residual_jacobian, NonlinearSolveDG,
-                 cons2eq_pot_temp, flux_LMARS, flux_chandrashekar
+                 cons2aeqpot, flux_LMARS, flux_chandrashekar
 using NLsolve: nlsolve
+using Plots
 
 
 
@@ -246,12 +247,12 @@ boundary_conditions = (; :left   => boundary_condition_periodic,
                          :bottom => boundary_condition_slip_wall,
                          :right  => boundary_condition_periodic)
 
-#volume_flux  = flux_chandrashekar
-#volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
-
-solver = DGMulti(polydeg = 1, element_type = Quad(), approximation_type = GaussSBP(),
-                 surface_integral = SurfaceIntegralWeakForm(flux_lax_friedrichs),
-                 volume_integral = VolumeIntegralWeakForm())
+solver = DGMulti(polydeg = 3, element_type = Quad(), approximation_type = GaussSBP(),
+                 surface_integral = SurfaceIntegralWeakForm(flux_LMARS),
+                 volume_integral = VolumeIntegralWeakForm(),
+                 #volume_integral = VolumeIntegralFluxDifferencing(flux_chandrashekar);
+                 #quad_rule_vol = Trixi.RefElemData(Quad(), 3)
+                 )
 
 coordinates_min = (     0.0,      0.0)
 coordinates_max = (20_000.0, 10_000.0)
@@ -301,3 +302,6 @@ sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
             save_everystep = false, callback = callbacks);
 
 summary_callback()
+
+pd = PlotData2D(sol; solution_variables = cons2aeqpot);
+plot(pd["aeqpottemp"], c = :vik, dpi = 1000)
