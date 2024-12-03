@@ -19,10 +19,12 @@ function convert_variables(u, solution_variables, mesh::P4estMesh{2},
                                                                 contravariant_vectors,
                                                                 i, j, element)
 
-            if applicable(solution_variables, u, normal_vector_node, equations, dg,
+            if applicable(solution_variables, u, normal_vector_node, mesh, equations,
+                          dg,
                           cache, i, j, element)
                 # The solution_variables function depends on the solution on other nodes, the normal_vector_node, etc.
-                data_node = solution_variables(u, normal_vector_node, equations, dg,
+                data_node = solution_variables(u, normal_vector_node, mesh, equations,
+                                               dg,
                                                cache, i, j, element)
             else
                 # The solution_variables function depends on u_node and equations
@@ -115,27 +117,44 @@ end
 
 # Calculate the primitive variables and the relative vorticity at a given node
 @inline function cons2prim_and_vorticity(u, normal_vector,
-                                         equations::ShallowWaterEquations3D,
+                                         mesh::P4estMesh{2},
+                                         equations::AbstractEquations{3},
                                          dg::DGSEM, cache, i, j, element)
+
+    # compute the vorticity and project onto normal vector
+    vorticity = calc_vorticity_node(u, mesh, equations, dg, cache, i, j, element)
+    relative_vorticity = dot(vorticity, normal_vector) / norm(normal_vector)
+
+    u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
+
+    # Return th solution variables
+    return SVector(cons2prim(u_node, equations)..., relative_vorticity)
+end
+
+@inline function calc_vorticity_node(u, mesh::P4estMesh{2},
+                                     equations::AbstractEquations{3}, dg::DGSEM, cache,
+                                     i, j, element)
     (; derivative_matrix) = dg.basis
-    (; contravariant_vectors, inverse_jacobian, node_coordinates) = cache.elements
+    (; contravariant_vectors, inverse_jacobian) = cache.elements
 
     # Compute gradients in reference space
     dv1dxi1 = dv1dxi2 = zero(eltype(u))
     dv2dxi1 = dv2dxi2 = zero(eltype(u))
     dv3dxi1 = dv3dxi2 = zero(eltype(u))
     for ii in eachnode(dg)
-        h, hv_1, hv_2, hv_3, _ = Trixi.get_node_vars(u, equations, dg, ii, j, element)
-        dv1dxi1 += derivative_matrix[i, ii] * hv_1 / h
-        dv2dxi1 += derivative_matrix[i, ii] * hv_2 / h
-        dv3dxi1 += derivative_matrix[i, ii] * hv_3 / h
+        u_node = Trixi.get_node_vars(u, equations, dg, ii, j, element)
+        v1, v2, v3 = velocity(u_node, equations)
+        dv1dxi1 += derivative_matrix[i, ii] * v1
+        dv2dxi1 += derivative_matrix[i, ii] * v2
+        dv3dxi1 += derivative_matrix[i, ii] * v3
     end
 
     for jj in eachnode(dg)
-        h, hv_1, hv_2, hv_3, _ = Trixi.get_node_vars(u, equations, dg, i, jj, element)
-        dv1dxi2 += derivative_matrix[j, jj] * hv_1 / h
-        dv2dxi2 += derivative_matrix[j, jj] * hv_2 / h
-        dv3dxi2 += derivative_matrix[j, jj] * hv_3 / h
+        u_node = Trixi.get_node_vars(u, equations, dg, i, jj, element)
+        v1, v2, v3 = velocity(u_node, equations)
+        dv1dxi2 += derivative_matrix[j, jj] * v1
+        dv2dxi2 += derivative_matrix[j, jj] * v2
+        dv3dxi2 += derivative_matrix[j, jj] * v3
     end
 
     # Transform gradients to Cartesian space
@@ -151,14 +170,8 @@ end
     dv3dx = (Ja11 * dv3dxi1 + Ja21 * dv3dxi2) * inverse_jacobian[i, j, element]
     dv3dy = (Ja12 * dv3dxi1 + Ja22 * dv3dxi2) * inverse_jacobian[i, j, element]
 
-    # compute the vorticity and project onto normal vector
-    vorticity = ((dv3dy - dv2dz) * normal_vector[1] +
-                 (dv1dz - dv3dx) * normal_vector[2] +
-                 (dv2dx - dv1dy) * normal_vector[3]) / norm(normal_vector)
-
-    u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
-
-    return SVector(cons2prim(u_node, equations)..., vorticity)
+    # compute the vorticity
+    return SVector(dv3dy - dv2dz, dv1dz - dv3dx, dv2dx - dv1dy)
 end
 
 # Variable names for cons2prim_and_vorticity
