@@ -63,7 +63,8 @@ This problem is adapted from Case 1 of the test suite described in the following
     # get Cartesian velocity components
     vx, vy, vz = omega * Trixi.cross(axis, x)
 
-    # Prescribe the rotated bell shape and Cartesian velocity components
+    # Prescribe the rotated bell shape and Cartesian velocity components.
+    # The last variable is the bottom topography, which we set to zero
     return SVector(h, vx, vy, vz, 0.0f0)
 end
 
@@ -101,8 +102,9 @@ end
     lon, lat = atan(x[2], x[1]), asin(x[3] / a)
     vlon = omega * a * (cos(lat) * cos(alpha) + sin(lat) * cos(lon) * sin(alpha))
     vlat = -omega * a * sin(lon) * sin(alpha)
-
-    # Prescribe the spherical velocity components
-    return SVector(h, vlon, vlat, 0.0f0)
+    
+    # Prescribe the rotated bell shape and spherical velocity components.
+    # The last variable is the bottom topography, which we set to zero
+    return SVector(h, vlon, vlat, 0.0f0, 0.0f0)
 end
 end # muladd
