@@ -125,14 +125,14 @@ end
 
 # This assumes a sphere, although the radius can be arbitrary, and general mesh topologies are supported.
 function init_elements_2d_manifold_in_3d!(elements,
-                                          mesh::Union{P4estMesh{2}, T8codeMesh{2}},
+                                          mesh::P4estMesh{2, 3},
                                           basis::LobattoLegendreBasis,
                                           metric_terms)
     (; node_coordinates, jacobian_matrix,
     contravariant_vectors, inverse_jacobian) = elements
 
     # The standard calc_node_coordinates! can be used, since Trixi.jl now dispatches on
-    # P4estMesh{NDIMS, NDIMS_AMBIENT}.
+    # P4estMesh{NDIMS, NDIMS_AMBIENT}, so it can be used here.
     Trixi.calc_node_coordinates!(node_coordinates, mesh, basis)
 
     for element in 1:Trixi.ncells(mesh)
@@ -161,17 +161,6 @@ function init_elements_2d_manifold_in_3d!(elements,
     end
 
     return nothing
-end
-
-# Interpolate tree_node_coordinates to each quadrant at the nodes of the specified basis
-function calc_node_coordinates_2d_shell!(node_coordinates,
-                                         mesh::Union{P4estMesh{2}, T8codeMesh{2}},
-                                         basis::LobattoLegendreBasis)
-    # Hanging nodes will cause holes in the mesh if its polydeg is higher
-    # than the polydeg of the solver.
-    @assert length(basis.nodes)>=length(mesh.nodes) "The solver can't have a lower polydeg than the mesh"
-    @assert size(mesh.tree_node_coordinates, 1)==3 "Shell must use 3D node coordinates"
-    calc_node_coordinates_2d_shell!(node_coordinates, mesh, basis.nodes)
 end
 
 # Calculate contravariant vectors, multiplied by the Jacobian determinant J of the transformation mapping,
