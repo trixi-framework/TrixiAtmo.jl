@@ -54,6 +54,10 @@ struct CovariantLinearAdvectionEquation2D{GlobalCoordinateSystem} <:
     end
 end
 
+# The conservative variables are the scalar conserved quantity and three contravariant 
+# velocity components. Note that vcon3 is zero, since the velocity is always tangent to the 
+# surface, but we keep it because there may be 3 global velocity components (if global 
+# Cartesian coordinates are used), and the number of variables needs to match.
 function Trixi.varnames(::typeof(cons2cons), ::CovariantLinearAdvectionEquation2D)
     return ("scalar", "vcon1", "vcon2", "vcon3")
 end
@@ -71,8 +75,9 @@ end
 # Convert contravariant velocity/momentum components to the global coordinate system
 @inline function contravariant2global(u, aux_vars,
                                       equations::CovariantLinearAdvectionEquation2D)
-    v_global = basis_covariant(aux_vars, equations) * velocity_horizontal(u, equations)
-    return SVector(u[1], v_global[1], v_global[2], v_global[3])
+    vglo1, vglo2, vglo3 = basis_covariant(aux_vars, equations) *
+                          velocity_horizontal(u, equations)
+    return SVector(u[1], vglo1, vglo2, vglo3)
 end
 
 # Convert velocity/momentum components in the global coordinate system to contravariant 
@@ -83,7 +88,7 @@ end
     return SVector(u[1], vcon1, vcon2, zero(eltype(u)))
 end
 
-# The notation (u, v, w) is used here to denote generic global vector components
+# Scalar conserved quantity and three global velocity components
 function Trixi.varnames(::typeof(contravariant2global),
                         ::CovariantLinearAdvectionEquation2D)
     return ("scalar", "vglo1", "vglo2", "vglo3")
