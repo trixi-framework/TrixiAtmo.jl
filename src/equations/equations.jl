@@ -72,15 +72,19 @@ dispatching on the return type.
 @doc raw"""
     transform_initial_condition(initial_condition, equations)
 
-Takes in a function with the signature `initial_condition(x, t)` which returns an initial 
-condition given in terms of global Cartesian or zonal/meridional velocity components, and 
-returns another function `initial_condition_transformed(x, t, equations)` or 
-`initial_condition_transformed(x, t, aux_vars, equations)` which returns the same initial 
-data, but transformed to the appropriate prognostic variables used internally by the 
-solver. For the covariant form, this involves a transformation of the global velocity 
+Takes in a function with the signature `initial_condition(x, t, equations)` which returns 
+an initial condition given in terms of global Cartesian or zonal/meridional velocity
+components, and returns another function `initial_condition_transformed(x, t, equations)` 
+or `initial_condition_transformed(x, t, aux_vars, equations)` which returns the same 
+initial data, but transformed to the appropriate prognostic variables used internally by 
+the solver. For the covariant form, this involves a transformation of the global velocity 
 components to contravariant components using [`global2contravariant`](@ref) as well as a 
 conversion from primitive to conservative variables. For standard Cartesian formulations, 
-this simply involves a conversion from  primitive to conservative variables. 
+this simply involves a conversion from  primitive to conservative variables. The intention 
+here is to have a set of test cases (for example, [`initial_condition_gaussian`](@ref)) for 
+which the initial condition is prescribed using a standardized set of primitive variables 
+in a global Cartesian coordinates, and transformed to the specific prognostic variables 
+required for a given model.
 !!! note 
     When using the covariant formulation, the initial velocity components should be defined 
     in the coordinate system specified by the `GlobalCoordinateSystem` type parameter in

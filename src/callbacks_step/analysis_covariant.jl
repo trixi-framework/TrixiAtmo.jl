@@ -2,7 +2,7 @@
 #! format: noindent
 
 # For the covariant form, we want to integrate using the exact area element 
-# sqrtG = √det(G), which is stored in cache.auxiliary_variables, not the approximate 
+# √G = (det(AᵀA))^(1/2), which is stored in cache.auxiliary_variables, not the approximate 
 # area element used in the Cartesian formulation, which stored in cache.elements.
 function Trixi.integrate_via_indices(func::Func, u,
                                      mesh::Union{StructuredMesh{2},
@@ -38,7 +38,7 @@ function Trixi.integrate_via_indices(func::Func, u,
     return integral
 end
 
-# Entropy time derivative which uses auxiliary variables
+# Entropy time derivative for cons2entropy function which depends on auxiliary variables
 function Trixi.analyze(::typeof(Trixi.entropy_timederivative), du, u, t,
                        mesh::P4estMesh{2},
                        equations::AbstractCovariantEquations{2}, dg::DG, cache)
