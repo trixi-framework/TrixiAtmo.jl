@@ -559,6 +559,42 @@ end
     return inv(T) * SVector(w1, w2, w3, w4, w5, w6)
 end
 
+@inline function entropy2cons(w, equations::CompressibleMoistEulerEquations2D)
+    @unpack R_d, R_v, c_pd, c_pv, c_pl, c_vd, c_vv, L_00 = equations
+
+    v1 = w[2]
+    v2 = w[3]
+    v_square = v1^2 + v2^2
+
+    T_inv = -    w[4]
+    T     = -inv(w[4])
+
+    g_d = w[1] + 0.5* v_square
+    g_v = w[5] + g_d
+    g_l = w[6] + g_d
+
+    s_d = -( g_d         * T_inv - c_pd)
+    s_v = -((g_v - L_00) * T_inv - c_pv)
+    s_l = -( g_l         * T_inv - c_pl)
+
+    if (s_d != 0.0)
+        rho_d = exp(s_d - c_pd * log(T) + R_d * log(R_d * T))
+    end
+    if (s_v != 0.0)
+        rho_v = exp(s_v - c_pv * log(T) + R_v * log(R_v * T))
+    end
+    if (s_l != 0.0)
+        rho_l = 0.0#TODO no information in cons2entropy????
+    end
+
+    rho    = rho_d + rho_v + rho_l 
+    rho_v1 = rho * v1
+    rho_v2 = rho * v2
+    rho_E  = (c_vd * rho_d + c_vv * rho_v + c_l * rho_l) * T + rho_v * L_00 + 0.5 * rho * v_square
+
+    return SVector(rho, rho_v1, rho_v2, rho_E, rho_v, rho_l)
+end
+
 # Convert primitive to conservative variables.
 @inline function prim2cons(prim, equations::CompressibleMoistEulerEquations2D)
     rho, v1, v2, p, qv, ql = prim
