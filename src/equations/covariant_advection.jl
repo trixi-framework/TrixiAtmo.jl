@@ -23,11 +23,11 @@ and $\xi^1$ and $\xi^2$ are the local reference space coordinates. The third vel
 component $v^3$, representing the velocity in the direction normal to the surface, is 
 stored as a fourth variable which is set to zero when solving equations on two-dimensional 
 surfaces in three-dimensional ambient space, and will remain zero throughout the simulation 
-(we use three velocity components to match the output of `contravariant2global`, which
-returns a three-dimensional velocity vector in the global Cartesian or spherical coordinate 
-system). The velocity components are spatially varying but assumed to be constant in time, 
-so we do not apply any flux or dissipation to such variables. The resulting system is then 
-given on the reference element as 
+(we use three velocity components to match the output of [`contravariant2global`](@ref), 
+which returns a three-dimensional velocity vector in the global Cartesian or spherical 
+coordinate system). The velocity components are spatially varying but assumed to be 
+constant in time, so we do not apply any flux or dissipation to such variables. The 
+resulting system is then given on the reference element as 
 ```math
 \sqrt{G} \frac{\partial}{\partial t}
 \left[\begin{array}{c} h \\ v^1 \\ v^2 \\ v^3 \end{array}\right] 
@@ -40,10 +40,10 @@ given on the reference element as
 = 
 \left[\begin{array}{c} 0 \\ 0 \\ 0 \\ 0 \end{array}\right],
 ```
-where $G$ is the determinant of the covariant metric tensor expressed as a matrix with 
-entries $G_{ij} =  \vec{a}_i \cdot \vec{a}_j$. Note that the variable advection velocity 
-components could alternatively be stored as auxiliary variables, similarly to the geometric 
-information.
+where $G$ is the determinant of the covariant metric tensor expressed as a 2 by 2 matrix 
+with entries $G_{ij} =  \vec{a}_i \cdot \vec{a}_j$. Note that the variable advection 
+velocity components could alternatively be stored as auxiliary variables, similarly to the 
+geometric information.
 """
 struct CovariantLinearAdvectionEquation2D{GlobalCoordinateSystem} <:
        AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 4}
