@@ -4,7 +4,7 @@
 # Convert to another set of variables using a solution_variables function that depends on 
 # auxiliary variables
 function convert_variables(u, solution_variables, mesh::P4estMesh{2},
-                           equations, dg, cache)
+                           equations::AbstractCovariantEquations{2}, dg, cache)
     (; aux_node_vars) = cache.auxiliary_variables
 
     # Extract the number of solution variables to be output 
@@ -28,31 +28,5 @@ function convert_variables(u, solution_variables, mesh::P4estMesh{2},
         end
     end
     return data
-end
-
-# Specialized save_solution_file method that supports a solution_variables function which 
-# depends on auxiliary variables. The conversion must be defined as solution_variables(u, 
-# aux_vars, equations), and an additional method must be defined as solution_variables(u,
-# equations) = u, such that no conversion is done when auxiliary variables are not provided.
-function Trixi.save_solution_file(u_ode, t, dt, iter,
-                                  semi::SemidiscretizationHyperbolic{<:Trixi.AbstractMesh,
-                                                                     <:AbstractCovariantEquations},
-                                  solution_callback,
-                                  element_variables = Dict{Symbol, Any}(),
-                                  node_variables = Dict{Symbol, Any}();
-                                  system = "")
-    mesh, equations, solver, cache = Trixi.mesh_equations_solver_cache(semi)
-    u = Trixi.wrap_array_native(u_ode, semi)
-
-    # Perform the variable conversion at each node
-    data = convert_variables(u, solution_callback.solution_variables, mesh, equations,
-                             solver, cache)
-
-    # Call the existing Trixi.save_solution_file, which will use solution_variables(u, 
-    # equations). Since the variables are already converted above, we therefore require 
-    # solution_variables(u, equations) = u.
-    Trixi.save_solution_file(data, t, dt, iter, mesh, equations, solver, cache,
-                             solution_callback, element_variables,
-                             node_variables, system = system)
 end
 end # muladd
