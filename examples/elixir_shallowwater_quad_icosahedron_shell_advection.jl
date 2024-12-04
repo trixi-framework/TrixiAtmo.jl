@@ -68,7 +68,7 @@ analysis_callback = AnalysisCallback(semi, interval = 100,
 
 # The SaveSolutionCallback allows to save the solution to a file in regular intervals
 save_solution = SaveSolutionCallback(interval = 100,
-                                     solution_variables = cons2prim)
+                                     solution_variables = cons2prim_and_vorticity)
 
 # The StepsizeCallback handles the re-calculation of the maximum Δt after each time step
 stepsize_callback = StepsizeCallback(cfl = 0.7)
