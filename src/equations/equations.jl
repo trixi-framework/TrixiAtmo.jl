@@ -120,7 +120,7 @@ correct. The inverse conversion is performed by [`global2contravariant`](@ref).
 function contravariant2global end
 
 """
-    contravariant2global(u, aux_vars, equations)
+    global2contravariant(u, aux_vars, equations)
 
 Transform the vector `u` of solution variables with momentum or velocity components
 given with respect to the global coordinate system into local contravariant components. The 
