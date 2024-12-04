@@ -3,7 +3,7 @@
 
 @doc raw"""
     CovariantLinearAdvectionEquation2D{GlobalCoordinateSystem} <:  
-        AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 4}
+        AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 3}
 
 A variable-coefficient linear advection equation can be defined on a two-dimensional
 manifold $S \subset \mathbb{R}^3$ as
@@ -19,26 +19,21 @@ with respect to the covariant basis vectors $\vec{a}_1$ and $\vec{a}_2$ as
 ```
 where $\vec{a}_1 = \partial \vec{x} / \partial \xi^1$ and 
 $\vec{a}_2 = \partial \vec{x} / \partial \xi^2$ are the so-called covariant basis vectors, 
-and $\xi^1$ and $\xi^2$ are the local reference space coordinates. The third velocity 
-component $v^3$, representing the velocity in the direction normal to the surface, is 
-stored as a fourth variable which is set to zero when solving equations on two-dimensional 
-surfaces in three-dimensional ambient space, and will remain zero throughout the simulation 
-(we use three velocity components to match the output of [`contravariant2global`](@ref), 
-which returns a three-dimensional velocity vector in the global Cartesian or spherical 
-coordinate system). The velocity components are spatially varying but assumed to be 
-constant in time, so we do not apply any flux or dissipation to such variables. The 
-resulting system is then given on the reference element as 
+and $\xi^1$ and $\xi^2$ are the local reference space coordinates. The velocity components 
+are spatially varying but assumed to be constant in time, so we do not apply any flux or 
+dissipation to such variables. The resulting system is then given on the reference element 
+as 
 ```math
 \sqrt{G} \frac{\partial}{\partial t}
-\left[\begin{array}{c} h \\ v^1 \\ v^2 \\ v^3 \end{array}\right] 
+\left[\begin{array}{c} h \\ v^1 \\ v^2 \end{array}\right] 
 +
 \frac{\partial}{\partial \xi^1} 
-\left[\begin{array}{c} \sqrt{G} h v^1 \\ 0 \\ 0 \\ 0 \end{array}\right]
+\left[\begin{array}{c} \sqrt{G} h v^1 \\ 0 \\ 0 \end{array}\right]
 + 
 \frac{\partial}{\partial \xi^2} 
-\left[\begin{array}{c} \sqrt{G} h v^2 \\ 0 \\ 0\\ 0 \end{array}\right] 
+\left[\begin{array}{c} \sqrt{G} h v^2 \\ 0 \\ 0 \end{array}\right] 
 = 
-\left[\begin{array}{c} 0 \\ 0 \\ 0 \\ 0 \end{array}\right],
+\left[\begin{array}{c} 0 \\ 0 \\ 0 \end{array}\right],
 ```
 where $G$ is the determinant of the covariant metric tensor expressed as a 2 by 2 matrix 
 with entries $G_{ij} =  \vec{a}_i \cdot \vec{a}_j$. Note that the variable advection 
@@ -46,7 +41,7 @@ velocity components could alternatively be stored as auxiliary variables, simila
 geometric information.
 """
 struct CovariantLinearAdvectionEquation2D{GlobalCoordinateSystem} <:
-       AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 4}
+       AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 3}
     global_coordinate_system::GlobalCoordinateSystem
     function CovariantLinearAdvectionEquation2D(;
                                                 global_coordinate_system = GlobalCartesianCoordinates())
@@ -59,24 +54,18 @@ end
 # surface, but we keep it because there may be 3 global velocity components (if global 
 # Cartesian coordinates are used), and the number of variables needs to match.
 function Trixi.varnames(::typeof(cons2cons), ::CovariantLinearAdvectionEquation2D)
-    return ("scalar", "vcon1", "vcon2", "vcon3")
+    return ("scalar", "vcon1", "vcon2")
 end
 
-# Convenience function to extract the horizontal velocity
-function velocity_horizontal(u, ::CovariantLinearAdvectionEquation2D)
-    return SVector(u[2], u[3])
-end
-
-# Convenience function to extract the full three-dimensional velocity
+# Convenience function to extract the velocity
 function velocity(u, ::CovariantLinearAdvectionEquation2D)
-    return SVector(u[2], u[3], u[4])
+    return SVector(u[2], u[3])
 end
 
 # Convert contravariant velocity/momentum components to the global coordinate system
 @inline function contravariant2global(u, aux_vars,
                                       equations::CovariantLinearAdvectionEquation2D)
-    vglo1, vglo2, vglo3 = basis_covariant(aux_vars, equations) *
-                          velocity_horizontal(u, equations)
+    vglo1, vglo2, vglo3 = basis_covariant(aux_vars, equations) * velocity(u, equations)
     return SVector(u[1], vglo1, vglo2, vglo3)
 end
 
@@ -84,8 +73,8 @@ end
 # components, setting the third component (normal to the manifold) to zero
 @inline function global2contravariant(u, aux_vars,
                                       equations::CovariantLinearAdvectionEquation2D)
-    vcon1, vcon2 = basis_contravariant(aux_vars, equations) * velocity(u, equations)
-    return SVector(u[1], vcon1, vcon2, zero(eltype(u)))
+    vcon1, vcon2 = basis_contravariant(aux_vars, equations) * SVector(u[2], u[3], u[4])
+    return SVector(u[1], vcon1, vcon2)
 end
 
 # Scalar conserved quantity and three global velocity components
@@ -99,7 +88,7 @@ end
 @inline function Trixi.cons2entropy(u, aux_vars,
                                     equations::CovariantLinearAdvectionEquation2D)
     z = zero(eltype(u))
-    return SVector(u[1], z, z, z)
+    return SVector(u[1], z, z)
 end
 
 # Numerical flux plus dissipation for abstract covariant equations as a function of the 
@@ -109,8 +98,8 @@ end
                             equations::CovariantLinearAdvectionEquation2D)
     z = zero(eltype(u))
     sqrtG = area_element(aux_vars, equations)
-    vcon = velocity_horizontal(u, equations)
-    return SVector(sqrtG * u[1] * vcon[orientation], z, z, z)
+    vcon = velocity(u, equations)
+    return SVector(sqrtG * u[1] * vcon[orientation], z, z)
 end
 
 # Local Lax-Friedrichs dissipation which is not applied to the contravariant velocity 
@@ -123,21 +112,21 @@ end
     sqrtG = area_element(aux_vars_ll, equations)
     λ = dissipation.max_abs_speed(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
                                   orientation_or_normal_direction, equations)
-    return -0.5f0 * sqrtG * λ * SVector(u_rr[1] - u_ll[1], z, z, z)
+    return -0.5f0 * sqrtG * λ * SVector(u_rr[1] - u_ll[1], z, z)
 end
 
 # Maximum contravariant wave speed with respect to specific basis vector
 @inline function Trixi.max_abs_speed_naive(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
                                            orientation::Integer,
                                            equations::CovariantLinearAdvectionEquation2D)
-    vcon_ll = velocity_horizontal(u_ll, equations)  # Contravariant components on left side
-    vcon_rr = velocity_horizontal(u_rr, equations)  # Contravariant components on right side
+    vcon_ll = velocity(u_ll, equations)  # Contravariant components on left side
+    vcon_rr = velocity(u_rr, equations)  # Contravariant components on right side
     return max(abs(vcon_ll[orientation]), abs(vcon_rr[orientation]))
 end
 
 # Maximum wave speeds in each direction for CFL calculation
 @inline function Trixi.max_abs_speeds(u, aux_vars,
                                       equations::CovariantLinearAdvectionEquation2D)
-    return abs.(velocity_horizontal(u, equations))
+    return abs.(velocity(u, equations))
 end
 end # @muladd
