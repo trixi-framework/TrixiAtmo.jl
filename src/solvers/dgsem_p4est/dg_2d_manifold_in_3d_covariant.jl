@@ -139,9 +139,9 @@ end
                                                          interface_index)
 
     # Compute flux in the primary element's coordinate system
-    u_rr_spherical = contravariant2spherical(u_rr, aux_vars_rr, equations)
-    u_rr_transformed_to_ll = spherical2contravariant(u_rr_spherical, aux_vars_ll,
-                                                     equations)
+    u_rr_spherical = contravariant2global(u_rr, aux_vars_rr, equations)
+    u_rr_transformed_to_ll = global2contravariant(u_rr_spherical, aux_vars_ll,
+                                                  equations)
     if isodd(primary_direction_index)
         flux_primary = -surface_flux(u_rr_transformed_to_ll, u_ll,
                                      aux_vars_ll, aux_vars_ll,
@@ -153,9 +153,9 @@ end
     end
 
     # Compute flux in the secondary element's coordinate system
-    u_ll_spherical = contravariant2spherical(u_ll, aux_vars_ll, equations)
-    u_ll_transformed_to_rr = spherical2contravariant(u_ll_spherical, aux_vars_rr,
-                                                     equations)
+    u_ll_spherical = contravariant2global(u_ll, aux_vars_ll, equations)
+    u_ll_transformed_to_rr = global2contravariant(u_ll_spherical, aux_vars_rr,
+                                                  equations)
     if isodd(secondary_direction_index)
         flux_secondary = -surface_flux(u_ll_transformed_to_rr, u_rr,
                                        aux_vars_rr, aux_vars_rr,

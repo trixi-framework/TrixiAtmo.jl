@@ -15,7 +15,7 @@ using Printf: @sprintf
 using Static: True, False
 using StrideArrays: PtrArray
 using StaticArrayInterface: static_size
-using LinearAlgebra: norm, dot
+using LinearAlgebra: norm, dot, det
 using Reexport: @reexport
 using LoopVectorization: @turbo
 using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
@@ -32,6 +32,7 @@ include("callbacks_step/callbacks_step.jl")
 
 export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
        CovariantLinearAdvectionEquation2D
+export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
 export flux_chandrashekar, flux_LMARS
 
@@ -43,9 +44,9 @@ export P4estMeshCubedSphere2D, P4estMeshQuadIcosahedron2D, MetricTermsCrossProdu
        MetricTermsInvariantCurl
 export EARTH_RADIUS, EARTH_GRAVITATIONAL_ACCELERATION,
        EARTH_ROTATION_RATE, SECONDS_PER_DAY
-export spherical2contravariant, contravariant2spherical, spherical2cartesian,
-       transform_to_cartesian, transform_to_contravariant
-export initial_condition_gaussian
+export global2contravariant, contravariant2global, spherical2cartesian,
+       transform_initial_condition
+export initial_condition_gaussian, initial_condition_gaussian_cartesian
 
 export examples_dir
 end # module TrixiAtmo
