@@ -237,7 +237,7 @@ varnames(::typeof(cons2prim), ::CompressibleRainyEulerEquations2D) = ("rho_dry",
 varnames(::typeof(cons2eq_pot_temp), ::CompressibleRainyEulerEquations2D) = ("rho_dry", "rho_vapour",
                                                                              "rho_cloud", "rho_rain", 
                                                                              "v1", "v2", "eq_pot_temp",
-                                                                             "pressure")
+                                                                             "pressure", "entropy")
 
 
 
