@@ -89,7 +89,7 @@ end
     return SVector(u[1], z, z)
 end
 
-# Numerical flux plus dissipation for abstract covariant equations as a function of the 
+# Flux for abstract covariant equations as a function of the 
 # state vector u, as well as the auxiliary variables aux_vars, which contain the geometric 
 # information required for the covariant form
 @inline function Trixi.flux(u, aux_vars, orientation::Integer,
