@@ -132,10 +132,6 @@ performed by [`contravariant2global`](@ref).
 """
 function global2contravariant end
 
-# If no auxiliary variables are passed into the conversion to spherical coordinates, do not 
-# do any conversion.
-@inline contravariant2global(u, ::AbstractEquations) = u
-
 # cons2cons method which takes in unused aux_vars variable
 @inline Trixi.cons2cons(u, aux_vars, ::AbstractEquations) = u
 @inline Trixi.prim2cons(u, aux_vars, ::AbstractEquations) = u
