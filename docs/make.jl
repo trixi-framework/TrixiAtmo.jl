@@ -1,6 +1,13 @@
-using TrixiAtmo
 using Documenter
 using DocumenterInterLinks
+
+# Fix for https://github.com/trixi-framework/Trixi.jl/issues/668
+if (get(ENV, "CI", nothing) != "true") &&
+   (get(ENV, "TRIXI_DOC_DEFAULT_ENVIRONMENT", nothing) != "true")
+    push!(LOAD_PATH, dirname(@__DIR__))
+end
+
+using TrixiAtmo
 
 # Provide external links to the Trixi.jl docs (project root and inventory file)
 links = InterLinks("Trixi" => ("https://trixi-framework.github.io/Trixi.jl/stable/",

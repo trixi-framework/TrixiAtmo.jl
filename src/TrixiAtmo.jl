@@ -8,18 +8,21 @@ See also: [trixi-framework/TrixiAtmo.jl](https://github.com/trixi-framework/Trix
 """
 module TrixiAtmo
 
+using Reexport: @reexport
 using Trixi
-# Import additional symbols that are not exported by Trixi.jl
-# using Trixi:
 using MuladdMacro: @muladd
-using StaticArrays: SVector
+using Printf: @sprintf
 using Static: True, False
-using LinearAlgebra: norm
+using StrideArrays: PtrArray
+using StaticArrayInterface: static_size
+using LinearAlgebra: norm, dot, det
+using Reexport: @reexport
+using LoopVectorization: @turbo
+using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
 
-foo() = true
-bar() = false
-baz() = Trixi.examples_dir()
+@reexport using StaticArrays: SVector, SMatrix
 
+include("auxiliary/auxiliary.jl")
 include("equations/equations.jl")
 export CompressibleMoistEulerEquations2D, CompressibleRainyEulerEquations2D,
        CompressibleRainyEulerPotentialTemperatureEquations2D,
@@ -27,5 +30,29 @@ export CompressibleMoistEulerEquations2D, CompressibleRainyEulerEquations2D,
 
 include("callbacks_stage/callbacks_stage.jl")
 export NonlinearSolveDG
+include("meshes/meshes.jl")
+include("semidiscretization/semidiscretization.jl")
+include("solvers/solvers.jl")
+include("semidiscretization/semidiscretization_hyperbolic_2d_manifold_in_3d.jl")
+include("callbacks_step/callbacks_step.jl")
 
+export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
+       CovariantLinearAdvectionEquation2D
+export GlobalCartesianCoordinates, GlobalSphericalCoordinates
+
+export flux_chandrashekar, flux_LMARS
+
+export velocity, waterheight, pressure, energy_total, energy_kinetic, energy_internal,
+       lake_at_rest_error, source_terms_lagrange_multiplier,
+       clean_solution_lagrange_multiplier!
+export cons2prim_and_vorticity
+export P4estMeshCubedSphere2D, P4estMeshQuadIcosahedron2D, MetricTermsCrossProduct,
+       MetricTermsInvariantCurl
+export EARTH_RADIUS, EARTH_GRAVITATIONAL_ACCELERATION,
+       EARTH_ROTATION_RATE, SECONDS_PER_DAY
+export global2contravariant, contravariant2global, spherical2cartesian,
+       transform_initial_condition
+export initial_condition_gaussian, initial_condition_gaussian_cartesian
+
+export examples_dir
 end # module TrixiAtmo
