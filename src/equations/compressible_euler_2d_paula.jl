@@ -105,7 +105,7 @@ end
     alpha = 0.5
 
     tau_s = zero(eltype(u))
-    if y > y_s
+    if y < y_s
         tau_s = alpha * sin(0.5 * (y - y_s) * inv(y_top - y_s))^(gamma)
     end
 
@@ -152,5 +152,3 @@ end
     rho, rho_v1, rho_v2, rho_e = u
     return SVector(zero(eltype(u)), zero(eltype(u)), -g * rho, -g * rho_v2)
 end
-
-#@inline boundary_condition_non_reflecting
