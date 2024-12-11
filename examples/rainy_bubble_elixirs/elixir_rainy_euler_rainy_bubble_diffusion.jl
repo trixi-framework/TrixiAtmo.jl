@@ -220,7 +220,7 @@ end
 ###############################################################################
 # semidiscretization of the compressible rainy Euler equations
 
-diffusivity = 0.6
+diffusivity = 1.5
 equations_parabolic = LaplaceDiffusion2D(diffusivity, equations)
 
 
@@ -236,7 +236,7 @@ boundary_conditions_parabolic = (
                        y_pos = boundary_condition_laplace)
 
 
-polydeg = 1
+polydeg = 2
 basis = LobattoLegendreBasis(polydeg)
 
 surface_flux = flux_lax_friedrichs
@@ -247,7 +247,7 @@ solver = DGSEM(basis, surface_flux)#, volume_integral)
 initial_condition = initial_condition_bubble_rainy
 source_terms      = source_terms_rainy
 
-mesh = TreeMesh(coordinates_min, coordinates_max, initial_refinement_level = 8, periodicity = (true, false), n_cells_max = 1_000_000)
+mesh = TreeMesh(coordinates_min, coordinates_max, initial_refinement_level = 6, periodicity = (true, false), n_cells_max = 1_000_000)
 
 semi = SemidiscretizationHyperbolicParabolic(mesh, (equations, equations_parabolic), initial_condition, solver; source_terms,
                                              boundary_conditions = (boundary_conditions, boundary_conditions_parabolic))
@@ -255,7 +255,7 @@ semi = SemidiscretizationHyperbolicParabolic(mesh, (equations, equations_parabol
 ###############################################################################
 # ODE solvers, callbacks etc.
 
-tspan = (0.0, 600.0)
+tspan = (0.0, 1000.0)
 
 ode = semidiscretize(semi, tspan)
 

@@ -113,7 +113,7 @@ end
 
 function AtmosphereLayers(equations::CompressibleRainyEulerEquations2D; total_height = coordinates_max[2] + 1.0, precision = 1.0, RealT = Float64)
     # constants
-    humidity_rel0    = 0.45      # hydrostatic relative humidity
+    humidity_rel0    = 0.2      # hydrostatic relative humidity
     surface_pressure = 8.5e4
 
     # surface layer with initial guesses for rho_dry, rho_vapour and temperature
@@ -156,7 +156,7 @@ function initial_condition_rainy_bubble(x, t, equations::CompressibleRainyEulerE
     ref_L = equations.ref_latent_heat_vap_temp
 
     # problem specific constants
-    humidity_rel_bar = 0.45                # background relative humidity field
+    humidity_rel_bar = 0.2                # background relative humidity field
     humidity_max     = 1.0
 
     # bubble parameters
@@ -235,7 +235,7 @@ boundary_conditions = (; :left   => boundary_condition_periodic,
 #volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
 solver = DGMulti(polydeg = 1, element_type = Quad(), approximation_type = GaussSBP(),
-                 surface_integral = SurfaceIntegralWeakForm(flux_lax_friedrichs),
+                 surface_integral = SurfaceIntegralWeakForm(flux_LMARS),
                  volume_integral = VolumeIntegralWeakForm())
 
 cells_per_dimension = (100, 100)
@@ -243,13 +243,13 @@ mesh = DGMultiMesh(solver, cells_per_dimension; coordinates_min, coordinates_max
 
 semi = SemidiscretizationHyperbolic(mesh, equations,
                                     initial_condition, solver;
-                                    source_terms = source_terms_rainy,
+                                    source_terms = source_terms_no_phase_change,
                                     boundary_conditions = boundary_conditions)
 
 ###############################################################################
 # ODE solvers, callbacks etc.
 
-tspan = (0.0, 1000.0)
+tspan = (0.0, 600.0)
 
 ode = semidiscretize(semi, tspan)
 
