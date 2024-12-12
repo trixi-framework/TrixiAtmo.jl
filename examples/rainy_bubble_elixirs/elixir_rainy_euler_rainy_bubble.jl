@@ -224,17 +224,17 @@ boundary_conditions = (x_neg = boundary_condition_periodic,
 polydeg = 1
 basis = LobattoLegendreBasis(polydeg)
 
-surface_flux = flux_lax_friedrichs
-volume_integral = VolumeIntegralFluxDifferencing(flux_chandrashekar)
+surface_flux = flux_LMARS
+#volume_integral = VolumeIntegralFluxDifferencing(flux_chandrashekar)
 
-solver = DGSEM(basis, surface_flux, volume_integral)
+solver = DGSEM(basis, surface_flux)#, volume_integral)
 
-cells_per_dimension = (200, 200)
+cells_per_dimension = (100, 100)
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = (true, false))
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_bubble_rainy, solver,
-                                    source_terms = source_terms_no_phase_change,
+                                    source_terms = source_terms_rainy,
                                     boundary_conditions = boundary_conditions)
 
 ###############################################################################
