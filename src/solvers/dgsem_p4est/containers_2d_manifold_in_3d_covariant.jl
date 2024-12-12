@@ -186,21 +186,40 @@ function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 
 
         # Compute the auxiliary metric information at each node
         for j in eachnode(dg), i in eachnode(dg)
+           
 
-            # Calculate the covariant basis in the desired global coordinate system
-            A = calc_basis_covariant(v1, v2, v3, v4,
-                                     dg.basis.nodes[i], dg.basis.nodes[j],
-                                     radius, equations.global_coordinate_system)
-            aux_node_vars[1:(NDIMS * NDIMS_AMBIENT), i, j, element] = SVector(A)
+            # Covariant basis in the desired global coordinate system as columns of a matrix
+            basis_covariant = calc_basis_covariant(v1, v2, v3, v4,
+                                    dg.basis.nodes[i], dg.basis.nodes[j],
+                                    radius,
+                                    equations.global_coordinate_system)
+            start_ind, end_ind = 1, length(basis_covariant)
+            aux_node_vars[start_ind:end_ind, i, j, element] = SVector(basis_covariant)
+            start_ind = end_ind + 1
 
-            G = A' * A  # Covariant metric tensor (not used for now)
+            # Metric tensor 
+            metric_covariant = basis_covariant' * basis_covariant
+            metric_contravariant = inv(basis_covariant' * basis_covariant)
 
-            # Contravariant basis
-            aux_node_vars[(NDIMS * NDIMS_AMBIENT + 1):(2 * NDIMS * NDIMS_AMBIENT),
-            i, j, element] = SVector(inv(G) * A')
+            # Contravariant basis vectors as rows of a matrix
+            basis_contravariant = metric_contravariant * basis_covariant'
+            end_ind = start_ind+length(basis_contravariant)-1
+            aux_node_vars[start_ind:end_ind, i, j, element] = SVector(basis_contravariant)
+            start_ind = end_ind + 1
 
             # Area element
-            aux_node_vars[n_aux_node_vars(equations), i, j, element] = sqrt(det(G))
+            area_element = sqrt(det(metric_covariant))
+            aux_node_vars[start_ind, i, j, element] = area_element
+            start_ind = start_ind + 1
+
+            # Covariant metric tensor components
+            end_ind = start_ind + 2
+            aux_node_vars[start_ind:end_ind, i, j, element] = SVector(metric_covariant[1,1], metric_covariant[1,2], metric_covariant[2,2])
+            start_ind = end_ind + 1
+
+            # Contravariant metric tensor components
+            end_ind = start_ind + 2
+            aux_node_vars[start_ind:end_ind, i, j, element] = SVector(metric_contravariant[1,1], metric_contravariant[1,2], metric_contravariant[2,2])
         end
     end
     return nothing

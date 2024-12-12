@@ -138,27 +138,56 @@ function global2contravariant end
 
 # For the covariant form, the auxiliary variables are the the NDIMS*NDIMS_AMBIENT entries 
 # of the exact covariant basis matrix, the NDIMS*NDIMS_AMBIENT entries of the exact 
-# contravariant basis matrix, and the area element. In the future, we will add other terms 
-# such as Christoffel symbols.
+# contravariant basis matrix, the covariant and contravariant metric tensor components, the
+# Christoffel symbols of the second kind, and the area element. 
 @inline have_aux_node_vars(::AbstractCovariantEquations) = True()
-@inline n_aux_node_vars(::AbstractCovariantEquations{NDIMS, NDIMS_AMBIENT}) where {NDIMS,
-NDIMS_AMBIENT} = 2 * NDIMS * NDIMS_AMBIENT + 1
+@inline function n_aux_node_vars(::AbstractCovariantEquations{NDIMS,
+                                                              NDIMS_AMBIENT}) where {
+                                                                                     NDIMS,
+                                                                                     NDIMS_AMBIENT
+                                                                                     }
+    nvars_basis_covariant = NDIMS_AMBIENT * NDIMS
+    nvars_basis_contravariant = NDIMS * NDIMS_AMBIENT
+    nvars_area_element = 1
+    nvars_metric_covariant = NDIMS*(NDIMS+1) ÷ 2
+    nvars_metric_contravariant = NDIMS*(NDIMS+1) ÷ 2
+    nvars_christoffel = NDIMS * NDIMS*(NDIMS+1) ÷ 2
+
+    return nvars_basis_covariant +
+           nvars_basis_contravariant +
+           nvars_area_element +
+           nvars_metric_covariant +
+           nvars_metric_contravariant +
+           nvars_christoffel
+end
 
 # Return auxiliary variable names for 2D covariant form
 @inline function auxvarnames(::AbstractCovariantEquations{2})
-    return ("basis_covariant[1,1]",
-            "basis_covariant[2,1]",
-            "basis_covariant[3,1]",
-            "basis_covariant[1,2]",
-            "basis_covariant[2,2]",
-            "basis_covariant[3,2]",
-            "basis_contravariant[1,1]",
-            "basis_contravariant[2,1]",
-            "basis_contravariant[3,1]",
-            "basis_contravariant[1,2]",
-            "basis_contravariant[2,2]",
-            "basis_contravariant[3,2]",
-            "area_element")
+    return ("basis_covariant[1,1]",         # e₁ ⋅ a₁
+            "basis_covariant[2,1]",         # e₂ ⋅ a₁
+            "basis_covariant[3,1]",         # e₃ ⋅ a₁
+            "basis_covariant[1,2]",         # e₁ ⋅ a₂
+            "basis_covariant[2,2]",         # e₂ ⋅ a₂
+            "basis_covariant[3,2]",         # e₃ ⋅ a₂
+            "basis_contravariant[1,1]",     # e₁ ⋅ a¹
+            "basis_contravariant[2,1]",     # e₂ ⋅ a¹
+            "basis_contravariant[3,1]",     # e₃ ⋅ a¹
+            "basis_contravariant[1,2]",     # e₁ ⋅ a²
+            "basis_contravariant[2,2]",     # e₂ ⋅ a²
+            "basis_contravariant[3,2]",     # e₃ ⋅ a²
+            "area_element",                 # √G = √(G₁₁G₂₂ - G₁₂G₂₁) = a₁ × a₂
+            "metric_covariant[1,1]",        # G₁₁
+            "metric_covariant[1,2]",        # G₁₂ = G₂₁
+            "metric_covariant[2,2]",        # G₂₂
+            "metric_contravariant[1,1]",    # G¹¹
+            "metric_contravariant[1,2]",    # G¹² = G²¹
+            "metric_contravariant[2,2]",    # G²²
+            "christoffel[1,1,1]",           # Γ¹₁₁
+            "christoffel[1,1,2]",           # Γ¹₁₂ = Γ¹₂₁
+            "christoffel[1,2,2]",           # Γ¹₂₂
+            "christoffel[2,1,1]",           # Γ²₁₁
+            "christoffel[2,1,2]",           # Γ²₁₂ = Γ²₂₁
+            "christoffel[2,2,2]")           # Γ²₂₂
 end
 
 # Extract the covariant basis vectors a_i from the auxiliary variables as a matrix A, 
