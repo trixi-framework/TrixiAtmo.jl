@@ -223,11 +223,8 @@ end
     return 0.5f0 * (flux_ll + flux_rr)
 end
 
-abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:
-              AbstractEquations{NDIMS, NVARS} end
-
 include("reference_data.jl")
 include("covariant_advection.jl")
-include("compressible_moist_euler_2d_lucas.jl")
 include("shallow_water_3d.jl")
+
 end # @muladd
