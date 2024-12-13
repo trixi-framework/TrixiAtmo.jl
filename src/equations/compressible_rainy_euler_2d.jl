@@ -775,11 +775,14 @@ end
 # https://journals.ametsoc.org/view/journals/mwre/141/7/mwr-d-12-00129.1.xml.
 @inline function flux_LMARS(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleRainyEulerEquations2D)
     # constants
-    a = 360.0
+    a   = 360.0
+    c_l = equations.c_liquid_water
 
     # densities
     rho_dry_ll, rho_moist_ll, rho_rain_ll, rho_ll, rho_inv_ll = densities(u_ll, equations)
     rho_dry_rr, rho_moist_rr, rho_rain_rr, rho_rr, rho_inv_rr = densities(u_rr, equations)
+
+    rho_rain_avg = 0.5 * (rho_rain_ll + rho_rain_rr)
 
     # pressure
     p_ll = pressure(u_ll, equations)
@@ -789,24 +792,46 @@ end
     v1_ll, v2_ll = velocities(u_ll, rho_inv_ll, equations)
     v1_rr, v2_rr = velocities(u_rr, rho_inv_rr, equations)
     
+    v_r_ll       = terminal_velocity_rain(rho_moist_ll, rho_rain_ll, equations) * normal_direction[2]
+    v_r_rr       = terminal_velocity_rain(rho_moist_rr, rho_rain_rr, equations) * normal_direction[2]
+    
     v_ll  = v1_ll * normal_direction[1] + v2_ll * normal_direction[2]
     v_rr  = v1_rr * normal_direction[1] + v2_rr * normal_direction[2]
     norm_ = norm(normal_direction)
+
+    v1_square_avg = 0.5 * (v1_ll^2 + v1_rr^2)
+    v2_square_avg = 0.5 * (v2_ll^2 + v2_rr^2)
+
+    v_r_avg = 0.5 * (v_r_ll + v_r_rr)
+
+    # temperature
+    _, _, temperature_ll = cons2nonlinearsystemsol(u_ll, equations)
+    _, _, temperature_rr = cons2nonlinearsystemsol(u_rr, equations)
 
     # diffusion parameter 0.0 < beta <= 1.0
     beta = 1.0
     
     # interface flux components
     rho = 0.5 * (rho_ll + rho_rr)
-    p_interface = 0.5 * (p_ll + p_rr) - beta * 0.5 * a * rho * (v_rr - v_ll) / norm_
-    v_interface = 0.5 * (v_ll + v_rr) - beta * 1 / (2 * a * rho) * (p_rr - p_ll) * norm_
+    p_interface   = 0.5 * (p_ll + p_rr) - beta * 0.5 * a * rho * (v_rr - v_ll) / norm_
+    v_interface   = 0.5 * (v_ll + v_rr) - beta * 1 / (2 * a * rho) * (p_rr - p_ll) * norm_
+    v_r_interface = v_interface - v_r_avg
+    
+    energy_rain_term  = (c_l * 0.5 * (temperature_ll + temperature_rr) + 0.5 * (v1_square_avg + v2_square_avg))
+    energy_rain_term *=  rho_rain_avg * v_r_avg
     
     if (v_interface > 0)
-        f1, f2, f3, f4, f5, f6, _, _, _ = u_ll * v_interface
-        f6 += p_ll * v_interface
+        f1, f2, _, f4, f5, f6, _, _, _ = u_ll * v_interface
+        f4 -= rho_rain_avg * v_r_avg * 0.5 * (v1_ll + v1_rr)
+        f5 -= rho_rain_avg * v_r_avg * 0.5 * (v2_ll + v2_rr)
+        f6 += p_ll * v_interface - energy_rain_term
+        f3  = u_ll[3] * v_r_interface
     else
-        f1, f2, f3, f4, f5, f6, _, _, _ = u_rr * v_interface
-        f6 += p_rr * v_interface
+        f1, f2, _, f4, f5, f6, _, _, _ = u_rr * v_interface
+        f4 -= rho_rain_avg * v_r_avg * 0.5 * (v1_ll + v1_rr)
+        f5 -= rho_rain_avg * v_r_avg * 0.5 * (v2_ll + v2_rr)
+        f6 += p_rr * v_interface - energy_rain_term
+        f3  = u_rr[3] * v_r_interface
     end
     
     return SVector(f1, f2, f3,

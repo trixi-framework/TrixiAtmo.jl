@@ -113,7 +113,7 @@ end
 
 function AtmosphereLayers(equations::CompressibleRainyEulerEquations2D; total_height = coordinates_max[2] + 1.0, precision = 1.0, RealT = Float64)
     # constants
-    humidity_rel0    = 0.45      # hydrostatic relative humidity
+    humidity_rel0    = 0.2      # hydrostatic relative humidity
     surface_pressure = 8.5e4
 
     # surface layer with initial guesses for rho_dry, rho_vapour and temperature
@@ -156,7 +156,7 @@ function initial_condition_bubble_rainy(x, t, equations::CompressibleRainyEulerE
     ref_L = equations.ref_latent_heat_vap_temp
 
     # problem specific constants
-    humidity_rel_bar = 0.45                # background relative humidity field
+    humidity_rel_bar = 0.2                # background relative humidity field
     humidity_max     = 1.0
 
     # bubble parameters
@@ -224,12 +224,12 @@ boundary_conditions = (x_neg = boundary_condition_periodic,
 polydeg = 1
 basis = LobattoLegendreBasis(polydeg)
 
-surface_flux = flux_lax_friedrichs
+surface_flux = flux_LMARS
 #volume_integral = VolumeIntegralFluxDifferencing(flux_chandrashekar)
 
 solver = DGSEM(basis, surface_flux)#, volume_integral)
 
-cells_per_dimension = (200, 200)
+cells_per_dimension = (100, 100)
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = (true, false))
 
