@@ -138,8 +138,9 @@ function global2contravariant end
 
 # For the covariant form, the auxiliary variables are the the NDIMS*NDIMS_AMBIENT entries 
 # of the exact covariant basis matrix, the NDIMS*NDIMS_AMBIENT entries of the exact 
-# contravariant basis matrix, the covariant and contravariant metric tensor components, the
-# Christoffel symbols of the second kind, and the area element. 
+# contravariant basis matrix, the exact area element, the upper-triangular covariant and 
+# contravariant metric tensor components, and the upper-triangular Christoffel symbols of 
+# the second kind
 @inline have_aux_node_vars(::AbstractCovariantEquations) = True()
 @inline function n_aux_node_vars(::AbstractCovariantEquations{NDIMS,
                                                               NDIMS_AMBIENT}) where {
@@ -149,9 +150,9 @@ function global2contravariant end
     nvars_basis_covariant = NDIMS_AMBIENT * NDIMS
     nvars_basis_contravariant = NDIMS * NDIMS_AMBIENT
     nvars_area_element = 1
-    nvars_metric_covariant = NDIMS*(NDIMS+1) ÷ 2
-    nvars_metric_contravariant = NDIMS*(NDIMS+1) ÷ 2
-    nvars_christoffel = NDIMS * NDIMS*(NDIMS+1) ÷ 2
+    nvars_metric_covariant = NDIMS * (NDIMS + 1) ÷ 2
+    nvars_metric_contravariant = NDIMS * (NDIMS + 1) ÷ 2
+    nvars_christoffel = NDIMS * NDIMS * (NDIMS + 1) ÷ 2
 
     return nvars_basis_covariant +
            nvars_basis_contravariant +
@@ -175,19 +176,19 @@ end
             "basis_contravariant[1,2]",     # e₁ ⋅ a²
             "basis_contravariant[2,2]",     # e₂ ⋅ a²
             "basis_contravariant[3,2]",     # e₃ ⋅ a²
-            "area_element",                 # √G = √(G₁₁G₂₂ - G₁₂G₂₁) = a₁ × a₂
+            "area_element",                 # √G = √(G₁₁G₂₂ - G₁₂G₂₁) = ||a₁ × a₂||
             "metric_covariant[1,1]",        # G₁₁
             "metric_covariant[1,2]",        # G₁₂ = G₂₁
             "metric_covariant[2,2]",        # G₂₂
             "metric_contravariant[1,1]",    # G¹¹
             "metric_contravariant[1,2]",    # G¹² = G²¹
             "metric_contravariant[2,2]",    # G²²
-            "christoffel[1,1,1]",           # Γ¹₁₁
-            "christoffel[1,1,2]",           # Γ¹₁₂ = Γ¹₂₁
-            "christoffel[1,2,2]",           # Γ¹₂₂
-            "christoffel[2,1,1]",           # Γ²₁₁
-            "christoffel[2,1,2]",           # Γ²₁₂ = Γ²₂₁
-            "christoffel[2,2,2]")           # Γ²₂₂
+            "christoffel_symbols[1][1,1]",  # Γ¹₁₁
+            "christoffel_symbols[1][1,2]",  # Γ¹₁₂ = Γ¹₂₁
+            "christoffel_symbols[2][2,2]",  # Γ¹₂₂
+            "christoffel_symbols[2][1,1]",  # Γ²₁₁
+            "christoffel_symbols[2][1,2]",  # Γ²₁₂ = Γ²₂₁
+            "christoffel_symbols[2][2,2]")  # Γ²₂₂
 end
 
 # Extract the covariant basis vectors a_i from the auxiliary variables as a matrix A, 
@@ -210,6 +211,24 @@ end
 # Extract the area element √G = (det(AᵀA))^(1/2) from the auxiliary variables
 @inline function area_element(aux_vars, ::AbstractCovariantEquations{2})
     return aux_vars[13]
+end
+
+# Extract the covariant metric tensor components Gᵢⱼ from the auxiliary variables
+@inline function metric_covariant(aux_vars, ::AbstractCovariantEquations{2})
+    return SMatrix{2, 2}(aux_vars[14], aux_vars[15],
+                         aux_vars[15], aux_vars[16])
+end
+
+# Extract the contravariant metric tensor components Gⁱʲ from the auxiliary variables
+@inline function metric_contravariant(aux_vars, ::AbstractCovariantEquations{2})
+    return SMatrix{2, 2}(aux_vars[17], aux_vars[18],
+                         aux_vars[18], aux_vars[19])
+end
+
+# Extract the Christoffel symbols of the second kind Γⁱⱼₖ from the auxiliary variables
+@inline function christoffel_symbols(aux_vars, ::AbstractCovariantEquations{2})
+    return (SMatrix{2, 2}(aux_vars[20], aux_vars[21], aux_vars[21], aux_vars[22]),
+            SMatrix{2, 2}(aux_vars[23], aux_vars[24], aux_vars[24], aux_vars[25]))
 end
 
 # Numerical flux plus dissipation for abstract covariant equations as a function of the 

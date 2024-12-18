@@ -3,7 +3,7 @@
 
 # For the covariant form, we want to integrate using the exact area element 
 # √G = (det(AᵀA))^(1/2), which is stored in cache.auxiliary_variables, not the approximate 
-# area element used in the Cartesian formulation, which stored in cache.elements.
+# area element used in the Cartesian formulation, which stored in cache.elements
 function Trixi.integrate_via_indices(func::Func, u,
                                      mesh::Union{StructuredMesh{2},
                                                  StructuredMeshView{2},
@@ -65,6 +65,7 @@ function Trixi.calc_error_norms(func, u, t, analyzer, mesh::P4estMesh{2},
     (; weights) = dg.basis
     (; node_coordinates) = cache.elements
     (; aux_node_vars) = cache.auxiliary_variables
+
     # Set up data structures
     l2_error = zero(func(Trixi.get_node_vars(u, equations, dg, 1, 1, 1), equations))
     linf_error = copy(l2_error)
