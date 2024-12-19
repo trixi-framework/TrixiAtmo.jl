@@ -297,7 +297,9 @@ function calc_christoffel_symbols!(aux_node_vars, mesh::P4estMesh{2, 3},
     for j in eachnode(dg), i in eachnode(dg)
 
         # Numerically differentiate covariant metric components with respect to ξ¹
-        dG11dxi1 = dG12dxi1 = dG22dxi1 = zero(eltype(aux_node_vars))
+        dG11dxi1 = zero(eltype(aux_node_vars))
+        dG12dxi1 = zero(eltype(aux_node_vars))
+        dG22dxi1 = zero(eltype(aux_node_vars))
         for ii in eachnode(dg)
             aux_node_ii = get_node_aux_vars(aux_node_vars, equations, dg, ii, j,
                                             element)
@@ -308,7 +310,9 @@ function calc_christoffel_symbols!(aux_node_vars, mesh::P4estMesh{2, 3},
         end
 
         # Numerically differentiate covariant metric components with respect to ξ²
-        dG11dxi2 = dG12dxi2 = dG22dxi2 = zero(eltype(aux_node_vars))
+        dG11dxi2 = zero(eltype(aux_node_vars))
+        dG12dxi2 = zero(eltype(aux_node_vars))
+        dG22dxi2 = zero(eltype(aux_node_vars))
         for jj in eachnode(dg)
             aux_node_jj = get_node_aux_vars(aux_node_vars, equations, dg, i, jj,
                                             element)
@@ -330,7 +334,7 @@ function calc_christoffel_symbols!(aux_node_vars, mesh::P4estMesh{2, 3},
 
         # Raise indices to get Christoffel symbols of the second kind
         aux_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
-        Gcon = metric_covariant(aux_node, equations)
+        Gcon = metric_contravariant(aux_node, equations)
         aux_node_vars[20, i, j, element] = Gcon[1, 1] * christoffel_firstkind_1[1, 1] +
                                            Gcon[1, 2] * christoffel_firstkind_2[1, 1]
         aux_node_vars[21, i, j, element] = Gcon[1, 1] * christoffel_firstkind_1[1, 2] +
