@@ -260,11 +260,38 @@ end
     return 0.5f0 * (flux_ll + flux_rr)
 end
 
+@inline function (dissipation::DissipationLocalLaxFriedrichs)(u_ll, u_rr, aux_vars_ll,
+                                                              aux_vars_rr,
+                                                              orientation_or_normal_direction,
+                                                              equations::AbstractCovariantEquations)
+    sqrtG = area_element(aux_vars_ll, equations)
+    λ = dissipation.max_abs_speed(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
+                                  orientation_or_normal_direction, equations)
+    return -0.5f0 * sqrtG * λ * (u_rr - u_ll)
+end
+
+# Dummy flux for weak form
+@inline function flux_nonconservative_weak_form(u_ll::SVector{NVARS, RealT},
+                                                u_rr::SVector{NVARS, RealT},
+                                                aux_vars_ll, aux_vars_rr,
+                                                orientation_or_normal_direction,
+                                                equations::AbstractCovariantEquations{2,
+                                                                                      NDIMS_AMBIENT,
+                                                                                      GlobalCoordinateSystem,
+                                                                                      NVARS}) where {
+                                                                                                     NDIMS_AMBIENT,
+                                                                                                     GlobalCoordinateSystem,
+                                                                                                     NVARS,
+                                                                                                     RealT
+                                                                                                     }
+    return zeros(SVector{NVARS, RealT})
+end
 abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:
               AbstractEquations{NDIMS, NVARS} end
 
 include("reference_data.jl")
 include("covariant_advection.jl")
+include("covariant_shallow_water.jl")
 include("compressible_moist_euler_2d_lucas.jl")
 include("shallow_water_3d.jl")
 end # @muladd

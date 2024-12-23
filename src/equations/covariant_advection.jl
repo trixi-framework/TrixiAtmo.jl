@@ -60,15 +60,14 @@ function velocity(u, ::CovariantLinearAdvectionEquation2D)
     return SVector(u[2], u[3])
 end
 
-# Convert contravariant velocity/momentum components to the global coordinate system
+# Convert contravariant velocity components to the global coordinate system
 @inline function contravariant2global(u, aux_vars,
                                       equations::CovariantLinearAdvectionEquation2D)
     vglo1, vglo2, vglo3 = basis_covariant(aux_vars, equations) * velocity(u, equations)
     return SVector(u[1], vglo1, vglo2, vglo3)
 end
 
-# Convert velocity/momentum components in the global coordinate system to contravariant 
-# components
+# Convert velocity components in the global coordinate system to contravariant components
 @inline function global2contravariant(u, aux_vars,
                                       equations::CovariantLinearAdvectionEquation2D)
     vcon1, vcon2 = basis_contravariant(aux_vars, equations) * SVector(u[2], u[3], u[4])
@@ -89,9 +88,9 @@ end
     return SVector(u[1], z, z)
 end
 
-# Flux for abstract covariant equations as a function of the 
-# state vector u, as well as the auxiliary variables aux_vars, which contain the geometric 
-# information required for the covariant form
+# Flux for abstract covariant equations as a function of the state vector u, as well as the 
+# auxiliary variables aux_vars, which contain the geometric information required for the 
+# covariant form
 @inline function Trixi.flux(u, aux_vars, orientation::Integer,
                             equations::CovariantLinearAdvectionEquation2D)
     z = zero(eltype(u))

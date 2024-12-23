@@ -31,22 +31,29 @@ include("semidiscretization/semidiscretization_hyperbolic_2d_manifold_in_3d.jl")
 include("callbacks_step/callbacks_step.jl")
 
 export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
-       CovariantLinearAdvectionEquation2D
+       CovariantLinearAdvectionEquation2D, CovariantShallowWaterEquations2D
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
-export flux_chandrashekar, flux_LMARS
+export flux_chandrashekar, flux_LMARS, flux_split_covariant, flux_nonconservative_weak_form,
+       flux_nonconservative_split_covariant
 
 export velocity, waterheight, pressure, energy_total, energy_kinetic, energy_internal,
-       lake_at_rest_error, source_terms_lagrange_multiplier,
+       lake_at_rest_error, source_terms_lagrange_multiplier, source_terms_weak_form,
        clean_solution_lagrange_multiplier!
+
 export cons2prim_and_vorticity
+
 export P4estMeshCubedSphere2D, P4estMeshQuadIcosahedron2D, MetricTermsCrossProduct,
        MetricTermsInvariantCurl
+
 export EARTH_RADIUS, EARTH_GRAVITATIONAL_ACCELERATION,
        EARTH_ROTATION_RATE, SECONDS_PER_DAY
+
 export global2contravariant, contravariant2global, spherical2cartesian,
        transform_initial_condition
-export initial_condition_gaussian, initial_condition_gaussian_cartesian
+
+export initial_condition_gaussian, initial_condition_gaussian_cartesian,
+       initial_condition_geostrophic_balance
 
 export examples_dir
 end # module TrixiAtmo
