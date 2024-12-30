@@ -132,6 +132,12 @@ performed by [`contravariant2global`](@ref).
 """
 function global2contravariant end
 
+# By default, the equations are assumed to be formulated in Cartesian coordinates. This 
+# function is specialized where needed.
+function cartesian2global(u, x, equations::AbstractEquations)
+    return u
+end
+
 # cons2cons method which takes in unused aux_vars variable
 @inline Trixi.cons2cons(u, aux_vars, ::AbstractEquations) = u
 @inline Trixi.prim2cons(u, aux_vars, ::AbstractEquations) = u
@@ -270,7 +276,7 @@ end
     return -0.5f0 * sqrtG * λ * (u_rr - u_ll)
 end
 
-# Dummy flux for weak form
+# Dummy two-point nonconservative flux for weak form
 @inline function flux_nonconservative_weak_form(u_ll::SVector{NVARS, RealT},
                                                 u_rr::SVector{NVARS, RealT},
                                                 aux_vars_ll, aux_vars_rr,
@@ -286,12 +292,49 @@ end
                                                                                                      }
     return zeros(SVector{NVARS, RealT})
 end
+
+# Convert a vector from a global spherical to Cartesian basis representation, where we note 
+# that the radial component is not necessarily zero
+@inline function spherical2cartesian(vlon, vlat, vrad, x)
+    # compute longitude and latitude
+    lon, lat = atan(x[2], x[1]), asin(x[3] / norm(x))
+
+    # compute trigonometric functions
+    sinlon, coslon = sincos(lon)
+    sinlat, coslat = sincos(lat)
+
+    # return Cartesian components
+    vx = -sinlon * vlon - sinlat * coslon * vlat + coslat * coslon * vrad
+    vy = coslon * vlon - sinlat * sinlon * vlat + coslat * sinlon * vrad
+    vz = coslat * vlat + sinlat * vrad
+
+    return vx, vy, vz
+end
+
+# Convert a vector from a global Cartesian to spherical basis representation, where we note 
+# that the radial component is not necessarily zero
+@inline function cartesian2spherical(vx, vy, vz, x)
+    # compute longitude and latitude
+    lon, lat = atan(x[2], x[1]), asin(x[3] / norm(x))
+
+    # compute trigonometric functions
+    sinlon, coslon = sincos(lon)
+    sinlat, coslat = sincos(lat)
+
+    # return spherical components
+    vlon = -sinlon * vx + coslon * vy
+    vlat = -sinlat * coslon * vx - sinlat * sinlon * vy + coslat * vz
+    vrad = coslat * coslon * vx + coslat * sinlon * vy + sinlat * vz  # zero for any tangent vector 
+
+    return vlon, vlat, vrad
+end
+
 abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:
               AbstractEquations{NDIMS, NVARS} end
 
-include("reference_data.jl")
 include("covariant_advection.jl")
 include("covariant_shallow_water.jl")
 include("compressible_moist_euler_2d_lucas.jl")
 include("shallow_water_3d.jl")
+include("reference_data.jl")
 end # @muladd

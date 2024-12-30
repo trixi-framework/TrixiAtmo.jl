@@ -44,17 +44,27 @@ Trixi.have_nonconservative_terms(::CovariantShallowWaterEquations2D) = True()
     return 0.5f0 * (dot(vcov, vcon) + equations.gravity * h^2)
 end
 
+@inline function Trixi.cons2prim(u, ::CovariantShallowWaterEquations2D)
+    h, h_vcon1, h_vcon2 = u
+    return SVector(h, h_vcon1 / h, h_vcon2 / h)
+end
+
+@inline function Trixi.prim2cons(u, ::CovariantShallowWaterEquations2D)
+    h, vcon1, vcon2 = u
+    return SVector(h, h * vcon1, h * vcon2)
+end
+
 # Entropy variables (partial derivatives of entropy with respect to conservative variables)
 @inline function Trixi.cons2entropy(u, aux_vars,
                                     equations::CovariantShallowWaterEquations2D)
     h, h_vcon1, h_vcon2 = u
-
     Gcov = metric_covariant(aux_vars, equations)
     vcon = SVector(h_vcon1 / h, h_vcon2 / h)
     vcov = Gcov * vcon
     w1 = equations.gravity * h - 0.5f0 * dot(vcov, vcon)
     return SVector{3}(w1, vcov[1], vcov[2])
 end
+
 
 # Height and three global momentum components
 function Trixi.varnames(::typeof(contravariant2global),
@@ -75,7 +85,6 @@ end
     vcon1, vcon2 = basis_contravariant(aux_vars, equations) * SVector(u[2], u[3], u[4])
     return SVector(u[1], vcon1, vcon2)
 end
-
 # The flux for the covariant form takes in the element container and node/element indices
 # in order to give the flux access to the geometric information
 @inline function Trixi.flux(u, aux_vars, orientation::Integer,
@@ -173,7 +182,7 @@ end
     h_vcon = SVector{2}(h_vcon1, h_vcon2)
     v_con = SVector{2}(h_vcon1 / h, h_vcon2 / h)
 
-    # Doubly-contravariant and mixed inertial flux tensors
+    # Doubly-contravariant flux tensor
     T = h_vcon * v_con' + 0.5f0 * equations.gravity * h^2 * Gcon
 
     # Coriolis parameter
@@ -256,26 +265,6 @@ end
            abs(h_vcon2 / h) + sqrt(Gcon[2, 2] * phi)
 end
 
-# Steady geostrophically balanzed zonal flow
-function initial_condition_geostrophic_balance(x, t,
-                                               equations::CovariantShallowWaterEquations2D{GlobalSphericalCoordinates})
-    (; gravity, rotation_rate) = equations
-
-    radius = sqrt(x[1]^2 + x[2]^2 + x[3]^2)
-    lat = asin(x[3] / radius)
-
-    # compute zonal and meridional components of the velocity
-    V = convert(eltype(x), 2π) * radius / (12 * SECONDS_PER_DAY)
-    vlon, vlat = V * cos(lat), zero(eltype(x))
-
-    # compute geopotential height 
-    h = 1 / gravity *
-        (2.94f4 - (radius * rotation_rate * V + 0.5f0 * V^2) * (sin(lat))^2)
-
-    # convert to conservative variables
-    return SVector(h, h * vlon, h * vlat, zero(eltype(x)))
-end
-
 # Rossby-Haurwitz wave
 function initial_condition_rossby_haurwitz(x, t,
                                            equations::CovariantShallowWaterEquations2D{<:GlobalSphericalCoordinates})
@@ -355,5 +344,28 @@ function initial_condition_barotropic_instability(x, t,
     end
     # convert to conservative variables
     return SVector(h, h * vlon, h * vlat)
+end
+
+# If the initial velocity field is defined in Cartesian coordinates and the chosen global 
+# coordinate system is spherical, perform the appropriate conversion
+@inline function cartesian2global(u, x,
+    ::CovariantShallowWaterEquations2D{GlobalSphericalCoordinates})
+    h_vlon, h_vlat, h_vrad = cartesian2spherical(u[2], u[3], u[4], x)
+return SVector(u[1], h_vlon, h_vlat, h_vrad)
+end
+
+# If the initial velocity field is defined in spherical coordinates and the chosen global 
+# coordinate system is Cartesian, perform the appropriate conversion
+@inline function spherical2global(u, x,
+    ::CovariantShallowWaterEquations2D{GlobalCartesianCoordinates})
+h_vx, h_vy, h_vz = spherical2cartesian(u[2], u[3], u[4], x)
+return SVector(u[1], h_vx, h_vy, h_vz)
+end
+
+# If the initial velocity field is defined in spherical coordinates and the chosen global 
+# coordinate system is spherical, do not convert
+@inline function spherical2global(u, x,
+    ::CovariantShallowWaterEquations2D{GlobalSphericalCoordinates})
+return u
 end
 end # @muladd
