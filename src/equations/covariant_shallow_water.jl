@@ -44,12 +44,12 @@ Trixi.have_nonconservative_terms(::CovariantShallowWaterEquations2D) = True()
     return 0.5f0 * (dot(vcov, vcon) + equations.gravity * h^2)
 end
 
-@inline function Trixi.cons2prim(u, ::CovariantShallowWaterEquations2D)
+@inline function Trixi.cons2prim(u, aux_vars, ::CovariantShallowWaterEquations2D)
     h, h_vcon1, h_vcon2 = u
     return SVector(h, h_vcon1 / h, h_vcon2 / h)
 end
 
-@inline function Trixi.prim2cons(u, ::CovariantShallowWaterEquations2D)
+@inline function Trixi.prim2cons(u, aux_vars, ::CovariantShallowWaterEquations2D)
     h, vcon1, vcon2 = u
     return SVector(h, h * vcon1, h * vcon2)
 end
@@ -64,7 +64,6 @@ end
     w1 = equations.gravity * h - 0.5f0 * dot(vcov, vcon)
     return SVector{3}(w1, vcov[1], vcov[2])
 end
-
 
 # Height and three global momentum components
 function Trixi.varnames(::typeof(contravariant2global),
@@ -169,6 +168,7 @@ const flux_split_covariant_lax_friedrichs = FluxPlusDissipation(flux_split_covar
     return SVector(zero(eltype(u_ll)), nonconservative_term[1], nonconservative_term[2])
 end
 
+# Geometric and Coriolis sources for a rotating sphere with VolumeIntegralWeakForm
 @inline function source_terms_weak_form(u, x, t, aux_vars,
                                         equations::CovariantShallowWaterEquations2D)
     h, h_vcon1, h_vcon2 = u
@@ -199,7 +199,7 @@ end
     return SVector(zero(eltype(u)), -source_1, -source_2)
 end
 
-# Geometric and Coriolis source terms for a rotating sphere
+# Geometric and Coriolis sources for a rotating sphere with VolumeIntegralFluxDifferencing
 @inline function source_terms_split_covariant(u, x, t, aux_vars,
                                               equations::CovariantShallowWaterEquations2D)
     h, h_vcon1, h_vcon2 = u

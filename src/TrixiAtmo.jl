@@ -20,6 +20,8 @@ using Reexport: @reexport
 using LoopVectorization: @turbo
 using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
 
+using Infiltrator
+
 @reexport using StaticArrays: SVector, SMatrix
 
 include("auxiliary/auxiliary.jl")

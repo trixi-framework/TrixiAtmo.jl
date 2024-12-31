@@ -94,12 +94,12 @@ function transform_initial_condition(initial_condition, ::AbstractCovariantEquat
     function initial_condition_transformed(x, t, aux_vars, equations)
         return Trixi.prim2cons(global2contravariant(initial_condition(x, t, equations),
                                                     aux_vars, equations), aux_vars,
-                               equations)
+                                                    equations)
     end
     return initial_condition_transformed
 end
 
-# Version for standard Cartesian formulations
+# Default version for standard Cartesian formulations
 function transform_initial_condition(initial_condition, ::AbstractEquations)
     function initial_condition_transformed(x, t, equations)
         return Trixi.prim2cons(initial_condition(x, t, equations), equations)
@@ -138,7 +138,7 @@ function cartesian2global(u, x, equations::AbstractEquations)
     return u
 end
 
-# cons2cons method which takes in unused aux_vars variable
+# Default cons2cons and prim2cons methods which take in unused aux_vars variable
 @inline Trixi.cons2cons(u, aux_vars, ::AbstractEquations) = u
 @inline Trixi.prim2cons(u, aux_vars, ::AbstractEquations) = u
 
@@ -148,6 +148,8 @@ end
 # contravariant metric tensor components, and the upper-triangular Christoffel symbols of 
 # the second kind
 @inline have_aux_node_vars(::AbstractCovariantEquations) = True()
+
+# Add up the total number of auxiliary variables for equations in covariant form
 @inline function n_aux_node_vars(::AbstractCovariantEquations{NDIMS,
                                                               NDIMS_AMBIENT}) where {
                                                                                      NDIMS,
@@ -266,6 +268,8 @@ end
     return 0.5f0 * (flux_ll + flux_rr)
 end
 
+# Local Lax-Friedrichs dissipation for abstract covariant equations, where dissipation is 
+# applied to all conservative variables and the wave speed may depend on auxiliary variables
 @inline function (dissipation::DissipationLocalLaxFriedrichs)(u_ll, u_rr, aux_vars_ll,
                                                               aux_vars_rr,
                                                               orientation_or_normal_direction,
@@ -276,7 +280,7 @@ end
     return -0.5f0 * sqrtG * λ * (u_rr - u_ll)
 end
 
-# Dummy two-point nonconservative flux for weak form
+# Define the two-point nonconservative flux for weak form to be a no-op
 @inline function flux_nonconservative_weak_form(u_ll::SVector{NVARS, RealT},
                                                 u_rr::SVector{NVARS, RealT},
                                                 aux_vars_ll, aux_vars_rr,
@@ -293,8 +297,8 @@ end
     return zeros(SVector{NVARS, RealT})
 end
 
-# Convert a vector from a global spherical to Cartesian basis representation, where we note 
-# that the radial component is not necessarily zero
+# Convert a vector from a global spherical to Cartesian basis representation. A tangent 
+# vector will have vrad = 0.
 @inline function spherical2cartesian(vlon, vlat, vrad, x)
     # compute longitude and latitude
     lon, lat = atan(x[2], x[1]), asin(x[3] / norm(x))
@@ -307,12 +311,11 @@ end
     vx = -sinlon * vlon - sinlat * coslon * vlat + coslat * coslon * vrad
     vy = coslon * vlon - sinlat * sinlon * vlat + coslat * sinlon * vrad
     vz = coslat * vlat + sinlat * vrad
-
     return vx, vy, vz
 end
 
-# Convert a vector from a global Cartesian to spherical basis representation, where we note 
-# that the radial component is not necessarily zero
+# Convert a vector from a global Cartesian to spherical basis representation. A tangent 
+# vector will have vrad = 0.
 @inline function cartesian2spherical(vx, vy, vz, x)
     # compute longitude and latitude
     lon, lat = atan(x[2], x[1]), asin(x[3] / norm(x))
@@ -324,7 +327,7 @@ end
     # return spherical components
     vlon = -sinlon * vx + coslon * vy
     vlat = -sinlat * coslon * vx - sinlat * sinlon * vy + coslat * vz
-    vrad = coslat * coslon * vx + coslat * sinlon * vy + sinlat * vz  # zero for any tangent vector 
+    vrad = coslat * coslon * vx + coslat * sinlon * vy + sinlat * vz  
 
     return vlon, vlat, vrad
 end
