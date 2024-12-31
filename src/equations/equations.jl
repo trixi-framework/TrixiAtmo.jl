@@ -94,7 +94,7 @@ function transform_initial_condition(initial_condition, ::AbstractCovariantEquat
     function initial_condition_transformed(x, t, aux_vars, equations)
         return Trixi.prim2cons(global2contravariant(initial_condition(x, t, equations),
                                                     aux_vars, equations), aux_vars,
-                                                    equations)
+                               equations)
     end
     return initial_condition_transformed
 end
@@ -327,7 +327,7 @@ end
     # return spherical components
     vlon = -sinlon * vx + coslon * vy
     vlat = -sinlat * coslon * vx - sinlat * sinlon * vy + coslat * vz
-    vrad = coslat * coslon * vx + coslat * sinlon * vy + sinlat * vz  
+    vrad = coslat * coslon * vx + coslat * sinlon * vy + sinlat * vz
 
     return vlon, vlat, vrad
 end

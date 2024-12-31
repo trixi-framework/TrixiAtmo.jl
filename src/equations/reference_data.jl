@@ -68,8 +68,8 @@ This problem is adapted from Case 1 of the test suite described in the following
     return cartesian2global(SVector(h, vx, vy, vz, 0.0f0), x, equations)
 end
 
-function initial_condition_geostrophic_balance(x, t,   
-                                                equations::CovariantShallowWaterEquations2D)
+function initial_condition_geostrophic_balance(x, t,
+                                               equations::CovariantShallowWaterEquations2D)
     (; gravity, rotation_rate) = equations
 
     radius = sqrt(x[1]^2 + x[2]^2 + x[3]^2)

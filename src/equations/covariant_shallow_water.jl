@@ -349,23 +349,23 @@ end
 # If the initial velocity field is defined in Cartesian coordinates and the chosen global 
 # coordinate system is spherical, perform the appropriate conversion
 @inline function cartesian2global(u, x,
-    ::CovariantShallowWaterEquations2D{GlobalSphericalCoordinates})
+                                  ::CovariantShallowWaterEquations2D{GlobalSphericalCoordinates})
     h_vlon, h_vlat, h_vrad = cartesian2spherical(u[2], u[3], u[4], x)
-return SVector(u[1], h_vlon, h_vlat, h_vrad)
+    return SVector(u[1], h_vlon, h_vlat, h_vrad)
 end
 
 # If the initial velocity field is defined in spherical coordinates and the chosen global 
 # coordinate system is Cartesian, perform the appropriate conversion
 @inline function spherical2global(u, x,
-    ::CovariantShallowWaterEquations2D{GlobalCartesianCoordinates})
-h_vx, h_vy, h_vz = spherical2cartesian(u[2], u[3], u[4], x)
-return SVector(u[1], h_vx, h_vy, h_vz)
+                                  ::CovariantShallowWaterEquations2D{GlobalCartesianCoordinates})
+    h_vx, h_vy, h_vz = spherical2cartesian(u[2], u[3], u[4], x)
+    return SVector(u[1], h_vx, h_vy, h_vz)
 end
 
 # If the initial velocity field is defined in spherical coordinates and the chosen global 
 # coordinate system is spherical, do not convert
 @inline function spherical2global(u, x,
-    ::CovariantShallowWaterEquations2D{GlobalSphericalCoordinates})
-return u
+                                  ::CovariantShallowWaterEquations2D{GlobalSphericalCoordinates})
+    return u
 end
 end # @muladd
