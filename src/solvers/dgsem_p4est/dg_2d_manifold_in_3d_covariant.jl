@@ -123,6 +123,56 @@ end
     Trixi.weak_form_kernel!(du, u, element, mesh, False(), equations, dg, cache, alpha)
 end
 
+# Non-conservative flux differencing kernel which uses contravariant flux components, 
+# passing the geometric information contained in the auxiliary variables to the flux 
+# function
+@inline function Trixi.flux_differencing_kernel!(du, u, element, mesh::P4estMesh{2},
+                                                 nonconservative_terms::True,
+                                                 equations::AbstractCovariantEquations{2},
+                                                 volume_flux, dg::DGSEM, cache,
+                                                 alpha = true)
+    (; derivative_split) = dg.basis
+    (; aux_node_vars) = cache.auxiliary_variables
+    symmetric_flux, nonconservative_flux = volume_flux
+
+    # Apply the symmetric flux as usual
+    Trixi.flux_differencing_kernel!(du, u, element, mesh, False(), equations,
+                                    symmetric_flux, dg, cache, alpha)
+
+    for j in eachnode(dg), i in eachnode(dg)
+        u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
+        aux_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
+
+        # ξ¹ direction
+        integral_contribution = zero(u_node)
+        for ii in eachnode(dg)
+            u_node_ii = Trixi.get_node_vars(u, equations, dg, ii, j, element)
+            aux_node_ii = get_node_aux_vars(aux_node_vars, equations, dg, ii, j,
+                                            element)
+            flux1 = nonconservative_flux(u_node, u_node_ii, aux_node, aux_node_ii, 1,
+                                         equations)
+            integral_contribution = integral_contribution +
+                                    derivative_split[i, ii] * flux1
+        end
+
+        # ξ² direction
+        for jj in eachnode(dg)
+            u_node_jj = Trixi.get_node_vars(u, equations, dg, i, jj, element)
+            aux_node_jj = get_node_aux_vars(aux_node_vars, equations, dg, i, jj,
+                                            element)
+            flux2 = nonconservative_flux(u_node, u_node_jj, aux_node, aux_node_jj, 2,
+                                         equations)
+            integral_contribution = integral_contribution +
+                                    derivative_split[j, jj] * flux2
+        end
+
+        Trixi.multiply_add_to_node_vars!(du, alpha * 0.5f0, integral_contribution,
+                                         equations, dg, i, j, element)
+    end
+
+    return nothing
+end
+
 # Pointwise interface flux in local coordinates for problems without nonconservative terms
 @inline function Trixi.calc_interface_flux!(surface_flux_values, mesh::P4estMesh{2},
                                             nonconservative_terms::False,

@@ -37,7 +37,8 @@ export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
 export flux_chandrashekar, flux_LMARS, flux_split_covariant, flux_nonconservative_weak_form,
-       flux_nonconservative_split_covariant
+       flux_nonconservative_split_covariant, flux_split_covariant_lax_friedrichs,
+       source_terms_split_covariant
 
 export velocity, waterheight, pressure, energy_total, energy_kinetic, energy_internal,
        lake_at_rest_error, source_terms_lagrange_multiplier, source_terms_weak_form,

@@ -184,7 +184,7 @@ end
             "basis_contravariant[1,2]",     # e₁ ⋅ a²
             "basis_contravariant[2,2]",     # e₂ ⋅ a²
             "basis_contravariant[3,2]",     # e₃ ⋅ a²
-            "area_element",                 # √G = √(G₁₁G₂₂ - G₁₂G₂₁) = ||a₁ × a₂||
+            "area_element",                 # J = √(G₁₁G₂₂ - G₁₂G₂₁) = ||a₁ × a₂||
             "metric_covariant[1,1]",        # G₁₁
             "metric_covariant[1,2]",        # G₁₂ = G₂₁
             "metric_covariant[2,2]",        # G₂₂
@@ -216,7 +216,7 @@ end
                          aux_vars[11], aux_vars[12])
 end
 
-# Extract the area element √G = (det(AᵀA))^(1/2) from the auxiliary variables
+# Extract the area element J = (det(AᵀA))^(1/2) from the auxiliary variables
 @inline function area_element(aux_vars, ::AbstractCovariantEquations{2})
     return aux_vars[13]
 end
@@ -274,10 +274,9 @@ end
                                                               aux_vars_rr,
                                                               orientation_or_normal_direction,
                                                               equations::AbstractCovariantEquations)
-    sqrtG = area_element(aux_vars_ll, equations)
     λ = dissipation.max_abs_speed(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
                                   orientation_or_normal_direction, equations)
-    return -0.5f0 * sqrtG * λ * (u_rr - u_ll)
+    return -0.5f0 * area_element(aux_vars_ll, equations) * λ * (u_rr - u_ll)
 end
 
 # Define the two-point nonconservative flux for weak form to be a no-op
