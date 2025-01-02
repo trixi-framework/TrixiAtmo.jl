@@ -11,11 +11,10 @@ initial_condition = initial_condition_geostrophic_balance
 polydeg = 3
 cells_per_dimension = 5
 n_saves = 10
+tspan = (0.0, 1.0 * SECONDS_PER_DAY)
 
 ###############################################################################
 # Spatial discretization
-
-tspan = (0.0, 1.0 * SECONDS_PER_DAY)
 
 mesh = P4estMeshCubedSphere2D(cells_per_dimension, EARTH_RADIUS, polydeg = polydeg,
                               initial_refinement_level = 0,

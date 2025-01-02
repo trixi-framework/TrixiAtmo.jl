@@ -7,15 +7,14 @@ using OrdinaryDiffEq, Trixi, TrixiAtmo
 ###############################################################################
 # Parameters
 
-initial_condition = initial_condition_geostrophic_balance
+initial_condition = initial_condition_rossby_haurwitz
 polydeg = 3
 cells_per_dimension = 5
 n_saves = 10
+tspan = (0.0, 1.0 * SECONDS_PER_DAY)
 
 ###############################################################################
 # Spatial discretization
-
-tspan = (0.0, 1.0 * SECONDS_PER_DAY)
 
 mesh = P4estMeshCubedSphere2D(cells_per_dimension, EARTH_RADIUS, polydeg = polydeg,
                               initial_refinement_level = 0,
@@ -23,7 +22,7 @@ mesh = P4estMeshCubedSphere2D(cells_per_dimension, EARTH_RADIUS, polydeg = polyd
 
 equations = CovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION,
                                              EARTH_ROTATION_RATE,
-                                             global_coordinate_system = GlobalSphericalCoordinates())
+                                             global_coordinate_system = GlobalCartesianCoordinates())
 
 # Create DG solver with polynomial degree = p
 volume_flux = (flux_split_covariant, flux_nonconservative_split_covariant)
@@ -51,7 +50,8 @@ summary_callback = SummaryCallback()
 # The AnalysisCallback allows to analyse the solution in regular intervals and prints the results
 analysis_callback = AnalysisCallback(semi, interval = 50,
                                      save_analysis = true,
-                                     extra_analysis_errors = (:conservation_error,))
+                                     extra_analysis_errors = (:conservation_error,),
+                                     extra_analysis_integrals = (entropy,))
 
 # The SaveSolutionCallback allows to save the solution to a file in regular intervals
 save_solution = SaveSolutionCallback(dt = (tspan[2] - tspan[1]) / n_saves,

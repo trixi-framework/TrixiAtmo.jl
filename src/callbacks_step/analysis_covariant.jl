@@ -1,6 +1,25 @@
 @muladd begin
 #! format: noindent
 
+# When the equations are of type AbstractCovariantEquations, the functions which we would 
+# like to integrate depend on the solution as well as the auxiliary variables
+function Trixi.integrate(func::Func, u,
+                         mesh::Union{TreeMesh{2}, StructuredMesh{2},
+                                     StructuredMeshView{2},
+                                     UnstructuredMesh2D, P4estMesh{2}, T8codeMesh{2}},
+                         equations::AbstractCovariantEquations{2}, dg::DG,
+                         cache; normalize = true) where {Func}
+    (; aux_node_vars) = cache.auxiliary_variables
+
+    Trixi.integrate_via_indices(u, mesh, equations, dg, cache;
+                                normalize = normalize) do u, i, j, element, equations,
+                                                          dg
+        u_local = Trixi.get_node_vars(u, equations, dg, i, j, element)
+        aux_local = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
+        return func(u_local, aux_local, equations)
+    end
+end
+
 # For the covariant form, we want to integrate using the exact area element 
 # √G = (det(AᵀA))^(1/2), which is stored in cache.auxiliary_variables, not the approximate 
 # area element used in the Cartesian formulation, which stored in cache.elements

@@ -34,6 +34,7 @@ include("callbacks_step/callbacks_step.jl")
 
 export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
        CovariantLinearAdvectionEquation2D, CovariantShallowWaterEquations2D
+
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
 export flux_chandrashekar, flux_LMARS, flux_split_covariant, flux_nonconservative_weak_form,
@@ -52,11 +53,11 @@ export P4estMeshCubedSphere2D, P4estMeshQuadIcosahedron2D, MetricTermsCrossProdu
 export EARTH_RADIUS, EARTH_GRAVITATIONAL_ACCELERATION,
        EARTH_ROTATION_RATE, SECONDS_PER_DAY
 
-export global2contravariant, contravariant2global, spherical2cartesian,
+export global2contravariant, contravariant2global, spherical2cartesian, cartesian2spherical,
        transform_initial_condition
 
-export initial_condition_gaussian, initial_condition_gaussian_cartesian,
-       initial_condition_geostrophic_balance
+export initial_condition_gaussian, initial_condition_geostrophic_balance,
+       initial_condition_rossby_haurwitz
 
 export examples_dir
 end # module TrixiAtmo
