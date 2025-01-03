@@ -380,4 +380,13 @@ end
 @inline function energy_internal(cons, equations::ShallowWaterEquations3D)
     return energy_total(cons, equations) - energy_kinetic(cons, equations)
 end
+
+# Convert spherical velocity components to global Cartesian components
+@inline function spherical2global(prim, x, ::ShallowWaterEquations3D)
+    h, vlat, vlon, vrad, b = prim  # primitive variables
+
+    v1, v2, v3 = spherical2cartesian(vlat, vlon, vrad, x)
+
+    return SVector(h, v1, v2, v3, b)
+end
 end # @muladd
