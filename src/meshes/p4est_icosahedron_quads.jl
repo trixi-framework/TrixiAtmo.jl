@@ -112,7 +112,7 @@ end
 #    /  -------->ξ     | └------->ξ       \
 #   /__________________|___________________\
 #
-# Each of those quadrilaterlas is subdivided into trees_per_face_dimension^2 trees.
+# Each of those quadrilaterals is subdivided into trees_per_face_dimension^2 trees.
 #
 # We use the following numbering for the 12 vertices of the icosahedron
 # Fig 3:
