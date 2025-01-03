@@ -21,7 +21,7 @@ function Trixi.integrate(func::Func, u,
 end
 
 # For the covariant form, we want to integrate using the exact area element 
-# √G = (det(AᵀA))^(1/2), which is stored in cache.auxiliary_variables, not the approximate 
+# J = (det(AᵀA))^(1/2), which is stored in cache.auxiliary_variables, not the approximate 
 # area element used in the Cartesian formulation, which stored in cache.elements
 function Trixi.integrate_via_indices(func::Func, u,
                                      mesh::Union{StructuredMesh{2},
@@ -42,10 +42,10 @@ function Trixi.integrate_via_indices(func::Func, u,
     for element in eachelement(dg, cache)
         for j in eachnode(dg), i in eachnode(dg)
             aux_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
-            sqrtG = area_element(aux_node, equations)
-            integral += weights[i] * weights[j] * sqrtG *
+            J = area_element(aux_node, equations)
+            integral += weights[i] * weights[j] * J *
                         func(u, i, j, element, equations, dg, args...)
-            total_volume += weights[i] * weights[j] * sqrtG
+            total_volume += weights[i] * weights[j] * J
         end
     end
 
@@ -108,14 +108,14 @@ function Trixi.calc_error_norms(func, u, t, analyzer, mesh::P4estMesh{2},
             diff = func(u_exact, equations) - func(u_numerical, equations)
 
             # For the L2 error, integrate with respect to area element stored in aux vars 
-            sqrtG = area_element(aux_node, equations)
-            l2_error += diff .^ 2 * (weights[i] * weights[j] * sqrtG)
+            J = area_element(aux_node, equations)
+            l2_error += diff .^ 2 * (weights[i] * weights[j] * J)
 
             # Compute Linf error as usual
             linf_error = @. max(linf_error, abs(diff))
 
             # Increment total volume according to the volume element stored in aux vars
-            total_volume += weights[i] * weights[j] * sqrtG
+            total_volume += weights[i] * weights[j] * J
         end
     end
 

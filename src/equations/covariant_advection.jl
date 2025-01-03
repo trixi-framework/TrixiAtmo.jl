@@ -93,9 +93,9 @@ end
 @inline function Trixi.flux(u, aux_vars, orientation::Integer,
                             equations::CovariantLinearAdvectionEquation2D)
     z = zero(eltype(u))
-    sqrtG = area_element(aux_vars, equations)
+    J = area_element(aux_vars, equations)
     vcon = velocity(u, equations)
-    return SVector(sqrtG * u[1] * vcon[orientation], z, z)
+    return SVector(J * u[1] * vcon[orientation], z, z)
 end
 
 # Local Lax-Friedrichs dissipation which is not applied to the contravariant velocity 
@@ -105,10 +105,10 @@ end
                                                               orientation_or_normal_direction,
                                                               equations::CovariantLinearAdvectionEquation2D)
     z = zero(eltype(u_ll))
-    sqrtG = area_element(aux_vars_ll, equations)
+    J = area_element(aux_vars_ll, equations)
     λ = dissipation.max_abs_speed(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
                                   orientation_or_normal_direction, equations)
-    return -0.5f0 * sqrtG * λ * SVector(u_rr[1] - u_ll[1], z, z)
+    return -0.5f0 * J * λ * SVector(u_rr[1] - u_ll[1], z, z)
 end
 
 # Maximum contravariant wave speed with respect to specific basis vector
