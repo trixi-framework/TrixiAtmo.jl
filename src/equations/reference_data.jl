@@ -107,17 +107,17 @@ end
 @doc raw"""
     initial_condition_rossby_haurwitz(x, t, equations)
 
-Rossby-Haurwitz wave case for the spherical shallow water equations, where the zonal and meridional velocity components are given by
+Rossby-Haurwitz wave case for the spherical shallow water equations, where the zonal and meridional velocity components are given, respectively, by
 ```math
 \begin{aligned}
 v_\lambda(\lambda,\theta) &= a \omega \cos \theta+a K \cos ^{R-1} \theta
-\left(R \sin ^2 \theta-\cos ^2 \theta\right) \cos (R \lambda)\\
-v_\theta(\lambda,\theta) &= -a K R \cos ^{R-1} \theta \sin \theta \sin (R \lambda)
+\left(R \sin ^2 \theta-\cos ^2 \theta\right) \cos (R \lambda),\\
+v_\theta(\lambda,\theta) &= -a K R \cos ^{R-1} \theta \sin \theta \sin (R \lambda),
 \end{aligned}
 ```
 where $\omega = K = 7.848 \times 10^{-6} \ \mathrm{s}^{-1}$ and $R = 4$ are given 
 constants, and $a = 6.37122 \times 10^3\ \mathrm{m}$ is the Earth's radius. Taking 
-$g = 9.80616 \ \mathrm{m}/\mathrm{s}^2$, $\Omega = 7.292 \times 10^{-5} \mathrm{s}^{-1}$, 
+$g = 9.80616 \ \mathrm{m}/\mathrm{s}^2$, $\Omega = 7.292 \times 10^{-5} \ \mathrm{s}^{-1}$, 
 and $h_0 = 8000 \ \mathrm{m}$ and defining the functions 
 ```math
 \begin{aligned}
