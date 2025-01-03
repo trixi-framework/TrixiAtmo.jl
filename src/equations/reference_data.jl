@@ -76,11 +76,11 @@ $v_\lambda(\theta) = v_0 \cos\theta$, where we define $v_0 = 2\pi a / (12 \ \mat
 in terms of the Earth's radius $a = 6.37122 \times 10^3\ \mathrm{m}$. The height field 
 then varies with the latitude as
 ```math
-h(\theta) = \frac{1}{g} \Big(gh_0 - \Big(a \omega v_0 + \frac{1}{2} v_0^2\Big)\sin^2\theta\Big),
+h(\theta) = \frac{1}{g} \Big(gh_0 - \Big(a \Omega v_0 + \frac{1}{2} v_0^2\Big)\sin^2\theta\Big),
 ```
 where $gh_0 = 2.94 \times 10^4 \ \mathrm{m}^2/\mathrm{s}^2$, 
 $g = 9.80616 \ \mathrm{m}/\mathrm{s}^2$, and 
-$\omega = 7.292 \times 10^{-5} \mathrm{s}^{-1}$. This problem corresponds to Case 2 of the test suite described in the following paper:
+$\Omega = 7.292 \times 10^{-5} \mathrm{s}^{-1}$. This problem corresponds to Case 2 of the test suite described in the following paper:
 - D. L. Williamson, J. B. Drake, J. J. Hack, R. Jakob, and P. N. Swarztrauber (1992). A  
   standard test set for numerical approximations to the shallow water equations in
   spherical geometry. Journal of Computational Physics, 102(1):211-224. 
@@ -117,7 +117,7 @@ v_\theta(\lambda,\theta) &= -a K R \cos ^{R-1} \theta \sin \theta \sin (R \lambd
 ```
 where $\omega = K = 7.848 \times 10^{-6} \ \mathrm{s}^{-1}$ and $R = 4$ are given 
 constants, and $a = 6.37122 \times 10^3\ \mathrm{m}$ is the Earth's radius. Taking 
-$g = 9.80616 \ \mathrm{m}/\mathrm{s}^2$, $\omega = 7.292 \times 10^{-5} \mathrm{s}^{-1}$, 
+$g = 9.80616 \ \mathrm{m}/\mathrm{s}^2$, $\Omega = 7.292 \times 10^{-5} \mathrm{s}^{-1}$, 
 and $h_0 = 8000 \ \mathrm{m}$ and defining the functions 
 ```math
 \begin{aligned}
