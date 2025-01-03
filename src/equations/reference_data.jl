@@ -72,15 +72,15 @@ end
 
 Steady geostrophic balance for the spherical shallow water equations, corresponding to a 
 purely zonal velocity field given as a function of the latitude $\theta$ by 
-$v_\lambda(\theta) = v_0 \cos\theta$, where we define 
-$v_0 = 2\pi a \cos(\theta) / 12 \ \mathrm{days}$ in terms of the Earth's radius 
-$a = 6.37122 \times 10^3\ \mathrm{m}$. The height field then varies with the latitude as
+$v_\lambda(\theta) = v_0 \cos\theta$, where we define $v_0 = 2\pi a / (12 \ \mathrm{days})$ 
+in terms of the Earth's radius $a = 6.37122 \times 10^3\ \mathrm{m}$. The height field 
+then varies with the latitude as
 ```math
-h(\theta) = 1/g \Big(gh_0 - \Big(a \omega v_0 + \frac{1}{2} v_0^2\Big)\sin^2\theta\Big),
+h(\theta) = \frac{1}{g} \Big(gh_0 - \Big(a \omega v_0 + \frac{1}{2} v_0^2\Big)\sin^2\theta\Big),
 ```
 where $gh_0 = 2.94 \times 10^4 \ \mathrm{m}^2/\mathrm{s}^2$, 
-$g = 9.80616 \ \mathrm{m}/\mathrm{s}^2$, and $\omega = 7.292e-5 \mathrm{s}^{-1}$. This 
-problem corresponds to Case 2 of the test suite described in the following paper:
+$g = 9.80616 \ \mathrm{m}/\mathrm{s}^2$, and 
+$\omega = 7.292 \times 10^{-5} \mathrm{s}^{-1}$. This problem corresponds to Case 2 of the test suite described in the following paper:
 - D. L. Williamson, J. B. Drake, J. J. Hack, R. Jakob, and P. N. Swarztrauber (1992). A  
   standard test set for numerical approximations to the shallow water equations in
   spherical geometry. Journal of Computational Physics, 102(1):211-224. 
@@ -107,8 +107,34 @@ end
 @doc raw"""
     initial_condition_rossby_haurwitz(x, t, equations)
 
-Rossby-Haurwitz wave with wave number 4, corresponding to Case 5 of the test suite 
-described in the following paper:
+Rossby-Haurwitz wave case for the spherical shallow water equations, where the zonal and meridional velocity components are given by
+```math
+\begin{aligned}
+v_\lambda(\lambda,\theta) &= a \omega \cos \theta+a K \cos ^{R-1} \theta
+\left(R \sin ^2 \theta-\cos ^2 \theta\right) \cos (R \lambda)\\
+v_\theta(\lambda,\theta) &= -a K R \cos ^{R-1} \theta \sin \theta \sin (R \lambda)
+\end{aligned}
+```
+where $\omega = K = 7.848 \times 10^{-6} \ \mathrm{s}^{-1}$ and $R = 4$ are given 
+constants, and $a = 6.37122 \times 10^3\ \mathrm{m}$ is the Earth's radius. Taking 
+$g = 9.80616 \ \mathrm{m}/\mathrm{s}^2$, $\omega = 7.292 \times 10^{-5} \mathrm{s}^{-1}$, 
+and $h_0 = 8000 \ \mathrm{m}$ and defining the functions 
+```math
+\begin{aligned}
+A(\theta) &=  \frac{\omega}{2}(2 \Omega+\omega) \cos ^2 \theta + 
+\frac{1}{4} K^2 \cos ^{2 R} \theta\Big((R+1) \cos ^2 \theta +\left(2 R^2-R-2\right) - 
+\big(2 R^2 / \cos^2 \theta\big) \Big), \\
+B(\theta) &= \frac{2(\Omega+\omega) K}{(R+1)(R+2)} \cos ^R \theta\big((R^2+2 R+2)- 
+(R+1)^2 \cos ^2 \theta\big), \\
+C(\theta) &=  \frac{1}{4} K^2 \cos^{2 R} \theta\big((R+1) \cos ^2 \theta-(R+2)\big),
+\end{aligned}
+```
+the initial height field is given by
+```math
+h(\lambda,\theta) = h_0 + \frac{a^2}{g}\Big(A(\theta) + B(\theta)\cos(R\lambda) +
+C(\theta)\cos(2R\lambda) \Big).
+```
+This problem corresponds to Case 5 of the test suite described in the following paper:
 - D. L. Williamson, J. B. Drake, J. J. Hack, R. Jakob, and P. N. Swarztrauber (1992). A  
   standard test set for numerical approximations to the shallow water equations in
   spherical geometry. Journal of Computational Physics, 102(1):211-224. 
