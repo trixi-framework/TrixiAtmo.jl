@@ -1,9 +1,60 @@
 @muladd begin
 #! format: noindent
 
-"""
+@doc raw"""
     CovariantShallowWaterEquations2D{GlobalCoordinateSystem} <:  
         AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 3}
+
+Denoting the [covariant derivative](https://en.wikipedia.org/wiki/Covariant_derivative) by 
+$\nabla_b$ and summing over repeated indices, the shallow water equations can be expressed 
+on a two-dimensional surface in three-dimensional ambient space as
+```math
+\begin{aligned}
+\partial_t h + \nabla_b (hv^b) &= 0,\\
+\partial_t (hv^a) + \nabla_b (hv^av^b) + gh G^{ab}\partial_b(h + b) 
+&= -fJ G^{ab}\varepsilon_{bc} hv^c,
+\end{aligned}
+```
+where $h$ is the fluid height, $v^a$ and $G^{ab}$ are the contravariant velocity and metric 
+tensor components, $g$ is the gravitational constant, $f$ is the Coriolis parameter, and 
+$J$ is the area element. Combining the inertial and gravitational terms in order to define 
+the momentum flux components
+```math
+\tau^{ab} = hv^a v^b + \frac{1}{2}G^{ab}gh^2,
+```
+the covariant shallow water equations can be expressed as a system of conservation laws 
+with a source term:
+```math
+J \frac{\partial}{\partial t}
+\left[\begin{array}{c} h \\ hv^1 \\ hv^2 \end{array}\right] 
++
+\frac{\partial}{\partial \xi^1} 
+\left[\begin{array}{c} J h v^1 \\ J \tau^{11} \\ J \tau^{12} \end{array}\right]
++ 
+\frac{\partial}{\partial \xi^2} 
+\left[\begin{array}{c} J h v^2 \\ J \tau^{21} \\ J \tau^{22}  \end{array}\right] 
+= J \left[\begin{array}{c} 0 \\ 
+-\Gamma^1_{ab}\tau^{ab} - f J \big(G^{12}hv^1 - G^{11}hv^2\big) \\ 
+-\Gamma^2_{ab}\tau^{ab} - f J \big(G^{22}hv^1 - G^{21}hv^2\big)
+ \end{array}\right].
+```
+TrixiAtmo.jl implements standard weak-form DG methods for both the above system, as well as 
+entropy-stable split forms based on a novel flux-differencing discretization of the 
+covariant derivative.
+
+## References
+- M. Baldauf (2020). Discontinuous Galerkin solver for the shallow-water equations in
+  covariant form on the sphere and the ellipsoid. Journal of Computational Physics 
+  410:109384. [DOI: 10.1016/j.jcp.2020.109384](https://doi.org/10.1016/j.jcp.2020.109384) 
+- L. Bao, R. D. Nair, and H. M. Tufo (2014). A mass and momentum flux-form high-order
+  discontinuous Galerkin shallow water model on the cubed-sphere. A mass and momentum 
+  flux-form high-order discontinuous Galerkin shallow water model on the cubed-sphere. 
+  Journal of Computational Physics 271:224-243. 
+  [DOI: 10.1016/j.jcp.2013.11.033](https://doi.org/10.1016/j.jcp.2013.11.033)
+
+!!! warning "Experimental implementation"
+    The use of entropy-stable split-form/flux-differencing formulations for covariant 
+    equations is an experimental feature and may change in future releases.
 """
 struct CovariantShallowWaterEquations2D{GlobalCoordinateSystem, RealT <: Real} <:
        AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 3}

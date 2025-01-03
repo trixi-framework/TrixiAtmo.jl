@@ -24,21 +24,20 @@ are spatially varying but assumed to be constant in time, so we do not apply any
 dissipation to such variables. The resulting system is then given on the reference element 
 as 
 ```math
-\sqrt{G} \frac{\partial}{\partial t}
+J \frac{\partial}{\partial t}
 \left[\begin{array}{c} h \\ v^1 \\ v^2 \end{array}\right] 
 +
 \frac{\partial}{\partial \xi^1} 
-\left[\begin{array}{c} \sqrt{G} h v^1 \\ 0 \\ 0 \end{array}\right]
+\left[\begin{array}{c} J h v^1 \\ 0 \\ 0 \end{array}\right]
 + 
 \frac{\partial}{\partial \xi^2} 
-\left[\begin{array}{c} \sqrt{G} h v^2 \\ 0 \\ 0 \end{array}\right] 
+\left[\begin{array}{c} J h v^2 \\ 0 \\ 0 \end{array}\right] 
 = 
 \left[\begin{array}{c} 0 \\ 0 \\ 0 \end{array}\right],
 ```
-where $G$ is the determinant of the covariant metric tensor expressed as a 2 by 2 matrix 
-with entries $G_{ij} =  \vec{a}_i \cdot \vec{a}_j$. Note that the variable advection 
-velocity components could alternatively be stored as auxiliary variables, similarly to the 
-geometric information.
+where $J = \lVert\vec{a}^1 \times \vec{a}^2 \rVert$ is the area element. Note that the 
+variable advection velocity components could alternatively be stored as auxiliary 
+variables, similarly to the geometric information.
 """
 struct CovariantLinearAdvectionEquation2D{GlobalCoordinateSystem} <:
        AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 3}
