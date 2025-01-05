@@ -76,11 +76,13 @@ $v_\lambda(\theta) = v_0 \cos\theta$, where we define $v_0 = 2\pi a / (12 \ \mat
 in terms of the Earth's radius $a = 6.37122 \times 10^3\ \mathrm{m}$. The height field 
 then varies with the latitude as
 ```math
-h(\theta) = \frac{1}{g} \Big(gh_0 - \Big(a \Omega v_0 + \frac{1}{2} v_0^2\Big)\sin^2\theta\Big),
+h(\theta) = \frac{1}{g} 
+\Big(gh_0 - \Big(a \Omega v_0 + \frac{1}{2} v_0^2\Big)\sin^2\theta\Big),
 ```
 where $gh_0 = 2.94 \times 10^4 \ \mathrm{m}^2/\mathrm{s}^2$, 
 $g = 9.80616 \ \mathrm{m}/\mathrm{s}^2$, and 
-$\Omega = 7.292 \times 10^{-5} \mathrm{s}^{-1}$. This problem corresponds to Case 2 of the test suite described in the following paper:
+$\Omega = 7.292 \times 10^{-5} \mathrm{s}^{-1}$. This problem corresponds to Case 2 of the
+test suite described in the following paper:
 - D. L. Williamson, J. B. Drake, J. J. Hack, R. Jakob, and P. N. Swarztrauber (1992). A  
   standard test set for numerical approximations to the shallow water equations in
   spherical geometry. Journal of Computational Physics, 102(1):211-224. 
@@ -107,7 +109,8 @@ end
 @doc raw"""
     initial_condition_rossby_haurwitz(x, t, equations)
 
-Rossby-Haurwitz wave case for the spherical shallow water equations, where the zonal and meridional velocity components are given, respectively, by
+Rossby-Haurwitz wave case for the spherical shallow water equations, where the zonal and 
+meridional velocity components are given, respectively, by
 ```math
 \begin{aligned}
 v_\lambda(\lambda,\theta) &= a \omega \cos \theta+a K \cos ^{R-1} \theta
@@ -121,18 +124,18 @@ $g = 9.80616 \ \mathrm{m}/\mathrm{s}^2$, $\Omega = 7.292 \times 10^{-5} \ \mathr
 and $h_0 = 8000 \ \mathrm{m}$ and defining the functions 
 ```math
 \begin{aligned}
-A(\theta) &=  \frac{\omega}{2}(2 \Omega+\omega) \cos ^2 \theta + 
-\frac{1}{4} K^2 \cos ^{2 R} \theta\Big((R+1) \cos ^2 \theta +\left(2 R^2-R-2\right) - 
+A(\theta) &=  \frac{\omega}{2}(2 \Omega+\omega) \cos^2 \theta + 
+\frac{1}{4} K^2 \cos^{2 R} \theta\Big((R+1) \cos^2\theta +\left(2 R^2-R-2\right) - 
 \big(2 R^2 / \cos^2 \theta\big) \Big), \\
-B(\theta) &= \frac{2(\Omega+\omega) K}{(R+1)(R+2)} \cos ^R \theta\big((R^2+2 R+2)- 
-(R+1)^2 \cos ^2 \theta\big), \\
-C(\theta) &=  \frac{1}{4} K^2 \cos^{2 R} \theta\big((R+1) \cos ^2 \theta-(R+2)\big),
+B(\theta) &= \frac{2(\Omega+\omega) K}{(R+1)(R+2)} \cos ^R \theta\big((R^2+2 R+2) - 
+(R+1)^2 \cos^2 \theta\big), \\
+C(\theta) &=  \frac{1}{4} K^2 \cos^{2 R} \theta\big((R+1) \cos^2 \theta-(R+2)\big),
 \end{aligned}
 ```
 the initial height field is given by
 ```math
-h(\lambda,\theta) = h_0 + \frac{a^2}{g}\Big(A(\theta) + B(\theta)\cos(R\lambda) +
-C(\theta)\cos(2R\lambda) \Big).
+h(\lambda,\theta) = h_0 + 
+\frac{a^2}{g}\Big(A(\theta) + B(\theta)\cos(R\lambda) + C(\theta)\cos(2R\lambda) \Big).
 ```
 This problem corresponds to Case 5 of the test suite described in the following paper:
 - D. L. Williamson, J. B. Drake, J. J. Hack, R. Jakob, and P. N. Swarztrauber (1992). A  
@@ -147,13 +150,14 @@ This problem corresponds to Case 5 of the test suite described in the following 
     lat = asin(x[3] / a)
 
     h_0 = 8.0f3
+    omega = 7.848f-6
     K = 7.848f-6
     R = 4.0f0
 
-    A = 0.5f0 * K * (2 * EARTH_ROTATION_RATE + K) * (cos(lat))^2 +
+    A = 0.5f0 * K * (2 * EARTH_ROTATION_RATE + omega) * (cos(lat))^2 +
         0.25f0 * K^2 * (cos(lat))^(2 * R) *
         ((R + 1) * (cos(lat))^2 + (2 * R^2 - R - 2) - 2 * R^2 / ((cos(lat))^2))
-    B = 2 * (EARTH_ROTATION_RATE + K) * K / ((R + 1) * (R + 2)) * (cos(lat))^R *
+    B = 2 * (EARTH_ROTATION_RATE + omega) * K / ((R + 1) * (R + 2)) * (cos(lat))^R *
         ((R^2 + 2R + 2) - (R + 1)^2 * (cos(lat))^2)
     C = 0.25f0 * K^2 * (cos(lat))^(2 * R) * ((R + 1) * (cos(lat))^2 - (R + 2))
 
@@ -163,7 +167,7 @@ This problem corresponds to Case 5 of the test suite described in the following 
         (a^2 * A + a^2 * B * cos(R * lon) + a^2 * C * cos(2 * R * lon))
 
     # compute zonal and meridional components of the velocity
-    vlon = a * K * cos(lat) +
+    vlon = a * omega * cos(lat) +
            a * K * (cos(lat))^(R - 1) * (R * (sin(lat))^2 -
                                          (cos(lat))^2) * cos(R * lon)
     vlat = -a * K * R * (cos(lat))^(R - 1) * sin(lat) * sin(R * lon)
