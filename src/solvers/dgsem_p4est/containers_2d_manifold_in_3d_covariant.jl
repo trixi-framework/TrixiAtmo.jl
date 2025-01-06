@@ -350,4 +350,4 @@ function calc_christoffel_symbols!(aux_node_vars, mesh::P4estMesh{2, 3},
                                            Gcon[2, 2] * christoffel_firstkind_2[2, 2]
     end
 end
-end # muladd
+end # @muladd

@@ -69,4 +69,4 @@ function Trixi.max_dt(u, t, mesh::P4estMesh{2}, constant_speed::False,
     end
     return 2 / (nnodes(dg) * max_scaled_speed)
 end
-end # muladd
+end # @muladd

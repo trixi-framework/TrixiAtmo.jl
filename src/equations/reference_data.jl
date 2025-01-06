@@ -81,7 +81,7 @@ h(\theta) = \frac{1}{g}
 ```
 where $gh_0 = 2.94 \times 10^4 \ \mathrm{m}^2/\mathrm{s}^2$, 
 $g = 9.80616 \ \mathrm{m}/\mathrm{s}^2$, and 
-$\Omega = 7.292 \times 10^{-5} \mathrm{s}^{-1}$. This problem corresponds to Case 2 of the
+$\Omega = 7.292 \times 10^{-5}\ \mathrm{s}^{-1}$. This problem corresponds to Case 2 of the
 test suite described in the following paper:
 - D. L. Williamson, J. B. Drake, J. J. Hack, R. Jakob, and P. N. Swarztrauber (1992). A  
   standard test set for numerical approximations to the shallow water equations in
@@ -110,7 +110,8 @@ end
     initial_condition_rossby_haurwitz(x, t, equations)
 
 Rossby-Haurwitz wave case for the spherical shallow water equations, where the zonal and 
-meridional velocity components are given, respectively, by
+meridional velocity components are given, respectively, as functions of the longitude 
+$\lambda$ and latitude $\theta$ by
 ```math
 \begin{aligned}
 v_\lambda(\lambda,\theta) &= a \omega \cos \theta+a K \cos ^{R-1} \theta
@@ -176,4 +177,4 @@ This problem corresponds to Case 5 of the test suite described in the following 
     # coordinate system, which depends on the equation type
     return spherical2global(SVector(h, vlon, vlat, zero(RealT)), x, equations)
 end
-end # muladd
+end # @muladd

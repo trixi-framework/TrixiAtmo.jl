@@ -19,7 +19,7 @@ EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
                             1.4786544678290738,
                             0.0013754600033514114,
                             0.0007564014737144256
-                        ])
+                        ], tspan=(0.0, 1.0 * SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let
@@ -41,7 +41,8 @@ end
                         linf=[
                             579.0744773822007,
                             0.5054767269383867,
-                            0.5628603103981209])
+                            0.5628603103981209
+                        ], tspan=(0.0, 1.0 * SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let

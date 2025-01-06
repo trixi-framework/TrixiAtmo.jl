@@ -183,4 +183,4 @@ function Trixi.varnames(::typeof(cons2prim_and_vorticity),
                                          AbstractCovariantEquations{2}})
     return (varnames(cons2prim, equations)..., "vorticity")
 end
-end # muladd
+end # @muladd

@@ -152,4 +152,4 @@ function calc_sources_2d_manifold_in_3d!(du, u, t, source_terms,
 
     return nothing
 end
-end # muladd
+end # @muladd
