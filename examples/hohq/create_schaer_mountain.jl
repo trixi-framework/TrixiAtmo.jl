@@ -1,13 +1,13 @@
 using HOHQMesh
 
-p = newProject("schaer_mountain_250", "mesh")
+p = newProject("schaer_mountain_2500", "mesh")
 
 y_top = 21000.0
 x_ll = -25000.0
 x_lr = 25000.0
 width = x_lr - x_ll
 
-h_c = 250.0
+h_c = 2500.0
 lambda_c = 4000.0
 a_c = 5000.0
 
@@ -45,6 +45,6 @@ addCurveToOuterBoundary!(p, left)
 setPolynomialOrder!(p, 2)
 setPlotFileFormat!(p, "sem")
 
-addBackgroundGrid!(p, [250.0, 210.0, 0.0])
-setMeshFileFormat!(p, "ABAQUS")
+addBackgroundGrid!(p, [25.0, 21.0, 0.0])
+setMeshFileFormat!(p, "ISM-V2")
 generate_mesh(p)

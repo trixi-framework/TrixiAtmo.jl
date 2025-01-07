@@ -55,9 +55,9 @@ initial_condition = initial_condition_schaer_mountain
 source_term = source
 
 boundary_conditions_dirichlet = Dict(:left => BoundaryConditionDirichlet(initial_condition_schaer_mountain),
-:right => BoundaryConditionDirichlet(initial_condition_schaer_mountain),
-:bottom => boundary_condition_slip_wall,
-:top => boundary_condition_slip_wall)
+                       :right => BoundaryConditionDirichlet(initial_condition_schaer_mountain),
+                       :bottom => boundary_condition_slip_wall,
+                       :top => boundary_condition_slip_wall)
 
 boundary_conditions_periodic = (x_neg = boundary_condition_periodic, 
                        x_pos = boundary_condition_periodic, 
@@ -76,8 +76,8 @@ solver = DGSEM(basis, surface_flux, volume_integral)
 
 mesh_file = joinpath("mesh", "schaer_mountain_250.inp")
 mesh_file_unstructured = joinpath("mesh", "schaer_mountain_250.mesh")
-#mesh = P4estMesh{2}(mesh_file, polydeg = polydeg)
-mesh = UnstructuredMesh2D(mesh_file_unstructured)
+mesh = P4estMesh{2}(mesh_file, polydeg = polydeg)
+#mesh = UnstructuredMesh2D(mesh_file_unstructured)
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_term,
