@@ -141,8 +141,8 @@ end
     return 0.5f0 * (dot(vcov, vcon) + equations.gravity * h^2)
 end
 
-# The flux for the covariant form takes in the element container and node/element indices
-# in order to give the flux access to the geometric information
+# Flux as a function of the state vector u, as well as the auxiliary variables aux_vars, 
+# which contain the geometric information required for the covariant form
 @inline function Trixi.flux(u, aux_vars, orientation::Integer,
                             equations::CovariantShallowWaterEquations2D)
     h, h_vcon1, h_vcon2 = u

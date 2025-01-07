@@ -155,7 +155,7 @@ This problem corresponds to Case 5 of the test suite described in the following 
     K = 7.848f-6
     R = 4.0f0
 
-    A = 0.5f0 * K * (2 * EARTH_ROTATION_RATE + omega) * (cos(lat))^2 +
+    A = 0.5f0 * omega * (2 * EARTH_ROTATION_RATE + omega) * (cos(lat))^2 +
         0.25f0 * K^2 * (cos(lat))^(2 * R) *
         ((R + 1) * (cos(lat))^2 + (2 * R^2 - R - 2) - 2 * R^2 / ((cos(lat))^2))
     B = 2 * (EARTH_ROTATION_RATE + omega) * K / ((R + 1) * (R + 2)) * (cos(lat))^R *
