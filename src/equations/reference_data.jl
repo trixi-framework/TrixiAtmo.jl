@@ -138,7 +138,7 @@ the initial height field is given by
 h(\lambda,\theta) = h_0 + 
 \frac{a^2}{g}\Big(A(\theta) + B(\theta)\cos(R\lambda) + C(\theta)\cos(2R\lambda) \Big).
 ```
-This problem corresponds to Case 5 of the test suite described in the following paper:
+This problem corresponds to Case 6 of the test suite described in the following paper:
 - D. L. Williamson, J. B. Drake, J. J. Hack, R. Jakob, and P. N. Swarztrauber (1992). A  
   standard test set for numerical approximations to the shallow water equations in
   spherical geometry. Journal of Computational Physics, 102(1):211-224. 
