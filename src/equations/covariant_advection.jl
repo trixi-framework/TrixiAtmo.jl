@@ -55,14 +55,15 @@ function Trixi.varnames(::typeof(cons2cons), ::CovariantLinearAdvectionEquation2
 end
 
 # Convenience function to extract the velocity
-function velocity(u, ::CovariantLinearAdvectionEquation2D)
+function velocity_contravariant(u, ::CovariantLinearAdvectionEquation2D)
     return SVector(u[2], u[3])
 end
 
 # Convert contravariant velocity components to the global coordinate system
 @inline function contravariant2global(u, aux_vars,
                                       equations::CovariantLinearAdvectionEquation2D)
-    vglo1, vglo2, vglo3 = basis_covariant(aux_vars, equations) * velocity(u, equations)
+    vglo1, vglo2, vglo3 = basis_covariant(aux_vars, equations) *
+                          velocity_contravariant(u, equations)
     return SVector(u[1], vglo1, vglo2, vglo3)
 end
 
@@ -93,7 +94,7 @@ end
                             equations::CovariantLinearAdvectionEquation2D)
     z = zero(eltype(u))
     J = area_element(aux_vars, equations)
-    vcon = velocity(u, equations)
+    vcon = velocity_contravariant(u, equations)
     return SVector(J * u[1] * vcon[orientation], z, z)
 end
 
@@ -114,15 +115,15 @@ end
 @inline function Trixi.max_abs_speed_naive(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
                                            orientation::Integer,
                                            equations::CovariantLinearAdvectionEquation2D)
-    vcon_ll = velocity(u_ll, equations)  # Contravariant components on left side
-    vcon_rr = velocity(u_rr, equations)  # Contravariant components on right side
+    vcon_ll = velocity_contravariant(u_ll, equations)  # Contravariant components on left side
+    vcon_rr = velocity_contravariant(u_rr, equations)  # Contravariant components on right side
     return max(abs(vcon_ll[orientation]), abs(vcon_rr[orientation]))
 end
 
 # Maximum wave speeds in each direction for CFL calculation
 @inline function Trixi.max_abs_speeds(u, aux_vars,
                                       equations::CovariantLinearAdvectionEquation2D)
-    return abs.(velocity(u, equations))
+    return abs.(velocity_contravariant(u, equations))
 end
 
 # If the initial velocity field is defined in Cartesian coordinates and the chosen global 

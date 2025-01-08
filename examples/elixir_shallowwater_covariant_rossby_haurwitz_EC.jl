@@ -26,11 +26,8 @@ equations = CovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION,
                                              global_coordinate_system = GlobalCartesianCoordinates())
 
 # Use entropy-conservative two-point fluxes for volume and surface terms
-volume_flux = (flux_split_covariant, flux_nonconservative_split_covariant)
-surface_flux = (flux_split_covariant, flux_nonconservative_split_covariant)
-
-# The following flux should be used to add interface dissipation:
-# surface_flux = (flux_split_covariant_lax_friedrichs, flux_nonconservative_split_covariant)
+volume_flux = (flux_ec, flux_nonconservative_ec)
+surface_flux = (flux_ec, flux_nonconservative_ec)
 
 # Create DG solver with polynomial degree = p
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
@@ -41,7 +38,7 @@ initial_condition_transformed = transform_initial_condition(initial_condition, e
 
 # A semidiscretization collects data structures and functions for the spatial discretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver,
-                                    source_terms = source_terms_split_covariant)
+                                    source_terms = source_terms_ec)
 
 ###############################################################################
 # ODE solvers, callbacks etc.

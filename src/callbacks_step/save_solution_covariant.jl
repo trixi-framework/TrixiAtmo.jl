@@ -53,14 +53,16 @@ end
     for ii in eachnode(dg)
         u_node_ii = Trixi.get_node_vars(u, equations, dg, ii, j, element)
         aux_node_ii = get_node_aux_vars(aux_node_vars, equations, dg, ii, j, element)
-        vcov = metric_covariant(aux_node_ii, equations) * velocity(u_node_ii, equations)
+        vcov = metric_covariant(aux_node_ii, equations) *
+               velocity_contravariant(u_node_ii, equations)
         dv2dxi1 = dv2dxi1 + derivative_matrix[i, ii] * vcov[2]
     end
 
     for jj in eachnode(dg)
         u_node_jj = Trixi.get_node_vars(u, equations, dg, i, jj, element)
         aux_node_jj = get_node_aux_vars(aux_node_vars, equations, dg, i, jj, element)
-        vcov = metric_covariant(aux_node_jj, equations) * velocity(u_node_jj, equations)
+        vcov = metric_covariant(aux_node_jj, equations) *
+               velocity_contravariant(u_node_jj, equations)
         dv1dxi2 = dv1dxi2 + derivative_matrix[j, jj] * vcov[1]
     end
 
