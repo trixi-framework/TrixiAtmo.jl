@@ -49,7 +49,8 @@ end
 # parameter of PtrArray is Tuple{StaticInt{NDIMS_AMBIENT}, Vararg{IntT, NDIMS + 2}}.
 @inline function Trixi.get_contravariant_vector(index,
                                                 contravariant_vectors::PtrArray{RealT,
-                                                                                5, <:Any,
+                                                                                5,
+                                                                                <:Any,
                                                                                 Tuple{Trixi.StaticInt{3},
                                                                                       IntT,
                                                                                       IntT,
