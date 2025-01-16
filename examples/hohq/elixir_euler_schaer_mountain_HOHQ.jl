@@ -74,7 +74,7 @@ volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
 solver = DGSEM(basis, surface_flux, volume_integral)
 
-mesh_file = joinpath("mesh", "schaer_mountain_250.inp")
+mesh_file = joinpath("mesh", "schaer_mountain_1000.inp")
 mesh_file_unstructured = joinpath("mesh", "schaer_mountain_250.mesh")
 mesh = P4estMesh{2}(mesh_file, polydeg = polydeg)
 #mesh = UnstructuredMesh2D(mesh_file_unstructured)

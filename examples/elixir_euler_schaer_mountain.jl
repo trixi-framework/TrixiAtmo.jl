@@ -61,7 +61,7 @@ function mapping(xi_, eta_)
     H = 21_000.0
 
     #topography
-    h_c = 250.0
+    h_c = 7500.0
     lambda_c = 4000.0
     a_c = 5000.0
 
@@ -73,7 +73,7 @@ function mapping(xi_, eta_)
 end
 
 # Create curved mesh with 200 x 100 elements
-cells_per_dimension = (20, 10)
+cells_per_dimension = (60, 30)
 mesh = StructuredMesh(cells_per_dimension, mapping,
                       periodicity = false)
 
@@ -114,7 +114,7 @@ semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
 ###############################################################################
 # ODE solvers, callbacks etc.
 
-tspan = (0.0, 60 * 60 * 10)  # 10h = 36000 s
+tspan = (0.0, 60 * 60)# * 10)  # 10h = 36000 s
 
 ode = semidiscretize(semi, tspan)
 
