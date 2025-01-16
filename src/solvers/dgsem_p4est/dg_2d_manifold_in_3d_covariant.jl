@@ -15,10 +15,10 @@ function Trixi.compute_coefficients!(u, func, t, mesh::P4estMesh{2},
                                            element)
 
             # Get auxiliary variables at node (i, j)
-            a_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
+            aux_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
 
             # Compute nodal values of the provided function
-            u_node = func(x_node, t, a_node, equations)
+            u_node = func(x_node, t, aux_node, equations)
 
             # Set nodal variables in cache
             Trixi.set_node_vars!(u, u_node, equations, dg, i, j, element)
@@ -38,11 +38,11 @@ end
     for j in eachnode(dg), i in eachnode(dg)
         # Get solution variables and auxiliary variables at node (i, j)
         u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
-        a_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
+        aux_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
 
         # Evaluate the contravariant flux components
-        flux1 = flux(u_node, a_node, 1, equations)
-        flux2 = flux(u_node, a_node, 2, equations)
+        flux1 = flux(u_node, aux_node, 1, equations)
+        flux2 = flux(u_node, aux_node, 2, equations)
 
         # Apply weak form derivative with respect to ξ¹ 
         for ii in eachnode(dg)
@@ -73,16 +73,17 @@ end
     for j in eachnode(dg), i in eachnode(dg)
         # Get solution variables and auxiliary variables at node (i, j)
         u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
-        a_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
+        aux_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
 
         # ξ¹ direction
         for ii in (i + 1):nnodes(dg)
             # Get solution variables and auxiliary variables at node (ii, j)
             u_node_ii = Trixi.get_node_vars(u, equations, dg, ii, j, element)
-            a_node_ii = get_node_aux_vars(aux_node_vars, equations, dg, ii, j, element)
+            aux_node_ii = get_node_aux_vars(aux_node_vars, equations, dg, ii, j,
+                                            element)
 
             # Evaluate contravariant component 1 of the variable-coefficient two-point flux
-            flux1 = volume_flux(u_node, u_node_ii, a_node, a_node_ii, 1, equations)
+            flux1 = volume_flux(u_node, u_node_ii, aux_node, aux_node_ii, 1, equations)
 
             # Multiply by entry of split derivative matrix and add to right-hand side
             Trixi.multiply_add_to_node_vars!(du, alpha * derivative_split[i, ii], flux1,
@@ -95,10 +96,11 @@ end
         for jj in (j + 1):nnodes(dg)
             # Get solution variables and auxiliary variables at node (i, jj)
             u_node_jj = Trixi.get_node_vars(u, equations, dg, i, jj, element)
-            a_node_jj = get_node_aux_vars(aux_node_vars, equations, dg, i, jj, element)
+            aux_node_jj = get_node_aux_vars(aux_node_vars, equations, dg, i, jj,
+                                            element)
 
             # Evaluate contravariant component 2 of the variable-coefficient two-point flux
-            flux2 = volume_flux(u_node, u_node_jj, a_node, a_node_jj, 2, equations)
+            flux2 = volume_flux(u_node, u_node_jj, aux_node, aux_node_jj, 2, equations)
 
             # Multiply by entry of split derivative matrix and add to right-hand side
             Trixi.multiply_add_to_node_vars!(du, alpha * derivative_split[j, jj], flux2,
@@ -137,9 +139,9 @@ end
                                                          interface_index)
 
     # Compute flux in the primary element's coordinate system
-    u_rr_spherical = contravariant2spherical(u_rr, aux_vars_rr, equations)
-    u_rr_transformed_to_ll = spherical2contravariant(u_rr_spherical, aux_vars_ll,
-                                                     equations)
+    u_rr_spherical = contravariant2global(u_rr, aux_vars_rr, equations)
+    u_rr_transformed_to_ll = global2contravariant(u_rr_spherical, aux_vars_ll,
+                                                  equations)
     if isodd(primary_direction_index)
         flux_primary = -surface_flux(u_rr_transformed_to_ll, u_ll,
                                      aux_vars_ll, aux_vars_ll,
@@ -151,9 +153,9 @@ end
     end
 
     # Compute flux in the secondary element's coordinate system
-    u_ll_spherical = contravariant2spherical(u_ll, aux_vars_ll, equations)
-    u_ll_transformed_to_rr = spherical2contravariant(u_ll_spherical, aux_vars_rr,
-                                                     equations)
+    u_ll_spherical = contravariant2global(u_ll, aux_vars_ll, equations)
+    u_ll_transformed_to_rr = global2contravariant(u_ll_spherical, aux_vars_rr,
+                                                  equations)
     if isodd(secondary_direction_index)
         flux_secondary = -surface_flux(u_ll_transformed_to_rr, u_rr,
                                        aux_vars_rr, aux_vars_rr,
@@ -181,8 +183,8 @@ function Trixi.apply_jacobian!(du, mesh::P4estMesh{2},
 
     Trixi.@threaded for element in eachelement(dg, cache)
         for j in eachnode(dg), i in eachnode(dg)
-            a_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
-            factor = -1 / area_element(a_node, equations)
+            aux_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
+            factor = -1 / area_element(aux_node, equations)
 
             for v in eachvariable(equations)
                 du[v, i, j, element] *= factor

@@ -11,12 +11,14 @@ module TrixiAtmo
 using Reexport: @reexport
 using Trixi
 using MuladdMacro: @muladd
+using Printf: @sprintf
 using Static: True, False
 using StrideArrays: PtrArray
 using StaticArrayInterface: static_size
-using LinearAlgebra: norm, dot
+using LinearAlgebra: norm, dot, det
 using Reexport: @reexport
 using LoopVectorization: @turbo
+using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
 
 @reexport using StaticArrays: SVector, SMatrix
 
@@ -30,18 +32,21 @@ include("callbacks_step/callbacks_step.jl")
 
 export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
        CovariantLinearAdvectionEquation2D
+export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
 export flux_chandrashekar, flux_LMARS
 
 export velocity, waterheight, pressure, energy_total, energy_kinetic, energy_internal,
        lake_at_rest_error, source_terms_lagrange_multiplier,
        clean_solution_lagrange_multiplier!
-export P4estCubedSphere2D, MetricTermsCrossProduct, MetricTermsInvariantCurl
+export cons2prim_and_vorticity
+export P4estMeshCubedSphere2D, P4estMeshQuadIcosahedron2D, MetricTermsCrossProduct,
+       MetricTermsInvariantCurl
 export EARTH_RADIUS, EARTH_GRAVITATIONAL_ACCELERATION,
        EARTH_ROTATION_RATE, SECONDS_PER_DAY
-export spherical2contravariant, contravariant2spherical, spherical2cartesian,
-       transform_to_cartesian, transform_to_contravariant
-export initial_condition_gaussian
+export global2contravariant, contravariant2global, spherical2cartesian,
+       transform_initial_condition
+export initial_condition_gaussian, initial_condition_gaussian_cartesian
 
 export examples_dir
 end # module TrixiAtmo
