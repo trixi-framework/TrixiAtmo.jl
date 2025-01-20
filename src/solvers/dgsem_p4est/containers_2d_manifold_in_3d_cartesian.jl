@@ -159,12 +159,10 @@ function init_elements_2d_manifold_in_3d!(elements,
         # Compute the inverse Jacobian as the norm of the cross product of the covariant vectors
         for j in eachnode(basis), i in eachnode(basis)
             inverse_jacobian[i, j, element] = 1 /
-                                              norm(Trixi.cross(jacobian_matrix[:, 1, i,
-                                                                               j,
-                                                                               element],
-                                                               jacobian_matrix[:, 2, i,
-                                                                               j,
-                                                                               element]))
+                                              norm(cross(jacobian_matrix[:, 1, i, j,
+                                                                         element],
+                                                         jacobian_matrix[:, 2, i, j,
+                                                                         element]))
         end
     end
 
