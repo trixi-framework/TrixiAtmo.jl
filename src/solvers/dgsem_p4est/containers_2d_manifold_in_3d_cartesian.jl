@@ -43,14 +43,22 @@ end
     return uEltype
 end
 
-# Extract contravariant vector Ja^i (i = index) as SVector
-# This function dispatches on the type of contravariant_vectors
-static2val(::Trixi.StaticInt{N}) where {N} = Val{N}()
-@inline function Trixi.get_contravariant_vector(index, contravariant_vectors::PtrArray,
-                                                indices...)
+# Extract contravariant vector Ja^i (i = index) as SVector. This function dispatches on the 
+# type of contravariant_vectors, specializing for NDIMS = 2 and NDIMS_AMBIENT = 3 by using 
+# the fact that the second type parameter of PtrArray is NDIMS + 3, and the fourth type 
+# parameter of PtrArray is Tuple{StaticInt{NDIMS_AMBIENT}, Vararg{IntT, NDIMS + 2}}.
+@inline function Trixi.get_contravariant_vector(index,
+                                                contravariant_vectors::PtrArray{RealT,
+                                                                                5,
+                                                                                <:Any,
+                                                                                Tuple{Trixi.StaticInt{3},
+                                                                                      IntT,
+                                                                                      IntT,
+                                                                                      IntT,
+                                                                                      IntT}},
+                                                indices...) where {RealT, IntT}
     return SVector(ntuple(@inline(dim->contravariant_vectors[dim, index, indices...]),
-                          static2val(static_size(contravariant_vectors,
-                                                 Trixi.StaticInt(1)))))
+                          3))
 end
 
 # Create element container and initialize element data.
