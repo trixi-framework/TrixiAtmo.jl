@@ -115,7 +115,7 @@ solver = DGSEM(basis, surface_flux)
 ###############################################################################
 # Mesh
 ###############################################################################
-function mapping_mountain(xi, eta)
+function mapping(xi_, eta_)
     # transform input variables between -1 and 1
 
     # horizontal width = 553 km
@@ -130,13 +130,13 @@ function mapping_mountain(xi, eta)
     # half-width length a = 11 km
     a = 11_000
 
-    x = xi * width / 2
+    x = xi_ * width / 2
 
     # bell-shaped mountain
     topo = H / exp((x / a)^2 + 1)^1.5
 
     above = height - topo
-    y = topo + (eta + 1) * above / 2
+    y = topo + (eta_ + 1) * above / 2
 
     return SVector(x, y)
 end
@@ -144,8 +144,8 @@ end
 # horizontal grid spacing of 2.765 km = 200 cells
 # vertical spacing 200 m = 70 cells
 cells_per_dimension = (200, 70)
-mesh = StructuredMesh(cells_per_dimension, mapping_mountain,
-                      periodicity = false)
+mesh = StructuredMesh(cells_per_dimension, mapping,
+                      periodicity = (true,false))
 #trees_per_dimension = (100, 35)
 #mesh = P4estMesh(trees_per_dimension,
 #                 polydeg = polydeg,
@@ -163,8 +163,8 @@ boundary_conditions_Dirichlet = BoundaryConditionDirichlet(initial_condition_rai
 #                           :x_pos => boundary_conditions_Dirichlet,
 #                           :y_neg => boundary_condition_slip_wall,
 #                           :y_pos => boundary_condition_slip_wall)
-boundary_conditions = (x_neg = boundary_conditions_Dirichlet,
-                       x_pos = boundary_conditions_Dirichlet,
+boundary_conditions = (x_neg = boundary_condition_periodic,
+                       x_pos = boundary_condition_periodic,
                        y_neg = boundary_condition_slip_wall,
                        y_pos = boundary_condition_slip_wall)
 
@@ -191,7 +191,7 @@ analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
 
 alive_callback = AliveCallback(analysis_interval = 1000)
 
-save_solution = SaveSolutionCallback(interval = 1000,
+save_solution = SaveSolutionCallback(interval = 2000,
                                      save_initial_solution = true,
                                      save_final_solution = true,
                                      output_directory = "out_rainy_mountain",
@@ -209,7 +209,7 @@ stepsize_callback = StepsizeCallback(cfl = 1.0)
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,
                         alive_callback,
-                        visualization,
+#                        visualization,
                         save_solution,
                         stepsize_callback)
 
