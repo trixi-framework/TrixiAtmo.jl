@@ -133,7 +133,7 @@ function mapping(xi_, eta_)
     x = xi_ * width / 2
 
     # bell-shaped mountain
-    topo = H / exp((x / a)^2 + 1)^1.5
+    topo = H / ((x / a)^2 + 1)^1.5
 
     above = height - topo
     y = topo + (eta_ + 1) * above / 2
