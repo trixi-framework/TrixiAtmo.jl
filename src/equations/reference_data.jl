@@ -52,16 +52,16 @@ This problem is adapted from Case 1 of the test suite described in the following
                   a * sin(lat_0))
 
     # apply rotation using Rodrigues' formula 
-    axis_cross_x_0 = Trixi.cross(axis, x_0)
+    axis_cross_x_0 = cross(axis, x_0)
     x_0 = x_0 + sin(omega * t) * axis_cross_x_0 +
-          (1 - cos(omega * t)) * Trixi.cross(axis, axis_cross_x_0)
+          (1 - cos(omega * t)) * cross(axis, axis_cross_x_0)
 
     # compute Gaussian bump profile
     h = h_0 *
         exp(-b_0 * ((x[1] - x_0[1])^2 + (x[2] - x_0[2])^2 + (x[3] - x_0[3])^2) / (a^2))
 
     # get Cartesian velocity components
-    vx, vy, vz = omega * Trixi.cross(axis, x)
+    vx, vy, vz = omega * cross(axis, x)
 
     # Prescribe the rotated bell shape and Cartesian velocity components.
     # The last variable is the bottom topography, which we set to zero
@@ -90,9 +90,9 @@ end
                   a * sin(lat_0))
 
     # apply rotation using Rodrigues' formula 
-    axis_cross_x_0 = Trixi.cross(axis, x_0)
+    axis_cross_x_0 = cross(axis, x_0)
     x_0 = x_0 + sin(omega * t) * axis_cross_x_0 +
-          (1 - cos(omega * t)) * Trixi.cross(axis, axis_cross_x_0)
+          (1 - cos(omega * t)) * cross(axis, axis_cross_x_0)
 
     # compute Gaussian bump profile
     h = h_0 *
