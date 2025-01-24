@@ -15,7 +15,7 @@ using Printf: @sprintf
 using Static: True, False
 using StrideArrays: PtrArray
 using StaticArrayInterface: static_size
-using LinearAlgebra: norm, dot, det
+using LinearAlgebra: cross, norm, dot, det
 using Reexport: @reexport
 using LoopVectorization: @turbo
 using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
