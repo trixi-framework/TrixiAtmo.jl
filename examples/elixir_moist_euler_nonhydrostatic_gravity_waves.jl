@@ -55,7 +55,7 @@ boundary_conditions = (x_neg = boundary_condition_periodic,
 
 polydeg = 4
 basis = LobattoLegendreBasis(polydeg)
-surface_flux = flux_LMARS
+surface_flux = FluxLMARS(360.0)
 volume_flux = flux_chandrashekar
 
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)

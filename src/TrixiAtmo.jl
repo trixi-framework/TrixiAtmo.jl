@@ -34,7 +34,7 @@ export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
        CovariantLinearAdvectionEquation2D
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
-export flux_chandrashekar, flux_LMARS
+export flux_chandrashekar
 
 export velocity, waterheight, pressure, energy_total, energy_kinetic, energy_internal,
        lake_at_rest_error, source_terms_lagrange_multiplier,

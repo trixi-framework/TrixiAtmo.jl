@@ -75,7 +75,7 @@ Trixi.varnames(::typeof(cons2prim), ::ShallowWaterEquations3D) = ("H", "v1", "v2
     h, h_v1, h_v2, h_v3, _ = u
     v1, v2, v3 = velocity(u, equations)
 
-    p = 0.5 * equations.gravity * h^2
+    p = 0.5f0 * equations.gravity * h^2
     if orientation == 1
         f1 = h_v1
         f2 = h_v1 * v1 + p
@@ -105,7 +105,7 @@ end
     v_normal = v1 * normal_direction[1] + v2 * normal_direction[2] +
                v3 * normal_direction[3]
     h_v_normal = h * v_normal
-    p = 0.5 * equations.gravity * h^2
+    p = 0.5f0 * equations.gravity * h^2
 
     f1 = h_v_normal
     f2 = h_v_normal * v1 + p * normal_direction[1]
@@ -141,13 +141,13 @@ Further details are available in Theorem 1 of the paper:
     v1_rr, v2_rr, v3_rr = velocity(u_rr, equations)
 
     # Average each factor of products in flux
-    h_v1_avg = 0.5 * (h_v1_ll + h_v1_rr)
-    h_v2_avg = 0.5 * (h_v2_ll + h_v2_rr)
-    h_v3_avg = 0.5 * (h_v3_ll + h_v3_rr)
-    v1_avg = 0.5 * (v1_ll + v1_rr)
-    v2_avg = 0.5 * (v2_ll + v2_rr)
-    v3_avg = 0.5 * (v3_ll + v3_rr)
-    p_avg = 0.5 * equations.gravity * h_ll * h_rr
+    h_v1_avg = 0.5f0 * (h_v1_ll + h_v1_rr)
+    h_v2_avg = 0.5f0 * (h_v2_ll + h_v2_rr)
+    h_v3_avg = 0.5f0 * (h_v3_ll + h_v3_rr)
+    v1_avg = 0.5f0 * (v1_ll + v1_rr)
+    v2_avg = 0.5f0 * (v2_ll + v2_rr)
+    v3_avg = 0.5f0 * (v3_ll + v3_rr)
+    p_avg = 0.5f0 * equations.gravity * h_ll * h_rr
 
     # Calculate fluxes depending on normal_direction
     f1 = h_v1_avg * normal_direction[1] + h_v2_avg * normal_direction[2] +
@@ -186,13 +186,13 @@ Details are available in Eq. (4.1) in the paper:
                  v3_rr * normal_direction[3]
 
     # Average each factor of products in flux
-    h_avg = 0.5 * (h_ll + h_rr)
-    v1_avg = 0.5 * (v1_ll + v1_rr)
-    v2_avg = 0.5 * (v2_ll + v2_rr)
-    v3_avg = 0.5 * (v3_ll + v3_rr)
-    h2_avg = 0.5 * (h_ll^2 + h_rr^2)
-    p_avg = 0.5 * equations.gravity * h2_avg
-    v_dot_n_avg = 0.5 * (v_dot_n_ll + v_dot_n_rr)
+    h_avg = 0.5f0 * (h_ll + h_rr)
+    v1_avg = 0.5f0 * (v1_ll + v1_rr)
+    v2_avg = 0.5f0 * (v2_ll + v2_rr)
+    v3_avg = 0.5f0 * (v3_ll + v3_rr)
+    h2_avg = 0.5f0 * (h_ll^2 + h_rr^2)
+    p_avg = 0.5f0 * equations.gravity * h2_avg
+    v_dot_n_avg = 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
 
     # Calculate fluxes depending on normal_direction
     f1 = h_avg * v_dot_n_avg
@@ -277,7 +277,7 @@ end
                                                               equations::ShallowWaterEquations3D)
     λ = dissipation.max_abs_speed(u_ll, u_rr, orientation_or_normal_direction,
                                   equations)
-    diss = -0.5 * λ * (u_rr - u_ll)
+    diss = -0.5f0 * λ * (u_rr - u_ll)
     return SVector(diss[1], diss[2], diss[3], diss[4], zero(eltype(u_ll)))
 end
 
@@ -317,7 +317,7 @@ end
     v1, v2, v3 = velocity(u, equations)
     v_square = v1^2 + v2^2 + v3^2
 
-    w1 = equations.gravity * (h + b) - 0.5 * v_square
+    w1 = equations.gravity * (h + b) - 0.5f0 * v_square
     w2 = v1
     w3 = v2
     w4 = v3
@@ -328,7 +328,7 @@ end
 @inline function Trixi.entropy2cons(w, equations::ShallowWaterEquations3D)
     w1, w2, w3, w4, b = w
 
-    h = (w1 + 0.5 * (w2^2 + w3^2 + w4^2)) / equations.gravity - b
+    h = (w1 + 0.5f0 * (w2^2 + w3^2 + w4^2)) / equations.gravity - b
     h_v1 = h * w2
     h_v2 = h * w3
     h_v3 = h * w4
@@ -352,7 +352,7 @@ end
 
 @inline function pressure(u, equations::ShallowWaterEquations3D)
     h = waterheight(u, equations)
-    p = 0.5 * equations.gravity * h^2
+    p = 0.5f0 * equations.gravity * h^2
     return p
 end
 
@@ -365,7 +365,7 @@ end
 @inline function energy_total(cons, equations::ShallowWaterEquations3D)
     h, h_v1, h_v2, h_v3, b = cons
 
-    e = (h_v1^2 + h_v2^2 + h_v3^2) / (2 * h) + 0.5 * equations.gravity * h^2 +
+    e = (h_v1^2 + h_v2^2 + h_v3^2) / (2 * h) + 0.5f0 * equations.gravity * h^2 +
         equations.gravity * h * b
     return e
 end
