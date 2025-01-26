@@ -36,7 +36,7 @@ function CompressibleMoistEulerEquations2D(; g = 9.81, RealT = Float64)
     c_pl = 4186.0
     gamma = c_pd / c_vd # = 1/(1 - kappa)
     kappa = 1 - inv(gamma)
-    L_00 = 3147620.0
+    L_00 = 3147620
     return CompressibleMoistEulerEquations2D{RealT}(p_0, c_pd, c_vd, R_d, c_pv, c_vv,
                                                     R_v, c_pl, g, kappa, gamma, L_00)
 end
