@@ -4,7 +4,7 @@ using TrixiAtmo
 using TrixiAtmo: source_terms_rainy, saturation_residual,
                  saturation_residual_jacobian, NonlinearSolveDG,
                  cons2eq_pot_temp, saturation_vapour_pressure,
-                 flux_chandrashekar, flux_LMARS,
+                 flux_chandrashekar, flux_LMARS, flux_ec_rain_log,
                  source_terms_no_phase_change
 using NLsolve: nlsolve
 #using Plots
@@ -224,10 +224,10 @@ boundary_conditions = (x_neg = boundary_condition_periodic,
 polydeg = 1
 basis = LobattoLegendreBasis(polydeg)
 
-surface_flux = flux_LMARS
-#volume_integral = VolumeIntegralFluxDifferencing(flux_chandrashekar)
+surface_flux = flux_lax_friedrichs
+volume_integral = VolumeIntegralFluxDifferencing(flux_ec_rain_log)
 
-solver = DGSEM(basis, surface_flux)#, volume_integral)
+solver = DGSEM(basis, surface_flux, volume_integral)
 
 cells_per_dimension = (100, 100)
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
