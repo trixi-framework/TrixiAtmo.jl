@@ -3,7 +3,7 @@ using Trixi, TrixiAtmo
 using TrixiAtmo: CompressibleMoistEulerEquations2D, source_terms_geopotential,
                  source_terms_phase_change,
                  source_terms_nonhydrostatic_rayleigh_sponge,
-                 cons2drypot, flux_LMARS
+                 cons2drypot
 
 ###############################################################################
 # semidiscretization of the compressible moist Euler equation
