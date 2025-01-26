@@ -121,7 +121,7 @@ end
                  (1 + 0.5f0 * (gamma - 1) * v_normal / sound_speed)^(2 * gamma *
                                                                        inv(gamma - 1))
     else # v_normal > 0.0
-        A = 2.0 / ((gamma + 1) * rho_local)
+        A = 2 / ((gamma + 1) * rho_local)
         B = p_local * (gamma - 1) / (gamma + 1)
         p_star = p_local +
                  0.5f0 * v_normal / A *
