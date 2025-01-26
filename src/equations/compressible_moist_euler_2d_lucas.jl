@@ -125,7 +125,7 @@ end
         B = p_local * (gamma - 1) / (gamma + 1)
         p_star = p_local +
                  0.5f0 * v_normal / A *
-                 (v_normal + sqrt(v_normal^2 + 4.0 * A * (p_local + B)))
+                 (v_normal + sqrt(v_normal^2 + 4 * A * (p_local + B)))
     end
 
     # For the slip wall we directly set the flux as the normal velocity is zero
