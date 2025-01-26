@@ -1,7 +1,6 @@
 using OrdinaryDiffEq
 using Trixi, TrixiAtmo
-using TrixiAtmo: cons2aeqpot, saturation_pressure, source_terms_moist_bubble,
-                 flux_LMARS
+using TrixiAtmo: cons2aeqpot, saturation_pressure, source_terms_moist_bubble
 using NLsolve: nlsolve
 
 ###############################################################################
