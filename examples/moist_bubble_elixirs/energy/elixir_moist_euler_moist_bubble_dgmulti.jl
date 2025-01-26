@@ -252,7 +252,7 @@ solver = DGMulti(polydeg = 3, element_type = Quad(), approximation_type = StartU
                  surface_integral = SurfaceIntegralWeakForm(flux_LMARS),
                  volume_integral = VolumeIntegralWeakForm(),
                  #volume_integral = VolumeIntegralFluxDifferencing(flux_chandrashekar);
-                 quad_rule_vol = StartUpDG.RefElemData(Quad(), 3)
+                 quad_rule_vol = StartUpDG.quad_nodes(Quad(), 6)
                  )
 
 coordinates_min = (     0.0,      0.0)
