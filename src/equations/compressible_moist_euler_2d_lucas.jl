@@ -118,7 +118,7 @@ end
     if v_normal <= 0.0
         sound_speed = sqrt(gamma * p_local / rho_local) # local sound speed
         p_star = p_local *
-                 (1.0 + 0.5f0 * (gamma - 1) * v_normal / sound_speed)^(2.0 * gamma *
+                 (1 + 0.5f0 * (gamma - 1) * v_normal / sound_speed)^(2 * gamma *
                                                                        inv(gamma - 1))
     else # v_normal > 0.0
         A = 2.0 / ((gamma + 1) * rho_local)
