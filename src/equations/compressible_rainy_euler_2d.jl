@@ -105,16 +105,34 @@ end
 # converts consverved to entropy variables
 @inline function cons2entropy(u, equations::CompressibleRainyEulerEquations2D)
     # constants
-    c_vd = equations.c_dry_air_const_volume
-    c_vv = equations.c_vapour_const_volume
-    c_l  = equations.c_liquid_water
-    R_d  = equations.R_dry_air
-    R_v  = equations.R_vapour
+    c_vd  = equations.c_dry_air_const_volume
+    c_vv  = equations.c_vapour_const_volume
+    c_l   = equations.c_liquid_water
+    R_d   = equations.R_dry_air
+    R_v   = equations.R_vapour
+    L_ref = equations.ref_latent_heat_vap_temp
 
-    # 
+    # densities
+    rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
 
+    # nonlinear system
+    rho_vapour, rho_cloud, temperature = cons2nonlinearsystemsol(u, equations)
+    ln_temperature  = log(temperature)
+    inv_temperature = inv(temperature)
 
-    return SVector(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+    # velocity
+    v1, v2 = velocities(u, rho_inv, equations)
+    v_squared_temp = 0.5 * (v1^2 + v2^2) * inv_temperature
+
+    omega_dry        = c_vd * ln_temperature - R_d * log(rho_dry)    + v_squared_temp - c_vd - R_d
+    omega_vapour     = c_vv * ln_temperature - R_v * log(rho_vapour) + v_squared_temp - c_vv - R_v - L_ref * inv_temperature
+    omega_liquid     = c_l  * ln_temperature                        + v_squared_temp - c_l
+    omega_momentum_1 = -v1 * inv_temperature
+    omega_momentum_2 = -v2 * inv_temperature
+    omega_energy     = inv_temperature
+
+    return SVector(omega_dry, omega_vapour + omega_liquid, omega_liquid,
+                   omega_momentum_1, omega_momentum_2, omega_energy, 0.0, 0.0, 0.0)
 end
 
 
@@ -161,8 +179,7 @@ end
                exp(L_v * r_v * inv(c_p * temperature)))
 
     #TODO
-    s_dry, s_vapour, s_cloud, s_rain, _, _, _, _, _ = cons2entropy(u, equations)
-    entropy = s_dry + s_vapour + s_cloud + s_rain
+    entropy = 0.0
 
     return SVector(rho_dry, rho_vapour, rho_cloud, rho_rain, v1, v2, eq_pot, p, entropy)
 end
@@ -212,7 +229,7 @@ end
 end
 
 
-# for convenience
+# for convenience TODO rename
 @inline function cons2speeds(u, equations::CompressibleRainyEulerEquations2D)
     # densities
     rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
@@ -852,6 +869,8 @@ end
     # velocities
     v1_ll, v2_ll = velocities(u_ll, rho_inv_ll, equations)
     v1_rr, v2_rr = velocities(u_rr, rho_inv_rr, equations)
+    vr_ll        = terminal_velocity_rain(rho_moist_ll, rho_rain_ll, equations)
+    vr_rr        = terminal_velocity_rain(rho_moist_rr, rho_rain_rr, equations)
     
     # mean values
     rho_dry_mean          = 0.0
@@ -893,10 +912,12 @@ end
     
     p_int  = inv(inv_temperature_avg) * (R_d * rho_dry_avg + R_v * rho_vapour_avg + R_q * (rho_cloud_avg + rho_rain_avg))
     K_avg  = 0.5 * (v1_square_avg + v2_square_avg)
+    vr_normal_avg = 0.5 * normal_direction[2] * (vr_ll + vr_rr)
+    rho_rain_avg        = 0.5 * (rho_rain_ll   + rho_rain_rr)
 
     # assemble the flux
     f_dry    = rho_dry_mean    *  v_dot_n_avg
-    f_rain   = rho_rain_mean   *  v_dot_n_avg
+    f_rain   = rho_rain_avg   * (v_dot_n_avg - vr_normal_avg)
     f_vapour = rho_vapour_mean *  v_dot_n_avg
     f_cloud  = rho_cloud_mean  *  v_dot_n_avg
     f_moist  = (rho_vapour_mean + rho_cloud_mean) * v_dot_n_avg
@@ -910,7 +931,7 @@ end
 end
 
 
-@inline function flux_ec_rain_log(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleRainyEulerEquations2D)
+@inline function flux_ec_rain(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleRainyEulerEquations2D)
     # constants
     c_l   = equations.c_liquid_water
     c_vd  = equations.c_dry_air_const_volume
@@ -994,29 +1015,30 @@ end
     temperature_jump     = temperature_rr     - temperature_ll
     inv_temperature_jump = inv_temperature_rr - inv_temperature_ll
     v_normal_jump        = (v1_rr - v1_ll) * normal_direction[1] + (v2_rr - v2_ll) * normal_direction[2]
-    v_jump               = sqrt(v1_rr^2 + v2_rr^2) - sqrt(v1_ll^2 + v2_ll^2)
+    v_jump               = v1_rr - v1_ll + v2_rr - v2_ll
 
     # help variables
     s_help      = inv(inv_temperature_log)
-    f_vapour    = rho_vapour_log * v_dot_n_avg
-    f_cloud     = rho_cloud_avg  * v_dot_n_avg
-
-    # flux
+    
+    # density flux
+    f_vapour = rho_vapour_log * v_dot_n_avg
+    f_cloud  = rho_cloud_avg  * v_dot_n_avg
     f_dry    = rho_dry_log  *  v_dot_n_avg
     f_rain   = rho_rain_avg * (v_dot_n_avg - vr_normal_avg)
     f_moist  = f_vapour + f_cloud
     f_rho    = f_dry    + f_moist + f_rain
 
-    # TODO check velocities and normal directions
+    # momentum flux
     f_rhov1  = f_rho * v1_avg + p_avg * normal_direction[1]
     f_rhov2  = f_rho * v2_avg + p_avg * normal_direction[2]
 
+    # energy flux
     if (temperature_jump != 0.0)
         v_temp_jump = v_jump / inv_temperature_jump
         f_energy = (c_vd * s_help - 0.5 * v_square_avg) * f_dry + (c_vv * s_help - 0.5 * v_square_avg + L_ref) * f_vapour + 
                    (c_l  * s_help - 0.5 * v_square_avg) * (f_cloud + f_rain) +
                    (v_temp_jump * inv_temperature_avg + v_dot_n_avg) * p_avg +
-                    v_square_avg * f_rho - (R_d * rho_dry_avg + R_v * rho_vapour_avg) * v_temp_jump
+                   (v1_avg^2 + v2_avg^2) * f_rho - (R_d * rho_dry_avg + R_v * rho_vapour_avg) * v_temp_jump
     else
         f_energy = 0.0
     end
