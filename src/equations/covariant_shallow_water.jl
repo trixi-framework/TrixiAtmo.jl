@@ -174,8 +174,7 @@ end
                                orientation::Integer,
                                equations::CovariantShallowWaterEquations2D)
     # Geometric variables
-    J_ll = area_element(aux_vars_ll, equations)
-    J_rr = area_element(aux_vars_rr, equations)
+    J_ll, J_rr = area_element(aux_vars_ll, equations), area_element(aux_vars_rr, equations)
 
     # Physical variables
     h_vcon_ll = momentum_contravariant(u_ll, equations)
@@ -183,14 +182,12 @@ end
     vcon_ll = velocity_contravariant(u_ll, equations)
     vcon_rr = velocity_contravariant(u_rr, equations)
 
-    # Scaled mass flux in conservative form
+    # Mass flux is simple average
     mass_flux = 0.5f0 * (J_ll * h_vcon_ll[orientation] + J_rr * h_vcon_rr[orientation])
 
-    # Half of scaled inertial flux in conservative form
-    momentum_flux = 0.25f0 * (J_ll * h_vcon_ll * vcon_ll[orientation] +
-                     J_rr * h_vcon_rr * vcon_rr[orientation])
-
-    return SVector(mass_flux, momentum_flux[1], momentum_flux[2])
+    # Momentum flux is average of mass flux times average of velocities
+    return SVector(mass_flux, 0.5f0 * (vcon_ll[1] + vcon_rr[1]) * mass_flux, 
+                              0.5f0 * (vcon_ll[2] + vcon_rr[2]) * mass_flux)
 end
 
 # Entropy-conservative flux with local Lax-Friedrichs dissipation
@@ -203,33 +200,22 @@ const flux_ec_llf = FluxPlusDissipation(flux_ec,
                                          orientation::Integer,
                                          equations::CovariantShallowWaterEquations2D)
     # Geometric variables
-    Gcov_ll = metric_covariant(aux_vars_ll, equations)
-    Gcov_rr = metric_covariant(aux_vars_rr, equations)
     Gcon_ll = metric_contravariant(aux_vars_ll, equations)
+    Gcov_rr = metric_covariant(aux_vars_rr, equations)
     J_ll = area_element(aux_vars_ll, equations)
-    J_rr = area_element(aux_vars_rr, equations)
 
     # Physical variables
+    h_ll = waterheight(u_ll, equations)
+    h_rr = waterheight(u_rr, equations)
     h_vcon_ll = momentum_contravariant(u_ll, equations)
-    h_vcon_rr = momentum_contravariant(u_rr, equations)
-    vcov_ll = Gcov_ll * velocity_contravariant(u_ll, equations)
-    vcov_rr = Gcov_rr * velocity_contravariant(u_rr, equations)
+    vcon_rr = velocity_contravariant(u_rr, equations)
 
-    # Half of inertial term in non-conservative form
-    nonconservative_term_inertial = 0.5f0 * Gcon_ll *
-                                    (J_ll * h_vcon_ll[orientation] * vcov_rr +
-                                     J_rr * h_vcon_rr[orientation] * vcov_ll)
+    # Nonconservative momentum term, consisting of curvature correction and pressure term
+    momentum_noncons = J_ll * (0.5f0 * h_vcon_ll[orientation] *  
+                              (Gcon_ll * Gcov_rr * vcon_rr - vcon_rr) + 
+                               Gcon_ll[:, orientation] * equations.gravity * h_ll * h_rr)
 
-    # Gravity term in non-conservative form
-    nonconservative_term_gravitational = equations.gravity * J_ll *
-                                         Gcon_ll[:, orientation] *
-                                         waterheight(u_ll, equations) *
-                                         waterheight(u_rr, equations)
-
-    nonconservative_term = nonconservative_term_inertial +
-                           nonconservative_term_gravitational
-
-    return SVector(zero(eltype(u_ll)), nonconservative_term[1], nonconservative_term[2])
+    return SVector(zero(eltype(u_ll)), momentum_noncons[1], momentum_noncons[2])
 end
 
 # Geometric and Coriolis sources for a rotating sphere with VolumeIntegralWeakForm
