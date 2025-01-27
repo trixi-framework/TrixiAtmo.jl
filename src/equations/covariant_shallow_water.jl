@@ -174,7 +174,8 @@ end
                                orientation::Integer,
                                equations::CovariantShallowWaterEquations2D)
     # Geometric variables
-    J_ll, J_rr = area_element(aux_vars_ll, equations), area_element(aux_vars_rr, equations)
+    J_ll, J_rr = area_element(aux_vars_ll, equations),
+                 area_element(aux_vars_rr, equations)
 
     # Physical variables
     h_vcon_ll = momentum_contravariant(u_ll, equations)
@@ -186,8 +187,8 @@ end
     mass_flux = 0.5f0 * (J_ll * h_vcon_ll[orientation] + J_rr * h_vcon_rr[orientation])
 
     # Momentum flux is average of mass flux times average of velocities
-    return SVector(mass_flux, 0.5f0 * (vcon_ll[1] + vcon_rr[1]) * mass_flux, 
-                              0.5f0 * (vcon_ll[2] + vcon_rr[2]) * mass_flux)
+    return SVector(mass_flux, 0.5f0 * (vcon_ll[1] + vcon_rr[1]) * mass_flux,
+                   0.5f0 * (vcon_ll[2] + vcon_rr[2]) * mass_flux)
 end
 
 # Entropy-conservative flux with local Lax-Friedrichs dissipation
@@ -211,9 +212,9 @@ const flux_ec_llf = FluxPlusDissipation(flux_ec,
     vcon_rr = velocity_contravariant(u_rr, equations)
 
     # Nonconservative momentum term, consisting of curvature correction and pressure term
-    momentum_noncons = J_ll * (0.5f0 * h_vcon_ll[orientation] *  
-                              (Gcon_ll * Gcov_rr * vcon_rr - vcon_rr) + 
-                               Gcon_ll[:, orientation] * equations.gravity * h_ll * h_rr)
+    momentum_noncons = J_ll * (0.5f0 * h_vcon_ll[orientation] *
+                        (Gcon_ll * Gcov_rr * vcon_rr - vcon_rr) +
+                        Gcon_ll[:, orientation] * equations.gravity * h_ll * h_rr)
 
     return SVector(zero(eltype(u_ll)), momentum_noncons[1], momentum_noncons[2])
 end
