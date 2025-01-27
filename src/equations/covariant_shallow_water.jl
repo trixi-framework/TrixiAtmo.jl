@@ -169,7 +169,8 @@ end
     return SVector(J * h_vcon[orientation], J * momentum_flux_1, J * momentum_flux_2)
 end
 
-# Symmetric part of entropy-conservative flux
+# Symmetric part of entropy-conservative flux. Note that this does not include the pressure 
+# term or the non-symmetric curvature correction term, which are in flux_nonconservative_ec.
 @inline function Trixi.flux_ec(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
                                orientation::Integer,
                                equations::CovariantShallowWaterEquations2D)
