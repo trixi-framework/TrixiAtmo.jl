@@ -38,9 +38,8 @@ J \frac{\partial}{\partial t}
 -\Gamma^2_{ac}\tau^{ac} - f J \big(G^{22}hv^1 - G^{21}hv^2\big)
  \end{array}\right],
 ```
-where $\Gamma_{ac}^b$ denote the 
-[Christoffel symbols of the second kind](https://en.wikipedia.org/wiki/Christoffel_symbols#Christoffel_symbols_of_the_second_kind_(symmetric_definition), 
-which can be expressed in terms of the covariant metric tensor components $G_{ab}$ as 
+where $\Gamma_{ac}^b$ denote the Christoffel symbols of the second kind, which can be
+expressed in terms of the covariant metric tensor components $G_{ab}$ as 
 ```math
 \Gamma_{ac}^b = 
 \frac{1}{2}G^{bd}\big(\partial_aG_{cd} + \partial_c G_{da} - \partial_d G_{ac}\big).
