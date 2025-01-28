@@ -191,9 +191,11 @@ function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 
                                                    equations.global_coordinate_system)
             aux_node_vars[1:6, i, j, element] = SVector(basis_covariant)
 
-            # Metric tensor 
+            # Covariant metric tensor G := basis_covariant' * basis_covariant
             metric_covariant = basis_covariant' * basis_covariant
-            metric_contravariant = inv(basis_covariant' * basis_covariant)
+
+            # Contravariant metric tensor inv(G)
+            metric_contravariant = inv(metric_covariant)
 
             # Contravariant basis vectors as rows of a matrix
             basis_contravariant = metric_contravariant * basis_covariant'
