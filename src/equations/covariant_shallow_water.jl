@@ -220,9 +220,9 @@ const flux_ec_llf = FluxPlusDissipation(flux_ec,
     return SVector(zero(eltype(u_ll)), momentum_noncons[1], momentum_noncons[2])
 end
 
-# Geometric and Coriolis sources for a rotating sphere with VolumeIntegralWeakForm
-@inline function source_terms_weak_form(u, x, t, aux_vars,
-                                        equations::CovariantShallowWaterEquations2D)
+# Standard geometric and Coriolis source terms for a rotating sphere
+@inline function source_terms_geometric_coriolis_weak_form(u, x, t, aux_vars,
+                                                           equations::CovariantShallowWaterEquations2D)
     # Geometric variables
     Gcon = metric_contravariant(aux_vars, equations)
     Gamma1, Gamma2 = christoffel_symbols(aux_vars, equations)
@@ -250,9 +250,9 @@ end
     return SVector(zero(eltype(u)), -source_1, -source_2)
 end
 
-# Geometric and Coriolis sources for a rotating sphere with VolumeIntegralFluxDifferencing
-@inline function source_terms_ec(u, x, t, aux_vars,
-                                 equations::CovariantShallowWaterEquations2D)
+# Entropy-conservative formulation of geometric and Coriolis sources for a rotating sphere
+@inline function source_terms_geometric_coriolis_ec(u, x, t, aux_vars,
+                                                    equations::CovariantShallowWaterEquations2D)
     # Geometric variables
     Gcov = metric_covariant(aux_vars, equations)
     Gcon = metric_contravariant(aux_vars, equations)

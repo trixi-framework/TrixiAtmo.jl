@@ -38,7 +38,7 @@ initial_condition_transformed = transform_initial_condition(initial_condition, e
 
 # A semidiscretization collects data structures and functions for the spatial discretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver,
-                                    source_terms = source_terms_ec)
+                                    source_terms = source_terms_geometric_coriolis_ec)
 
 ###############################################################################
 # ODE solvers, callbacks etc.
