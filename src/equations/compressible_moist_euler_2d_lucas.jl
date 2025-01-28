@@ -366,7 +366,7 @@ end
     # boundary top
     z_top = 16000.0
     # positive even power with default value 2
-    gamma = 2.0f0
+    gamma = 2
     # relaxation coefficient > 0
     alpha = 0.5f0
 
