@@ -945,8 +945,8 @@ end
     rho_dry_rr, rho_moist_rr, rho_rain_rr, rho_rr, rho_inv_rr = densities(u_rr, equations)
     rho_vapour_ll, rho_cloud_ll, temperature_ll               = cons2nonlinearsystemsol(u_ll, equations)
     rho_vapour_rr, rho_cloud_rr, temperature_rr               = cons2nonlinearsystemsol(u_rr, equations)
-    inv_temperature_ll                                               = 1/temperature_ll
-    inv_temperature_rr                                               = 1/temperature_rr
+    inv_temperature_ll                                        = inv(temperature_ll)
+    inv_temperature_rr                                        = inv(temperature_rr)
 
     # velocities
     v1_ll, v2_ll = velocities(u_ll, rho_inv_ll, equations)
@@ -1033,7 +1033,7 @@ end
     f_rhov2  = f_rho * v2_avg + p_avg * normal_direction[2]
 
     # energy flux
-    if (temperature_jump != 0.0)
+    if !(isapprox(temperature_jump, 0.0, atol=1e-13))
         v_temp_jump = v_jump / inv_temperature_jump
         f_energy = (c_vd * s_help - 0.5 * v_square_avg) * f_dry + (c_vv * s_help - 0.5 * v_square_avg + L_ref) * f_vapour + 
                    (c_l  * s_help - 0.5 * v_square_avg) * (f_cloud + f_rain) +
