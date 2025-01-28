@@ -143,7 +143,7 @@ end
     h = waterheight(u, equations)
     vcon = velocity_contravariant(u, equations)
     vcov = metric_covariant(aux_vars, equations) * vcon
-    return 0.5f0 * (dot(vcov, vcon) + equations.gravity * h^2)
+    return 0.5f0 * (h * dot(vcov, vcon) + equations.gravity * h^2)
 end
 
 # Flux as a function of the state vector u, as well as the auxiliary variables aux_vars, 
