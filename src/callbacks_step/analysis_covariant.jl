@@ -21,7 +21,7 @@ function Trixi.integrate(func::Func, u,
 end
 
 # For the covariant form, we want to integrate using the exact area element 
-# J = (det(AᵀA))^(1/2), which is stored in cache.auxiliary_variables, not the approximate 
+# J = √G = (det(AᵀA))^(1/2), which is stored in cache.auxiliary_variables, not the approximate 
 # area element used in the Cartesian formulation, which stored in cache.elements
 function Trixi.integrate_via_indices(func::Func, u,
                                      mesh::Union{StructuredMesh{2},
