@@ -29,10 +29,6 @@ function nonlinear_solve_dg_2d!(u, residual, jacobian, variables_index_vector, t
                 u[3, i, j, element] = 0.0
             end
 
-            if (u_node[3] > rain_threshold)
-                u[3, i, j, element] = rain_threshold * 0.1
-            end
-
             # newton method
             for iteration in range(1, max_iterations)
                 res_vector = residual(u_node, guess, equations)
