@@ -83,7 +83,7 @@ conversion from primitive to conservative variables. For standard Cartesian form
 this simply involves a conversion from  primitive to conservative variables. The intention 
 here is to have a set of test cases (for example, [`initial_condition_gaussian`](@ref)) for 
 which the initial condition is prescribed using a standardized set of primitive variables 
-in a global Cartesian coordinates, and transformed to the specific prognostic variables 
+in a global coordinate system, and transformed to the specific prognostic variables 
 required for a given model.
 !!! note 
     When using the covariant formulation, the initial velocity components should be defined 
