@@ -198,8 +198,8 @@ end
                                                          interface_index)
 
     # Compute flux in the primary element's coordinate system
-    u_rr_spherical = contravariant2global(u_rr, aux_vars_rr, equations)
-    u_rr_transformed_to_ll = global2contravariant(u_rr_spherical, aux_vars_ll,
+    u_rr_global = contravariant2global(u_rr, aux_vars_rr, equations)
+    u_rr_transformed_to_ll = global2contravariant(u_rr_global, aux_vars_ll,
                                                   equations)
     if isodd(primary_direction_index)
         flux_primary = -surface_flux(u_rr_transformed_to_ll, u_ll,
@@ -212,8 +212,8 @@ end
     end
 
     # Compute flux in the secondary element's coordinate system
-    u_ll_spherical = contravariant2global(u_ll, aux_vars_ll, equations)
-    u_ll_transformed_to_rr = global2contravariant(u_ll_spherical, aux_vars_rr,
+    u_ll_global = contravariant2global(u_ll, aux_vars_ll, equations)
+    u_ll_transformed_to_rr = global2contravariant(u_ll_global, aux_vars_rr,
                                                   equations)
     if isodd(secondary_direction_index)
         flux_secondary = -surface_flux(u_ll_transformed_to_rr, u_rr,
@@ -259,8 +259,8 @@ end
                                                          interface_index)
 
     # Compute flux in the primary element's coordinate system
-    u_rr_spherical = contravariant2global(u_rr, aux_vars_rr, equations)
-    u_rr_transformed_to_ll = global2contravariant(u_rr_spherical, aux_vars_ll,
+    u_rr_global = contravariant2global(u_rr, aux_vars_rr, equations)
+    u_rr_transformed_to_ll = global2contravariant(u_rr_global, aux_vars_ll,
                                                   equations)
     primary_orientation = (primary_direction_index + 1) >> 1
     if isodd(primary_direction_index)
@@ -278,8 +278,8 @@ end
     end
 
     # Compute flux in the secondary element's coordinate system
-    u_ll_spherical = contravariant2global(u_ll, aux_vars_ll, equations)
-    u_ll_transformed_to_rr = global2contravariant(u_ll_spherical, aux_vars_rr,
+    u_ll_global = contravariant2global(u_ll, aux_vars_ll, equations)
+    u_ll_transformed_to_rr = global2contravariant(u_ll_global, aux_vars_rr,
                                                   equations)
     secondary_orientation = (secondary_direction_index + 1) >> 1
     if isodd(secondary_direction_index)
