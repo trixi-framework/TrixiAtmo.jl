@@ -24,15 +24,15 @@ equations = CovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION,
                                              EARTH_ROTATION_RATE,
                                              global_coordinate_system = GlobalSphericalCoordinates())
 
-# The covariant shallow water equations are treated as a nonconservative system in order to 
-# handle flux-differencing formulations of the covariant derivative. With 
-# VolumeIntegralWeakForm, there are actually no nonconservative terms, but we must still
-# pass a no-op function "flux_nonconservative_weak_form" as the nonconservative surface flux
-surface_flux = (flux_lax_friedrichs, flux_nonconservative_weak_form)
+                
+# With nonconservative terms, our only choice is to use a flux-differencing formulation.
+# These options recover a standard weak formulation.
+volume_flux = (flux_central, flux_nonconservative_zeros)
+surface_flux = (flux_central, flux_nonconservative_zeros)
 
-# Create DG solver with polynomial degree = p
-solver = DGSEM(polydeg = polydeg, volume_integral = VolumeIntegralWeakForm(),
-               surface_flux = surface_flux)
+# Create DG solver with polynomial degree = polydeg
+solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
+               volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
 
 # Transform the initial condition to the proper set of conservative variables
 initial_condition_transformed = transform_initial_condition(initial_condition, equations)

@@ -279,15 +279,20 @@ end
     return -0.5f0 * area_element(aux_vars_ll, equations) * λ * (u_rr - u_ll)
 end
 
-# Define the two-point nonconservative flux for weak form to be a no-op
-@inline function flux_nonconservative_weak_form(u_ll::SVector{NVARS, RealT},
-                                                u_rr::SVector{NVARS, RealT},
-                                                aux_vars_ll, aux_vars_rr,
-                                                orientation_or_normal_direction,
-                                                equations::AbstractCovariantEquations{2,
-                                                                                      NDIMS_AMBIENT,
-                                                                                      GlobalCoordinateSystem,
-                                                                                      NVARS}) where {
+# Non-conservative two-point flux that returns a vector of zeros. This is used for systems 
+# that have nonconservative terms when expressed in some formulations, but not others. For 
+# example, to recover a standard weak formulation for CovariantShallowWaterEquations2D, one 
+# must use volume_flux = (flux_central, flux_nonconservative_zeros). Once the bottom 
+# topography source term for the covariant form is added, however, we will use that 
+# instead, and this function will most likely no longer be needed.
+@inline function flux_nonconservative_zeros(u_ll::SVector{NVARS, RealT},
+                                            u_rr::SVector{NVARS, RealT},
+                                            aux_vars_ll, aux_vars_rr,
+                                            orientation_or_normal_direction,
+                                            equations::AbstractCovariantEquations{2,
+                                                                                    NDIMS_AMBIENT,
+                                                                                    GlobalCoordinateSystem,
+                                                                                    NVARS}) where {
                                                                                                      NDIMS_AMBIENT,
                                                                                                      GlobalCoordinateSystem,
                                                                                                      NVARS,

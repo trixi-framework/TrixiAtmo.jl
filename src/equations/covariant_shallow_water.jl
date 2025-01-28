@@ -74,10 +74,6 @@ struct CovariantShallowWaterEquations2D{GlobalCoordinateSystem, RealT <: Real} <
     end
 end
 
-# Our implementation of flux-differencing formulation uses nonconservative terms, but the 
-# standard weak form does not. To handle both options, we have defined a dummy kernel for 
-# the nonconservative terms that does nothing when VolumeIntegralWeakForm is used with a 
-# nonconservative system.
 Trixi.have_nonconservative_terms(::CovariantShallowWaterEquations2D) = True()
 
 # The conservative variables are the height and contravariant momentum components
