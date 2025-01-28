@@ -279,28 +279,6 @@ end
     return -0.5f0 * area_element(aux_vars_ll, equations) * λ * (u_rr - u_ll)
 end
 
-# Non-conservative two-point flux that returns a vector of zeros. This is used for systems 
-# that have nonconservative terms when expressed in some formulations, but not others. For 
-# example, to recover a standard weak formulation for CovariantShallowWaterEquations2D, one 
-# must use volume_flux = (flux_central, flux_nonconservative_zeros). Once the bottom 
-# topography source term for the covariant form is added, however, we will use that 
-# instead, and this function will most likely no longer be needed.
-@inline function flux_nonconservative_zeros(u_ll::SVector{NVARS, RealT},
-                                            u_rr::SVector{NVARS, RealT},
-                                            aux_vars_ll, aux_vars_rr,
-                                            orientation_or_normal_direction,
-                                            equations::AbstractCovariantEquations{2,
-                                                                                    NDIMS_AMBIENT,
-                                                                                    GlobalCoordinateSystem,
-                                                                                    NVARS}) where {
-                                                                                                     NDIMS_AMBIENT,
-                                                                                                     GlobalCoordinateSystem,
-                                                                                                     NVARS,
-                                                                                                     RealT
-                                                                                                     }
-    return zeros(SVector{NVARS, RealT})
-end
-
 # Convert a vector from a global spherical to Cartesian basis representation. A tangent 
 # vector will have vrad = 0.
 @inline function spherical2cartesian(vlon, vlat, vrad, x)
@@ -339,8 +317,12 @@ end
 abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:
               AbstractEquations{NDIMS, NVARS} end
 
+abstract type AbstractCovariantShallowWaterEquations2D{GlobalCoordinateSystem} <:
+              AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 3} end
+
 include("covariant_advection.jl")
 include("covariant_shallow_water.jl")
+include("covariant_shallow_water_split.jl")
 include("compressible_moist_euler_2d_lucas.jl")
 include("shallow_water_3d.jl")
 include("reference_data.jl")

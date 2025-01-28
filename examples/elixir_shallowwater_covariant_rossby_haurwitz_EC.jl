@@ -21,9 +21,9 @@ mesh = P4estMeshCubedSphere2D(cells_per_dimension, EARTH_RADIUS, polydeg = polyd
                               initial_refinement_level = 0,
                               element_local_mapping = true)
 
-equations = CovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION,
-                                             EARTH_ROTATION_RATE,
-                                             global_coordinate_system = GlobalCartesianCoordinates())
+equations = SplitCovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION,
+                                                  EARTH_ROTATION_RATE,
+                                                  global_coordinate_system = GlobalCartesianCoordinates())
 
 # Use entropy-conservative two-point fluxes for volume and surface terms
 volume_flux = (flux_ec, flux_nonconservative_ec)
@@ -38,7 +38,7 @@ initial_condition_transformed = transform_initial_condition(initial_condition, e
 
 # A semidiscretization collects data structures and functions for the spatial discretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver,
-                                    source_terms = source_terms_geometric_coriolis_ec)
+                                    source_terms = source_terms_geometric_coriolis)
 
 ###############################################################################
 # ODE solvers, callbacks etc.

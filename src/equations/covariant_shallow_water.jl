@@ -17,13 +17,13 @@ on a two-dimensional surface in three-dimensional ambient space as
 ```
 where $h$ is the fluid height, $v^a$ and $G^{ab}$ are the contravariant velocity and metric 
 tensor components, $g$ is the gravitational constant, $f$ is the Coriolis parameter, and 
-$J$ is the area element. Combining the inertial and gravitational terms in order to define 
+$J$ is the area element. Combining the advective and pressure terms in order to define 
 the momentum flux components
 ```math
 \tau^{ab} = hv^a v^b + \frac{1}{2}G^{ab}gh^2,
 ```
 the covariant shallow water equations can be expressed as a system of conservation laws 
-with a source term:
+with a source term (implemented as `source_terms_geometric_coriolis`):
 ```math
 J \frac{\partial}{\partial t}
 \left[\begin{array}{c} h \\ hv^1 \\ hv^2 \end{array}\right] 
@@ -44,9 +44,6 @@ expressed in terms of the covariant metric tensor components $G_{ab}$ as
 \Gamma_{ac}^b = 
 \frac{1}{2}G^{bd}\big(\partial_aG_{cd} + \partial_c G_{da} - \partial_d G_{ac}\big).
 ```
-TrixiAtmo.jl implements standard weak-form DG methods for both the above system, as well as entropy-stable split forms based on a novel flux-differencing discretization of the 
-covariant derivative.
-
 ## References
 - M. Baldauf (2020). Discontinuous Galerkin solver for the shallow-water equations in
   covariant form on the sphere and the ellipsoid. Journal of Computational Physics 
@@ -56,13 +53,9 @@ covariant derivative.
   flux-form high-order discontinuous Galerkin shallow water model on the cubed-sphere. 
   Journal of Computational Physics 271:224-243. 
   [DOI: 10.1016/j.jcp.2013.11.033](https://doi.org/10.1016/j.jcp.2013.11.033)
-
-!!! warning "Experimental implementation"
-    The use of entropy-stable split-form/flux-differencing formulations for covariant 
-    equations is an experimental feature and may change in future releases.
 """
 struct CovariantShallowWaterEquations2D{GlobalCoordinateSystem, RealT <: Real} <:
-       AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 3}
+       AbstractCovariantShallowWaterEquations2D{GlobalCoordinateSystem}
     gravity::RealT  # acceleration due to gravity
     rotation_rate::RealT  # rotation rate for Coriolis term 
     global_coordinate_system::GlobalCoordinateSystem
@@ -74,15 +67,16 @@ struct CovariantShallowWaterEquations2D{GlobalCoordinateSystem, RealT <: Real} <
     end
 end
 
-Trixi.have_nonconservative_terms(::CovariantShallowWaterEquations2D) = True()
+# Until we implement bottom topography, there are no nonconservative terms
+Trixi.have_nonconservative_terms(::CovariantShallowWaterEquations2D) = False()
 
 # The conservative variables are the height and contravariant momentum components
-function Trixi.varnames(::typeof(cons2cons), ::CovariantShallowWaterEquations2D)
+function Trixi.varnames(::typeof(cons2cons), ::AbstractCovariantShallowWaterEquations2D)
     return ("h", "h_vcon1", "h_vcon2")
 end
 
 # The primitive variables are the height and contravariant velocity components
-function Trixi.varnames(::typeof(cons2prim), ::CovariantShallowWaterEquations2D)
+function Trixi.varnames(::typeof(cons2prim), ::AbstractCovariantShallowWaterEquations2D)
     return ("h", "vcon1", "vcon2")
 end
 
@@ -92,31 +86,35 @@ end
 # works for both primitive and conservative variables, although varnames refers 
 # specifically to transformations from conservative variables.
 function Trixi.varnames(::typeof(contravariant2global),
-                        ::CovariantShallowWaterEquations2D)
+                        ::AbstractCovariantShallowWaterEquations2D)
     return ("h", "h_vglo1", "h_vglo2", "h_vglo3")
 end
 
 # Convenience functions to extract physical variables from state vector
-@inline waterheight(u, ::CovariantShallowWaterEquations2D) = u[1]
-@inline velocity_contravariant(u, ::CovariantShallowWaterEquations2D) = SVector(u[2] /
-                                                                                u[1],
-                                                                                u[3] /
-                                                                                u[1])
-@inline momentum_contravariant(u, ::CovariantShallowWaterEquations2D) = SVector(u[2],
-                                                                                u[3])
+@inline waterheight(u, ::AbstractCovariantShallowWaterEquations2D) = u[1]
+@inline velocity_contravariant(u,
+::AbstractCovariantShallowWaterEquations2D) = SVector(u[2] /
+                                                      u[1],
+                                                      u[3] /
+                                                      u[1])
+@inline momentum_contravariant(u,
+::AbstractCovariantShallowWaterEquations2D) = SVector(u[2],
+                                                      u[3])
 
-@inline function Trixi.cons2prim(u, aux_vars, ::CovariantShallowWaterEquations2D)
+@inline function Trixi.cons2prim(u, aux_vars,
+                                 ::AbstractCovariantShallowWaterEquations2D)
     h, h_vcon1, h_vcon2 = u
     return SVector(h, h_vcon1 / h, h_vcon2 / h)
 end
 
-@inline function Trixi.prim2cons(u, aux_vars, ::CovariantShallowWaterEquations2D)
+@inline function Trixi.prim2cons(u, aux_vars,
+                                 ::AbstractCovariantShallowWaterEquations2D)
     h, vcon1, vcon2 = u
     return SVector(h, h * vcon1, h * vcon2)
 end
 
 @inline function Trixi.cons2entropy(u, aux_vars,
-                                    equations::CovariantShallowWaterEquations2D)
+                                    equations::AbstractCovariantShallowWaterEquations2D)
     h = waterheight(u, equations)
     vcon = velocity_contravariant(u, equations)
     vcov = metric_covariant(aux_vars, equations) * vcon
@@ -125,7 +123,7 @@ end
 
 # Convert contravariant momentum components to the global coordinate system
 @inline function contravariant2global(u, aux_vars,
-                                      equations::CovariantShallowWaterEquations2D)
+                                      equations::AbstractCovariantShallowWaterEquations2D)
     h_vglo1, h_vglo2, h_vglo3 = basis_covariant(aux_vars, equations) *
                                 momentum_contravariant(u, equations)
     return SVector(waterheight(u, equations), h_vglo1, h_vglo2, h_vglo3)
@@ -133,14 +131,15 @@ end
 
 # Convert momentum components in the global coordinate system to contravariant components
 @inline function global2contravariant(u, aux_vars,
-                                      equations::CovariantShallowWaterEquations2D)
+                                      equations::AbstractCovariantShallowWaterEquations2D)
     h_vcon1, h_vcon2 = basis_contravariant(aux_vars, equations) *
                        SVector(u[2], u[3], u[4])
     return SVector(u[1], h_vcon1, h_vcon2)
 end
 
 # Entropy function (total energy per unit volume)
-@inline function Trixi.entropy(u, aux_vars, equations::CovariantShallowWaterEquations2D)
+@inline function Trixi.entropy(u, aux_vars,
+                               equations::AbstractCovariantShallowWaterEquations2D)
     h = waterheight(u, equations)
     vcon = velocity_contravariant(u, equations)
     vcov = metric_covariant(aux_vars, equations) * vcon
@@ -170,60 +169,9 @@ end
     return SVector(J * h_vcon[orientation], J * momentum_flux_1, J * momentum_flux_2)
 end
 
-# Symmetric part of entropy-conservative flux. Note that this does not include the pressure 
-# term or the non-symmetric curvature correction term, which are in flux_nonconservative_ec.
-@inline function Trixi.flux_ec(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
-                               orientation::Integer,
-                               equations::CovariantShallowWaterEquations2D)
-    # Geometric variables
-    J_ll, J_rr = area_element(aux_vars_ll, equations),
-                 area_element(aux_vars_rr, equations)
-
-    # Physical variables
-    h_vcon_ll = momentum_contravariant(u_ll, equations)
-    h_vcon_rr = momentum_contravariant(u_rr, equations)
-    vcon_ll = velocity_contravariant(u_ll, equations)
-    vcon_rr = velocity_contravariant(u_rr, equations)
-
-    # Mass flux is simple average
-    mass_flux = 0.5f0 * (J_ll * h_vcon_ll[orientation] + J_rr * h_vcon_rr[orientation])
-
-    # Momentum flux is average of mass flux times average of velocities
-    return SVector(mass_flux, 0.5f0 * (vcon_ll[1] + vcon_rr[1]) * mass_flux,
-                   0.5f0 * (vcon_ll[2] + vcon_rr[2]) * mass_flux)
-end
-
-# Entropy-conservative flux with local Lax-Friedrichs dissipation
-const flux_ec_llf = FluxPlusDissipation(flux_ec,
-                                        DissipationLocalLaxFriedrichs(max_abs_speed_naive))
-
-# Non-symmetric part of entropy-conservative flux
-@inline function flux_nonconservative_ec(u_ll, u_rr, aux_vars_ll,
-                                         aux_vars_rr,
-                                         orientation::Integer,
-                                         equations::CovariantShallowWaterEquations2D)
-    # Geometric variables
-    Gcon_ll = metric_contravariant(aux_vars_ll, equations)
-    Gcov_rr = metric_covariant(aux_vars_rr, equations)
-    J_ll = area_element(aux_vars_ll, equations)
-
-    # Physical variables
-    h_ll = waterheight(u_ll, equations)
-    h_rr = waterheight(u_rr, equations)
-    h_vcon_ll = momentum_contravariant(u_ll, equations)
-    vcon_rr = velocity_contravariant(u_rr, equations)
-
-    # Nonconservative momentum term, consisting of curvature correction and pressure term
-    momentum_noncons = J_ll * (0.5f0 * h_vcon_ll[orientation] *
-                        (Gcon_ll * Gcov_rr * vcon_rr - vcon_rr) +
-                        Gcon_ll[:, orientation] * equations.gravity * h_ll * h_rr)
-
-    return SVector(zero(eltype(u_ll)), momentum_noncons[1], momentum_noncons[2])
-end
-
 # Standard geometric and Coriolis source terms for a rotating sphere
-@inline function source_terms_geometric_coriolis_weak_form(u, x, t, aux_vars,
-                                                           equations::CovariantShallowWaterEquations2D)
+@inline function source_terms_geometric_coriolis(u, x, t, aux_vars,
+                                                 equations::CovariantShallowWaterEquations2D)
     # Geometric variables
     Gcon = metric_contravariant(aux_vars, equations)
     Gamma1, Gamma2 = christoffel_symbols(aux_vars, equations)
@@ -251,49 +199,17 @@ end
     return SVector(zero(eltype(u)), -source_1, -source_2)
 end
 
-# Entropy-conservative formulation of geometric and Coriolis sources for a rotating sphere
-@inline function source_terms_geometric_coriolis_ec(u, x, t, aux_vars,
-                                                    equations::CovariantShallowWaterEquations2D)
-    # Geometric variables
-    Gcov = metric_covariant(aux_vars, equations)
-    Gcon = metric_contravariant(aux_vars, equations)
-    (Gamma1, Gamma2) = christoffel_symbols(aux_vars, equations)
-    J = area_element(aux_vars, equations)
-
-    # Physical variables
-    h_vcon = momentum_contravariant(u, equations)
-    v_con = velocity_contravariant(u, equations)
-
-    # Doubly-contravariant and mixed inertial flux tensors
-    h_vcon_vcon = h_vcon * v_con'
-    h_vcov_vcon = Gcov * h_vcon_vcon
-
-    # Coriolis parameter
-    f = 2 * equations.rotation_rate * x[3] / norm(x)  # 2Ωsinθ
-
-    # Geometric source term
-    s_geo = 0.5f0 * (SVector(sum(Gamma1 .* h_vcon_vcon), sum(Gamma2 .* h_vcon_vcon)) -
-             Gcon * (Gamma1 * h_vcov_vcon[1, :] + Gamma2 * h_vcov_vcon[2, :]))
-
-    # Combined source terms
-    source_1 = s_geo[1] + f * J * (Gcon[1, 2] * h_vcon[1] - Gcon[1, 1] * h_vcon[2])
-    source_2 = s_geo[2] + f * J * (Gcon[2, 2] * h_vcon[1] - Gcon[2, 1] * h_vcon[2])
-
-    # Do not scale by Jacobian since apply_jacobian! is called before this
-    return SVector(zero(eltype(u)), -source_1, -source_2)
-end
-
 # Maximum wave speed along the normal direction in reference space
 @inline function Trixi.max_abs_speed_naive(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
                                            orientation,
-                                           equations::CovariantShallowWaterEquations2D)
+                                           equations::AbstractCovariantShallowWaterEquations2D)
     # Geometric variables
     Gcon_ll = metric_contravariant(aux_vars_ll, equations)
     Gcon_rr = metric_contravariant(aux_vars_rr, equations)
 
     # Physical variables 
     h_ll = waterheight(u_ll, equations)
-    h_rr = waterheight(u_ll, equations)
+    h_rr = waterheight(u_rr, equations)
     h_vcon_ll = momentum_contravariant(u_ll, equations)
     h_vcon_rr = momentum_contravariant(u_rr, equations)
 
@@ -305,7 +221,7 @@ end
 
 # Maximum wave speeds with respect to the covariant basis
 @inline function Trixi.max_abs_speeds(u, aux_vars,
-                                      equations::CovariantShallowWaterEquations2D)
+                                      equations::AbstractCovariantShallowWaterEquations2D)
     vcon = velocity_contravariant(u, equations)
     h = waterheight(u, equations)
     Gcon = metric_contravariant(aux_vars, equations)
@@ -316,7 +232,7 @@ end
 # If the initial velocity field is defined in Cartesian coordinates and the chosen global 
 # coordinate system is spherical, perform the appropriate conversion
 @inline function cartesian2global(u, x,
-                                  ::CovariantShallowWaterEquations2D{GlobalSphericalCoordinates})
+                                  ::AbstractCovariantShallowWaterEquations2D{GlobalSphericalCoordinates})
     h_vlon, h_vlat, h_vrad = cartesian2spherical(u[2], u[3], u[4], x)
     return SVector(u[1], h_vlon, h_vlat, h_vrad)
 end
@@ -324,7 +240,7 @@ end
 # If the initial velocity field is defined in spherical coordinates and the chosen global 
 # coordinate system is Cartesian, perform the appropriate conversion
 @inline function spherical2global(u, x,
-                                  ::CovariantShallowWaterEquations2D{GlobalCartesianCoordinates})
+                                  ::AbstractCovariantShallowWaterEquations2D{GlobalCartesianCoordinates})
     h_vx, h_vy, h_vz = spherical2cartesian(u[2], u[3], u[4], x)
     return SVector(u[1], h_vx, h_vy, h_vz)
 end
@@ -332,7 +248,7 @@ end
 # If the initial velocity field is defined in spherical coordinates and the chosen global 
 # coordinate system is spherical, do not convert
 @inline function spherical2global(u, x,
-                                  ::CovariantShallowWaterEquations2D{GlobalSphericalCoordinates})
+                                  ::AbstractCovariantShallowWaterEquations2D{GlobalSphericalCoordinates})
     return u
 end
 end # @muladd

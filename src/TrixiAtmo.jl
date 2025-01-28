@@ -31,15 +31,15 @@ include("semidiscretization/semidiscretization_hyperbolic_2d_manifold_in_3d.jl")
 include("callbacks_step/callbacks_step.jl")
 
 export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
-       CovariantLinearAdvectionEquation2D, CovariantShallowWaterEquations2D
+       CovariantLinearAdvectionEquation2D, CovariantShallowWaterEquations2D,
+       SplitCovariantShallowWaterEquations2D
 
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
 export flux_chandrashekar, flux_LMARS
 
 export flux_nonconservative_zeros, flux_nonconservative_ec,
-       source_terms_geometric_coriolis_weak_form,
-       source_terms_geometric_coriolis_ec
+       source_terms_geometric_coriolis
 
 export velocity, waterheight, pressure, energy_total, energy_kinetic, energy_internal,
        lake_at_rest_error, source_terms_lagrange_multiplier,

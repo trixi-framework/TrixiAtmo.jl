@@ -113,16 +113,6 @@ end
     return nothing
 end
 
-# Since the standard weak form for CovariantShallowWaterEquations2D has no nonconservative 
-# terms, but the equation type has have_nonconservative_terms = True(), we must define
-# an appropriate kernel that just calls the standard weak form
-@inline function Trixi.weak_form_kernel!(du, u, element, mesh::P4estMesh{2},
-                                         nonconservative_terms::True,
-                                         equations::AbstractCovariantEquations{2},
-                                         dg::DGSEM, cache, alpha = true)
-    Trixi.weak_form_kernel!(du, u, element, mesh, False(), equations, dg, cache, alpha)
-end
-
 # Non-conservative flux differencing kernel which uses contravariant flux components, 
 # passing the geometric information contained in the auxiliary variables to the flux 
 # function

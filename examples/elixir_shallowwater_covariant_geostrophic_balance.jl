@@ -24,22 +24,16 @@ equations = CovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION,
                                              EARTH_ROTATION_RATE,
                                              global_coordinate_system = GlobalSphericalCoordinates())
 
-                
-# With nonconservative terms, our only choice is to use a flux-differencing formulation.
-# These options recover a standard weak formulation.
-volume_flux = (flux_central, flux_nonconservative_zeros)
-surface_flux = (flux_central, flux_nonconservative_zeros)
-
 # Create DG solver with polynomial degree = polydeg
-solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
-               volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
+solver = DGSEM(polydeg = polydeg, surface_flux = flux_lax_friedrichs,
+               volume_integral = VolumeIntegralWeakForm())
 
 # Transform the initial condition to the proper set of conservative variables
 initial_condition_transformed = transform_initial_condition(initial_condition, equations)
 
 # A semidiscretization collects data structures and functions for the spatial discretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver,
-                                    source_terms = source_terms_geometric_coriolis_weak_form)
+                                    source_terms = source_terms_geometric_coriolis)
 
 ###############################################################################
 # ODE solvers, callbacks etc.
