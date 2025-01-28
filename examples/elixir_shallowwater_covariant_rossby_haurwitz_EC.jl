@@ -29,7 +29,7 @@ equations = CovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION,
 volume_flux = (flux_ec, flux_nonconservative_ec)
 surface_flux = (flux_ec, flux_nonconservative_ec)
 
-# Create DG solver with polynomial degree = p
+# Create DG solver with polynomial degree = polydeg
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
 
