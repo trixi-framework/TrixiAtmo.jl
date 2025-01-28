@@ -193,7 +193,7 @@ end
             "metric_contravariant[2,2]",    # G²²
             "christoffel_symbols[1][1,1]",  # Γ¹₁₁
             "christoffel_symbols[1][1,2]",  # Γ¹₁₂ = Γ¹₂₁
-            "christoffel_symbols[2][2,2]",  # Γ¹₂₂
+            "christoffel_symbols[1][2,2]",  # Γ¹₂₂
             "christoffel_symbols[2][1,1]",  # Γ²₁₁
             "christoffel_symbols[2][1,2]",  # Γ²₁₂ = Γ²₂₁
             "christoffel_symbols[2][2,2]")  # Γ²₂₂
