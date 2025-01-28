@@ -290,7 +290,9 @@ end
     return SMatrix{3, 2}(A[1, 1], A[2, 1], 0.0f0, A[1, 2], A[2, 2], 0.0f0)
 end
 
-# Calculate Christoffel symbols approximately using the collocation derivative
+# Calculate Christoffel symbols approximately using the collocation derivative. Note that
+# they could alternatively be computed exactly without affecting the entropy stability 
+# properties of the scheme.
 function calc_christoffel_symbols!(aux_node_vars, mesh::P4estMesh{2, 3},
                                    equations::AbstractCovariantEquations{2, 3}, dg,
                                    element)
