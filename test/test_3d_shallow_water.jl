@@ -61,6 +61,36 @@ end
     end
 end
 
+@trixiatmo_testset "elixir_shallowwater_cubed_sphere_shell_ES_projection" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_shallowwater_cubed_sphere_shell_EC_projection.jl"),
+                        l2=[
+                            0.06942328774989055,
+                            0.06815337757250019,
+                            0.038564087277833003,
+                            0.07127736553644314,
+                            0.002166321001178188
+                        ],
+                        linf=[
+                            1.046573189544382,
+                            0.7379677511543662,
+                            0.1443340255302651,
+                            0.661648435853761,
+                            0.009155117525905546
+                        ],
+                        surface_flux=(FluxPlusDissipation(flux_wintermeyer_etal,
+                                                          DissipationLaxFriedrichsEntropyVariables()),
+                                      flux_nonconservative_wintermeyer_etal))
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    let
+        t = sol.t[end]
+        u_ode = sol.u[end]
+        du_ode = similar(u_ode)
+        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
+    end
+end
+
 @trixiatmo_testset "elixir_shallowwater_cubed_sphere_shell_standard" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_cubed_sphere_shell_standard.jl"),

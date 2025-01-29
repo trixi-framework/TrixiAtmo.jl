@@ -14,6 +14,9 @@ equations = ShallowWaterEquations3D(gravity_constant = 9.81)
 polydeg = 3
 volume_flux = (flux_wintermeyer_etal, flux_nonconservative_wintermeyer_etal)
 surface_flux = (flux_wintermeyer_etal, flux_nonconservative_wintermeyer_etal)
+# For provably entropy-stable surface fluxes, use
+# surface_flux = (FluxPlusDissipation(flux_wintermeyer_etal, DissipationLaxFriedrichsEntropyVariables()), 
+#                 flux_nonconservative_wintermeyer_etal)
 
 solver = DGSEM(polydeg = polydeg,
                surface_flux = surface_flux,

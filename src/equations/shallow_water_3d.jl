@@ -363,6 +363,33 @@ end
     return SVector(diss[1], diss[2], diss[3], diss[4], zero(eltype(u_ll)))
 end
 
+# Specialization of [`DissipationLaxFriedrichsEntropyVariables`](https://trixi-framework.github.io/Trixi.jl/stable/reference-trixi/#Trixi.DissipationLaxFriedrichsEntropyVariables) 
+# for the shallow water system. This is equivalent to `DissipationLocalLaxFriedrichs` if the bottom topography is continuous
+@inline function (dissipation::DissipationLaxFriedrichsEntropyVariables)(u_ll, u_rr,
+                                                                         orientation_or_normal_direction,
+                                                                         equations::ShallowWaterEquations3D)
+    h_ll, h_v1_ll, h_v2_ll, h_v3_ll, b_ll = u_ll
+    h_rr, h_v1_rr, h_v2_rr, h_v3_rr, b_rr = u_rr
+    v1_ll, v2_ll, v3_ll = velocity(u_ll, equations)
+    v1_rr, v2_rr, v3_rr = velocity(u_rr, equations)
+
+    # Compute the maximum wave speed
+    λ = dissipation.max_abs_speed(u_ll, u_rr, orientation_or_normal_direction,
+                                  equations)
+
+    # Get some averages
+    v1_avg = 0.5 * (v1_ll + v1_rr)
+    v2_avg = 0.5 * (v2_ll + v2_rr)
+    v3_avg = 0.5 * (v3_ll + v3_rr)
+
+    # Compute dissipation operator
+    diss1 = -0.5 * λ * ((h_rr + b_rr) - (h_ll + b_ll))
+    diss2 = -0.5 * λ * ((h_v1_rr - h_v1_ll) + v1_avg * (b_rr - b_ll))
+    diss3 = -0.5 * λ * ((h_v2_rr - h_v2_ll) + v2_avg * (b_rr - b_ll))
+    diss4 = -0.5 * λ * ((h_v3_rr - h_v3_ll) + v3_avg * (b_rr - b_ll))
+    return SVector(diss1, diss2, diss3, diss4, zero(eltype(u_ll)))
+end
+
 @inline function Trixi.max_abs_speeds(u, equations::ShallowWaterEquations3D)
     h = waterheight(u, equations)
     v1, v2, v3 = velocity(u, equations)
