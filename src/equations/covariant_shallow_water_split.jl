@@ -25,13 +25,14 @@ given by
 ```math
 \Upsilon^a = \frac{1}{2}hu^b\big(G^{ac}\partial_b u_c - \partial_b u^a \big), \quad 
 s^a = \frac{1}{2}\big(\Gamma_{bc}^a hu^bu^c - G^{ac}\Gamma_{bc}^d hu^b u_d \big) -
-f JG^{ab}\varepsilon_{bc} hu^c.
+f JG^{ab}\varepsilon_{bc} hu^c,
 ```
-To obtain an entropy-conservative scheme with respect to the total energy 
+and we note that the covariant velocity components are given by $u_a = G_{ab} u^b$. To 
+obtain an entropy-conservative scheme with respect to the total energy 
 ```math
 S = \frac{1}{2}h(u_1 u^1 + u_2u^2)  + \frac{1}{2}gh^2,
 ```
-this equation type should be used with `volume_flux = (flux_ec, flux_nonconservative_ec)`. 
+this equation type should be used with `volume_flux = (flux_ec, flux_nonconservative_ec)`.
 !!! warning "Experimental implementation"
     The use of entropy-stable split-form/flux-differencing formulations for covariant 
     equations is an experimental feature and may change in future releases.

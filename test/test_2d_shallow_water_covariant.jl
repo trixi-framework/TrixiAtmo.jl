@@ -11,14 +11,14 @@ EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_covariant_geostrophic_balance.jl"),
                         l2=[
-                            0.3069983437497173,
-                            0.00029892902311647127,
-                            9.277173102047606e-5
+                            0.30653144639858293,
+                            0.00019984467582353295,
+                            8.767819502806826e-5
                         ],
                         linf=[
-                            1.5085621086946048,
-                            0.0014732012110710846,
-                            0.0007477909455087181
+                            1.4786544678290738,
+                            0.001375460003351342,
+                            0.0007564014737142868
                         ],
                         tspan=(0.0, 1.0 * SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
