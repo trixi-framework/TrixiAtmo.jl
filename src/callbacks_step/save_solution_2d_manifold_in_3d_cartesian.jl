@@ -3,7 +3,8 @@
 
 # Convert to another set of variables using a solution_variables function
 function convert_variables(u, solution_variables, mesh::P4estMesh{2},
-                           equations::AbstractEquations{3}, dg, cache)
+                           equations::AbstractEquations{3},
+                           dg, cache)
     (; contravariant_vectors) = cache.elements
     # Extract the number of solution variables to be output 
     # (may be different than the number of conservative variables) 
@@ -129,7 +130,7 @@ end
 
     u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
 
-    # Return th solution variables
+    # Return the solution variables
     return SVector(cons2prim(u_node, equations)..., relative_vorticity)
 end
 
@@ -177,7 +178,9 @@ end
 end
 
 # Variable names for cons2prim_and_vorticity
-Trixi.varnames(::typeof(cons2prim_and_vorticity), equations::ShallowWaterEquations3D) = (varnames(cons2prim,
-                                                                                                  equations)...,
-                                                                                         "vorticity")
+function Trixi.varnames(::typeof(cons2prim_and_vorticity),
+                        equations::Union{ShallowWaterEquations3D,
+                                         AbstractCovariantEquations{2}})
+    return (varnames(cons2prim, equations)..., "vorticity")
 end
+end # @muladd
