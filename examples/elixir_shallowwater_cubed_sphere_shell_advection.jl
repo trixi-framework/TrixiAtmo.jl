@@ -51,9 +51,7 @@ mesh = P4estMeshCubedSphere2D(cells_per_dimension[1], EARTH_RADIUS, polydeg = 3,
                               #initial_refinement_level = 0, # Comment to use cells_per_dimension in the convergence test
                               element_local_mapping = false)
 
-# Convert initial condition given in terms of zonal and meridional velocity components to 
-# one given in terms of Cartesian momentum components
-initial_condition_transformed = transform_to_cartesian(initial_condition, equations)
+initial_condition_transformed = transform_initial_condition(initial_condition, equations)
 
 # A semidiscretization collects data structures and functions for the spatial discretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver,

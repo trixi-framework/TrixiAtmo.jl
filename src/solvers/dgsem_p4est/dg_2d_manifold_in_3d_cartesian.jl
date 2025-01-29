@@ -46,8 +46,7 @@ function Trixi.rhs!(du, u, t,
 
     # Prolong solution to mortars
     Trixi.@trixi_timeit Trixi.timer() "prolong2mortars" begin
-        Trixi.prolong2mortars!(cache, u, mesh, equations,
-                               dg.mortar, dg.surface_integral, dg)
+        Trixi.prolong2mortars!(cache, u, mesh, equations, dg.mortar, dg)
     end
 
     # Calculate mortar fluxes

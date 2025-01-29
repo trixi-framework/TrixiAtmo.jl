@@ -42,7 +42,9 @@ end
 
 function Trixi.save_solution_file(u, time, dt, timestep,
                                   mesh::P4estMesh{2},
-                                  equations::AbstractEquations{3}, dg::DG, cache,
+                                  equations::Union{AbstractEquations{3},
+                                                   AbstractCovariantEquations{2}},
+                                  dg::DG, cache,
                                   solution_callback,
                                   element_variables = Dict{Symbol, Any}(),
                                   node_variables = Dict{Symbol, Any}();

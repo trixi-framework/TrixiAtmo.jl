@@ -462,47 +462,4 @@ end
 @inline function energy_internal(cons, equations::ShallowWaterEquations3D)
     return energy_total(cons, equations) - energy_kinetic(cons, equations)
 end
-
-# Transform zonal and meridional velocity/momentum components to Cartesian components
-function spherical2cartesian(vlon, vlat, x)
-    # Co-latitude
-    colat = acos(x[3] / sqrt(x[1]^2 + x[2]^2 + x[3]^2))
-
-    # Longitude
-    if sign(x[2]) == 0.0
-        signy = 1.0
-    else
-        signy = sign(x[2])
-    end
-    r_xy = sqrt(x[1]^2 + x[2]^2)
-    if r_xy == 0.0
-        lon = pi / 2
-    else
-        lon = signy * acos(x[1] / r_xy)
-    end
-
-    v1 = -cos(colat) * cos(lon) * vlat - sin(lon) * vlon
-    v2 = -cos(colat) * sin(lon) * vlat + cos(lon) * vlon
-    v3 = sin(colat) * vlat
-
-    return SVector(v1, v2, v3)
-end
-
-@doc raw"""
-    transform_to_cartesian(initial_condition, equations)
-
-Takes in a function with the signature `initial_condition(x, t)` which returns an initial 
-condition given in terms of zonal and meridional velocity or momentum components, and 
-returns another function with the signature 
-`initial_condition_transformed(x, t, equations)` which returns the same initial condition 
-with the velocity or momentum vector given in terms of Cartesian components.
-"""
-function transform_to_cartesian(initial_condition, ::ShallowWaterEquations3D)
-    function initial_condition_transformed(x, t, equations)
-        h, vlon, vlat, b = initial_condition(x, t)
-        v1, v2, v3 = spherical2cartesian(vlon, vlat, x)
-        return Trixi.prim2cons(SVector(h, v1, v2, v3, b), equations)
-    end
-    return initial_condition_transformed
-end
 end # @muladd

@@ -43,7 +43,6 @@ The mesh will have no boundaries.
     form, and we require `initial_refinement_level = 0` for such cases. Furthermore, the 
     calculation of the metric terms for the covariant form currently requires `polydeg` to 
     be equal to the polynomial degree of the solver, and `element_local_mapping = true`.
-!!!
 """
 function P4estMeshCubedSphere2D(trees_per_face_dimension, radius;
                                 polydeg, RealT = Float64,
