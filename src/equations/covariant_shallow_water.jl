@@ -16,14 +16,16 @@ on a two-dimensional surface in three-dimensional ambient space as
 \end{aligned}
 ```
 where $h$ is the fluid height, $v^a$ and $G^{ab}$ are the contravariant velocity and metric 
-tensor components, $g$ is the gravitational constant, $f$ is the Coriolis parameter, and 
-$J$ is the area element. Combining the advective and pressure terms in order to define 
+tensor components, $g$ is the gravitational constant, $f$ is the Coriolis parameter, 
+$J$ is the area element, and $\partial_a$ is used as a shorthand for 
+$\partial / \partial \xi^a$. Combining the advective and pressure terms in order to define 
 the momentum flux components
 ```math
 \tau^{ab} = hv^a v^b + \frac{1}{2}G^{ab}gh^2,
 ```
 the covariant shallow water equations can be expressed as a system of conservation laws 
-with a source term (implemented as `source_terms_geometric_coriolis`):
+with a source term (implemented in the exported function 
+`source_terms_geometric_coriolis`), as given by
 ```math
 J \frac{\partial}{\partial t}
 \left[\begin{array}{c} h \\ hv^1 \\ hv^2 \end{array}\right] 
@@ -36,10 +38,9 @@ J \frac{\partial}{\partial t}
 = J \left[\begin{array}{c} 0 \\ 
 -\Gamma^1_{ac}\tau^{ac} - f J \big(G^{12}hv^1 - G^{11}hv^2\big) \\ 
 -\Gamma^2_{ac}\tau^{ac} - f J \big(G^{22}hv^1 - G^{21}hv^2\big)
- \end{array}\right],
+ \end{array}\right].
 ```
-where $\Gamma_{ac}^b$ denote the Christoffel symbols of the second kind, which can be
-expressed in terms of the covariant metric tensor components $G_{ab}$ as 
+Note that the geometric contribution to the source term involves the Christoffel symbols of the second kind, which can been expressed in terms of the covariant metric tensor components $G_{ab}$ as 
 ```math
 \Gamma_{ac}^b = 
 \frac{1}{2}G^{bd}\big(\partial_aG_{cd} + \partial_c G_{da} - \partial_d G_{ac}\big).

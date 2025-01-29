@@ -5,7 +5,8 @@
     SplitCovariantShallowWaterEquations2D{GlobalCoordinateSystem} <:  
         AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 3}
 
-Alternative flux formulation of [`CovariantShallowWaterEquations2D`](@ref) given by 
+Alternative flux formulation of [`CovariantShallowWaterEquations2D`](@ref) given on the 
+reference element by 
 ```math
 J \frac{\partial}{\partial t}
 \left[\begin{array}{c} h \\ hv^1 \\ hv^2 \end{array}\right] 
@@ -16,19 +17,25 @@ J \frac{\partial}{\partial t}
 \frac{\partial}{\partial \xi^2} 
 \left[\begin{array}{c} J h v^2 \\ J h v^1 v^2 \\ J h v^2 v^2 \end{array}\right] 
 +
-\left[\begin{array}{c} 0 \\ \Upsilon^1 \\ \Upsilon^2 \end{array}\right] 
+J \left[\begin{array}{c} 0 \\ \Upsilon^1 \\ \Upsilon^2 \end{array}\right] 
 = 
-J\left[\begin{array}{c}0 \\ s^1 \\ s^2 \end{array}\right],
+J\left[\begin{array}{c}0 \\ s^1 \\ s^2 \end{array}\right].
 ```
-where the non-conservative terms and source terms (`source_terms_geometric_coriolis`) are 
-given by 
+In the above, the non-conservative differential terms in the momentum equations are given by
 ```math
-\Upsilon^a = \frac{1}{2}hu^b\big(G^{ac}\partial_b u_c - \partial_b u^a \big), \quad 
-s^a = \frac{1}{2}\big(\Gamma_{bc}^a hu^bu^c - G^{ac}\Gamma_{bc}^d hu^b u_d \big) -
-f JG^{ab}\varepsilon_{bc} hu^c,
+\Upsilon^a = \frac{1}{2}hu^b\big(G^{ac}\partial_b u_c - \partial_b u^a\big) 
++ ghG^{ab}\partial_b h,
 ```
-and we note that the covariant velocity components are given by $u_a = G_{ab} u^b$. To 
-obtain an entropy-conservative scheme with respect to the total energy 
+and the algebraic momentum source terms implemented in `source_terms_geometric_coriolis` 
+are given by
+```math
+s^a = \frac{1}{2}\big(\Gamma_{bc}^a hu^bu^c - G^{ac}\Gamma_{bc}^d hu^b u_d \big) 
+- f JG^{ab}\varepsilon_{bc} hu^c,
+```
+where we use the same notation as in [`CovariantShallowWaterEquations2D`](@ref) (including 
+summation over repeated indices) and note that the covariant velocity components are given 
+by $u_a = G_{ab} u^b$. To obtain an entropy-conservative scheme with respect to the total 
+energy
 ```math
 S = \frac{1}{2}h(u_1 u^1 + u_2u^2)  + \frac{1}{2}gh^2,
 ```
@@ -50,7 +57,8 @@ struct SplitCovariantShallowWaterEquations2D{GlobalCoordinateSystem, RealT <: Re
     end
 end
 
-# This alternative flux formulation has non-conservative terms even in the absence of variable bottom topography
+# This alternative flux formulation has non-conservative terms even in the absence of 
+# variable bottom topography
 Trixi.have_nonconservative_terms(::SplitCovariantShallowWaterEquations2D) = True()
 
 # Flux as a function of the state vector u, as well as the auxiliary variables aux_vars, 
