@@ -36,7 +36,7 @@ export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
 
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
-export flux_chandrashekar, flux_LMARS
+export flux_chandrashekar, FluxLMARS
 
 export flux_nonconservative_zeros, flux_nonconservative_ec,
        source_terms_geometric_coriolis
