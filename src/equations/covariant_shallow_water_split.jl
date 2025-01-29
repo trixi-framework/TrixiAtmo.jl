@@ -50,11 +50,12 @@ struct SplitCovariantShallowWaterEquations2D{GlobalCoordinateSystem, RealT <: Re
     end
 end
 
-# Until we implement bottom topography, there are no nonconservative terms
+# This alternative flux formulation has non-conservative terms even in the absence of variable bottom topography
 Trixi.have_nonconservative_terms(::SplitCovariantShallowWaterEquations2D) = True()
 
 # Flux as a function of the state vector u, as well as the auxiliary variables aux_vars, 
-# which contain the geometric information required for the covariant form
+# which contain the geometric information required for the covariant form.
+# Note that this flux does not include the pressure term.
 @inline function Trixi.flux(u, aux_vars, orientation::Integer,
                             equations::SplitCovariantShallowWaterEquations2D)
     # Geometric variables
