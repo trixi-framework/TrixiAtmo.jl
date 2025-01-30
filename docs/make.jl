@@ -19,8 +19,7 @@ DocMeta.setdocmeta!(TrixiAtmo, :DocTestSetup, :(using TrixiAtmo);
 makedocs(;
          modules = [TrixiAtmo],
          authors = "Benedict Geihe <bgeihe@uni-koeln.de>, Tristan Montoya <montoya.tristan@gmail.com, Hendrik Ranocha <hendrik.ranocha@uni-mainz.de>, Michael Schlottke-Lakemper <michael@sloede.com>",
-         repo = Remotes.GitHub("trixi-framework",
-                               "TrixiAtmo.jl/blob/{commit}{path}#{line}"),
+         repo = Remotes.GitHub("trixi-framework", "TrixiAtmo.jl"),
          sitename = "TrixiAtmo.jl",
          format = Documenter.HTML(;
                                   prettyurls = get(ENV, "CI", "false") == "true",
