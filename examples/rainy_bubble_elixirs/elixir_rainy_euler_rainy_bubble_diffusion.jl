@@ -6,7 +6,8 @@ using TrixiAtmo: source_terms_rainy, saturation_residual,
                  cons2eq_pot_temp, saturation_vapour_pressure,
                  flux_chandrashekar, flux_LMARS,
                  source_terms_no_phase_change,
-                 boundary_condition_laplace
+                 boundary_condition_laplace,
+                 flux_ec_rain
 using NLsolve: nlsolve
 #using Plots
 
@@ -220,7 +221,7 @@ end
 ###############################################################################
 # semidiscretization of the compressible rainy Euler equations
 
-diffusivity = 1.5
+diffusivity = 0.5
 equations_parabolic = LaplaceDiffusion2D(diffusivity, equations)
 
 
@@ -236,13 +237,13 @@ boundary_conditions_parabolic = (
                        y_pos = boundary_condition_laplace)
 
 
-polydeg = 2
+polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
 
 surface_flux = flux_lax_friedrichs
-#volume_integral = VolumeIntegralFluxDifferencing(flux_chandrashekar)
+volume_integral = VolumeIntegralFluxDifferencing(flux_ec_rain)
 
-solver = DGSEM(basis, surface_flux)#, volume_integral)
+solver = DGSEM(basis, surface_flux, volume_integral)
 
 initial_condition = initial_condition_bubble_rainy
 source_terms      = source_terms_rainy

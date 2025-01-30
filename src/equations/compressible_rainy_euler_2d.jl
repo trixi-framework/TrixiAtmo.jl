@@ -1046,4 +1046,12 @@ end
     return SVector(f_dry, f_moist, f_rain, f_rhov1, f_rhov2, f_energy, 0.0, 0.0, 0.0)
 end
 
+@inline function flux_ec_rain(u_ll, u_rr, orientation::Int, equations::CompressibleRainyEulerEquations2D)
+    if (orientation == 1)
+        return flux_ec_rain(u_ll, u_rr, SVector(1, 0), equations)
+    else
+        return flux_ec_rain(u_ll, u_rr, SVector(0, 1), equations)
+    end
+end
+
 end  # muladd end
