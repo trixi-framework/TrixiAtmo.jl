@@ -24,21 +24,20 @@ are spatially varying but assumed to be constant in time, so we do not apply any
 dissipation to such variables. The resulting system is then given on the reference element 
 as 
 ```math
-\sqrt{G} \frac{\partial}{\partial t}
+J \frac{\partial}{\partial t}
 \left[\begin{array}{c} h \\ v^1 \\ v^2 \end{array}\right] 
 +
 \frac{\partial}{\partial \xi^1} 
-\left[\begin{array}{c} \sqrt{G} h v^1 \\ 0 \\ 0 \end{array}\right]
+\left[\begin{array}{c} J h v^1 \\ 0 \\ 0 \end{array}\right]
 + 
 \frac{\partial}{\partial \xi^2} 
-\left[\begin{array}{c} \sqrt{G} h v^2 \\ 0 \\ 0 \end{array}\right] 
+\left[\begin{array}{c} J h v^2 \\ 0 \\ 0 \end{array}\right] 
 = 
 \left[\begin{array}{c} 0 \\ 0 \\ 0 \end{array}\right],
 ```
-where $G$ is the determinant of the covariant metric tensor expressed as a 2 by 2 matrix 
-with entries $G_{ij} =  \vec{a}_i \cdot \vec{a}_j$. Note that the variable advection 
-velocity components could alternatively be stored as auxiliary variables, similarly to the 
-geometric information.
+where $J = \lVert\vec{a}^1 \times \vec{a}^2 \rVert$ is the area element. Note that the 
+variable advection velocity components could alternatively be stored as auxiliary 
+variables, similarly to the geometric information.
 """
 struct CovariantLinearAdvectionEquation2D{GlobalCoordinateSystem} <:
        AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 3}
@@ -56,19 +55,19 @@ function Trixi.varnames(::typeof(cons2cons), ::CovariantLinearAdvectionEquation2
 end
 
 # Convenience function to extract the velocity
-function velocity(u, ::CovariantLinearAdvectionEquation2D)
+function velocity_contravariant(u, ::CovariantLinearAdvectionEquation2D)
     return SVector(u[2], u[3])
 end
 
-# Convert contravariant velocity/momentum components to the global coordinate system
+# Convert contravariant velocity components to the global coordinate system
 @inline function contravariant2global(u, aux_vars,
                                       equations::CovariantLinearAdvectionEquation2D)
-    vglo1, vglo2, vglo3 = basis_covariant(aux_vars, equations) * velocity(u, equations)
+    vglo1, vglo2, vglo3 = basis_covariant(aux_vars, equations) *
+                          velocity_contravariant(u, equations)
     return SVector(u[1], vglo1, vglo2, vglo3)
 end
 
-# Convert velocity/momentum components in the global coordinate system to contravariant 
-# components
+# Convert velocity components in the global coordinate system to contravariant components
 @inline function global2contravariant(u, aux_vars,
                                       equations::CovariantLinearAdvectionEquation2D)
     vcon1, vcon2 = basis_contravariant(aux_vars, equations) * SVector(u[2], u[3], u[4])
@@ -89,15 +88,14 @@ end
     return SVector(u[1], z, z)
 end
 
-# Flux for abstract covariant equations as a function of the 
-# state vector u, as well as the auxiliary variables aux_vars, which contain the geometric 
-# information required for the covariant form
+# Flux as a function of the state vector u, as well as the auxiliary variables aux_vars, 
+# which contain the geometric information required for the covariant form
 @inline function Trixi.flux(u, aux_vars, orientation::Integer,
                             equations::CovariantLinearAdvectionEquation2D)
     z = zero(eltype(u))
-    sqrtG = area_element(aux_vars, equations)
-    vcon = velocity(u, equations)
-    return SVector(sqrtG * u[1] * vcon[orientation], z, z)
+    J = area_element(aux_vars, equations)
+    vcon = velocity_contravariant(u, equations)
+    return SVector(J * u[1] * vcon[orientation], z, z)
 end
 
 # Local Lax-Friedrichs dissipation which is not applied to the contravariant velocity 
@@ -107,24 +105,47 @@ end
                                                               orientation_or_normal_direction,
                                                               equations::CovariantLinearAdvectionEquation2D)
     z = zero(eltype(u_ll))
-    sqrtG = area_element(aux_vars_ll, equations)
+    J = area_element(aux_vars_ll, equations)
     λ = dissipation.max_abs_speed(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
                                   orientation_or_normal_direction, equations)
-    return -0.5f0 * sqrtG * λ * SVector(u_rr[1] - u_ll[1], z, z)
+    return -0.5f0 * J * λ * SVector(u_rr[1] - u_ll[1], z, z)
 end
 
 # Maximum contravariant wave speed with respect to specific basis vector
 @inline function Trixi.max_abs_speed_naive(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
                                            orientation::Integer,
                                            equations::CovariantLinearAdvectionEquation2D)
-    vcon_ll = velocity(u_ll, equations)  # Contravariant components on left side
-    vcon_rr = velocity(u_rr, equations)  # Contravariant components on right side
+    vcon_ll = velocity_contravariant(u_ll, equations)  # Contravariant components on left side
+    vcon_rr = velocity_contravariant(u_rr, equations)  # Contravariant components on right side
     return max(abs(vcon_ll[orientation]), abs(vcon_rr[orientation]))
 end
 
 # Maximum wave speeds in each direction for CFL calculation
 @inline function Trixi.max_abs_speeds(u, aux_vars,
                                       equations::CovariantLinearAdvectionEquation2D)
-    return abs.(velocity(u, equations))
+    return abs.(velocity_contravariant(u, equations))
+end
+
+# If the initial velocity field is defined in Cartesian coordinates and the chosen global 
+# coordinate system is spherical, perform the appropriate conversion
+@inline function cartesian2global(u, x,
+                                  ::CovariantLinearAdvectionEquation2D{GlobalSphericalCoordinates})
+    vlon, vlat, vrad = cartesian2spherical(u[2], u[3], u[4], x)
+    return SVector(u[1], vlon, vlat, vrad)
+end
+
+# If the initial velocity field is defined in spherical coordinates and the chosen global 
+# coordinate system is Cartesian, perform the appropriate conversion
+@inline function spherical2global(u, x,
+                                  ::CovariantLinearAdvectionEquation2D{GlobalCartesianCoordinates})
+    vx, vy, vz = spherical2cartesian(u[2], u[3], u[4], x)
+    return SVector(u[1], vx, vy, vz)
+end
+
+# If the initial velocity field is defined in spherical coordinates and the chosen global 
+# coordinate system is spherical, do not convert
+@inline function spherical2global(u, x,
+                                  ::CovariantLinearAdvectionEquation2D{GlobalSphericalCoordinates})
+    return u
 end
 end # @muladd

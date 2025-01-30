@@ -5,7 +5,7 @@ using Trixi
 using Trixi: ln_mean, inv_ln_mean
 import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
               cons2prim, cons2entropy, max_abs_speed_naive, max_abs_speeds,
-              entropy, energy_total, flux
+              entropy, energy_total, flux, FluxLMARS
 
 @muladd begin
 #! format: noindent
@@ -23,7 +23,6 @@ struct CompressibleMoistEulerEquations2D{RealT <: Real} <:
     kappa::RealT # ratio of the gas constant R_d
     gamma::RealT # = inv(kappa- 1); can be used to write slow divisions as fast multiplications
     L_00::RealT # latent heat of evaporation  at 0 K
-    a::RealT
 end
 
 function CompressibleMoistEulerEquations2D(; g = 9.81, RealT = Float64)
@@ -37,10 +36,9 @@ function CompressibleMoistEulerEquations2D(; g = 9.81, RealT = Float64)
     c_pl = 4186.0
     gamma = c_pd / c_vd # = 1/(1 - kappa)
     kappa = 1 - inv(gamma)
-    L_00 = 3147620.0
-    a = 360.0
+    L_00 = 3147620
     return CompressibleMoistEulerEquations2D{RealT}(p_0, c_pd, c_vd, R_d, c_pv, c_vv,
-                                                    R_v, c_pl, g, kappa, gamma, L_00, a)
+                                                    R_v, c_pl, g, kappa, gamma, L_00)
 end
 
 # Calculate 1D flux for a single point.
@@ -117,17 +115,17 @@ end
     # Eleuterio F. Toro (2009)
     # Riemann Solvers and Numerical Methods for Fluid Dynamics: A Practical Introduction
     # [DOI: 10.1007/b79761](https://doi.org/10.1007/b79761)
-    if v_normal <= 0.0
+    if v_normal <= 0
         sound_speed = sqrt(gamma * p_local / rho_local) # local sound speed
         p_star = p_local *
-                 (1.0 + 0.5 * (gamma - 1) * v_normal / sound_speed)^(2.0 * gamma *
+                 (1 + 0.5f0 * (gamma - 1) * v_normal / sound_speed)^(2 * gamma *
                                                                      inv(gamma - 1))
     else # v_normal > 0.0
-        A = 2.0 / ((gamma + 1) * rho_local)
+        A = 2 / ((gamma + 1) * rho_local)
         B = p_local * (gamma - 1) / (gamma + 1)
         p_star = p_local +
-                 0.5 * v_normal / A *
-                 (v_normal + sqrt(v_normal^2 + 4.0 * A * (p_local + B)))
+                 0.5f0 * v_normal / A *
+                 (v_normal + sqrt(v_normal^2 + 4 * A * (p_local + B)))
     end
 
     # For the slip wall we directly set the flux as the normal velocity is zero
@@ -368,13 +366,13 @@ end
     # boundary top
     z_top = 16000.0
     # positive even power with default value 2
-    gamma = 2.0
+    gamma = 2
     # relaxation coefficient > 0
-    alpha = 0.5
+    alpha = 0.5f0
 
     tau_s = zero(eltype(u))
     if z > z_s
-        tau_s = alpha * sin(0.5 * (z - z_s) * inv(z_top - z_s))^(gamma)
+        tau_s = alpha * sin(0.5f0 * (z - z_s) * inv(z_top - z_s))^(gamma)
     end
 
     return SVector(zero(eltype(u)),
@@ -400,7 +398,7 @@ end
     v2 = rho_v2 / rho
 
     # Inner energy
-    rho_e = (rho_E - 0.5 * (rho_v1 * v1 + rho_v2 * v2))
+    rho_e = (rho_E - 0.5f0 * (rho_v1 * v1 + rho_v2 * v2))
 
     # Absolute temperature
     T = (rho_e - L_00 * rho_qv) / (rho_qd * c_vd + rho_qv * c_vv + rho_ql * c_pl)
@@ -452,9 +450,9 @@ end
 # Lin, A Control-Volume Model of the Compressible Euler Equations with a Vertical Lagrangian
 # Coordinate Monthly Weather Review Vol. 141.7, pages 2526–2544, 2013,
 # https://journals.ametsoc.org/view/journals/mwre/141/7/mwr-d-12-00129.1.xml.
-@inline function flux_LMARS(u_ll, u_rr, normal_direction::AbstractVector,
-                            equations::CompressibleMoistEulerEquations2D)
-    @unpack a = equations
+@inline function (flux_lmars::FluxLMARS)(u_ll, u_rr, normal_direction::AbstractVector,
+                                         equations::CompressibleMoistEulerEquations2D)
+    a = flux_lmars.speed_of_sound
     # Unpack left and right state
     rho_ll, rho_v1_ll, rho_v2_ll, rho_e_ll, rho_qv_ll, rho_ql_ll = u_ll
     rho_rr, rho_v1_rr, rho_v2_rr, rho_e_rr, rho_qv_rr, rho_ql_rr = u_rr
@@ -474,9 +472,10 @@ end
     # Compute the necessary interface flux components
     norm_ = norm(normal_direction)
 
-    rho = 0.5 * (rho_ll + rho_rr)
-    p_interface = 0.5 * (p_ll + p_rr) - beta * 0.5 * a * rho * (v_rr - v_ll) / norm_
-    v_interface = 0.5 * (v_ll + v_rr) - beta * 1 / (2 * a * rho) * (p_rr - p_ll) * norm_
+    rho = 0.5f0 * (rho_ll + rho_rr)
+    p_interface = 0.5f0 * (p_ll + p_rr) - beta * 0.5f0 * a * rho * (v_rr - v_ll) / norm_
+    v_interface = 0.5f0 * (v_ll + v_rr) -
+                  beta * 1 / (2 * a * rho) * (p_rr - p_ll) * norm_
 
     if (v_interface > 0)
         f1, f2, f3, f4, f5, f6 = u_ll * v_interface
@@ -549,7 +548,7 @@ end
     g_v = L_00 + (c_pv - s_v) * T
     g_l = (c_pl - s_l) * T
 
-    w1 = g_d - 0.5 * v_square
+    w1 = g_d - 0.5f0 * v_square
     w2 = v1
     w3 = v2
     w4 = -1
@@ -566,7 +565,7 @@ end
     rho_v2 = rho * v2
     rho_qv = rho * qv
     rho_ql = rho * ql
-    rho_E = p * equations.inv_gamma_minus_one + 0.5 * (rho_v1 * v1 + rho_v2 * v2)
+    rho_E = p * equations.inv_gamma_minus_one + 0.5f0 * (rho_v1 * v1 + rho_v2 * v2)
     return SVector(rho, rho_v1, rho_v2, rho_E, rho_qv, rho_ql)
 end
 
@@ -670,7 +669,7 @@ end
     v2 = rho_v2 / rho
 
     # inner energy
-    rho_e = (rho_E - 0.5 * (rho_v1 * v1 + rho_v2 * v2))
+    rho_e = (rho_E - 0.5f0 * (rho_v1 * v1 + rho_v2 * v2))
 
     # Absolute Temperature
     T = (rho_e - L_00 * rho_qv) / (rho_qd * c_vd + rho_qv * c_vv + rho_ql * c_pl)
@@ -716,7 +715,7 @@ end
     v2 = rho_v2 / rho
 
     # inner energy
-    rho_e = (rho_E - 0.5 * (rho_v1 * v1 + rho_v2 * v2))
+    rho_e = (rho_E - 0.5f0 * (rho_v1 * v1 + rho_v2 * v2))
 
     # Absolute Temperature
     T = (rho_e - L_00 * rho_qv) / (rho_qd * c_vd + rho_qv * c_vv + rho_ql * c_pl)
@@ -950,8 +949,8 @@ end
     v2_rr = rho_v2_rr / rho_rr
 
     # inner energy
-    rho_e_ll = (rho_E_ll - 0.5 * (rho_v1_ll * v1_ll + rho_v2_ll * v2_ll))
-    rho_e_rr = (rho_E_rr - 0.5 * (rho_v1_rr * v1_rr + rho_v2_rr * v2_rr))
+    rho_e_ll = (rho_E_ll - 0.5f0 * (rho_v1_ll * v1_ll + rho_v2_ll * v2_ll))
+    rho_e_rr = (rho_E_rr - 0.5f0 * (rho_v1_rr * v1_rr + rho_v2_rr * v2_rr))
 
     # Absolute Temperature
     T_ll = (rho_e_ll - L_00 * rho_qv_ll) /
@@ -977,18 +976,18 @@ end
         inv_T_mean = inv_ln_mean(inv(T_ll), inv(T_rr))
     end
 
-    v1_avg = 0.5 * (v1_ll + v1_rr)
-    v2_avg = 0.5 * (v2_ll + v2_rr)
-    v1_square_avg = 0.5 * (v1_ll^2 + v1_rr^2)
-    v2_square_avg = 0.5 * (v2_ll^2 + v2_rr^2)
-    rho_qd_avg = 0.5 * (rho_qd_ll + rho_qd_rr)
-    rho_qv_avg = 0.5 * (rho_qv_ll + rho_qv_rr)
-    rho_ql_avg = 0.5 * (rho_ql_ll + rho_ql_rr)
-    inv_T_avg = 0.5 * (inv(T_ll) + inv(T_rr))
+    v1_avg = 0.5f0 * (v1_ll + v1_rr)
+    v2_avg = 0.5f0 * (v2_ll + v2_rr)
+    v1_square_avg = 0.5f0 * (v1_ll^2 + v1_rr^2)
+    v2_square_avg = 0.5f0 * (v2_ll^2 + v2_rr^2)
+    rho_qd_avg = 0.5f0 * (rho_qd_ll + rho_qd_rr)
+    rho_qv_avg = 0.5f0 * (rho_qv_ll + rho_qv_rr)
+    rho_ql_avg = 0.5f0 * (rho_ql_ll + rho_ql_rr)
+    inv_T_avg = 0.5f0 * (inv(T_ll) + inv(T_rr))
     v_dot_n_avg = normal_direction[1] * v1_avg + normal_direction[2] * v2_avg
 
     p_int = inv(inv_T_avg) * (R_d * rho_qd_avg + R_v * rho_qv_avg + R_q * rho_ql_avg)
-    K_avg = 0.5 * (v1_square_avg + v2_square_avg)
+    K_avg = 0.5f0 * (v1_square_avg + v2_square_avg)
 
     f_1d = rho_qd_mean * v_dot_n_avg
     f_1v = rho_qv_mean * v_dot_n_avg
