@@ -29,7 +29,7 @@ In the above, the non-conservative differential terms in the momentum equations 
 and the algebraic momentum source terms implemented in `source_terms_geometric_coriolis` 
 are given by
 ```math
-s^a = \frac{1}{2}\big(\Gamma_{bc}^a hu^bu^c - G^{ac}\Gamma_{bc}^d hu^b u_d \big) 
+s^a = -\frac{1}{2}\big(\Gamma_{bc}^a hu^bu^c - G^{ac}\Gamma_{bc}^d hu^b u_d \big) 
 - f JG^{ab}\varepsilon_{bc} hu^c,
 ```
 where we use the same notation as in [`CovariantShallowWaterEquations2D`](@ref) (including 
