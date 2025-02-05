@@ -24,7 +24,8 @@ cells_per_dimension = (2, 2)
 equations = ShallowWaterEquations3D(gravity_constant = 0.0)
 
 # Create DG solver with polynomial degree = 3 and (local) Lax-Friedrichs/Rusanov flux as surface flux
-solver = DGSEM(polydeg = polydeg, surface_flux = flux_lax_friedrichs)
+solver = DGSEM(polydeg = polydeg,
+               surface_flux = (flux_lax_friedrichs, flux_nonconservative_wintermeyer_etal))
 
 # Source term function to transform the Euler equations into a linear advection equation with variable advection velocity
 function source_terms_convert_to_linear_advection(u, du, x, t,
@@ -39,6 +40,21 @@ function source_terms_convert_to_linear_advection(u, du, x, t,
     s4 = du[1] * v3 - du[4]
 
     return SVector(0.0, s2, s3, s4, 0.0)
+end
+
+# Hack to use the weak form kernel with ShallowWaterEquations3D (a non-conservative equation).
+# This works only because we have a constant bottom topography, so the equations are effectively
+# conservative. Note that the weak form kernel is NOT equal to the flux differencing kernel
+# with central fluxes because of the curved geometry!
+@inline function Trixi.weak_form_kernel!(du, u,
+                                         element,
+                                         mesh::Union{StructuredMesh{2},
+                                                     UnstructuredMesh2D,
+                                                     P4estMesh{2}, T8codeMesh{2}},
+                                         nonconservative_terms::Trixi.True,
+                                         equations::Trixi.AbstractEquations{3},
+                                         dg::DGSEM, cache, alpha = true)
+    Trixi.weak_form_kernel!(du, u, element, mesh, Trixi.False(), equations, dg, cache)
 end
 
 # Create a 2D quad-based icosahedral mesh the size of the Earth

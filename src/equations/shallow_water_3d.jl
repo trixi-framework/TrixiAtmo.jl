@@ -61,7 +61,7 @@ function ShallowWaterEquations3D(; gravity_constant, H0 = zero(gravity_constant)
     ShallowWaterEquations3D(gravity_constant, H0)
 end
 
-Trixi.have_nonconservative_terms(::ShallowWaterEquations3D) = False() # Deactivate non-conservative terms for the moment...
+Trixi.have_nonconservative_terms(::ShallowWaterEquations3D) = True()
 Trixi.varnames(::typeof(cons2cons), ::ShallowWaterEquations3D) = ("h", "h_v1", "h_v2",
                                                                   "h_v3", "b")
 # Note, we use the total water height, H = h + b, as the first primitive variable for easier
@@ -204,6 +204,88 @@ Details are available in Eq. (4.1) in the paper:
 end
 
 """
+    flux_nonconservative_wintermeyer_etal(u_ll, u_rr, orientation::Integer,
+                                          equations::ShallowWaterEquations2D)
+    flux_nonconservative_wintermeyer_etal(u_ll, u_rr,
+                                          normal_direction::AbstractVector,
+                                          equations::ShallowWaterEquations2D)
+
+Non-symmetric two-point volume flux discretizing the nonconservative (source) term
+that contains the gradient of the bottom topography [`ShallowWaterEquations2D`](@ref).
+
+For the `surface_flux` either [`flux_wintermeyer_etal`](@ref) or [`flux_fjordholm_etal`](@ref) can
+be used to ensure well-balancedness and entropy conservation.
+
+Further details are available in the papers:
+- Niklas Wintermeyer, Andrew R. Winters, Gregor J. Gassner and David A. Kopriva (2017)
+  An entropy stable nodal discontinuous Galerkin method for the two dimensional
+  shallow water equations on unstructured curvilinear meshes with discontinuous bathymetry
+  [DOI: 10.1016/j.jcp.2017.03.036](https://doi.org/10.1016/j.jcp.2017.03.036)
+- Patrick Ersing, Andrew R. Winters (2023)
+  An entropy stable discontinuous Galerkin method for the two-layer shallow water equations on
+  curvilinear meshes
+  [DOI: 10.48550/arXiv.2306.12699](https://doi.org/10.48550/arXiv.2306.12699)
+"""
+@inline function Trixi.flux_nonconservative_wintermeyer_etal(u_ll, u_rr,
+                                                             normal_direction::AbstractVector,
+                                                             equations::ShallowWaterEquations3D)
+    # Pull the necessary left and right state information
+    h_ll = waterheight(u_ll, equations)
+    b_jump = u_rr[5] - u_ll[5]
+
+    # Bottom gradient nonconservative term: (0, g h b_x, g h b_y, 0)
+    return SVector(0,
+                   normal_direction[1] * equations.gravity * h_ll * b_jump,
+                   normal_direction[2] * equations.gravity * h_ll * b_jump,
+                   normal_direction[3] * equations.gravity * h_ll * b_jump,
+                   0)
+end
+
+"""
+    flux_nonconservative_fjordholm_etal(u_ll, u_rr, orientation::Integer,
+                                        equations::ShallowWaterEquations2D)
+    flux_nonconservative_fjordholm_etal(u_ll, u_rr,
+                                        normal_direction::AbstractVector,
+                                        equations::ShallowWaterEquations2D)
+
+Non-symmetric two-point surface flux discretizing the nonconservative (source) term of
+that contains the gradient of the bottom topography [`ShallowWaterEquations2D`](@ref).
+
+This flux can be used together with [`flux_fjordholm_etal`](@ref) at interfaces to ensure entropy
+conservation and well-balancedness.
+
+Further details for the original finite volume formulation are available in
+- Ulrik S. Fjordholm, Siddhartha Mishra and Eitan Tadmor (2011)
+  Well-balanced and energy stable schemes for the shallow water equations with discontinuous topography
+  [DOI: 10.1016/j.jcp.2011.03.042](https://doi.org/10.1016/j.jcp.2011.03.042)
+and for curvilinear 2D case in the paper:
+- Niklas Wintermeyer, Andrew R. Winters, Gregor J. Gassner and David A. Kopriva (2017)
+  An entropy stable nodal discontinuous Galerkin method for the two dimensional
+  shallow water equations on unstructured curvilinear meshes with discontinuous bathymetry
+  [DOI: 10.1016/j.jcp.2017.03.036](https://doi.org/10.1016/j.jcp.2017.03.036)
+"""
+@inline function Trixi.flux_nonconservative_fjordholm_etal(u_ll, u_rr,
+                                                           normal_direction::AbstractVector,
+                                                           equations::ShallowWaterEquations3D)
+    # Pull the necessary left and right state information
+    h_ll, _, _, _, b_ll = u_ll
+    h_rr, _, _, _, b_rr = u_rr
+
+    h_average = 0.5f0 * (h_ll + h_rr)
+    b_jump = b_rr - b_ll
+
+    # Bottom gradient nonconservative term: (0, g h b_x, g h b_y, 0)
+    f2 = normal_direction[1] * equations.gravity * h_average * b_jump
+    f3 = normal_direction[2] * equations.gravity * h_average * b_jump
+    f4 = normal_direction[3] * equations.gravity * h_average * b_jump
+
+    # First and last equations do not have a nonconservative flux
+    f1 = f5 = 0
+
+    return SVector(f1, f2, f3, f4, f5)
+end
+
+"""
     source_terms_lagrange_multiplier(u, du, x, t,
                                           equations::ShallowWaterEquations3D,
                                           normal_direction)
@@ -279,6 +361,33 @@ end
                                   equations)
     diss = -0.5f0 * λ * (u_rr - u_ll)
     return SVector(diss[1], diss[2], diss[3], diss[4], zero(eltype(u_ll)))
+end
+
+# Specialization of [`DissipationLaxFriedrichsEntropyVariables`](https://trixi-framework.github.io/Trixi.jl/stable/reference-trixi/#Trixi.DissipationLaxFriedrichsEntropyVariables) 
+# for the shallow water system. This is equivalent to `DissipationLocalLaxFriedrichs` if the bottom topography is continuous
+@inline function (dissipation::DissipationLaxFriedrichsEntropyVariables)(u_ll, u_rr,
+                                                                         orientation_or_normal_direction,
+                                                                         equations::ShallowWaterEquations3D)
+    h_ll, h_v1_ll, h_v2_ll, h_v3_ll, b_ll = u_ll
+    h_rr, h_v1_rr, h_v2_rr, h_v3_rr, b_rr = u_rr
+    v1_ll, v2_ll, v3_ll = velocity(u_ll, equations)
+    v1_rr, v2_rr, v3_rr = velocity(u_rr, equations)
+
+    # Compute the maximum wave speed
+    λ = dissipation.max_abs_speed(u_ll, u_rr, orientation_or_normal_direction,
+                                  equations)
+
+    # Get some averages
+    v1_avg = 0.5 * (v1_ll + v1_rr)
+    v2_avg = 0.5 * (v2_ll + v2_rr)
+    v3_avg = 0.5 * (v3_ll + v3_rr)
+
+    # Compute dissipation operator
+    diss1 = -0.5 * λ * ((h_rr + b_rr) - (h_ll + b_ll))
+    diss2 = -0.5 * λ * ((h_v1_rr - h_v1_ll) + v1_avg * (b_rr - b_ll))
+    diss3 = -0.5 * λ * ((h_v2_rr - h_v2_ll) + v2_avg * (b_rr - b_ll))
+    diss4 = -0.5 * λ * ((h_v3_rr - h_v3_ll) + v3_avg * (b_rr - b_ll))
+    return SVector(diss1, diss2, diss3, diss4, zero(eltype(u_ll)))
 end
 
 @inline function Trixi.max_abs_speeds(u, equations::ShallowWaterEquations3D)
