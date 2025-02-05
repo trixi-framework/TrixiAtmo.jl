@@ -95,18 +95,18 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_cubed_sphere_shell_standard.jl"),
                         l2=[
-                            6.86661496e-02,
-                            9.43310712e-02,
-                            3.26202302e-02,
-                            2.02514293e-02,
-                            0.00000000e+00
+                            0.06866722672214583,
+                            0.09439341808798994,
+                            0.03259642977310212,
+                            0.02026391975808816,
+                            0.0
                         ],
                         linf=[
-                            1.04610420e+00,
-                            1.05891219e+00,
-                            1.19809349e-01,
-                            5.54354032e-02,
-                            0.00000000e+00
+                            1.046030865500347,
+                            1.0593845602505891,
+                            0.11825902590307091,
+                            0.055554598594340664,
+                            0.0
                         ])
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
