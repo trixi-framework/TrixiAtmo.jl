@@ -112,6 +112,7 @@ end
     Gcon_ll = metric_contravariant(aux_vars_ll, equations)
     Gcov_rr = metric_covariant(aux_vars_rr, equations)
     J_ll = area_element(aux_vars_ll, equations)
+    b_rr = bottom_topography(aux_vars_rr, equations)
 
     # Physical variables
     h_ll = waterheight(u_ll, equations)
@@ -122,7 +123,8 @@ end
     # Nonconservative momentum term, consisting of curvature correction and pressure term
     momentum_noncons = J_ll * (0.5f0 * h_vcon_ll[orientation] *
                         (Gcon_ll * Gcov_rr * vcon_rr - vcon_rr) +
-                        Gcon_ll[:, orientation] * equations.gravity * h_ll * h_rr)
+                        Gcon_ll[:, orientation] * equations.gravity * h_ll *
+                        (h_rr + b_rr))
 
     return SVector(zero(eltype(u_ll)), momentum_noncons[1], momentum_noncons[2])
 end

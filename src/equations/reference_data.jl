@@ -177,4 +177,49 @@ This problem corresponds to Case 6 of the test suite described in the following 
     # coordinate system, which depends on the equation type
     return spherical2global(SVector(h, vlon, vlat, zero(RealT)), x, equations)
 end
+
+"""
+    initial_condition_isolated_mountain(x, t, equations)
+
+Zonal flow over an isolated mountain, corresponding to Case 5 of the test suite described 
+in the following paper:
+- D. L. Williamson, J. B. Drake, J. J. Hack, R. Jakob, and P. N. Swarztrauber (1992). A  
+  standard test set for numerical approximations to the shallow water equations in
+  spherical geometry. Journal of Computational Physics, 102(1):211-224. 
+  [DOI: 10.1016/S0021-9991(05)80016-6](https://doi.org/10.1016/S0021-9991(05)80016-6)
+"""
+@inline function initial_condition_isolated_mountain(x, t, equations)
+    RealT = eltype(x)
+    a = sqrt(x[1]^2 + x[2]^2 + x[3]^2)  # radius of the sphere
+    lat = asin(x[3] / a)
+    h_0 = 5960.0f0
+    v_0 = 20.0f0
+
+    # compute zonal and meridional components of the velocity
+    vlon, vlat = v_0 * cos(lat), zero(eltype(x))
+
+    # compute geopotential height 
+    h = h_0 -
+        1 / EARTH_GRAVITATIONAL_ACCELERATION *
+        (a * EARTH_ROTATION_RATE * v_0 + 0.5f0 * v_0^2) * (sin(lat))^2
+
+    # Convert primitive variables from spherical coordinates to the chosen global 
+    # coordinate system, which depends on the equation type
+    return spherical2global(SVector(h, vlon, vlat, zero(RealT)), x, equations)
+end
+
+@inline function bottom_topography_isolated_mountain(x)
+    RealT = eltype(x)
+    a = sqrt(x[1]^2 + x[2]^2 + x[3]^2)  # radius of the sphere
+    lon, lat = atan(x[2], x[1]), asin(x[3] / a)
+
+    # position and height of mountain 
+    lon_0, lat_0 = convert(RealT, 3π / 2), convert(RealT, π / 6)
+    h_s0 = 2000.0f0
+
+    # width of the mountain 
+    R = convert(RealT, π / 9)
+
+    return h_s0 * (1.0f0 - sqrt(min(R^2), (lon - lon_0)^2 + (lat - lat_0)^2) / R)
+end
 end # @muladd
