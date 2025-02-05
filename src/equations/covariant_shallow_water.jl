@@ -103,14 +103,18 @@ end
                                                       u[3])
 
 @inline function Trixi.cons2prim(u, aux_vars,
-                                 ::AbstractCovariantShallowWaterEquations2D)
+                                 equations::AbstractCovariantShallowWaterEquations2D)
     h, h_vcon1, h_vcon2 = u
-    return SVector(h, h_vcon1 / h, h_vcon2 / h)
+    b = bottom_topography(aux_vars, equations)
+    H = h + b
+    return SVector(H, h_vcon1 / h, h_vcon2 / h)
 end
 
 @inline function Trixi.prim2cons(u, aux_vars,
-                                 ::AbstractCovariantShallowWaterEquations2D)
-    h, vcon1, vcon2 = u
+    equations::AbstractCovariantShallowWaterEquations2D)
+    H, vcon1, vcon2 = u
+    b = bottom_topography(aux_vars, equations)
+    h = H - b
     return SVector(h, h * vcon1, h * vcon2)
 end
 

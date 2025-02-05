@@ -122,12 +122,13 @@ end
     vcon_rr = velocity_contravariant(u_rr, equations)
 
     # Nonconservative momentum term, consisting of curvature correction and pressure term
-    momentum_noncons = J_ll * (0.5f0 * h_vcon_ll[orientation] *
-                        (Gcon_ll * Gcov_rr * vcon_rr - vcon_rr) +
+    momentum_noncons = 0.5f0 * h_vcon_ll[orientation] * 
+                       (Gcon_ll * Gcov_rr * vcon_rr - vcon_rr) +
                         Gcon_ll[:, orientation] * equations.gravity * h_ll *
-                        (h_rr + b_jump)) # this is EC but is it properly consistent?
+                        (h_rr + b_jump) # this is EC but is it properly consistent?
 
-    return SVector(zero(eltype(u_ll)), momentum_noncons[1], momentum_noncons[2])
+    return SVector(zero(eltype(u_ll)), J_ll * momentum_noncons[1], 
+                                       J_ll * momentum_noncons[2])
 end
 
 @inline function source_terms_geometric_coriolis(u, x, t, aux_vars,
