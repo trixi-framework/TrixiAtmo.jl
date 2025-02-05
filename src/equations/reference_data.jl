@@ -213,13 +213,13 @@ end
     a = sqrt(x[1]^2 + x[2]^2 + x[3]^2)  # radius of the sphere
     lon, lat = atan(x[2], x[1]), asin(x[3] / a)
 
-    # position and height of mountain 
-    lon_0, lat_0 = convert(RealT, 3π / 2), convert(RealT, π / 6)
+    # Position and height of mountain 
+    # Note that position is at λ = -π/2 and not λ = 3π/2 because atan(y,x) is in [-π, π]
+    lon_0, lat_0 = convert(RealT, -π / 2), convert(RealT, π / 6)
     h_s0 = 2000.0f0
 
-    # width of the mountain 
+    # Width of the mountain 
     R = convert(RealT, π / 9)
-
-    return h_s0 * (1.0f0 - sqrt(min(R^2), (lon - lon_0)^2 + (lat - lat_0)^2) / R)
+    return h_s0 * (1.0f0 - sqrt(min(R^2, (lon - lon_0)^2 + (lat - lat_0)^2)) / R)
 end
 end # @muladd

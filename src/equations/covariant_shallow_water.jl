@@ -117,9 +117,10 @@ end
 @inline function Trixi.cons2entropy(u, aux_vars,
                                     equations::AbstractCovariantShallowWaterEquations2D)
     h = waterheight(u, equations)
+    b = bottom_topography(aux_vars, equations)
     vcon = velocity_contravariant(u, equations)
     vcov = metric_covariant(aux_vars, equations) * vcon
-    return SVector{3}(equations.gravity * h - 0.5f0 * dot(vcov, vcon), vcov[1], vcov[2])
+    return SVector{3}(equations.gravity * (h + b) - 0.5f0 * dot(vcov, vcon), vcov[1], vcov[2])
 end
 
 # Convert contravariant momentum components to the global coordinate system
@@ -142,9 +143,11 @@ end
 @inline function Trixi.entropy(u, aux_vars,
                                equations::AbstractCovariantShallowWaterEquations2D)
     h = waterheight(u, equations)
+    b = bottom_topography(aux_vars, equations)
     vcon = velocity_contravariant(u, equations)
     vcov = metric_covariant(aux_vars, equations) * vcon
-    return 0.5f0 * (h * dot(vcov, vcon) + equations.gravity * h^2)
+    return 0.5f0 * (h * dot(vcov, vcon) + equations.gravity * h^2) + 
+        equations.gravity * h * b
 end
 
 # Flux as a function of the state vector u, as well as the auxiliary variables aux_vars, 

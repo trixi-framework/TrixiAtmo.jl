@@ -18,6 +18,7 @@ using StaticArrayInterface: static_size
 using LinearAlgebra: cross, norm, dot, det
 using Reexport: @reexport
 using LoopVectorization: @turbo
+using Infiltrator
 using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
 
 @reexport using StaticArrays: SVector, SMatrix
@@ -57,7 +58,9 @@ export global2contravariant, contravariant2global, spherical2cartesian, cartesia
        transform_initial_condition
 
 export initial_condition_gaussian, initial_condition_geostrophic_balance,
-       initial_condition_rossby_haurwitz
+       initial_condition_rossby_haurwitz, initial_condition_isolated_mountain
+
+export bottom_topography_isolated_mountain
 
 export examples_dir
 end # module TrixiAtmo

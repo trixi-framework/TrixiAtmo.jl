@@ -33,14 +33,16 @@ function convert_variables(u, solution_variables, mesh::P4estMesh{2},
     return data
 end
 
-# Calculate the primitive variables and the relative vorticity at a given node
+# Calculate the primitive variables, bottom topography, and relative vorticity at a given 
+# node
 @inline function cons2prim_and_vorticity(u, equations::AbstractCovariantEquations{2},
                                          dg::DGSEM, cache, i, j, element)
     (; aux_node_vars) = cache.auxiliary_variables
     u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
     aux_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
     relative_vorticity = calc_vorticity_node(u, equations, dg, cache, i, j, element)
-    return SVector(cons2prim(u_node, aux_node, equations)..., relative_vorticity)
+    b = bottom_topography(aux_node, equations)
+    return SVector(cons2prim(u_node, aux_node, equations)..., b, relative_vorticity)
 end
 
 # Calculate relative vorticity ζ = ∂₁v₂ - ∂₂v₁ for equations in covariant form
@@ -70,4 +72,11 @@ end
     aux_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
     return (dv2dxi1 - dv1dxi2) / area_element(aux_node, equations)
 end
+
+# Variable names for cons2prim_and_vorticity
+function Trixi.varnames(::typeof(cons2prim_and_vorticity), 
+                        equations::AbstractCovariantEquations{2})
+    return (varnames(cons2prim, equations)..., "b", "vorticity")
+end
+
 end # @muladd

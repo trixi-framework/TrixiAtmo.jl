@@ -12,7 +12,7 @@ initial_condition = initial_condition_isolated_mountain
 polydeg = 3
 cells_per_dimension = 5
 n_saves = 10
-tspan = (0.0, 7.0 * SECONDS_PER_DAY)
+tspan = (0.0, 5.0 * SECONDS_PER_DAY)
 
 ###############################################################################
 # Spatial discretization

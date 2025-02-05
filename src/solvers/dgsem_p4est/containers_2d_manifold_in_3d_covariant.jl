@@ -221,7 +221,6 @@ function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 
             aux_node_vars[17:19, i, j, element] = SVector(metric_contravariant[1, 1],
                                                           metric_contravariant[1, 2],
                                                           metric_contravariant[2, 2])
-
             # Bottom topography
             if !isnothing(bottom_topography)
                 x_node = Trixi.get_node_coords(node_coordinates, equations, dg, i, j,

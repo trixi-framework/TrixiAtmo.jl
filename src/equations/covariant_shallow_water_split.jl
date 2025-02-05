@@ -112,7 +112,8 @@ end
     Gcon_ll = metric_contravariant(aux_vars_ll, equations)
     Gcov_rr = metric_covariant(aux_vars_rr, equations)
     J_ll = area_element(aux_vars_ll, equations)
-    b_rr = bottom_topography(aux_vars_rr, equations)
+    b_jump = bottom_topography(aux_vars_rr, equations) - 
+             bottom_topography(aux_vars_ll, equations)
 
     # Physical variables
     h_ll = waterheight(u_ll, equations)
@@ -124,7 +125,7 @@ end
     momentum_noncons = J_ll * (0.5f0 * h_vcon_ll[orientation] *
                         (Gcon_ll * Gcov_rr * vcon_rr - vcon_rr) +
                         Gcon_ll[:, orientation] * equations.gravity * h_ll *
-                        (h_rr + b_rr))
+                        (h_rr + b_jump)) # this is EC but is it properly consistent?
 
     return SVector(zero(eltype(u_ll)), momentum_noncons[1], momentum_noncons[2])
 end
