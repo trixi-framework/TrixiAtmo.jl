@@ -225,7 +225,7 @@ function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 
             # Bottom topography
             if !isnothing(bottom_topography)
                 x_node = Trixi.get_node_coords(node_coordinates, equations, dg, i, j,
-                                            element)                          
+                                               element)
                 aux_node_vars[20, i, j, element] = bottom_topography(x_node)
             else
                 aux_node_vars[20, i, j, element] = zero(eltype(aux_node_vars))
@@ -234,7 +234,6 @@ function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 
 
         # Christoffel symbols of the second kind (aux_node_vars[21:26, :, :, element])
         calc_christoffel_symbols!(aux_node_vars, mesh, equations, dg, element)
-
     end
 
     return nothing

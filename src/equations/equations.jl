@@ -168,7 +168,7 @@ end
            nvars_area_element +
            nvars_metric_covariant +
            nvars_metric_contravariant +
-           nvars_bottom_topography + 
+           nvars_bottom_topography +
            nvars_christoffel
 end
 

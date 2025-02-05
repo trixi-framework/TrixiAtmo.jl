@@ -3,7 +3,7 @@
 # the RHS etc, and is modified here to use custom metric terms as well as provide the 
 # option to # use auxiliary variables. 
 function Trixi.create_cache(mesh::P4estMesh, equations::AbstractEquations, dg::DG, ::Any,
-                            metric_terms, auxiliary_field, 
+                            metric_terms, auxiliary_field,
                             ::Type{uEltype}) where {uEltype <: Real}
     # Make sure to balance the `p4est` before creating any containers
     # in case someone has tampered with the `p4est` after creating the mesh
