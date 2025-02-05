@@ -15,9 +15,11 @@ function Trixi.SemidiscretizationHyperbolic(mesh::P4estMesh{2},
                                             # while `uEltype` is used as element type of solutions etc.
                                             RealT = real(solver), uEltype = RealT,
                                             initial_cache = NamedTuple(),
-                                            metric_terms = MetricTermsCrossProduct())
-    cache = (; Trixi.create_cache(mesh, equations, solver, RealT, metric_terms, uEltype)...,
-             initial_cache...)
+                                            metric_terms = MetricTermsCrossProduct(),
+                                            auxiliary_field = nothing)
+    cache = (;
+             Trixi.create_cache(mesh, equations, solver, RealT, metric_terms,
+                                auxiliary_field, uEltype)..., initial_cache...)
     _boundary_conditions = Trixi.digest_boundary_conditions(boundary_conditions, mesh,
                                                             solver,
                                                             cache)
