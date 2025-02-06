@@ -100,10 +100,10 @@ end
 
     # Momentum flux is average of mass flux times average of velocities
     return SVector(mass_flux, 0.5f0 * (vcon_ll[1] + vcon_rr[1]) * mass_flux,
-                   0.5f0 * (vcon_ll[2] + vcon_rr[2]) * mass_flux)
+                              0.5f0 * (vcon_ll[2] + vcon_rr[2]) * mass_flux)
 end
 
-# Non-symmetric part of entropy-conservative flux
+# Non-symmetric part of entropy-conservative flux. Can be used in both surface and volume.
 @inline function flux_nonconservative_ec(u_ll, u_rr, aux_vars_ll,
                                          aux_vars_rr,
                                          orientation::Integer,
@@ -120,15 +120,32 @@ end
     h_rr = waterheight(u_rr, equations)
     h_vcon_ll = momentum_contravariant(u_ll, equations)
     vcon_rr = velocity_contravariant(u_rr, equations)
+    vcov_rr = Gcov_rr * vcon_rr
 
-    # Nonconservative momentum term, consisting of curvature correction and pressure term
-    momentum_noncons = 0.5f0 * h_vcon_ll[orientation] * 
-                       (Gcon_ll * Gcov_rr * vcon_rr - vcon_rr) +
-                        Gcon_ll[:, orientation] * equations.gravity * h_ll *
-                        (h_rr + b_jump) # this is EC but is it properly consistent?
+    geometric_term = 0.5f0 * h_vcon_ll[orientation] * (Gcon_ll * vcov_rr  - vcon_rr)
+    pressure_term = equations.gravity * Gcon_ll[:, orientation] * h_ll * (h_rr + b_jump)
 
-    return SVector(zero(eltype(u_ll)), J_ll * momentum_noncons[1], 
-                                       J_ll * momentum_noncons[2])
+    return SVector(zero(eltype(u_ll)), J_ll * (geometric_term[1] + pressure_term[1]),
+                                       J_ll * (geometric_term[2] + pressure_term[2]))
+end
+
+# For the surface term with smooth bottom topography, we can significantly simplify the 
+# surface nonconservative term
+@inline function flux_nonconservative_surface_simplified(u_ll, u_rr, aux_vars_ll,
+                                                        aux_vars_rr,
+                                                        orientation::Integer,
+                                                        equations::SplitCovariantShallowWaterEquations2D)
+    # Geometric variables
+    Gcon_ll = metric_contravariant(aux_vars_ll, equations)
+    J_ll = area_element(aux_vars_ll, equations)
+
+    # Physical variables
+    h_ll = waterheight(u_ll, equations)
+    h_rr = waterheight(u_rr, equations)
+
+    pressure_term = equations.gravity * Gcon_ll[:, orientation] * h_ll * h_rr
+
+    return SVector(zero(eltype(u_ll)), J_ll * pressure_term[1], J_ll * pressure_term[2])
 end
 
 @inline function source_terms_geometric_coriolis(u, x, t, aux_vars,

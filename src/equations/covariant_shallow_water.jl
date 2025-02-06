@@ -78,7 +78,7 @@ end
 
 # The primitive variables are the height and contravariant velocity components
 function Trixi.varnames(::typeof(cons2prim), ::AbstractCovariantShallowWaterEquations2D)
-    return ("h", "vcon1", "vcon2")
+    return ("H", "vcon1", "vcon2")
 end
 
 # The change of variables contravariant2global converts the two local contravariant vector 
@@ -111,7 +111,7 @@ end
 end
 
 @inline function Trixi.prim2cons(u, aux_vars,
-    equations::AbstractCovariantShallowWaterEquations2D)
+                                 equations::AbstractCovariantShallowWaterEquations2D)
     H, vcon1, vcon2 = u
     b = bottom_topography(aux_vars, equations)
     h = H - b
@@ -124,7 +124,8 @@ end
     b = bottom_topography(aux_vars, equations)
     vcon = velocity_contravariant(u, equations)
     vcov = metric_covariant(aux_vars, equations) * vcon
-    return SVector{3}(equations.gravity * (h + b) - 0.5f0 * dot(vcov, vcon), vcov[1], vcov[2])
+    return SVector{3}(equations.gravity * (h + b) - 0.5f0 * dot(vcov, vcon), vcov[1],
+                      vcov[2])
 end
 
 # Convert contravariant momentum components to the global coordinate system
@@ -150,8 +151,8 @@ end
     b = bottom_topography(aux_vars, equations)
     vcon = velocity_contravariant(u, equations)
     vcov = metric_covariant(aux_vars, equations) * vcon
-    return 0.5f0 * (h * dot(vcov, vcon) + equations.gravity * h^2) + 
-        equations.gravity * h * b
+    return 0.5f0 * (h * dot(vcov, vcon) + equations.gravity * h^2) +
+           equations.gravity * h * b
 end
 
 # Flux as a function of the state vector u, as well as the auxiliary variables aux_vars, 

@@ -33,8 +33,10 @@ function convert_variables(u, solution_variables, mesh::P4estMesh{2},
     return data
 end
 
-# Calculate the primitive variables, bottom topography, and relative vorticity at a given 
-# node
+# Calculate the primitive variables and relative vorticity at a given node. The velocity
+# components in the global coordinate system and the bottom topography are returned, such 
+# that the outputs for CovariantShallowWaterEquations2D and ShallowWaterEquations3D are the 
+# same variables, provided that GlobalCartesianCoordinates are used in the former case.
 @inline function cons2prim_and_vorticity(u, equations::AbstractCovariantEquations{2},
                                          dg::DGSEM, cache, i, j, element)
     (; aux_node_vars) = cache.auxiliary_variables
@@ -42,7 +44,9 @@ end
     aux_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
     relative_vorticity = calc_vorticity_node(u, equations, dg, cache, i, j, element)
     b = bottom_topography(aux_node, equations)
-    return SVector(cons2prim(u_node, aux_node, equations)..., b, relative_vorticity)
+    primitive_global = contravariant2global(cons2prim(u_node, aux_node, equations), 
+                                            aux_node, equations) 
+    return SVector(primitive_global..., b, relative_vorticity)
 end
 
 # Calculate relative vorticity ζ = ∂₁v₂ - ∂₂v₁ for equations in covariant form
@@ -73,10 +77,17 @@ end
     return (dv2dxi1 - dv1dxi2) / area_element(aux_node, equations)
 end
 
-# Variable names for cons2prim_and_vorticity
-function Trixi.varnames(::typeof(cons2prim_and_vorticity), 
-                        equations::AbstractCovariantEquations{2})
-    return (varnames(cons2prim, equations)..., "b", "vorticity")
+# Variable names for cons2prim_and_vorticity, chosen to match those from 
+# ShallowWaterEquations3D
+function Trixi.varnames(::typeof(cons2prim_and_vorticity),
+                        equations::AbstractCovariantShallowWaterEquations2D)
+    return ("H", "v1", "v2", "v3", "b", "vorticity")
 end
+
+function Trixi.varnames(::typeof(cons2prim_and_vorticity),
+                        equations::CovariantLinearAdvectionEquation2D)
+return ("h", "v1", "v2", "v3", "b", "vorticity")
+end
+
 
 end # @muladd

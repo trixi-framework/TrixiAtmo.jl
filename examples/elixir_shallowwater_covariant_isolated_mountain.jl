@@ -26,8 +26,9 @@ equations = SplitCovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATI
                                                   global_coordinate_system = GlobalCartesianCoordinates())
 
 # Use entropy-conservative two-point fluxes for volume and surface terms
-volume_flux = (flux_ec, flux_nonconservative_ec)
-surface_flux = (flux_ec, flux_nonconservative_ec)
+volume_flux = (flux_ec, flux_nonconservative_ec) 
+surface_flux = (flux_ec, 
+                flux_nonconservative_surface_simplified)
 
 # Create DG solver with polynomial degree = polydeg
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
