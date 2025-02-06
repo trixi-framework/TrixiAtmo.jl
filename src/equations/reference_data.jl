@@ -178,11 +178,27 @@ This problem corresponds to Case 6 of the test suite described in the following 
     return spherical2global(SVector(h, vlon, vlat, zero(RealT)), x, equations)
 end
 
-"""
+@doc raw"""
     initial_condition_isolated_mountain(x, t, equations)
 
-Zonal flow over an isolated mountain, corresponding to Case 5 of the test suite described 
-in the following paper:
+Zonal flow over an isolated mountain with a profile given in terms of the latitude 
+$\lambda$ and longitude $\theta$ as 
+```math
+b(\lambda,\theta) = 
+b_0 (1 - \sqrt{\min(R^2, (\lambda-\lambda_0)^2 + (\theta-\theta_0)^2)}/R),
+```
+where $b_0 = 2000 \ \text{m}$, $\lambda_0 = -/\pi/2$, $\theta_0 = \pi/6$, and $R =\pi/9$. 
+The initial velocity field is given by  $v_\lambda(\theta) = v_0 \cos\theta$, where 
+$v_0 = 20 \ \mathrm{m/s}$, and the total height $H = h+b$ is given by 
+```math
+H(\theta) = H_0 - \frac{1}{g}\Big(a \Omega v_0 + \frac{1}{2} v_0^2\Big)\sin^2\theta,
+```
+where $H_0 = 5960 \ \mathrm{m}$, $g = 9.80616 \ \mathrm{m}/\mathrm{s}^2$, and 
+$\Omega = 7.292 \times 10^{-5}\ \mathrm{s}^{-1}$. To use this test case with 
+[`SplitCovariantShallowWaterEquations2D`](@ref), the keyword argument 
+`auxiliary_field = bottom_topography_isolated_mountain` should be passed into the 
+`SemidiscretizationHyperbolic` constructor. This problem corresponds to Case 5 of the
+test suite described in the following paper:
 - D. L. Williamson, J. B. Drake, J. J. Hack, R. Jakob, and P. N. Swarztrauber (1992). A  
   standard test set for numerical approximations to the shallow water equations in
   spherical geometry. Journal of Computational Physics, 102(1):211-224. 
@@ -208,6 +224,8 @@ in the following paper:
     return spherical2global(SVector(h, vlon, vlat, zero(RealT)), x, equations)
 end
 
+# Bottom topography function to pass as auxiliary_field keyword argument in constructor for 
+# SemidiscretizationHyperbolic
 @inline function bottom_topography_isolated_mountain(x)
     RealT = eltype(x)
     a = sqrt(x[1]^2 + x[2]^2 + x[3]^2)  # radius of the sphere
@@ -216,9 +234,9 @@ end
     # Position and height of mountain, noting that latitude is λ = -π/2 and not λ = 3π/2 
     # because atan(y,x) is in [-π, π]
     lon_0, lat_0 = convert(RealT, -π / 2), convert(RealT, π / 6)
-    h_s0 = 2000.0f0
+    b_0 = 2000.0f0
 
     R = convert(RealT, π / 9)
-    return h_s0 * (1.0f0 - sqrt(min(R^2, (lon - lon_0)^2 + (lat - lat_0)^2)) / R)
+    return b_0 * (1.0f0 - sqrt(min(R^2, (lon - lon_0)^2 + (lat - lat_0)^2)) / R)
 end
 end # @muladd
