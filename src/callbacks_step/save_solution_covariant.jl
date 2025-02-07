@@ -44,8 +44,8 @@ end
     aux_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
     relative_vorticity = calc_vorticity_node(u, equations, dg, cache, i, j, element)
     b = bottom_topography(aux_node, equations)
-    primitive_global = contravariant2global(cons2prim(u_node, aux_node, equations), 
-                                            aux_node, equations) 
+    primitive_global = contravariant2global(cons2prim(u_node, aux_node, equations),
+                                            aux_node, equations)
     return SVector(primitive_global..., b, relative_vorticity)
 end
 
@@ -86,8 +86,6 @@ end
 
 function Trixi.varnames(::typeof(cons2prim_and_vorticity),
                         equations::CovariantLinearAdvectionEquation2D)
-return ("h", "v1", "v2", "v3", "b", "vorticity")
+    return ("h", "v1", "v2", "v3", "b", "vorticity")
 end
-
-
 end # @muladd

@@ -100,7 +100,7 @@ end
 
     # Momentum flux is average of mass flux times average of velocities
     return SVector(mass_flux, 0.5f0 * (vcon_ll[1] + vcon_rr[1]) * mass_flux,
-                              0.5f0 * (vcon_ll[2] + vcon_rr[2]) * mass_flux)
+                   0.5f0 * (vcon_ll[2] + vcon_rr[2]) * mass_flux)
 end
 
 # Non-symmetric part of entropy-conservative flux. Can be used in both surface and volume.
@@ -112,7 +112,7 @@ end
     Gcon_ll = metric_contravariant(aux_vars_ll, equations)
     Gcov_rr = metric_covariant(aux_vars_rr, equations)
     J_ll = area_element(aux_vars_ll, equations)
-    b_jump = bottom_topography(aux_vars_rr, equations) - 
+    b_jump = bottom_topography(aux_vars_rr, equations) -
              bottom_topography(aux_vars_ll, equations)
 
     # Physical variables
@@ -122,19 +122,19 @@ end
     vcon_rr = velocity_contravariant(u_rr, equations)
     vcov_rr = Gcov_rr * vcon_rr
 
-    geometric_term = 0.5f0 * h_vcon_ll[orientation] * (Gcon_ll * vcov_rr  - vcon_rr)
+    geometric_term = 0.5f0 * h_vcon_ll[orientation] * (Gcon_ll * vcov_rr - vcon_rr)
     pressure_term = equations.gravity * Gcon_ll[:, orientation] * h_ll * (h_rr + b_jump)
 
     return SVector(zero(eltype(u_ll)), J_ll * (geometric_term[1] + pressure_term[1]),
-                                       J_ll * (geometric_term[2] + pressure_term[2]))
+                   J_ll * (geometric_term[2] + pressure_term[2]))
 end
 
 # For the surface term with smooth bottom topography, we can significantly simplify the 
 # surface nonconservative term
 @inline function flux_nonconservative_surface_simplified(u_ll, u_rr, aux_vars_ll,
-                                                        aux_vars_rr,
-                                                        orientation::Integer,
-                                                        equations::SplitCovariantShallowWaterEquations2D)
+                                                         aux_vars_rr,
+                                                         orientation::Integer,
+                                                         equations::SplitCovariantShallowWaterEquations2D)
     # Geometric variables
     Gcon_ll = metric_contravariant(aux_vars_ll, equations)
     J_ll = area_element(aux_vars_ll, equations)

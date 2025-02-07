@@ -26,7 +26,7 @@ equations = SplitCovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATI
                                                   global_coordinate_system = GlobalCartesianCoordinates())
 
 # Use entropy-conservative two-point fluxes for volume and surface terms
-volume_flux = (flux_ec, flux_nonconservative_ec) 
+volume_flux = (flux_ec, flux_nonconservative_ec)
 surface_flux = (flux_ec, flux_nonconservative_surface_simplified)
 
 # Create DG solver with polynomial degree = polydeg
@@ -38,7 +38,7 @@ initial_condition_transformed = transform_initial_condition(initial_condition, e
 
 # A semidiscretization collects data structures and functions for the spatial discretization
 # Here, we pass in the additional keyword argument "auxiliary_field" to specify the bottom 
-# topography
+# topography.
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver,
                                     source_terms = source_terms_geometric_coriolis,
                                     auxiliary_field = bottom_topography_isolated_mountain)

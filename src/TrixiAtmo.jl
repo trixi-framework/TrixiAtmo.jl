@@ -39,7 +39,7 @@ export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
 export flux_chandrashekar, FluxLMARS
 
-export flux_nonconservative_zeros, flux_nonconservative_ec, 
+export flux_nonconservative_zeros, flux_nonconservative_ec,
        flux_nonconservative_surface_simplified, source_terms_geometric_coriolis
 
 export velocity, waterheight, pressure, energy_total, energy_kinetic, energy_internal,
