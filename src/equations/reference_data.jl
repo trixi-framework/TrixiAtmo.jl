@@ -225,7 +225,7 @@ test suite described in the following paper:
 end
 
 # Bottom topography function to pass as auxiliary_field keyword argument in constructor for 
-# SemidiscretizationHyperbolic
+# SemidiscretizationHyperbolic, for use with initial_condition_isolated_mountain
 @inline function bottom_topography_isolated_mountain(x)
     RealT = eltype(x)
     a = sqrt(x[1]^2 + x[2]^2 + x[3]^2)  # radius of the sphere
@@ -238,5 +238,48 @@ end
 
     R = convert(RealT, π / 9)
     return b_0 * (1.0f0 - sqrt(min(R^2, (lon - lon_0)^2 + (lat - lat_0)^2)) / R)
+end
+
+@doc raw"""
+    initial_condition_unsteady_solid_body_rotation(x, t, equations)
+
+Unsteady solid body rotation for the spherical shallow water equations. This analytical 
+solution was derived in the following paper:
+- M. Läuter, D. Handorf, and K. Dethloff (2005). Unsteady analytical solutions of the 
+  spherical shallow water equations. Journal of Computational Physics 210:535–553.
+  [DOI: 10.1016/j.jcp.2005.04.022](https://doi.org/10.1016/j.jcp.2005.04.022)
+"""
+@inline function initial_condition_unsteady_solid_body_rotation(x, t, equations)
+    RealT = eltype(x)
+    a = sqrt(x[1]^2 + x[2]^2 + x[3]^2)  # radius of the sphere
+
+    v_0 = convert(RealT, 2π) * a / (12 * SECONDS_PER_DAY)
+    k1 = 133681.0f0
+    alpha = convert(RealT, π / 4)
+
+    b1 = SVector(cos(EARTH_ROTATION_RATE * t), sin(EARTH_ROTATION_RATE * t), 0.0f0)
+    b2 = SVector(-sin(EARTH_ROTATION_RATE * t), cos(EARTH_ROTATION_RATE * t), 0.0f0)
+    b3 = SVector(0.0f0, 0.0f0, 1.0f0)
+
+    c = SVector(-sin(alpha), 0.0f0, cos(alpha))
+    n = x / norm(x)
+
+    Omega = SVector(0.0f0, 0.0f0, EARTH_ROTATION_RATE)
+    phi_t = SVector(dot(c, b1), dot(c, b2), dot(c, b3))
+
+    v = v_0 * cross(phi_t, n)
+    h = (-0.5f0 * (v_0 * dot(phi_t, n) + dot(Omega, x))^2 +
+         0.5f0 * dot(Omega, x)^2 + k1) / EARTH_GRAVITATIONAL_ACCELERATION
+
+    # Convert primitive variables from Cartesian coordinates to the chosen global 
+    # coordinate system, which depends on the equation type
+    return cartesian2global(SVector(h, v[1], v[2], v[3]), x, equations)
+end
+
+# Bottom topography function to pass as auxiliary_field keyword argument in constructor for 
+# SemidiscretizationHyperbolic, for use with initial_condition_unsteady_solid_body_rotation
+@inline function bottom_topography_unsteady_solid_body_rotation(x)
+    return 0.5f0 * dot(SVector(0.0f0, 0.0f0, EARTH_ROTATION_RATE), x)^2 /
+           EARTH_GRAVITATIONAL_ACCELERATION
 end
 end # @muladd

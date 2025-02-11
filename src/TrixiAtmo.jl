@@ -58,9 +58,10 @@ export global2contravariant, contravariant2global, spherical2cartesian, cartesia
        transform_initial_condition
 
 export initial_condition_gaussian, initial_condition_geostrophic_balance,
-       initial_condition_rossby_haurwitz, initial_condition_isolated_mountain
+       initial_condition_rossby_haurwitz, initial_condition_isolated_mountain,
+       initial_condition_unsteady_solid_body_rotation
 
-export bottom_topography_isolated_mountain
+export bottom_topography_isolated_mountain, bottom_topography_unsteady_solid_body_rotation
 
 export examples_dir
 end # module TrixiAtmo
