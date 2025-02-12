@@ -7,6 +7,7 @@ using TrixiAtmo: source_terms_rainy, saturation_residual,
                  flux_chandrashekar, flux_LMARS,
                  source_terms_no_phase_change,
                  boundary_condition_laplace,
+                 boundary_condition_simple_slip_wall,
                  flux_ec_rain
 using NLsolve: nlsolve
 #using Plots
@@ -227,8 +228,8 @@ equations_parabolic = LaplaceDiffusion2D(diffusivity, equations)
 
 boundary_conditions = (x_neg = boundary_condition_periodic,
                        x_pos = boundary_condition_periodic,
-                       y_neg = boundary_condition_slip_wall,
-                       y_pos = boundary_condition_slip_wall)
+                       y_neg = boundary_condition_simple_slip_wall,
+                       y_pos = boundary_condition_simple_slip_wall)
 
 boundary_conditions_parabolic = (
                        x_neg = boundary_condition_periodic,
@@ -256,7 +257,7 @@ semi = SemidiscretizationHyperbolicParabolic(mesh, (equations, equations_parabol
 ###############################################################################
 # ODE solvers, callbacks etc.
 
-tspan = (0.0, 1000.0)
+tspan = (0.0, 600.0)
 
 ode = semidiscretize(semi, tspan)
 

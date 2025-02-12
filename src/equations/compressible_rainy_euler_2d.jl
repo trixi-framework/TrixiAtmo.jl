@@ -536,13 +536,8 @@ end
     S_auto_conversion = 0.001 * rho_cloud
     S_accretion       = 1.72 * rho_cloud * rho_rain^(0.875)
     S_rain            = S_auto_conversion + S_accretion - S_evaporation
-    S_groundwater     = 0.0
-    
-    if (x[2] < 100.0)
-        S_groundwater = rho_rain * (1 - (x[2] * 0.01)^2)
-    end
 
-    return SVector(0.0, -S_rain, S_rain - S_groundwater, 0.0,
+    return SVector(0.0, -S_rain, S_rain, 0.0,
                    -rho * g, -rho_v2 * g, 0.0, 0.0, 0.0)
 end
 
@@ -1055,3 +1050,46 @@ end
 end
 
 end  # muladd end
+
+
+# adapted from ShallowWaterEquations2D (Recommended with rain!)
+@inline function boundary_condition_simple_slip_wall(u_inner, normal_direction::AbstractVector, x, t, surface_flux_function,
+                                                     equations::CompressibleRainyEulerEquations2D)
+    # normalize the outward pointing direction
+    normal = normal_direction / norm(normal_direction)
+
+    # compute the normal velocity
+    u_normal = normal[1] * u_inner[2] + normal[2] * u_inner[5]
+
+    # create the "external" boundary solution state
+    u_boundary = SVector(u_inner[1], u_inner[2], u_inner[3],
+                         u_inner[4] - 2 * u_normal * normal[5],
+                         u_inner[5] - 2 * u_normal * normal[4],
+                         u_inner[6], u_inner[7], u_inner[8], u_inner[9])
+
+    # calculate the boundary flux
+    flux = surface_flux_function(u_inner, u_boundary, normal_direction, equations)
+
+    return flux
+end
+
+
+# adapted from ShallowWaterEquations2D (Recommended with rain!)
+@inline function boundary_condition_simple_slip_wall(u_inner, orientation, direction, x, t, surface_flux_function,
+                                                     equations::CompressibleRainyEulerEquations2D)
+    ## get the appropriate normal vector from the orientation
+    if orientation == 1
+        u_boundary = SVector(u_inner[1], u_inner[2], u_inner[3], -u_inner[4],  u_inner[5], u_inner[6], u_inner[7], u_inner[8], u_inner[9])
+    else # orientation == 2
+        u_boundary = SVector(u_inner[1], u_inner[2], u_inner[3],  u_inner[4], -u_inner[5], u_inner[6], u_inner[7], u_inner[8], u_inner[9])
+    end
+
+    # Calculate boundary flux
+    if iseven(direction) # u_inner is "left" of boundary, u_boundary is "right" of boundary
+        flux = surface_flux_function(u_inner, u_boundary, orientation, equations)
+    else # u_boundary is "left" of boundary, u_inner is "right" of boundary
+        flux = surface_flux_function(u_boundary, u_inner, orientation, equations)
+    end
+
+    return flux
+end
