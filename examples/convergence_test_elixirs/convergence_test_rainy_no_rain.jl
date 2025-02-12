@@ -164,3 +164,30 @@ summary_callback() # print the timer summary
 
 # For copy-paste convenience:
 #convergence_test("TrixiAtmo.jl/examples/convergence_test_elixirs/convergence_test_rainy_no_rain.jl", 4)
+#=
+####################################################################################################
+l2
+rho_dry             rho_moist           rho_rain            rho_v1              rho_v2              energy_density      rho_vapour          rho_cloud           temperature
+error     EOC       error     EOC       error     EOC       error     EOC       error     EOC       error     EOC       error     EOC       error     EOC       error     EOC
+8.26e-07  -         1.87e-05  -         0.00e+00  -         7.47e-03  -         7.47e-03  -         1.92e+01  -         2.62e-08  -         1.87e-05  -         3.23e-04  -
+4.38e-08  4.24      9.63e-07  4.28      0.00e+00  NaN       2.13e-04  5.13      2.13e-04  5.13      1.01e+00  4.25      8.68e-10  4.91      9.63e-07  4.28      1.07e-05  4.91
+2.69e-09  4.02      5.86e-08  4.04      0.00e+00  NaN       7.04e-06  4.92      7.04e-06  4.92      6.23e-02  4.03      3.61e-11  4.59      5.86e-08  4.04      4.46e-07  4.58
+1.68e-10  4.01      3.61e-09  4.02      0.00e+00  NaN       2.78e-07  4.66      2.78e-07  4.66      3.87e-03  4.01      1.06e-12  5.09      3.61e-09  4.02      1.32e-08  5.08
+
+mean      4.09      mean      4.11      mean      NaN       mean      4.90      mean      4.90      mean      4.09      mean      4.86      mean      4.11      mean      
+4.86
+----------------------------------------------------------------------------------------------------
+linf
+rho_dry             rho_moist           rho_rain            rho_v1              rho_v2              energy_density      rho_vapour          rho_cloud           temperature
+error     EOC       error     EOC       error     EOC       error     EOC       error     EOC       error     EOC       error     EOC       error     EOC       error     EOC
+6.66e-06  -         1.45e-04  -         0.00e+00  -         1.55e-02  -         1.55e-02  -         1.54e+02  -         1.24e-07  -         1.45e-04  -         1.54e-03  -
+3.51e-07  4.25      8.00e-06  4.18      0.00e+00  NaN       4.91e-04  4.98      4.91e-04  4.98      8.24e+00  4.23      3.85e-09  5.01      8.00e-06  4.18      4.78e-05  5.01
+1.92e-08  4.19      4.16e-07  4.26      0.00e+00  NaN       1.81e-05  4.76      1.81e-05  4.76      4.46e-01  4.21      1.58e-10  4.61      4.16e-07  4.26      1.94e-06  4.62
+1.17e-09  4.03      2.53e-08  4.04      0.00e+00  NaN       8.48e-07  4.42      8.48e-07  4.42      2.72e-02  4.04      5.63e-12  4.81      2.53e-08  4.04      6.94e-08  4.81
+
+mean      4.16      mean      4.16      mean      NaN       mean      4.72      mean      4.72      mean      4.16      mean      4.81      mean      4.16      mean      4.81
+----------------------------------------------------------------------------------------------------
+Dict{Symbol, Any} with 3 entries:
+  :variables => ("rho_dry", "rho_moist", "rho_rain", "rho_v1", "rho_v2", "energy_density", "rho_vapour", "rho_cloud", "temperature")
+  :l2        => [4.08874, 4.11293, NaN, 4.90375, 4.90375, 4.09297, 4.86169, 4.11317, 4.85982]
+  :linf      => [4.1567, 4.161, NaN, 4.71912, 4.71912, 4.15581, 4.8092, 4.16105, 4.81099]=#
