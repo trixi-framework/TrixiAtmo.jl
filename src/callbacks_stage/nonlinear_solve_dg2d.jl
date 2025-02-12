@@ -22,10 +22,8 @@ function nonlinear_solve_dg_2d!(u, residual, jacobian, variables_index_vector, t
             u_node = get_node_vars(u, equations, dg, i, j, element)
             guess = SVector(u_node[7], u_node[8], u_node[9])
 
-            x_node = get_node_coords(cache.elements.node_coordinates, equations, dg, i, j, element)
-
             # keep rain positive
-            if (u_node[3] < 0.0 || x_node[2] < 50.0)
+            if (u_node[3] < 0.0)
                 u[3, i, j, element] = 0.0
             end
 

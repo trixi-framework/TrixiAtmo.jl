@@ -16,10 +16,8 @@ function rain_limiter_dg2d!(u, topography,
 
             u_node = get_node_vars(u, equations, dg, i, j, element)
 
-            x_node = get_node_coords(cache.elements.node_coordinates, equations, dg, i, j, element)
-
             # keep rho_rain positive
-            if (u_node[4] < 0.0 || (x_node[2] + topography(x_node[1])) < 50.0)
+            if (u_node[4] < 0.0)
                 u[4, i, j, element] = 0.0
             end
 

@@ -506,13 +506,8 @@ end
     S_auto_conversion = 0.001 * rho_cloud
     S_accretion       = 1.72 * rho_cloud * rho_rain^(0.875)
     S_rain            = S_auto_conversion + S_accretion - S_evaporation
-    S_groundwater     = 0.0
-    
-    if (x[2] < 100.0)
-        S_groundwater = rho_rain * (1 - (x[2] * 0.01)^2)
-    end
 
-    return SVector(0.0, Q_ph + S_evaporation, -Q_ph - S_auto_conversion - S_accretion, S_rain - S_groundwater, 0.0,
+    return SVector(0.0, Q_ph + S_evaporation, -Q_ph - S_auto_conversion - S_accretion, S_rain, 0.0,
                    -rho * g, -rho_v2 * g)
 end
 
