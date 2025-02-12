@@ -13,7 +13,8 @@ const SECONDS_PER_DAY = 8.64e4
 This Gaussian bell case is a smooth initial condition suitable for testing the convergence 
 of discretizations of the linear advection equation on a spherical domain of radius $a = 6.
 37122 \times 10^3\ \mathrm{m}$, representing the surface of the Earth. Denoting the 
-Euclidean norm as $\lVert \cdot \rVert$, the initial height field is given by
+Euclidean norm as $\lVert \cdot \rVert$, the initial height field is prescribed as a 
+function of the position $\vec{x}$ relative to the centre of the Earth by
 ```math
 h(\vec{x}) = h_0 \exp
 \Big(-b_0 \big(\lVert \vec{x} - \vec{x}_0 \rVert / \lVert \vec{x} \rVert\big)^2 \Big),
@@ -125,12 +126,12 @@ $g = 9.80616 \ \mathrm{m}/\mathrm{s}^2$, $\Omega = 7.292 \times 10^{-5} \ \mathr
 and $h_0 = 8000 \ \mathrm{m}$ and defining the functions 
 ```math
 \begin{aligned}
-A(\theta) &=  \frac{\omega}{2}(2 \Omega+\omega) \cos^2 \theta + 
+A(\theta) &:= \frac{\omega}{2}(2 \Omega+\omega) \cos^2 \theta + 
 \frac{1}{4} K^2 \cos^{2 R} \theta\Big((R+1) \cos^2\theta +\left(2 R^2-R-2\right) - 
 \big(2 R^2 / \cos^2 \theta\big) \Big), \\
-B(\theta) &= \frac{2(\Omega+\omega) K}{(R+1)(R+2)} \cos ^R \theta\big((R^2+2 R+2) - 
+B(\theta) &:= \frac{2(\Omega+\omega) K}{(R+1)(R+2)} \cos ^R \theta\big((R^2+2 R+2) - 
 (R+1)^2 \cos^2 \theta\big), \\
-C(\theta) &=  \frac{1}{4} K^2 \cos^{2 R} \theta\big((R+1) \cos^2 \theta-(R+2)\big),
+C(\theta) &:=  \frac{1}{4} K^2 \cos^{2 R} \theta\big((R+1) \cos^2 \theta-(R+2)\big),
 \end{aligned}
 ```
 the initial height field is given by
@@ -184,12 +185,12 @@ end
 Zonal flow over an isolated mountain with a profile given in terms of the latitude 
 $\lambda$ and longitude $\theta$ as 
 ```math
-b(\lambda,\theta) = 
+b(\lambda,\theta) =
 b_0 (1 - \sqrt{\min(R^2, (\lambda-\lambda_0)^2 + (\theta-\theta_0)^2)}/R),
 ```
 where $b_0 = 2000 \ \text{m}$, $\lambda_0 = -/\pi/2$, $\theta_0 = \pi/6$, and $R =\pi/9$. 
 The initial velocity field is given by  $v_\lambda(\theta) = v_0 \cos\theta$, where 
-$v_0 = 20 \ \mathrm{m/s}$, and the total height $H = h+b$ is given by 
+$v_0 = 20 \ \mathrm{m/s}$, and the total geopotential height $H = h+b$ is given by 
 ```math
 H(\theta) = H_0 - \frac{1}{g}\Big(a \Omega v_0 + \frac{1}{2} v_0^2\Big)\sin^2\theta,
 ```
@@ -225,7 +226,7 @@ test suite described in the following paper:
 end
 
 # Bottom topography function to pass as auxiliary_field keyword argument in constructor for 
-# SemidiscretizationHyperbolic, for use with initial_condition_isolated_mountain
+# SemidiscretizationHyperbolic, used with initial_condition_isolated_mountain
 @inline function bottom_topography_isolated_mountain(x)
     RealT = eltype(x)
     a = sqrt(x[1]^2 + x[2]^2 + x[3]^2)  # radius of the sphere
@@ -243,8 +244,47 @@ end
 @doc raw"""
     initial_condition_unsteady_solid_body_rotation(x, t, equations)
 
-Unsteady solid body rotation for the spherical shallow water equations. This analytical 
-solution was derived in the following paper:
+Unsteady analytical solution to the spherical shallow water equations, corresponding to a
+solid body rotation with a prescribed bottom topography. Assuming the domain to be a sphere 
+of radius $a = 6.37122 \times 10^3\ \mathrm{m}$, letting $\vec{x}$ denote the position 
+relative to the centre of the Earth, and letting $\vec{e}_x$, $\vec{e}_y$, and $\vec{e}_z$ 
+denote the Cartesian basis vectors, we define the rotating frame 
+```math
+\vec{b}_x(t) = \cos(\Omega t)\vec{e}_x + \sin(\Omega t)\vec{e}_y, \quad
+\vec{b}_y(t) = -\sin(\Omega t)\vec{e}_x + \cos(\Omega t)\vec{e}_y, \quad 
+\vec{b}_z(t) = \vec{e}_z,
+```
+as a function of time $t$. We also define the associated coordinate transformation 
+```math
+\vec{\varphi}(\vec{x},t) = 
+(\vec{x} \cdot \vec{b}_x(t)) \vec{e}_x + (\vec{x} \cdot \vec{b}_y(t)) \vec{e}_y + 
+(\vec{x} \cdot \vec{b}_z(t)) \vec{e}_z
+```
+as well as a fixed axis $\vec{c} = -\sin(\alpha)\vec{e}_x + \cos(\alpha)\vec{e}_y$, where 
+$\Omega = 7.292 \times 10^{-5}\ \mathrm{s}^{-1}$ is the Earth's rotation rate, and we take 
+$\alpha = \pi/4$. For a bottom topography prescribed as
+```math
+b(\vec{x}) = \frac{1}{2g}(\vec{\Omega} \cdot \vec{x})^2
+```
+where $\vec{\Omega} = \Omega\vec{e}_z$ and $g = 9.80616 \ \mathrm{m}/\mathrm{s}^2$ are the 
+Earth's axis of rotation and gravitational acceleration, respectively, the time-dependent 
+velocity field is given as 
+```math
+\vec{v}(\vec{x},t) = v_0\, \vec{\varphi}(\vec{c},t) \times \vec{x}/\lVert \vec{x} \rVert,
+```
+and the total geopotential height $H = h+b$ is given by 
+```math
+H(\vec{x},t) = 
+\frac{1}{2g}\left(\big(v_0 \,\vec{\Omega}\cdot \vec{x} - 
+\vec{\varphi}(\vec{c},t) \cdot \vec{x}/\lVert \vec{x} \rVert \big)^2 +
+(\vec{\Omega} \cdot \vec{x})^2 + 2k_1\right),
+```
+where we take $v_0 = 2\pi a / (12 \ \mathrm{days})$ and 
+$k_1 = 133681 \ \mathrm{m}^2/\mathrm{s}^2$. To use this test case with 
+[`SplitCovariantShallowWaterEquations2D`](@ref), the keyword argument 
+`auxiliary_field = bottom_topography_unsteady_solid_body_rotation` should be passed into 
+the `SemidiscretizationHyperbolic` constructor. This analytical solution was derived in 
+the following paper:
 - M. Läuter, D. Handorf, and K. Dethloff (2005). Unsteady analytical solutions of the 
   spherical shallow water equations. Journal of Computational Physics 210:535–553.
   [DOI: 10.1016/j.jcp.2005.04.022](https://doi.org/10.1016/j.jcp.2005.04.022)
@@ -253,33 +293,39 @@ solution was derived in the following paper:
     RealT = eltype(x)
     a = sqrt(x[1]^2 + x[2]^2 + x[3]^2)  # radius of the sphere
 
+    # parameters
     v_0 = convert(RealT, 2π) * a / (12 * SECONDS_PER_DAY)
     k1 = 133681.0f0
     alpha = convert(RealT, π / 4)
 
+    # rotating frame
     b1 = SVector(cos(EARTH_ROTATION_RATE * t), sin(EARTH_ROTATION_RATE * t), 0.0f0)
     b2 = SVector(-sin(EARTH_ROTATION_RATE * t), cos(EARTH_ROTATION_RATE * t), 0.0f0)
     b3 = SVector(0.0f0, 0.0f0, 1.0f0)
 
+    # axis and normal vectors 
     c = SVector(-sin(alpha), 0.0f0, cos(alpha))
     n = x / norm(x)
 
-    Omega = SVector(0.0f0, 0.0f0, EARTH_ROTATION_RATE)
+    # dot product of Earth's rotation axis and position vector
+    Omega_dot_x = EARTH_ROTATION_RATE * x[3]
+
+    # coordinate transformation
     phi_t = SVector(dot(c, b1), dot(c, b2), dot(c, b3))
 
+    # compute velocity and total geopotential height
     v = v_0 * cross(phi_t, n)
-    h = (-0.5f0 * (v_0 * dot(phi_t, n) + dot(Omega, x))^2 +
-         0.5f0 * dot(Omega, x)^2 + k1) / EARTH_GRAVITATIONAL_ACCELERATION
+    H = (-0.5f0 * (v_0 * dot(phi_t, n) + Omega_dot_x)^2 +
+         0.5f0 * Omega_dot_x^2 + k1) / EARTH_GRAVITATIONAL_ACCELERATION
 
     # Convert primitive variables from Cartesian coordinates to the chosen global 
     # coordinate system, which depends on the equation type
-    return cartesian2global(SVector(h, v[1], v[2], v[3]), x, equations)
+    return cartesian2global(SVector(H, v[1], v[2], v[3]), x, equations)
 end
 
 # Bottom topography function to pass as auxiliary_field keyword argument in constructor for 
-# SemidiscretizationHyperbolic, for use with initial_condition_unsteady_solid_body_rotation
+# SemidiscretizationHyperbolic, used with initial_condition_unsteady_solid_body_rotation
 @inline function bottom_topography_unsteady_solid_body_rotation(x)
-    return 0.5f0 * dot(SVector(0.0f0, 0.0f0, EARTH_ROTATION_RATE), x)^2 /
-           EARTH_GRAVITATIONAL_ACCELERATION
+    return 0.5f0 * (EARTH_ROTATION_RATE * x[3])^2 / EARTH_GRAVITATIONAL_ACCELERATION
 end
 end # @muladd
