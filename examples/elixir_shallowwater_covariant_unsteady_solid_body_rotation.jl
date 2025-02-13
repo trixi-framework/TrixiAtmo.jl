@@ -10,15 +10,14 @@ using OrdinaryDiffEq, Trixi, TrixiAtmo
 
 initial_condition = initial_condition_unsteady_solid_body_rotation
 polydeg = 3
-cells_per_dimension = 10
+cells_per_dimension = (10,10)
 n_saves = 10
 tspan = (0.0, 5.0 * SECONDS_PER_DAY)
 
 ###############################################################################
 # Spatial discretization
 
-mesh = P4estMeshCubedSphere2D(cells_per_dimension, EARTH_RADIUS, polydeg = polydeg,
-                              initial_refinement_level = 0,
+mesh = P4estMeshCubedSphere2D(cells_per_dimension[1], EARTH_RADIUS, polydeg = polydeg,
                               element_local_mapping = true)
 
 equations = SplitCovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION,
@@ -31,7 +30,7 @@ surface_flux = (FluxPlusDissipation(flux_ec, DissipationLocalLaxFriedrichs()),
                 flux_nonconservative_surface_simplified)
 
 # Create DG solver with polynomial degree = polydeg
-solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
+solver = DGSEM(polydeg = Trixi.polydeg(solver), surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
 
 # Transform the initial condition to the proper set of conservative variables

@@ -280,11 +280,11 @@ H(\vec{x},t) =
 (\vec{\Omega} \cdot \vec{x})^2 + 2k_1\right),
 ```
 where we take $v_0 = 2\pi a / (12 \ \mathrm{days})$ and 
-$k_1 = 133681 \ \mathrm{m}^2/\mathrm{s}^2$. To use this test case with 
-[`SplitCovariantShallowWaterEquations2D`](@ref), the keyword argument 
-`auxiliary_field = bottom_topography_unsteady_solid_body_rotation` should be passed into 
-the `SemidiscretizationHyperbolic` constructor. This analytical solution was derived in 
-the following paper:
+$k_1 = 133681 \ \mathrm{m}^2/\mathrm{s}^2$, and we use $\lVert \cdot \rVert$ to denote the 
+Euclidean norm. To use this test case with [`SplitCovariantShallowWaterEquations2D`](@ref), 
+the keyword argument `auxiliary_field = bottom_topography_unsteady_solid_body_rotation` 
+should be passed into the `SemidiscretizationHyperbolic` constructor. This analytical 
+solution was derived in the following paper:
 - M. Läuter, D. Handorf, and K. Dethloff (2005). Unsteady analytical solutions of the 
   spherical shallow water equations. Journal of Computational Physics 210:535–553.
   [DOI: 10.1016/j.jcp.2005.04.022](https://doi.org/10.1016/j.jcp.2005.04.022)
