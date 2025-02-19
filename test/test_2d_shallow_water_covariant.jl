@@ -47,13 +47,12 @@ end
     end
 end
 
-@trixiatmo_testset "elixir_shallowwater_covariant_rossby_haurwitz_EC (LLF surface flux)" begin
+@trixiatmo_testset "elixir_shallowwater_covariant_isolated_mountain" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_shallowwater_covariant_rossby_haurwitz_EC.jl"),
-                        l2=[265.9818409531758, 0.17644362975403768, 0.2535621643485035],
-                        linf=[574.6722628324133, 0.5155374806433987, 0.5497046315783312],
-                        tspan=(0.0, 1.0 * SECONDS_PER_DAY),
-                        surface_flux=(flux_lax_friedrichs, flux_nonconservative_ec))
+                                 "elixir_shallowwater_covariant_isolated_mountain.jl"),
+                        l2=[13.188835117913722, 0.005698389870463649, 0.007624148100358777],
+                        linf=[116.64112009453402, 0.05208844726941367, 0.07855581195821103],
+                        tspan=(0.0, 1.0 * SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let
@@ -63,4 +62,29 @@ end
         @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
     end
 end
+
+@trixiatmo_testset "elixir_shallowwater_covariant_unsteady_solid_body_rotation_EC" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_shallowwater_covariant_unsteady_solid_body_rotation_EC.jl"),
+                        l2=[
+                            0.19219748410091575,
+                            0.00021019730007766627,
+                            0.0001720661216058036
+                        ],
+                        linf=[
+                            0.8478432302072179,
+                            0.0037665641236666048,
+                            0.006883726531089818
+                        ],
+                        tspan=(0.0, 1.0 * SECONDS_PER_DAY))
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    let
+        t = sol.t[end]
+        u_ode = sol.u[end]
+        du_ode = similar(u_ode)
+        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
+    end
+end
+
 end # module

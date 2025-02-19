@@ -8,11 +8,11 @@ using OrdinaryDiffEq, Trixi, TrixiAtmo
 ###############################################################################
 # Parameters
 
-initial_condition = initial_condition_unsteady_solid_body_rotation
+initial_condition = initial_condition_isolated_mountain
 polydeg = 3
-cells_per_dimension = (10, 10)
+cells_per_dimension = (5, 5)
 n_saves = 10
-tspan = (0.0, 5.0 * SECONDS_PER_DAY)
+tspan = (0.0, 7.0 * SECONDS_PER_DAY)
 
 ###############################################################################
 # Spatial discretization
@@ -30,7 +30,7 @@ surface_flux = (FluxPlusDissipation(flux_ec, DissipationLocalLaxFriedrichs()),
                 flux_nonconservative_surface_simplified)
 
 # Create DG solver with polynomial degree = polydeg
-solver = DGSEM(polydeg = Trixi.polydeg(solver), surface_flux = surface_flux,
+solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
 
 # Transform the initial condition to the proper set of conservative variables
@@ -41,7 +41,7 @@ initial_condition_transformed = transform_initial_condition(initial_condition, e
 # topography.
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver,
                                     source_terms = source_terms_geometric_coriolis,
-                                    auxiliary_field = bottom_topography_unsteady_solid_body_rotation)
+                                    auxiliary_field = bottom_topography_isolated_mountain)
 
 ###############################################################################
 # ODE solvers, callbacks etc.

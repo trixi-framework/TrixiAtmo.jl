@@ -10,15 +10,14 @@ using OrdinaryDiffEq, Trixi, TrixiAtmo
 
 initial_condition = initial_condition_rossby_haurwitz
 polydeg = 3
-cells_per_dimension = 5
+cells_per_dimension = (5, 5)
 n_saves = 10
 tspan = (0.0, 7.0 * SECONDS_PER_DAY)
 
 ###############################################################################
 # Spatial discretization
 
-mesh = P4estMeshCubedSphere2D(cells_per_dimension, EARTH_RADIUS, polydeg = polydeg,
-                              initial_refinement_level = 0,
+mesh = P4estMeshCubedSphere2D(cells_per_dimension[1], EARTH_RADIUS, polydeg = polydeg,
                               element_local_mapping = true)
 
 equations = SplitCovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION,

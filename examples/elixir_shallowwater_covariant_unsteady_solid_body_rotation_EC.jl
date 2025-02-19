@@ -8,17 +8,16 @@ using OrdinaryDiffEq, Trixi, TrixiAtmo
 ###############################################################################
 # Parameters
 
-initial_condition = initial_condition_isolated_mountain
+initial_condition = initial_condition_unsteady_solid_body_rotation
 polydeg = 3
-cells_per_dimension = 5
+cells_per_dimension = (10, 10)
 n_saves = 10
-tspan = (0.0, 7.0 * SECONDS_PER_DAY)
+tspan = (0.0, 5.0 * SECONDS_PER_DAY)
 
 ###############################################################################
 # Spatial discretization
 
-mesh = P4estMeshCubedSphere2D(cells_per_dimension, EARTH_RADIUS, polydeg = polydeg,
-                              initial_refinement_level = 0,
+mesh = P4estMeshCubedSphere2D(cells_per_dimension[1], EARTH_RADIUS, polydeg = polydeg,
                               element_local_mapping = true)
 
 equations = SplitCovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION,
@@ -41,7 +40,7 @@ initial_condition_transformed = transform_initial_condition(initial_condition, e
 # topography.
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver,
                                     source_terms = source_terms_geometric_coriolis,
-                                    auxiliary_field = bottom_topography_isolated_mountain)
+                                    auxiliary_field = bottom_topography_unsteady_solid_body_rotation)
 
 ###############################################################################
 # ODE solvers, callbacks etc.
