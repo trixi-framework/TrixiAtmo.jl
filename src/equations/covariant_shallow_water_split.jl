@@ -148,6 +148,8 @@ end
     return SVector(zero(eltype(u_ll)), J_ll * pressure_term[1], J_ll * pressure_term[2])
 end
 
+# Geometric and Coriolis source terms for a rotating sphere for use with the modified 
+# split covariant formulation
 @inline function source_terms_geometric_coriolis(u, x, t, aux_vars,
                                                  equations::SplitCovariantShallowWaterEquations2D)
     # Geometric variables

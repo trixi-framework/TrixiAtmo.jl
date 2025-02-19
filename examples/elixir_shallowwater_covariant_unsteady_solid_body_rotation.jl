@@ -10,7 +10,7 @@ using OrdinaryDiffEq, Trixi, TrixiAtmo
 
 initial_condition = initial_condition_unsteady_solid_body_rotation
 polydeg = 3
-cells_per_dimension = (10,10)
+cells_per_dimension = (10, 10)
 n_saves = 10
 tspan = (0.0, 5.0 * SECONDS_PER_DAY)
 

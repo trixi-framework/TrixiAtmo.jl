@@ -40,7 +40,9 @@ J \frac{\partial}{\partial t}
 -\Gamma^2_{ac}\tau^{ac} - f J \big(G^{22}hv^1 - G^{21}hv^2\big)
  \end{array}\right].
 ```
-Note that the geometric contribution to the source term involves the Christoffel symbols of the second kind, which can been expressed in terms of the covariant metric tensor components $G_{ab}$ as 
+Note that the geometric contribution to the source term involves the Christoffel symbols of
+the second kind, which can been expressed in terms of the covariant metric tensor 
+components $G_{ab}$ as 
 ```math
 \Gamma_{ac}^b = 
 \frac{1}{2}G^{bd}\big(\partial_aG_{cd} + \partial_c G_{da} - \partial_d G_{ac}\big).
