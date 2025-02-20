@@ -84,8 +84,4 @@ function Trixi.varnames(::typeof(cons2prim_and_vorticity),
     return ("H", "v1", "v2", "v3", "b", "vorticity")
 end
 
-function Trixi.varnames(::typeof(cons2prim_and_vorticity),
-                        equations::CovariantLinearAdvectionEquation2D)
-    return ("h", "v1", "v2", "v3", "b", "vorticity")
-end
 end # @muladd
