@@ -24,20 +24,19 @@ J\left[\begin{array}{c}0 \\ s^1 \\ s^2 \end{array}\right].
 In the above, the non-conservative differential terms in the momentum equations are given by
 ```math
 \Upsilon^a = \frac{1}{2}hu^b\big(G^{ac}\partial_b u_c - \partial_b u^a\big) 
-+ ghG^{ab}\partial_b h,
++ ghG^{ab}\partial_b (h + h_s),
 ```
-and the algebraic momentum source terms implemented in `source_terms_geometric_coriolis` 
-are given by
+where we allow for a variable bottom topography defined by $h_s$, and the algebraic 
+momentum source terms implemented in `source_terms_geometric_coriolis` are given by
 ```math
 s^a = -\frac{1}{2}\big(\Gamma_{bc}^a hu^bu^c - G^{ac}\Gamma_{bc}^d hu^b u_d \big) 
-- f JG^{ab}\varepsilon_{bc} hu^c,
+- f JG^{ab}\varepsilon_{bc} hu^c.
 ```
-where we use the same notation as in [`CovariantShallowWaterEquations2D`](@ref) (including 
-summation over repeated indices) and note that the covariant velocity components are given 
-by $u_a = G_{ab} u^b$. To obtain an entropy-conservative scheme with respect to the total 
-energy
+In the above, we employ the same notation as in [`CovariantShallowWaterEquations2D`](@ref) 
+(including summation over repeated indices) and note that the covariant velocity components are given by $u_a = G_{ab} u^b$. To obtain an entropy-conservative scheme with respect to 
+the total energy
 ```math
-S = \frac{1}{2}h(u_1 u^1 + u_2u^2)  + \frac{1}{2}gh^2,
+S = \frac{1}{2}h(u_1 u^1 + u_2u^2)  + \frac{1}{2}gh^2 + gh h_s,
 ```
 this equation type should be used with `volume_flux = (flux_ec, flux_nonconservative_ec)`.
 !!! warning "Experimental implementation"
@@ -129,8 +128,8 @@ end
                    J_ll * (geometric_term[2] + pressure_term[2]))
 end
 
-# For the surface term with smooth bottom topography, we can significantly simplify the 
-# surface nonconservative term
+# For smooth bottom topography, we can significantly simplify the nonconservative surface
+# term, such that only the pressure term remains.
 @inline function flux_nonconservative_surface_simplified(u_ll, u_rr, aux_vars_ll,
                                                          aux_vars_rr,
                                                          orientation::Integer,

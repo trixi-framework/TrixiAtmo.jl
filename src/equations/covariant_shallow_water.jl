@@ -56,6 +56,11 @@ components $G_{ab}$ as
   flux-form high-order discontinuous Galerkin shallow water model on the cubed-sphere. 
   Journal of Computational Physics 271:224-243. 
   [DOI: 10.1016/j.jcp.2013.11.033](https://doi.org/10.1016/j.jcp.2013.11.033)
+
+``` note
+    For problems with variable bottom topography and entropy-stable schemes, 
+    [SplitCovariantShallowWaterEquations2D](@ref) should be used.
+```
 """
 struct CovariantShallowWaterEquations2D{GlobalCoordinateSystem, RealT <: Real} <:
        AbstractCovariantShallowWaterEquations2D{GlobalCoordinateSystem}
