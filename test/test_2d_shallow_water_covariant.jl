@@ -63,19 +63,21 @@ end
     end
 end
 
-@trixiatmo_testset "elixir_shallowwater_covariant_unsteady_solid_body_rotation_EC" begin
+@trixiatmo_testset "elixir_shallowwater_covariant_unsteady_solid_body_rotation_central_llf" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_covariant_unsteady_solid_body_rotation_EC.jl"),
                         l2=[
-                            0.19219748410091575,
-                            0.00021019730007766627,
-                            0.0001720661216058036
+                            0.015841167275942963,
+                            3.470597408352903e-5,
+                            1.4875776786557202e-5
                         ],
                         linf=[
-                            0.8478432302072179,
-                            0.0037665641236666048,
-                            0.006883726531089818
+                            0.1176405542039447,
+                            0.0001442044402930609,
+                            0.00013001377736920894
                         ],
+                        volume_flux=(flux_central, flux_nonconservative_ec),
+                        surface_flux=(flux_lax_friedrichs, flux_nonconservative_ec),
                         tspan=(0.0, 1.0 * SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
