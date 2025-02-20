@@ -83,5 +83,4 @@ function Trixi.varnames(::typeof(cons2prim_and_vorticity),
                         equations::AbstractCovariantShallowWaterEquations2D)
     return ("H", "v1", "v2", "v3", "b", "vorticity")
 end
-
 end # @muladd
