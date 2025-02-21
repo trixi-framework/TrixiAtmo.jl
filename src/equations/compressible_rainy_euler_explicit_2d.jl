@@ -120,8 +120,15 @@ end
     v1, v2 = velocities(u, rho_inv, equations)
     v_squared_temp = 0.5 * (v1^2 + v2^2) * inv_temperature
 
-    omega_dry        = c_vd * ln_temperature - R_d * log(rho_dry)    + v_squared_temp - c_vd - R_d
-    omega_vapour     = c_vv * ln_temperature - R_v * log(rho_vapour) + v_squared_temp - c_vv - R_v - L_ref * inv_temperature
+    # check for zero density
+    rho_vapour_log = 0.0
+
+    if (rho_vapour > 0.0)
+        rho_vapour_log = log(rho_vapour)
+    end
+
+    omega_dry        = c_vd * ln_temperature - R_d * log(rho_dry)   + v_squared_temp - c_vd - R_d
+    omega_vapour     = c_vv * ln_temperature - R_v * rho_vapour_log + v_squared_temp - c_vv - R_v - L_ref * inv_temperature
     omega_liquid     = c_l  * ln_temperature                         + v_squared_temp - c_l
     omega_momentum_1 = -v1 * inv_temperature
     omega_momentum_2 = -v2 * inv_temperature
@@ -170,7 +177,7 @@ end
     eq_pot = (temperature * (ref_p / p_d)^(R_d / c_p) * H^(-r_v * R_v / c_p) *
                exp(L_v * r_v * inv(c_p * temperature)))
 
-    return SVector(rho, r_v, r_c, r_r, v1, v2, eq_pot, p)
+    return SVector(rho, rho_vapour, rho_cloud, rho_rain, v1, v2, eq_pot, rho)
 end
 
 
@@ -209,7 +216,7 @@ varnames(::typeof(cons2prim), ::CompressibleRainyEulerEquationsExplicit2D) = ("r
 varnames(::typeof(cons2eq_pot_temp), ::CompressibleRainyEulerEquationsExplicit2D) = ("rho_dry", "rho_vapour",
                                                                              "rho_cloud", "rho_rain", 
                                                                              "v1", "v2", "eq_pot_temp",
-                                                                             "pressure", "entropy")
+                                                                             "rho")
 
 
 
@@ -833,6 +840,16 @@ end
 end
 
 
+@inline function flux_chandrashekar(u_ll, u_rr, orientation::Int, equations::CompressibleRainyEulerEquationsExplicit2D)
+    if (orientation == 1)
+        return flux_chandrashekar(u_ll, u_rr, SVector(1, 0), equations)
+    else
+        return flux_chandrashekar(u_ll, u_rr, SVector(0, 1), equations)
+    end
+end
+
+
+
 @inline function flux_ec_rain(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleRainyEulerEquationsExplicit2D)
     # constants
     c_l   = equations.c_liquid_water
@@ -856,18 +873,14 @@ end
     vr_ll        = terminal_velocity_rain(rho_vapour_ll + rho_cloud_ll, rho_rain_ll, equations)
     vr_rr        = terminal_velocity_rain(rho_vapour_rr + rho_cloud_rr, rho_rain_rr, equations)
 
-    # pressures
-    p_ll = pressure(u_ll, equations)
-    p_rr = pressure(u_rr, equations)
-
     # velocity averages
-    v1_avg              = 0.5 * (v1_ll                 + v1_rr)
-    v2_avg              = 0.5 * (v2_ll                 + v2_rr)
-    v1_square_avg       = 0.5 * (v1_ll^2               + v1_rr^2)
-    v2_square_avg       = 0.5 * (v2_ll^2               + v2_rr^2)
-    v_square_avg        = v1_square_avg                + v2_square_avg
-    v_dot_n_avg         = normal_direction[1] * v1_avg + normal_direction[2] *  v2_avg
-    vr_normal_avg       =                          0.5 * normal_direction[2] * (vr_ll + vr_rr)
+    v1_avg        = 0.5 * (v1_ll                 + v1_rr)
+    v2_avg        = 0.5 * (v2_ll                 + v2_rr)
+    v1_square_avg = 0.5 * (v1_ll^2               + v1_rr^2)
+    v2_square_avg = 0.5 * (v2_ll^2               + v2_rr^2)
+    K_avg         = 0.5 * (v1_square_avg         + v2_square_avg)
+    v_dot_n_avg   = normal_direction[1] * v1_avg + normal_direction[2] *  v2_avg
+    vr_normal_avg =                          0.5 * normal_direction[2] * (vr_ll + vr_rr)
 
     # density averages
     rho_dry_avg         = 0.5 * (rho_dry_ll    + rho_dry_rr)
@@ -898,17 +911,9 @@ end
     end
 
     # other averages
-    p_avg               = 0.5 * (p_ll + p_rr)
     inv_temperature_avg = 0.5 * (inv_temperature_ll + inv_temperature_rr)
-    inv_temperature_log = ln_mean(inv_temperature_ll, inv_temperature_rr)
-
-    # jumps
-    temperature_jump     = temperature_rr     - temperature_ll
-    inv_temperature_jump = inv_temperature_rr - inv_temperature_ll
-    v_jump               = v1_rr - v1_ll + v2_rr - v2_ll
-
-    # help variables
-    s_help      = inv(inv_temperature_log)
+    inv_temperature_log = inv_ln_mean(inv_temperature_ll, inv_temperature_rr)
+    p_int  = inv(inv_temperature_avg) * (R_d * rho_dry_avg + R_v * rho_vapour_avg)
     
     # density flux
     f_vapour = rho_vapour_log * v_dot_n_avg
@@ -919,19 +924,12 @@ end
     f_rho    = f_dry    + f_moist + f_rain
 
     # momentum flux
-    f_rhov1  = f_rho * v1_avg + p_avg * normal_direction[1]
-    f_rhov2  = f_rho * v2_avg + p_avg * normal_direction[2]
+    f_rhov1  = f_rho * v1_avg + p_int * normal_direction[1]
+    f_rhov2  = f_rho * v2_avg + p_int * normal_direction[2]
 
     # energy flux
-    if !(isapprox(temperature_jump, 0.0, atol=1e-13))
-        v_temp_jump = v_jump / inv_temperature_jump
-        f_energy = (c_vd * s_help - 0.5 * v_square_avg) * f_dry + (c_vv * s_help - 0.5 * v_square_avg + L_ref) * f_vapour + 
-                   (c_l  * s_help - 0.5 * v_square_avg) * (f_cloud + f_rain) +
-                   (v_temp_jump * inv_temperature_avg + v_dot_n_avg) * p_avg +
-                   (v1_avg^2 + v2_avg^2) * f_rho - (R_d * rho_dry_avg + R_v * rho_vapour_avg) * v_temp_jump
-    else
-        f_energy = 0.0
-    end
+    f_energy = (c_vd * inv_temperature_log - K_avg) * f_dry + (c_vv * inv_temperature_log - K_avg + L_ref) * f_vapour + 
+               (c_l  * inv_temperature_log - K_avg) * (f_cloud + f_rain) + (v1_avg * f_rhov1 + v2_avg * f_rhov2) 
 
     return SVector(f_dry, f_vapour, f_cloud, f_rain, f_rhov1, f_rhov2, f_energy)
 end
@@ -943,5 +941,51 @@ end
         return flux_ec_rain(u_ll, u_rr, SVector(0, 1), equations)
     end
 end
+
+
+
+# adapted from ShallowWaterEquations2D (Recommended with rain!)
+@inline function boundary_condition_simple_slip_wall(u_inner, normal_direction::AbstractVector, x, t, surface_flux_function,
+                                                     equations::CompressibleRainyEulerEquationsExplicit2D)
+    # normalize the outward pointing direction
+    normal = normal_direction / norm(normal_direction)
+
+    # compute the normal velocity
+    u_normal = normal[1] * u_inner[2] + normal[2] * u_inner[5]
+
+    # create the "external" boundary solution state
+    u_boundary = SVector(u_inner[1], u_inner[2], u_inner[3], u_inner[4],
+    u_inner[5] - 2 * u_normal * normal[6],
+    u_inner[6] - 2 * u_normal * normal[5],
+    u_inner[7])
+
+    # calculate the boundary flux
+    flux = surface_flux_function(u_inner, u_boundary, normal_direction, equations)
+
+    return flux
+end
+
+
+# adapted from ShallowWaterEquations2D (Recommended with rain!)
+@inline function boundary_condition_simple_slip_wall(u_inner, orientation, direction, x, t, surface_flux_function,
+                                                     equations::CompressibleRainyEulerEquationsExplicit2D)
+    ## get the appropriate normal vector from the orientation
+    if orientation == 1
+        u_boundary = SVector(u_inner[1], u_inner[2], u_inner[3], u_inner[4], -u_inner[5],  u_inner[6], u_inner[7])
+    else # orientation == 2
+        u_boundary = SVector(u_inner[1], u_inner[2], u_inner[3],  u_inner[4], u_inner[5], -u_inner[6], u_inner[7])
+    end
+
+    # Calculate boundary flux
+    if iseven(direction) # u_inner is "left" of boundary, u_boundary is "right" of boundary
+        flux = surface_flux_function(u_inner, u_boundary, orientation, equations)
+    else # u_boundary is "left" of boundary, u_inner is "right" of boundary
+        flux = surface_flux_function(u_boundary, u_inner, orientation, equations)
+    end
+
+    return flux
+end
+
+
 
 end  # muladd end

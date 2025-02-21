@@ -1,10 +1,9 @@
 using OrdinaryDiffEq
 using Trixi
 using TrixiAtmo
-using TrixiAtmo: source_terms_no_phase_change, saturation_residual,
+using TrixiAtmo: source_terms_moist, saturation_residual,
                  saturation_residual_jacobian, NonlinearSolveDG,
-                 cons2eq_pot_temp, flux_LMARS, flux_chandrashekar,
-                 flux_ec_rain
+                 cons2eq_pot_temp, flux_LMARS, flux_ec_rain
 using NLsolve: nlsolve
 
 
@@ -13,7 +12,7 @@ using NLsolve: nlsolve
 function moist_state(y, dz, y0, r_t0, theta_e0, equations::CompressibleMoistEulerEquations2D)
 
     @unpack p_0, g, c_pd, c_pv, c_vd, c_vv, R_d, R_v, c_pl, L_00 = equations
-
+    g = 0.0
     (p, rho, T, r_t, r_v, rho_qv, theta_e) = y
     p0 = y0[1]
 
@@ -136,13 +135,13 @@ function initial_condition_moist_bubble(x, t, equations::CompressibleMoistEulerE
     rho, rho_e, rho_qv, rho_ql, T_loc = perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
                                                         equations::CompressibleMoistEulerEquations2D)
 
-    v1 = 0.0
-    v2 = 0.0
+    v1 = 1.0
+    v2 = 1.0
     rho_v1 = rho * v1
     rho_v2 = rho * v2
     rho_E = rho_e + 1 / 2 * rho * (v1^2 + v2^2)
 
-    return SVector(rho - rho_qv - rho_ql, rho_qv + rho_ql, 0.0, rho_v1, rho_v2, rho_E, rho_qv, rho_ql, T_loc)
+    return SVector(rho - rho_qv - rho_ql, rho_qv, rho_ql, 0.0, rho_v1, rho_v2, rho_E)
 end
 
 function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
@@ -211,7 +210,7 @@ end
 atmosphere_data = AtmosphereLayers(CompressibleMoistEulerEquations2D())
 
 # Create the initial condition with the initial data set
-function initial_condition_moist(x, t, equations::CompressibleRainyEulerEquations2D)
+function initial_condition_moist(x, t, equations::CompressibleRainyEulerEquationsExplicit2D)
     return initial_condition_moist_bubble(x, t, CompressibleMoistEulerEquations2D(), atmosphere_data)
 end
 
@@ -220,20 +219,19 @@ end
 ###############################################################################
 # semidiscretization of the compressible rainy Euler equations
 
-equations = CompressibleRainyEulerEquations2D()
+equations = CompressibleRainyEulerEquationsExplicit2D()
 
 boundary_conditions = (x_neg = boundary_condition_periodic,
                        x_pos = boundary_condition_periodic,
-                       y_neg = boundary_condition_slip_wall,
-                       y_pos = boundary_condition_slip_wall)
+                       y_neg = boundary_condition_periodic,
+                       y_pos = boundary_condition_periodic)
 
 polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
 
-#surface_flux = flux_lax_friedrichs
-surface_flux = flux_LMARS
-volume_flux  = flux_ec_rain
 
+volume_flux  = flux_ec_rain
+surface_flux = volume_flux
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
 solver = DGSEM(basis, surface_flux, volume_integral)
@@ -241,13 +239,12 @@ solver = DGSEM(basis, surface_flux, volume_integral)
 coordinates_min = (     0.0,      0.0)
 coordinates_max = (20_000.0, 10_000.0)
 
-cells_per_dimension = (65, 32)
+cells_per_dimension = (64, 32)
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
-                      periodicity = (true, false))
+                      periodicity = (true, true))
 
 semi = SemidiscretizationHyperbolic(mesh, equations,
                                     initial_condition_moist, solver,
-                                    source_terms = source_terms_no_phase_change,
                                     boundary_conditions = boundary_conditions)
 
 ###############################################################################
@@ -261,7 +258,7 @@ summary_callback = SummaryCallback()
 
 analysis_interval = 1000
 
-# entropy?
+
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
                                      extra_analysis_errors = (:entropy_conservation_error,))
 
@@ -281,11 +278,9 @@ callbacks = CallbackSet(summary_callback,
                         save_solution,
                         stepsize_callback)
 
-stage_limiter! = NonlinearSolveDG(saturation_residual, saturation_residual_jacobian, SVector(7, 8, 9), 1e-9)
-
 ###############################################################################
 # run the simulation
-sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false, stage_limiter!),
+sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
             maxiters = 1.0e7,
             dt = 1.0,
             save_everystep = false, callback = callbacks);

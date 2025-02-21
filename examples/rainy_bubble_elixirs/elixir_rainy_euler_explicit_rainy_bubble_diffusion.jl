@@ -7,7 +7,8 @@ using TrixiAtmo: source_terms_rainy, saturation_residual,
                  flux_chandrashekar, flux_LMARS,
                  source_terms_no_phase_change,
                  boundary_condition_laplace,
-                 flux_ec_rain
+                 flux_ec_rain,
+                 boundary_condition_simple_slip_wall
 using NLsolve: nlsolve
 #using Plots
 
@@ -227,8 +228,8 @@ equations_parabolic = LaplaceDiffusion2D(diffusivity, equations)
 
 boundary_conditions = (x_neg = boundary_condition_periodic,
                        x_pos = boundary_condition_periodic,
-                       y_neg = boundary_condition_slip_wall,
-                       y_pos = boundary_condition_slip_wall)
+                       y_neg = boundary_condition_simple_slip_wall,
+                       y_pos = boundary_condition_simple_slip_wall)
 
 boundary_conditions_parabolic = (
                        x_neg = boundary_condition_periodic,
@@ -283,9 +284,8 @@ callbacks = CallbackSet(summary_callback,
                         alive_callback,
                         save_solution,
                         stepsize_callback)
-topography(x_1) = 0.0
 
-stage_limiter! = RainLimiterDG(topography)
+stage_limiter! = RainLimiterDG()
 
 ###############################################################################
 # run the simulation

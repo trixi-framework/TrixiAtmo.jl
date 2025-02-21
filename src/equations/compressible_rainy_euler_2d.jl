@@ -124,8 +124,15 @@ end
     v1, v2 = velocities(u, rho_inv, equations)
     v_squared_temp = 0.5 * (v1^2 + v2^2) * inv_temperature
 
-    omega_dry        = c_vd * ln_temperature - R_d * log(rho_dry)    + v_squared_temp - c_vd - R_d
-    omega_vapour     = c_vv * ln_temperature - R_v * log(rho_vapour) + v_squared_temp - c_vv - R_v - L_ref * inv_temperature
+    # check for zero density
+    rho_vapour_log = 0.0
+
+    if (rho_vapour > 0.0)
+        rho_vapour_log = log(rho_vapour)
+    end
+
+    omega_dry        = c_vd * ln_temperature - R_d * log(rho_dry)   + v_squared_temp - c_vd - R_d
+    omega_vapour     = c_vv * ln_temperature - R_v * rho_vapour_log + v_squared_temp - c_vv - R_v - L_ref * inv_temperature
     omega_liquid     = c_l  * ln_temperature                        + v_squared_temp - c_l
     omega_momentum_1 = -v1 * inv_temperature
     omega_momentum_2 = -v2 * inv_temperature
@@ -925,6 +932,14 @@ end
     return SVector(f_dry, f_moist, f_rain, f_rhov1, f_rhov2, f_energy, 0.0, 0.0, 0.0)
 end
 
+@inline function flux_chandrashekar(u_ll, u_rr, orientation::Int, equations::CompressibleRainyEulerEquations2D)
+    if (orientation == 1)
+        return flux_chandrashekar(u_ll, u_rr, SVector(1, 0), equations)
+    else
+        return flux_chandrashekar(u_ll, u_rr, SVector(0, 1), equations)
+    end
+end
+
 
 @inline function flux_ec_rain(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleRainyEulerEquations2D)
     # constants
@@ -936,35 +951,27 @@ end
     L_ref = equations.ref_latent_heat_vap_temp
 
     # densities and temperatures
-    rho_dry_ll, rho_moist_ll, rho_rain_ll, rho_ll, rho_inv_ll = densities(u_ll, equations)
-    rho_dry_rr, rho_moist_rr, rho_rain_rr, rho_rr, rho_inv_rr = densities(u_rr, equations)
-    rho_vapour_ll, rho_cloud_ll, temperature_ll               = cons2nonlinearsystemsol(u_ll, equations)
-    rho_vapour_rr, rho_cloud_rr, temperature_rr               = cons2nonlinearsystemsol(u_rr, equations)
-    inv_temperature_ll                                        = inv(temperature_ll)
-    inv_temperature_rr                                        = inv(temperature_rr)
+    rho_dry_ll, rho_vapour_ll, rho_cloud_ll, rho_rain_ll, rho_ll, rho_inv_ll = densities(u_ll, equations)
+    rho_dry_rr, rho_vapour_rr, rho_cloud_rr, rho_rain_rr, rho_rr, rho_inv_rr = densities(u_rr, equations)
+    temperature_ll                                                           = get_temperature(u_ll, equations)
+    temperature_rr                                                           = get_temperature(u_rr, equations)
+    inv_temperature_ll                                                       = inv(temperature_ll)
+    inv_temperature_rr                                                       = inv(temperature_rr)
 
     # velocities
     v1_ll, v2_ll = velocities(u_ll, rho_inv_ll, equations)
     v1_rr, v2_rr = velocities(u_rr, rho_inv_rr, equations)
-    vr_ll        = terminal_velocity_rain(rho_moist_ll, rho_rain_ll, equations)
-    vr_rr        = terminal_velocity_rain(rho_moist_rr, rho_rain_rr, equations)
-
-    # energy_density
-    E_ll = energy_density(u_ll, equations)
-    E_rr = energy_density(u_rr, equations)
-
-    # pressures
-    p_ll = pressure(u_ll, equations)
-    p_rr = pressure(u_rr, equations)
+    vr_ll        = terminal_velocity_rain(rho_vapour_ll + rho_cloud_ll, rho_rain_ll, equations)
+    vr_rr        = terminal_velocity_rain(rho_vapour_rr + rho_cloud_rr, rho_rain_rr, equations)
 
     # velocity averages
-    v1_avg              = 0.5 * (v1_ll                 + v1_rr)
-    v2_avg              = 0.5 * (v2_ll                 + v2_rr)
-    v1_square_avg       = 0.5 * (v1_ll^2               + v1_rr^2)
-    v2_square_avg       = 0.5 * (v2_ll^2               + v2_rr^2)
-    v_square_avg        = v1_square_avg                + v2_square_avg
-    v_dot_n_avg         = normal_direction[1] * v1_avg + normal_direction[2] *  v2_avg
-    vr_normal_avg       =                          0.5 * normal_direction[2] * (vr_ll + vr_rr)
+    v1_avg        = 0.5 * (v1_ll                 + v1_rr)
+    v2_avg        = 0.5 * (v2_ll                 + v2_rr)
+    v1_square_avg = 0.5 * (v1_ll^2               + v1_rr^2)
+    v2_square_avg = 0.5 * (v2_ll^2               + v2_rr^2)
+    K_avg         = 0.5 * (v1_square_avg         + v2_square_avg)
+    v_dot_n_avg   = normal_direction[1] * v1_avg + normal_direction[2] *  v2_avg
+    vr_normal_avg =                          0.5 * normal_direction[2] * (vr_ll + vr_rr)
 
     # density averages
     rho_dry_avg         = 0.5 * (rho_dry_ll    + rho_dry_rr)
@@ -995,25 +1002,9 @@ end
     end
 
     # other averages
-    p_avg               = 0.5 * (p_ll + p_rr)
-    E_avg               = 0.5 * (E_ll + E_rr)
-    temperature_avg     = 0.5 * (temperature_ll     + temperature_rr)
     inv_temperature_avg = 0.5 * (inv_temperature_ll + inv_temperature_rr)
-    temperature_log     = ln_mean(temperature_ll, temperature_rr)
-    inv_temperature_log = ln_mean(inv_temperature_ll, inv_temperature_rr)
-
-    # jumps
-    rho_dry_jump         = rho_dry_rr         - rho_dry_ll
-    rho_vapour_jump      = rho_vapour_rr      - rho_vapour_ll
-    rho_cloud_jump       = rho_cloud_rr       - rho_cloud_ll
-    rho_rain_jump        = rho_rain_rr        - rho_rain_ll
-    temperature_jump     = temperature_rr     - temperature_ll
-    inv_temperature_jump = inv_temperature_rr - inv_temperature_ll
-    v_normal_jump        = (v1_rr - v1_ll) * normal_direction[1] + (v2_rr - v2_ll) * normal_direction[2]
-    v_jump               = v1_rr - v1_ll + v2_rr - v2_ll
-
-    # help variables
-    s_help      = inv(inv_temperature_log)
+    inv_temperature_log = inv_ln_mean(inv_temperature_ll, inv_temperature_rr)
+    p_int  = inv(inv_temperature_avg) * (R_d * rho_dry_avg + R_v * rho_vapour_avg)
     
     # density flux
     f_vapour = rho_vapour_log * v_dot_n_avg
@@ -1024,19 +1015,12 @@ end
     f_rho    = f_dry    + f_moist + f_rain
 
     # momentum flux
-    f_rhov1  = f_rho * v1_avg + p_avg * normal_direction[1]
-    f_rhov2  = f_rho * v2_avg + p_avg * normal_direction[2]
+    f_rhov1  = f_rho * v1_avg + p_int * normal_direction[1]
+    f_rhov2  = f_rho * v2_avg + p_int * normal_direction[2]
 
     # energy flux
-    if !(isapprox(temperature_jump, 0.0, atol=1e-13))
-        v_temp_jump = v_jump / inv_temperature_jump
-        f_energy = (c_vd * s_help - 0.5 * v_square_avg) * f_dry + (c_vv * s_help - 0.5 * v_square_avg + L_ref) * f_vapour + 
-                   (c_l  * s_help - 0.5 * v_square_avg) * (f_cloud + f_rain) +
-                   (v_temp_jump * inv_temperature_avg + v_dot_n_avg) * p_avg +
-                   (v1_avg^2 + v2_avg^2) * f_rho - (R_d * rho_dry_avg + R_v * rho_vapour_avg) * v_temp_jump
-    else
-        f_energy = 0.0
-    end
+    f_energy = (c_vd * inv_temperature_log - K_avg) * f_dry + (c_vv * inv_temperature_log - K_avg + L_ref) * f_vapour + 
+               (c_l  * inv_temperature_log - K_avg) * (f_cloud + f_rain) + (v1_avg * f_rhov1 + v2_avg * f_rhov2)
 
     return SVector(f_dry, f_moist, f_rain, f_rhov1, f_rhov2, f_energy, 0.0, 0.0, 0.0)
 end
@@ -1049,7 +1033,6 @@ end
     end
 end
 
-end  # muladd end
 
 
 # adapted from ShallowWaterEquations2D (Recommended with rain!)
@@ -1093,3 +1076,7 @@ end
 
     return flux
 end
+
+
+
+end  # muladd end

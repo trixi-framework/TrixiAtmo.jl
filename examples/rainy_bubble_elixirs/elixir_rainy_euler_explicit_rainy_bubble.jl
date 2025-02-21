@@ -268,9 +268,7 @@ callbacks = CallbackSet(summary_callback,
                         save_solution,
                         stepsize_callback)
 
-topography(x_1) = 0.0
-
-stage_limiter! = RainLimiterDG(topography)
+stage_limiter! = RainLimiterDG()
 
 ###############################################################################
 # run the simulation
