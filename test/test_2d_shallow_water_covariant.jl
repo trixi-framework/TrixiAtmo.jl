@@ -101,4 +101,22 @@ end
     end
 end
 
+@trixiatmo_testset "elixir_shallowwater_covariant_barotropic_instability" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_shallowwater_covariant_barotropic_instability.jl"),
+                        l2=[21.085349167645717, 0.030059547976114206, 0.023419991986079282],
+                        linf=[122.97647708776276, 0.17997838634063137, 0.16658465951310109],
+                        polydeg=TEST_POLYDEG,
+                        cells_per_dimension=TEST_CELLS_PER_DIMENSION,
+                        tspan=TEST_TSPAN)
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    let
+        t = sol.t[end]
+        u_ode = sol.u[end]
+        du_ode = similar(u_ode)
+        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
+    end
+end
+
 end # module

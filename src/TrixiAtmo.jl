@@ -18,6 +18,7 @@ using StaticArrayInterface: static_size
 using LinearAlgebra: cross, norm, dot, det
 using Reexport: @reexport
 using LoopVectorization: @turbo
+using QuadGK: quadgk
 using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
 
 @reexport using StaticArrays: SVector, SMatrix

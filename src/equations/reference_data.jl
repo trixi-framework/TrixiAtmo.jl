@@ -333,11 +333,10 @@ end
     initial_condition_barotropic_instability(x, t, equations)
 
 """
-function initial_condition_barotropic_instability(x, t, equations)
+@inline function initial_condition_barotropic_instability(x, t, equations)
     RealT = eltype(x)
-    radius = sqrt(x[1]^2 + x[2]^2 + x[3]^2)
-    lon = atan(x[2], x[1])
-    lat = asin(x[3] / radius)
+    a = sqrt(x[1]^2 + x[2]^2 + x[3]^2)  # radius of the sphere
+    lon, lat = atan(x[2], x[1]), asin(x[3] / a)
 
     # compute zonal and meridional velocity components
     u_0 = 80.0f0
@@ -347,16 +346,17 @@ function initial_condition_barotropic_instability(x, t, equations)
     vlat = zero(eltype(x))
 
     # numerically integrate (here we use the QuadGK package) to get height
-    galewsky_integral, _ = quadgk(latp -> galewsky_integrand(latp, u_0, lat_0, lat_1,
-                                                             radius,
-                                                             equations), -π / 2, lat)
-    h = 10158.0f0 - radius / gravitational_acceleration * galewsky_integral
+    galewsky_integral, _ = quadgk(latp -> galewsky_integrand(latp, u_0, lat_0, lat_1, a),
+                                  convert(RealT, π / 2), lat)
+    h = 10158.0f0 - a / EARTH_GRAVITATIONAL_ACCELERATION * galewsky_integral
 
     # add perturbation to initiate instability
-    α, β = convert(RealT, 1 / 3), convert(RealT, 1 / 15)
+    alpha, beta = convert(RealT, 1 / 3), convert(RealT, 1 / 15)
     lat_2 = convert(RealT, π / 4)
     if (-π < lon) && (lon < π)
-        h = h + 120.0f0 * cos(lat) * exp(-((lon / α)^2)) * exp(-((lat_2 - lat) / β)^2)
+        h = h +
+            120.0f0 * cos(lat) *
+            exp(-((lon / alpha)^2)) * exp(-((lat_2 - lat) / beta)^2)
     end
 
     # Convert primitive variables from spherical coordinates to the chosen global 
@@ -364,19 +364,18 @@ function initial_condition_barotropic_instability(x, t, equations)
     return spherical2global(SVector(h, vlon, vlat, zero(RealT)), x, equations)
 end
 
-@inline function galewsky_velocity(θ, u_0, θ_0, θ_1)
-    if (θ_0 < θ) && (θ < θ_1)
-        u = u_0 / exp(-4 / (θ_1 - θ_0)^2) * exp(1 / (θ - θ_0) * 1 / (θ - θ_1))
+@inline function galewsky_velocity(lat, u_0, lat_0, lat_1)
+    if (lat_0 < lat) && (lat < lat_1)
+        u = u_0 / exp(-4 / (lat_1 - lat_0)^2) *
+            exp(1 / (lat - lat_0) * 1 / (lat - lat_1))
     else
-        u = zero(θ)
+        u = zero(lat)
     end
     return u
 end
 
-@inline function galewsky_integrand(θ, u_0, θ_0, θ_1, a,
-                                    equations::CovariantShallowWaterEquations2D)
-    (; rotation_rate) = equations
-    u = galewsky_velocity(θ, u_0, θ_0, θ_1)
-    return u * (2 * rotation_rate * sin(θ) + u * tan(θ) / a)
+@inline function galewsky_integrand(lat, u_0, lat_0, lat_1, a)
+    u = galewsky_velocity(lat, u_0, lat_0, lat_1)
+    return u * (2 * EARTH_ROTATION_RATE * sin(lat) + u * tan(lat) / a)
 end
 end # @muladd
