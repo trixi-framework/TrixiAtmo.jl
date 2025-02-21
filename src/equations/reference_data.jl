@@ -329,9 +329,13 @@ end
     return 0.5f0 * (EARTH_ROTATION_RATE * x[3])^2 / EARTH_GRAVITATIONAL_ACCELERATION
 end
 
-"""
+@doc raw"""
     initial_condition_barotropic_instability(x, t, equations)
 
+Barotrotropic instability test case described in the following paper:
+- J. Galewsky, R. K. Scott, and L. M. Polvani (2004). An initial-value problem for
+  testing numerical models of the global shallow-water equations. Tellus A 56.5:429–440.
+  [DOI: 10.3402/tellusa.v56i5.14436](https://doi.org/10.3402/tellusa.v56i5.14436)
 """
 @inline function initial_condition_barotropic_instability(x, t, equations)
     RealT = eltype(x)
