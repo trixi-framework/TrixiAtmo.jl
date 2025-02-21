@@ -1,5 +1,7 @@
 using TrixiAtmo
-using TrixiAtmo: source_terms_no_phase_change, saturation_vapour_pressure,
+using TrixiAtmo: source_terms_no_phase_change, source_terms_rainy,
+                 boundary_condition_simple_slip_wall,
+                 saturation_vapour_pressure,
                  saturation_residual, saturation_residual_jacobian
 using Trixi
 using OrdinaryDiffEq
@@ -95,7 +97,7 @@ end
                                              equations::CompressibleRainyEulerEquations2D)
     return (source_terms_rayleigh_sponge(u, x, t,
                                          equations::CompressibleRainyEulerEquations2D) +
-            source_terms_no_phase_change(u, x, t,
+                                         source_terms_rainy(u, x, t,
                                          equations::CompressibleRainyEulerEquations2D))
 end
 
@@ -165,8 +167,8 @@ boundary_conditions_Dirichlet = BoundaryConditionDirichlet(initial_condition_rai
 #                           :y_pos => boundary_condition_slip_wall)
 boundary_conditions = (x_neg = boundary_condition_periodic,
                        x_pos = boundary_condition_periodic,
-                       y_neg = boundary_condition_slip_wall,
-                       y_pos = boundary_condition_slip_wall)
+                       y_neg = boundary_condition_simple_slip_wall,
+                       y_pos = boundary_condition_simple_slip_wall)
 
 semi = SemidiscretizationHyperbolic(mesh,
                                     equations,

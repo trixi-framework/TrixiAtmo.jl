@@ -335,7 +335,6 @@ abstract type AbstractCovariantShallowWaterEquations2D{GlobalCoordinateSystem} <
 include("covariant_advection.jl")
 include("covariant_shallow_water.jl")
 include("covariant_shallow_water_split.jl")
-include("compressible_moist_euler_2d_lucas.jl")
 include("shallow_water_3d.jl")
 include("reference_data.jl")
 end # @muladd
