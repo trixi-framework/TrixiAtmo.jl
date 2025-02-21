@@ -10,7 +10,12 @@ equations = ShallowWaterEquations3D(gravity_constant = 9.81)
 
 # Create DG solver with polynomial degree = 3 and (local) Lax-Friedrichs as surface flux
 polydeg = 3
-solver = DGSEM(polydeg = polydeg, surface_flux = flux_lax_friedrichs)
+volume_flux = (flux_central, flux_nonconservative_wintermeyer_etal)
+surface_flux = (flux_lax_friedrichs, flux_nonconservative_wintermeyer_etal)
+
+solver = DGSEM(polydeg = polydeg,
+               surface_flux = surface_flux,
+               volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
 
 # Initial condition for a Gaussian density profile with constant pressure
 # and the velocity of a rotating solid body
