@@ -9,10 +9,10 @@ using OrdinaryDiffEq, Trixi, TrixiAtmo
 # Parameters
 
 initial_condition = initial_condition_isolated_mountain
-polydeg = 3
-cells_per_dimension = (5, 5)
+polydeg = 5
+cells_per_dimension = (30, 30)
 n_saves = 10
-tspan = (0.0, 7.0 * SECONDS_PER_DAY)
+tspan = (0.0, 15.0 * SECONDS_PER_DAY)
 
 ###############################################################################
 # Spatial discretization

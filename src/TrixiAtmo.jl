@@ -59,7 +59,8 @@ export global2contravariant, contravariant2global, spherical2cartesian, cartesia
 
 export initial_condition_gaussian, initial_condition_geostrophic_balance,
        initial_condition_rossby_haurwitz, initial_condition_isolated_mountain,
-       initial_condition_unsteady_solid_body_rotation
+       initial_condition_unsteady_solid_body_rotation, 
+       initial_condition_barotropic_instability
 
 export bottom_topography_isolated_mountain, bottom_topography_unsteady_solid_body_rotation
 

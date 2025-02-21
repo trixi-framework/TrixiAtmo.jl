@@ -9,10 +9,10 @@ using OrdinaryDiffEq, Trixi, TrixiAtmo
 # Parameters
 
 initial_condition = initial_condition_rossby_haurwitz
-polydeg = 3
-cells_per_dimension = (5, 5)
+polydeg = 7
+cells_per_dimension = (9, 9)
 n_saves = 10
-tspan = (0.0, 7.0 * SECONDS_PER_DAY)
+tspan = (0.0, 14.0 * SECONDS_PER_DAY)
 
 ###############################################################################
 # Spatial discretization
@@ -24,9 +24,10 @@ equations = SplitCovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATI
                                                   EARTH_ROTATION_RATE,
                                                   global_coordinate_system = GlobalCartesianCoordinates())
 
-# Use entropy-conservative two-point fluxes for volume and surface terms
+# Use entropy-conservative two-point fluxes for volume terms, dissipative flux for surface
 volume_flux = (flux_ec, flux_nonconservative_ec)
-surface_flux = (flux_ec, flux_nonconservative_ec)
+surface_flux = (FluxPlusDissipation(flux_ec, DissipationLocalLaxFriedrichs()),
+                flux_nonconservative_surface_simplified)
 
 # Create DG solver with polynomial degree = polydeg
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
