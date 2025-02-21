@@ -24,4 +24,8 @@ const TRIXIATMO_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
     @time if TRIXIATMO_TEST == "all" || TRIXIATMO_TEST == "shallow_water_3d"
         include("test_3d_shallow_water.jl")
     end
+
+    @time if TRIXIATMO_TEST == "all" || TRIXIATMO_TEST == "shallow_water_2d_covariant"
+        include("test_2d_shallow_water_covariant.jl")
+    end
 end

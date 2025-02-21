@@ -94,7 +94,7 @@ conversion from primitive to conservative variables. For standard Cartesian form
 this simply involves a conversion from  primitive to conservative variables. The intention 
 here is to have a set of test cases (for example, [`initial_condition_gaussian`](@ref)) for 
 which the initial condition is prescribed using a standardized set of primitive variables 
-in a global Cartesian coordinates, and transformed to the specific prognostic variables 
+in a global coordinate system, and transformed to the specific prognostic variables 
 required for a given model.
 !!! note 
     When using the covariant formulation, the initial velocity components should be defined 
@@ -110,7 +110,7 @@ function transform_initial_condition(initial_condition, ::AbstractCovariantEquat
     return initial_condition_transformed
 end
 
-# Version for standard Cartesian formulations
+# Default version for standard Cartesian formulations
 function transform_initial_condition(initial_condition, ::AbstractEquations)
     function initial_condition_transformed(x, t, equations)
         return Trixi.prim2cons(initial_condition(x, t, equations), equations)
@@ -143,33 +143,71 @@ performed by [`contravariant2global`](@ref).
 """
 function global2contravariant end
 
-# cons2cons method which takes in unused aux_vars variable
+# By default, the equations are assumed to be formulated in Cartesian coordinates. This 
+# function is specialized where needed.
+function cartesian2global(u, x, equations::AbstractEquations)
+    return u
+end
+
+# Default cons2cons and prim2cons methods which take in unused aux_vars variable
 @inline Trixi.cons2cons(u, aux_vars, ::AbstractEquations) = u
 @inline Trixi.prim2cons(u, aux_vars, ::AbstractEquations) = u
 
 # For the covariant form, the auxiliary variables are the the NDIMS*NDIMS_AMBIENT entries 
 # of the exact covariant basis matrix, the NDIMS*NDIMS_AMBIENT entries of the exact 
-# contravariant basis matrix, and the area element. In the future, we will add other terms 
-# such as Christoffel symbols.
+# contravariant basis matrix, the exact area element, the upper-triangular covariant and 
+# contravariant metric tensor components, and the upper-triangular Christoffel symbols of 
+# the second kind
 @inline have_aux_node_vars(::AbstractCovariantEquations) = True()
-@inline n_aux_node_vars(::AbstractCovariantEquations{NDIMS, NDIMS_AMBIENT}) where {NDIMS,
-NDIMS_AMBIENT} = 2 * NDIMS * NDIMS_AMBIENT + 1
+
+# Add up the total number of auxiliary variables for equations in covariant form
+@inline function n_aux_node_vars(::AbstractCovariantEquations{NDIMS,
+                                                              NDIMS_AMBIENT}) where {
+                                                                                     NDIMS,
+                                                                                     NDIMS_AMBIENT
+                                                                                     }
+    nvars_basis_covariant = NDIMS_AMBIENT * NDIMS
+    nvars_basis_contravariant = NDIMS * NDIMS_AMBIENT
+    nvars_area_element = 1
+    nvars_metric_covariant = NDIMS * (NDIMS + 1) ÷ 2
+    nvars_metric_contravariant = NDIMS * (NDIMS + 1) ÷ 2
+    nvars_christoffel = NDIMS * NDIMS * (NDIMS + 1) ÷ 2
+
+    return nvars_basis_covariant +
+           nvars_basis_contravariant +
+           nvars_area_element +
+           nvars_metric_covariant +
+           nvars_metric_contravariant +
+           nvars_christoffel
+end
 
 # Return auxiliary variable names for 2D covariant form
 @inline function auxvarnames(::AbstractCovariantEquations{2})
-    return ("basis_covariant[1,1]",
-            "basis_covariant[2,1]",
-            "basis_covariant[3,1]",
-            "basis_covariant[1,2]",
-            "basis_covariant[2,2]",
-            "basis_covariant[3,2]",
-            "basis_contravariant[1,1]",
-            "basis_contravariant[2,1]",
-            "basis_contravariant[3,1]",
-            "basis_contravariant[1,2]",
-            "basis_contravariant[2,2]",
-            "basis_contravariant[3,2]",
-            "area_element")
+    return ("basis_covariant[1,1]",         # e₁ ⋅ a₁
+            "basis_covariant[2,1]",         # e₂ ⋅ a₁
+            "basis_covariant[3,1]",         # e₃ ⋅ a₁
+            "basis_covariant[1,2]",         # e₁ ⋅ a₂
+            "basis_covariant[2,2]",         # e₂ ⋅ a₂
+            "basis_covariant[3,2]",         # e₃ ⋅ a₂
+            "basis_contravariant[1,1]",     # e₁ ⋅ a¹
+            "basis_contravariant[2,1]",     # e₂ ⋅ a¹
+            "basis_contravariant[3,1]",     # e₃ ⋅ a¹
+            "basis_contravariant[1,2]",     # e₁ ⋅ a²
+            "basis_contravariant[2,2]",     # e₂ ⋅ a²
+            "basis_contravariant[3,2]",     # e₃ ⋅ a²
+            "area_element",                 # J = √(G₁₁G₂₂ - G₁₂G₂₁) = ||a₁ × a₂||
+            "metric_covariant[1,1]",        # G₁₁
+            "metric_covariant[1,2]",        # G₁₂ = G₂₁
+            "metric_covariant[2,2]",        # G₂₂
+            "metric_contravariant[1,1]",    # G¹¹
+            "metric_contravariant[1,2]",    # G¹² = G²¹
+            "metric_contravariant[2,2]",    # G²²
+            "christoffel_symbols[1][1,1]",  # Γ¹₁₁
+            "christoffel_symbols[1][1,2]",  # Γ¹₁₂ = Γ¹₂₁
+            "christoffel_symbols[1][2,2]",  # Γ¹₂₂
+            "christoffel_symbols[2][1,1]",  # Γ²₁₁
+            "christoffel_symbols[2][1,2]",  # Γ²₁₂ = Γ²₂₁
+            "christoffel_symbols[2][2,2]")  # Γ²₂₂
 end
 
 # Extract the covariant basis vectors a_i from the auxiliary variables as a matrix A, 
@@ -189,9 +227,27 @@ end
                          aux_vars[11], aux_vars[12])
 end
 
-# Extract the area element √G = (det(AᵀA))^(1/2) from the auxiliary variables
+# Extract the area element J = (det(AᵀA))^(1/2) from the auxiliary variables
 @inline function area_element(aux_vars, ::AbstractCovariantEquations{2})
     return aux_vars[13]
+end
+
+# Extract the covariant metric tensor components Gᵢⱼ from the auxiliary variables
+@inline function metric_covariant(aux_vars, ::AbstractCovariantEquations{2})
+    return SMatrix{2, 2}(aux_vars[14], aux_vars[15],
+                         aux_vars[15], aux_vars[16])
+end
+
+# Extract the contravariant metric tensor components Gⁱʲ from the auxiliary variables
+@inline function metric_contravariant(aux_vars, ::AbstractCovariantEquations{2})
+    return SMatrix{2, 2}(aux_vars[17], aux_vars[18],
+                         aux_vars[18], aux_vars[19])
+end
+
+# Extract the Christoffel symbols of the second kind Γⁱⱼₖ from the auxiliary variables
+@inline function christoffel_symbols(aux_vars, ::AbstractCovariantEquations{2})
+    return (SMatrix{2, 2}(aux_vars[20], aux_vars[21], aux_vars[21], aux_vars[22]),
+            SMatrix{2, 2}(aux_vars[23], aux_vars[24], aux_vars[24], aux_vars[25]))
 end
 
 # Numerical flux plus dissipation for abstract covariant equations as a function of the 
@@ -223,8 +279,62 @@ end
     return 0.5f0 * (flux_ll + flux_rr)
 end
 
-include("reference_data.jl")
-include("covariant_advection.jl")
-include("shallow_water_3d.jl")
+# Local Lax-Friedrichs dissipation for abstract covariant equations, where dissipation is 
+# applied to all conservative variables and the wave speed may depend on auxiliary variables
+@inline function (dissipation::DissipationLocalLaxFriedrichs)(u_ll, u_rr, aux_vars_ll,
+                                                              aux_vars_rr,
+                                                              orientation_or_normal_direction,
+                                                              equations::AbstractCovariantEquations)
+    λ = dissipation.max_abs_speed(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
+                                  orientation_or_normal_direction, equations)
+    return -0.5f0 * area_element(aux_vars_ll, equations) * λ * (u_rr - u_ll)
+end
 
+# Convert a vector from a global spherical to Cartesian basis representation. A tangent 
+# vector will have vrad = 0.
+@inline function spherical2cartesian(vlon, vlat, vrad, x)
+    # compute longitude and latitude
+    lon, lat = atan(x[2], x[1]), asin(x[3] / norm(x))
+
+    # compute trigonometric functions
+    sinlon, coslon = sincos(lon)
+    sinlat, coslat = sincos(lat)
+
+    # return Cartesian components
+    vx = -sinlon * vlon - sinlat * coslon * vlat + coslat * coslon * vrad
+    vy = coslon * vlon - sinlat * sinlon * vlat + coslat * sinlon * vrad
+    vz = coslat * vlat + sinlat * vrad
+    return vx, vy, vz
+end
+
+# Convert a vector from a global Cartesian to spherical basis representation. A tangent 
+# vector will have vrad = 0.
+@inline function cartesian2spherical(vx, vy, vz, x)
+    # compute longitude and latitude
+    lon, lat = atan(x[2], x[1]), asin(x[3] / norm(x))
+
+    # compute trigonometric functions
+    sinlon, coslon = sincos(lon)
+    sinlat, coslat = sincos(lat)
+
+    # return spherical components
+    vlon = -sinlon * vx + coslon * vy
+    vlat = -sinlat * coslon * vx - sinlat * sinlon * vy + coslat * vz
+    vrad = coslat * coslon * vx + coslat * sinlon * vy + sinlat * vz
+
+    return vlon, vlat, vrad
+end
+
+abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:
+              AbstractEquations{NDIMS, NVARS} end
+
+abstract type AbstractCovariantShallowWaterEquations2D{GlobalCoordinateSystem} <:
+              AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 3} end
+
+include("covariant_advection.jl")
+include("covariant_shallow_water.jl")
+include("covariant_shallow_water_split.jl")
+include("compressible_moist_euler_2d_lucas.jl")
+include("shallow_water_3d.jl")
+include("reference_data.jl")
 end # @muladd

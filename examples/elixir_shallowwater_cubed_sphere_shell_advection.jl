@@ -46,6 +46,7 @@ mesh = P4estMeshCubedSphere2D(cells_per_dimension[1], EARTH_RADIUS, polydeg = 3,
                               #initial_refinement_level = 0, # Comment to use cells_per_dimension in the convergence test
                               element_local_mapping = false)
 
+# Transform the initial condition to the proper set of conservative variables
 initial_condition_transformed = transform_initial_condition(initial_condition, equations)
 
 # A semidiscretization collects data structures and functions for the spatial discretization
