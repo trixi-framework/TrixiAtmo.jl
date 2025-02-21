@@ -334,7 +334,6 @@ end
 
 """
 function initial_condition_barotropic_instability(x, t, equations)
-    
     RealT = eltype(x)
     radius = sqrt(x[1]^2 + x[2]^2 + x[3]^2)
     lon = atan(x[2], x[1])
@@ -359,7 +358,7 @@ function initial_condition_barotropic_instability(x, t, equations)
     if (-π < lon) && (lon < π)
         h = h + 120.0f0 * cos(lat) * exp(-((lon / α)^2)) * exp(-((lat_2 - lat) / β)^2)
     end
-    
+
     # Convert primitive variables from spherical coordinates to the chosen global 
     # coordinate system, which depends on the equation type
     return spherical2global(SVector(h, vlon, vlat, zero(RealT)), x, equations)
