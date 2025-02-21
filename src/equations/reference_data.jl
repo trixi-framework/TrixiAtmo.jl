@@ -185,12 +185,12 @@ end
 Zonal flow over an isolated mountain with a profile given in terms of the latitude 
 $\lambda$ and longitude $\theta$ as 
 ```math
-b(\lambda,\theta) =
-b_0 (1 - \sqrt{\min(R^2, (\lambda-\lambda_0)^2 + (\theta-\theta_0)^2)}/R),
+h_s(\lambda,\theta) =
+h_{s0} (1 - \sqrt{\min(R^2, (\lambda-\lambda_0)^2 + (\theta-\theta_0)^2)}/R),
 ```
-where $b_0 = 2000 \ \text{m}$, $\lambda_0 = -/\pi/2$, $\theta_0 = \pi/6$, and $R =\pi/9$. 
-The initial velocity field is given by  $v_\lambda(\theta) = v_0 \cos\theta$, where 
-$v_0 = 20 \ \mathrm{m/s}$, and the total geopotential height $H = h+b$ is given by 
+where $h_{s0} = 2000 \ \text{m}$, $\lambda_0 = -\pi/2$, $\theta_0 = \pi/6$, and $R =\pi/9$. 
+The initial velocity field is given by $v_\lambda(\theta) = v_0 \cos\theta$, where 
+$v_0 = 20 \ \mathrm{m/s}$, and the total geopotential height $H = h+h_s$ is given by 
 ```math
 H(\theta) = H_0 - \frac{1}{g}\Big(a \Omega v_0 + \frac{1}{2} v_0^2\Big)\sin^2\theta,
 ```
@@ -264,7 +264,7 @@ as well as a fixed axis $\vec{c} = -\sin(\alpha)\vec{e}_x + \cos(\alpha)\vec{e}_
 $\Omega = 7.292 \times 10^{-5}\ \mathrm{s}^{-1}$ is the Earth's rotation rate, and we take 
 $\alpha = \pi/4$. For a bottom topography prescribed as
 ```math
-b(\vec{x}) = \frac{1}{2g}(\vec{\Omega} \cdot \vec{x})^2
+h_s(\vec{x}) = \frac{1}{2g}(\vec{\Omega} \cdot \vec{x})^2
 ```
 where $\vec{\Omega} = \Omega\vec{e}_z$ and $g = 9.80616 \ \mathrm{m}/\mathrm{s}^2$ are the 
 Earth's axis of rotation and gravitational acceleration, respectively, the time-dependent 
@@ -332,7 +332,8 @@ end
 @doc raw"""
     initial_condition_barotropic_instability(x, t, equations)
 
-Barotrotropic instability test case described in the following paper:
+Barotrotropic instability initiated by a perturbation applied to a mid-latitude jet. A full
+description of this case is provided in the following paper:
 - J. Galewsky, R. K. Scott, and L. M. Polvani (2004). An initial-value problem for
   testing numerical models of the global shallow-water equations. Tellus A 56.5:429–440.
   [DOI: 10.3402/tellusa.v56i5.14436](https://doi.org/10.3402/tellusa.v56i5.14436)
