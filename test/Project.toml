@@ -5,7 +5,6 @@ OrdinaryDiffEqLowStorageRK = "b0944070-b475-4768-8dec-fb6eb410534d"
 OrdinaryDiffEqSSPRK = "669c94d9-1f4b-4b64-b377-1aa079aa2388"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Trixi = "a7f1ee26-1774-49b1-8366-f1abc58fbfcb"
-TrixiAtmo = "c9ed1054-d170-44a9-8ee2-d5566f5d1389"
 
 [compat]
 NLsolve = "4.5.1"
