@@ -26,7 +26,8 @@ include("auxiliary/auxiliary.jl")
 include("equations/equations.jl")
 export CompressibleMoistEulerEquations2D, CompressibleRainyEulerEquations2D,
        CompressibleRainyEulerPotentialTemperatureEquations2D,
-       CompressibleMoistEulerPotentialTemperatureEquations2D
+       CompressibleMoistEulerPotentialTemperatureEquations2D,
+       CompressibleRainyEulerEquationsExplicit2D
 
 include("callbacks_stage/callbacks_stage.jl")
 export NonlinearSolveDG

@@ -10,6 +10,7 @@ include("compressible_rainy_euler_2d.jl")
 include("compressible_moist_euler_2d_lucas.jl")
 include("compressible_rainy_euler_potential_temperature_2d.jl")
 include("compressible_moist_euler_potential_temperature_2d.jl")
+include("compressible_rainy_euler_explicit_2d.jl")
 
 @muladd begin
 #! format: noindent
