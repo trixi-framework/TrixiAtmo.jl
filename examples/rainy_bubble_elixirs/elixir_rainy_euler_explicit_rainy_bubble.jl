@@ -2,13 +2,10 @@ using OrdinaryDiffEq
 using Trixi
 using TrixiAtmo
 using TrixiAtmo: source_terms_rainy, saturation_residual,
-                 saturation_residual_jacobian, NonlinearSolveDG,
+                 saturation_residual_jacobian, RainLimiterDG,
                  cons2eq_pot_temp, saturation_vapour_pressure,
-                 flux_chandrashekar, flux_LMARS,
-                 source_terms_no_phase_change,
-                 boundary_condition_laplace,
-                 boundary_condition_simple_slip_wall,
-                 flux_ec_rain
+                 flux_chandrashekar, flux_LMARS, flux_ec_rain,
+                 source_terms_no_phase_change
 using NLsolve: nlsolve
 #using Plots
 
@@ -20,7 +17,7 @@ coordinates_max = (2400.0, 2400.0)
 
 
 # hydrostatic dry potential temperature
-function theta_d(z, equations::CompressibleRainyEulerEquations2D)
+function theta_d(z, equations::CompressibleRainyEulerEquationsExplicit2D)
     # constants
     c_pd          = equations.c_dry_air_const_pressure
     R_d           = equations.R_dry_air
@@ -41,7 +38,7 @@ end
 
 
 # hydrostatic base state residual
-function generate_hydrostatic_residual(pressure_lower, humidity_rel0, z, dz, equations::CompressibleRainyEulerEquations2D)
+function generate_hydrostatic_residual(pressure_lower, humidity_rel0, z, dz, equations::CompressibleRainyEulerEquationsExplicit2D)
     # equations constants
     c_pd          = equations.c_dry_air_const_pressure
     R_d           = equations.R_dry_air
@@ -75,7 +72,7 @@ function generate_hydrostatic_residual(pressure_lower, humidity_rel0, z, dz, equ
 end
 
 
-function generate_perturbation_residual(pressure_hydrostatic, H_init, z, equations::CompressibleRainyEulerEquations2D)
+function generate_perturbation_residual(pressure_hydrostatic, H_init, z, equations::CompressibleRainyEulerEquationsExplicit2D)
     # equations constants
     c_pd          = equations.c_dry_air_const_pressure
     R_d           = equations.R_dry_air
@@ -114,7 +111,7 @@ struct AtmosphereLayers{RealT <: Real}
 end
 
 
-function AtmosphereLayers(equations::CompressibleRainyEulerEquations2D; total_height = coordinates_max[2] + 1.0, precision = 1.0, RealT = Float64)
+function AtmosphereLayers(equations::CompressibleRainyEulerEquationsExplicit2D; total_height = coordinates_max[2] + 1.0, precision = 1.0, RealT = Float64)
     # constants
     humidity_rel0    = 0.2      # hydrostatic relative humidity
     surface_pressure = 8.5e4
@@ -148,11 +145,11 @@ end
 
 
 # create layers for initial condition
-equations = CompressibleRainyEulerEquations2D()
+equations = CompressibleRainyEulerEquationsExplicit2D()
 layers    = AtmosphereLayers(equations)
 
 
-function initial_condition_bubble_rainy(x, t, equations::CompressibleRainyEulerEquations2D; atmosphere_layers = layers)
+function initial_condition_bubble_rainy(x, t, equations::CompressibleRainyEulerEquationsExplicit2D; atmosphere_layers = layers)
     # equations constants
     c_vd  = equations.c_dry_air_const_volume
     c_vv  = equations.c_vapour_const_volume
@@ -194,10 +191,6 @@ function initial_condition_bubble_rainy(x, t, equations::CompressibleRainyEulerE
         n = n - 1
     end
 
-    if (n == 0)
-        n = 1
-    end
-
     # check height consistency
     if (z > total_height && !(isapprox(z, total_height)))
         error("The atmosphere does not match the simulation domain")
@@ -214,7 +207,7 @@ function initial_condition_bubble_rainy(x, t, equations::CompressibleRainyEulerE
 
     energy_density = (c_vd * rho_dry + c_vv * rho_vapour) * temperature + rho_vapour * ref_L
 
-    return SVector(rho_dry, rho_vapour, 0.0, 0.0, 0.0, energy_density, rho_vapour, 0.0, temperature)
+    return SVector(rho_dry, rho_vapour, 0.0, 0.0, 0.0, 0.0, energy_density)
 end
 
 
@@ -222,23 +215,13 @@ end
 ###############################################################################
 # semidiscretization of the compressible rainy Euler equations
 
-diffusivity = 0.5
-equations_parabolic = LaplaceDiffusion2D(diffusivity, equations)
-
 
 boundary_conditions = (x_neg = boundary_condition_periodic,
                        x_pos = boundary_condition_periodic,
-                       y_neg = boundary_condition_simple_slip_wall,
-                       y_pos = boundary_condition_simple_slip_wall)
+                       y_neg = boundary_condition_slip_wall,
+                       y_pos = boundary_condition_slip_wall)
 
-boundary_conditions_parabolic = (
-                       x_neg = boundary_condition_periodic,
-                       x_pos = boundary_condition_periodic,
-                       y_neg = boundary_condition_laplace,
-                       y_pos = boundary_condition_laplace)
-
-
-polydeg = 3
+polydeg = 1
 basis = LobattoLegendreBasis(polydeg)
 
 surface_flux = flux_lax_friedrichs
@@ -246,13 +229,13 @@ volume_integral = VolumeIntegralFluxDifferencing(flux_ec_rain)
 
 solver = DGSEM(basis, surface_flux, volume_integral)
 
-initial_condition = initial_condition_bubble_rainy
-source_terms      = source_terms_rainy
+cells_per_dimension = (100, 100)
+mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
+                      periodicity = (true, false))
 
-mesh = TreeMesh(coordinates_min, coordinates_max, initial_refinement_level = 6, periodicity = (true, false), n_cells_max = 1_000_000)
-
-semi = SemidiscretizationHyperbolicParabolic(mesh, (equations, equations_parabolic), initial_condition, solver; source_terms,
-                                             boundary_conditions = (boundary_conditions, boundary_conditions_parabolic))
+semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_bubble_rainy, solver,
+                                    source_terms = source_terms_rainy,
+                                    boundary_conditions = boundary_conditions)
 
 ###############################################################################
 # ODE solvers, callbacks etc.
@@ -285,7 +268,9 @@ callbacks = CallbackSet(summary_callback,
                         save_solution,
                         stepsize_callback)
 
-stage_limiter! = NonlinearSolveDG(saturation_residual, saturation_residual_jacobian, SVector(7, 8, 9), 1e-9)
+topography(x_1) = 0.0
+
+stage_limiter! = RainLimiterDG(topography)
 
 ###############################################################################
 # run the simulation
