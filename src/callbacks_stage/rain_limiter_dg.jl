@@ -5,7 +5,6 @@ using Trixi: wrap_array, TimerOutputs, @trixi_timeit, timer
 @muladd begin
  
 struct RainLimiterDG
-    topography::Function
 end
 
 
@@ -13,7 +12,7 @@ function (limiter!::RainLimiterDG)(u_ode, integrator, semi::AbstractSemidiscreti
     u = wrap_array(u_ode, semi)
     
     @trixi_timeit timer() "rain limiter" begin
-        rain_limiter_dg2d!(u, limiter!.topography, semi.equations, semi.solver, semi.cache, semi.mesh)
+        rain_limiter_dg2d!(u, semi.equations, semi.solver, semi.cache, semi.mesh)
     end
 end
 

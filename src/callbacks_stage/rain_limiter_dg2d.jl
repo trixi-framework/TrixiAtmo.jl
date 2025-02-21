@@ -6,8 +6,7 @@ using StaticArrays
 
 @muladd begin
 
-function rain_limiter_dg2d!(u, topography,
-                             equations::AbstractCompressibleRainyEulerEquations, dg::DGSEM, cache, mesh)
+function rain_limiter_dg2d!(u, equations::AbstractCompressibleRainyEulerEquations, dg::DGSEM, cache, mesh)
     
     # iterate over every DGSEM element
     @batch for element in eachelement(dg, cache)
