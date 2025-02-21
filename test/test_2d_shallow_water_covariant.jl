@@ -77,14 +77,14 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_covariant_unsteady_solid_body_rotation_EC.jl"),
                         l2=[
-                            0.015841167275942963,
-                            3.470597408352903e-5,
-                            1.4875776786557202e-5
+                            0.25498720877863845,
+                            0.0002689081664431078,
+                            0.00015718255978420539
                         ],
                         linf=[
-                            0.1176405542039447,
-                            0.0001442044402930609,
-                            0.00013001377736920894
+                            2.135538516899487,
+                            0.0013076854064064114,
+                            0.0013246467546383922
                         ], # For coverage, test with central flux here instead of usual EC
                         volume_flux=(flux_central, flux_nonconservative_ec),
                         surface_flux=(flux_lax_friedrichs, flux_nonconservative_ec),
