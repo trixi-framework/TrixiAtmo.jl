@@ -820,10 +820,6 @@ end
     v_rr  = v1_rr * normal_direction[1] + v2_rr * normal_direction[2]
     norm_ = norm(normal_direction)
 
-    # temperature
-    rho_vapour_ll, _, temperature_ll = cons2nonlinearsystemsol(u_ll, equations)
-    rho_vapour_rr, _, temperature_rr = cons2nonlinearsystemsol(u_rr, equations)
-
     # diffusion parameter 0.0 < beta <= 1.0
     beta = 1.0
     
@@ -951,10 +947,10 @@ end
     L_ref = equations.ref_latent_heat_vap_temp
 
     # densities and temperatures
-    rho_dry_ll, rho_vapour_ll, rho_cloud_ll, rho_rain_ll, rho_ll, rho_inv_ll = densities(u_ll, equations)
-    rho_dry_rr, rho_vapour_rr, rho_cloud_rr, rho_rain_rr, rho_rr, rho_inv_rr = densities(u_rr, equations)
-    temperature_ll                                                           = get_temperature(u_ll, equations)
-    temperature_rr                                                           = get_temperature(u_rr, equations)
+    rho_dry_ll, rho_moist_ll, rho_rain_ll, rho_ll, rho_inv_ll = densities(u_ll, equations)
+    rho_dry_rr, rho_moist_rr, rho_rain_rr, rho_rr, rho_inv_rr = densities(u_rr, equations)
+    rho_vapour_ll, rho_cloud_ll, temperature_ll               = cons2nonlinearsystemsol(u_ll, equations)
+    rho_vapour_rr, rho_cloud_rr, temperature_rr               = cons2nonlinearsystemsol(u_rr, equations)
     inv_temperature_ll                                                       = inv(temperature_ll)
     inv_temperature_rr                                                       = inv(temperature_rr)
 

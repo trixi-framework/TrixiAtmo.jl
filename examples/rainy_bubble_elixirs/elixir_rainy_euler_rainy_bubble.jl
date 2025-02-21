@@ -222,7 +222,7 @@ boundary_conditions = (x_neg = boundary_condition_periodic,
                        y_neg = boundary_condition_simple_slip_wall,
                        y_pos = boundary_condition_simple_slip_wall)
 
-polydeg = 4
+polydeg = 1
 basis = LobattoLegendreBasis(polydeg)
 
 surface_flux = flux_lax_friedrichs
