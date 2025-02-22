@@ -5,3 +5,5 @@ struct VariableCoefficientAdvectionEquation2D{} <:
 
 varnames(::typeof(cons2cons), ::VariableCoefficientAdvectionEquation2D) = ("scalar",)
 varnames(::typeof(cons2prim), ::VariableCoefficientAdvectionEquation2D) = ("scalar",)
+
+end

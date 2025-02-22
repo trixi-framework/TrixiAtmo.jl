@@ -5,20 +5,38 @@ using OrdinaryDiffEq, Trixi, TrixiAtmo
 
 equations = VariableCoefficientAdvectionEquation2D()
 
-function initial_condition_schaer_mountain_cloud(x, t, equations)
-    x_0, z_0 = -50_000.0, 9_000.0
-    rho_0 = 1.0
-    A_x, A_z = 25_000.0, 3_000.0
+@inline function initial_condition_schaer_mountain_cloud(x, t, equations)
+    RealT = eltype(x)
+    x_0, z_0 = -50000.0f0, 9000.0f0
+    rho_0 = 1.0f0
+    A_x, A_z = 25000.0f0, 3000.0f0
 
     r = sqrt(((x[1] - x_0) / A_x)^2 + ((x[2] - z_0) / A_z)^2)
 
     if r <= 1
-        rho = rho_0 * (cos((pi*r)/2))^2
-    else 
-        rho = 0
-    end 
-    
+        rho = convert(RealT, rho_0 * (cos((pi * r) / 2))^2)
+    else
+        rho = 0.0f0
+    end
+
     return SVector(rho)
+end
+
+# wind profile 
+@inline function velocity_schaer_mountain(x)
+    RealT = eltype(x)
+    u_0 = 10.0f0
+    z_1 = 4000.0f0
+    z_2 = 5000.0f0
+
+    if x[2] <= z_1
+        u = 0.0f0
+    elseif z_2 <= x[2]
+        u = 1.0f0
+    else
+        u = convert(RealT, u_0 * (sin((pi / 2) * (x[2] - z_1) / (z_2 - z_1))))^2
+    end
+    return u
 end
 
 ##############################################################################################
@@ -27,22 +45,16 @@ end
 polydeg = 3
 
 # mesh 
-mesh_file = joinpath("mesh", "schaer_mountain_1000.inp")
+mesh_file = joinpath("src/meshes", "schaer_mountain_1000.inp")
 mesh = P4estMesh{2}(mesh_file, polydeg = polydeg)
-
-
 
 initial_condition = initial_condition_schaer_mountain_cloud
 
 # flux and solver 
 surface_flux = FluxLMARS(340.0)
-volume_flux = flux_kennedy_gruber
 
-solver = DGSEM(
-    polydeg = polydeg,
-    surface_flux = surface_flux,
-    volume_integral = VolumeIntegralFluxDifferencing(volume_flux),
-)
+solver = DGSEM(polydeg = polydeg,
+               surface_flux = surface_flux)
 
 # source terms 
 @inline function source(u, x, t, equations::VariableCoefficientAdvectionEquation2D)
@@ -53,23 +65,18 @@ source_term = source
 
 # boundary conditions 
 
-boundary_conditions_dirichlet = Dict(
-    :left => BoundaryConditionDirichlet(initial_condition_schaer_mountain_cloud),
-    :right => BoundaryConditionDirichlet(initial_condition_schaer_mountain_cloud),
-    :bottom => boundary_condition_slip_wall,
-    :top => boundary_condition_slip_wall,
-)
+boundary_conditions_dirichlet = Dict(:left => BoundaryConditionDirichlet(initial_condition_schaer_mountain_cloud),
+                                     :right => BoundaryConditionDirichlet(initial_condition_schaer_mountain_cloud),
+                                     :bottom => boundary_condition_slip_wall,
+                                     :top => boundary_condition_slip_wall)
 
-
-semi = SemidiscretizationHyperbolic(
-    mesh,
-    equations,
-    initial_condition,
-    solver,
-    source_terms = source_term,
-    boundary_conditions = boundary_conditions_dirichlet,
-    auxiliary_field = velocity_schaer_mountain,
-)
+semi = SemidiscretizationHyperbolic(mesh,
+                                    equations,
+                                    initial_condition,
+                                    solver,
+                                    source_terms = source_term,
+                                    boundary_conditions = boundary_conditions_dirichlet,
+                                    auxiliary_field = velocity_schaer_mountain)
 
 ##############################################################################################
 # ODE solvers, callbacks etc.
@@ -83,41 +90,33 @@ summary_callback = SummaryCallback()
 analysis_interval = 1000
 solution_variables = cons2prim
 
-analysis_callback = AnalysisCallback(
-    semi,
-    interval = analysis_interval,
-    extra_analysis_errors = (:entropy_conservation_error,),
-)
+analysis_callback = AnalysisCallback(semi,
+                                     interval = analysis_interval,
+                                     extra_analysis_errors = (:entropy_conservation_error,))
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
-save_solution = SaveSolutionCallback(
-    interval = analysis_interval,
-    save_initial_solution = true,
-    save_final_solution = true,
-    output_directory = "out",
-    solution_variables = solution_variables,
-)
+save_solution = SaveSolutionCallback(interval = analysis_interval,
+                                     save_initial_solution = true,
+                                     save_final_solution = true,
+                                     output_directory = "out",
+                                     solution_variables = solution_variables)
 
 stepsize_callback = StepsizeCallback(cfl = 1.0)
 
-callbacks = CallbackSet(
-    summary_callback,
-    analysis_callback,
-    alive_callback,
-    save_solution,
-    stepsize_callback,
-)
+callbacks = CallbackSet(summary_callback,
+                        analysis_callback,
+                        alive_callback,
+                        save_solution,
+                        stepsize_callback)
 
 ###############################################################################
 # run the simulation
-sol = solve(
-    ode,
-    CarpenterKennedy2N54(williamson_condition = false),
-    maxiters = 1.0e7,
-    dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
-    save_everystep = false,
-    callback = callbacks,
-);
+sol = solve(ode,
+            CarpenterKennedy2N54(williamson_condition = false),
+            maxiters = 1.0e7,
+            dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
+            save_everystep = false,
+            callback = callbacks);
 
 summary_callback()
