@@ -120,7 +120,8 @@ end
                                  equations::AbstractCovariantShallowWaterEquations2D)
     H, vcon1, vcon2 = u
     h_s = bottom_topography(aux_vars, equations)
-    return SVector(H - h_s, h * vcon1, h * vcon2)
+    h = H - h_s
+    return SVector(h, h * vcon1, h * vcon2)
 end
 
 # Entropy variables are w = (g(h+hₛ) - (v₁v¹ + v₂v²)/2, v₁, v₂)ᵀ
