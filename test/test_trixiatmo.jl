@@ -207,6 +207,9 @@ macro trixiatmo_testset(name, expr)
         # and we want to fail gracefully if it's not defined.
         try
             import ..EXAMPLES_DIR
+            import ..TEST_POLYDEG
+            import ..TEST_CELLS_PER_DIMENSION
+            import ..TEST_TSPAN
             import ..TRIXI_EXAMPLES_DIR
         catch
             nothing
