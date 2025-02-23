@@ -57,10 +57,10 @@ components $G_{ab}$ as
   Journal of Computational Physics 271:224-243. 
   [DOI: 10.1016/j.jcp.2013.11.033](https://doi.org/10.1016/j.jcp.2013.11.033)
 
-``` note
-    For problems with variable bottom topography and entropy-stable schemes, 
-    [SplitCovariantShallowWaterEquations2D](@ref) should be used.
-```
+!!! note
+    When solving problems with variable bottom topography as well as when using
+    entropy-stable schemes, [SplitCovariantShallowWaterEquations2D](@ref) should be used
+    instead.
 """
 struct CovariantShallowWaterEquations2D{GlobalCoordinateSystem, RealT <: Real} <:
        AbstractCovariantShallowWaterEquations2D{GlobalCoordinateSystem}
@@ -95,7 +95,7 @@ end
 # specifically to transformations from conservative variables.
 function Trixi.varnames(::typeof(contravariant2global),
                         ::AbstractCovariantShallowWaterEquations2D)
-    return ("h", "h_vglo1", "h_vglo2", "h_vglo3")
+    return ("h", "h_v1", "h_v2", "h_v3")
 end
 
 # Convenience functions to extract physical variables from state vector
@@ -112,35 +112,34 @@ end
 @inline function Trixi.cons2prim(u, aux_vars,
                                  equations::AbstractCovariantShallowWaterEquations2D)
     h, h_vcon1, h_vcon2 = u
-    b = bottom_topography(aux_vars, equations)
-    H = h + b
-    return SVector(H, h_vcon1 / h, h_vcon2 / h)
+    h_s = bottom_topography(aux_vars, equations)
+    return SVector(h + h_s, h_vcon1 / h, h_vcon2 / h)
 end
 
 @inline function Trixi.prim2cons(u, aux_vars,
                                  equations::AbstractCovariantShallowWaterEquations2D)
     H, vcon1, vcon2 = u
-    b = bottom_topography(aux_vars, equations)
-    h = H - b
-    return SVector(h, h * vcon1, h * vcon2)
+    h_s = bottom_topography(aux_vars, equations)
+    return SVector(H - h_s, h * vcon1, h * vcon2)
 end
 
+# Entropy variables are w = (g(h+hₛ) - (v₁v¹ + v₂v²)/2, v₁, v₂)ᵀ
 @inline function Trixi.cons2entropy(u, aux_vars,
                                     equations::AbstractCovariantShallowWaterEquations2D)
     h = waterheight(u, equations)
-    b = bottom_topography(aux_vars, equations)
+    h_s = bottom_topography(aux_vars, equations)
     vcon = velocity_contravariant(u, equations)
     vcov = metric_covariant(aux_vars, equations) * vcon
-    return SVector{3}(equations.gravity * (h + b) - 0.5f0 * dot(vcov, vcon), vcov[1],
-                      vcov[2])
+    return SVector{3}(equations.gravity * (h + h_s) - 0.5f0 * dot(vcov, vcon),
+                      vcov[1], vcov[2])
 end
 
 # Convert contravariant momentum components to the global coordinate system
 @inline function contravariant2global(u, aux_vars,
                                       equations::AbstractCovariantShallowWaterEquations2D)
-    h_vglo1, h_vglo2, h_vglo3 = basis_covariant(aux_vars, equations) *
-                                momentum_contravariant(u, equations)
-    return SVector(waterheight(u, equations), h_vglo1, h_vglo2, h_vglo3)
+    h_v1, h_v2, h_v3 = basis_covariant(aux_vars, equations) *
+                       momentum_contravariant(u, equations)
+    return SVector(waterheight(u, equations), h_v1, h_v2, h_v3)
 end
 
 # Convert momentum components in the global coordinate system to contravariant components
@@ -151,15 +150,15 @@ end
     return SVector(u[1], h_vcon1, h_vcon2)
 end
 
-# Entropy function (total energy per unit volume)
+# Entropy function (total energy) given by S = (h(v₁v¹ + v₂v²) + gh² + ghhₛ)/2
 @inline function Trixi.entropy(u, aux_vars,
                                equations::AbstractCovariantShallowWaterEquations2D)
     h = waterheight(u, equations)
-    b = bottom_topography(aux_vars, equations)
+    h_s = bottom_topography(aux_vars, equations)
     vcon = velocity_contravariant(u, equations)
     vcov = metric_covariant(aux_vars, equations) * vcon
     return 0.5f0 * (h * dot(vcov, vcon) + equations.gravity * h^2) +
-           equations.gravity * h * b
+           equations.gravity * h * h_s
 end
 
 # Flux as a function of the state vector u, as well as the auxiliary variables aux_vars, 

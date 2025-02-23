@@ -111,8 +111,8 @@ end
     Gcon_ll = metric_contravariant(aux_vars_ll, equations)
     Gcov_rr = metric_covariant(aux_vars_rr, equations)
     J_ll = area_element(aux_vars_ll, equations)
-    b_jump = bottom_topography(aux_vars_rr, equations) -
-             bottom_topography(aux_vars_ll, equations)
+    h_s_jump = bottom_topography(aux_vars_rr, equations) -
+               bottom_topography(aux_vars_ll, equations)
 
     # Physical variables
     h_ll = waterheight(u_ll, equations)
@@ -122,7 +122,8 @@ end
     vcov_rr = Gcov_rr * vcon_rr
 
     geometric_term = 0.5f0 * h_vcon_ll[orientation] * (Gcon_ll * vcov_rr - vcon_rr)
-    pressure_term = equations.gravity * Gcon_ll[:, orientation] * h_ll * (h_rr + b_jump)
+    pressure_term = equations.gravity * Gcon_ll[:, orientation] * h_ll *
+                    (h_rr + h_s_jump)
 
     return SVector(zero(eltype(u_ll)), J_ll * (geometric_term[1] + pressure_term[1]),
                    J_ll * (geometric_term[2] + pressure_term[2]))

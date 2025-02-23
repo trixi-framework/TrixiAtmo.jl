@@ -51,7 +51,7 @@ end
 # The conservative variables are the scalar conserved quantity and two contravariant 
 # velocity components.
 function Trixi.varnames(::typeof(cons2cons), ::CovariantLinearAdvectionEquation2D)
-    return ("scalar", "vcon1", "vcon2")
+    return ("h", "vcon1", "vcon2")
 end
 
 # Convenience function to extract the velocity
@@ -62,9 +62,9 @@ end
 # Convert contravariant velocity components to the global coordinate system
 @inline function contravariant2global(u, aux_vars,
                                       equations::CovariantLinearAdvectionEquation2D)
-    vglo1, vglo2, vglo3 = basis_covariant(aux_vars, equations) *
-                          velocity_contravariant(u, equations)
-    return SVector(u[1], vglo1, vglo2, vglo3)
+    v1, v2, v3 = basis_covariant(aux_vars, equations) *
+                 velocity_contravariant(u, equations)
+    return SVector(u[1], v1, v2, v3)
 end
 
 # Convert velocity components in the global coordinate system to contravariant components
@@ -77,7 +77,7 @@ end
 # Scalar conserved quantity and three global velocity components
 function Trixi.varnames(::typeof(contravariant2global),
                         ::CovariantLinearAdvectionEquation2D)
-    return ("scalar", "vglo1", "vglo2", "vglo3")
+    return ("h", "v1", "v2", "v3")
 end
 
 # We will define the "entropy variables" here to just be the scalar variable in the first 

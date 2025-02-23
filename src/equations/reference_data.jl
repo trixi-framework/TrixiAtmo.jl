@@ -65,7 +65,7 @@ This problem is adapted from Case 1 of the test suite described in the following
 
     # Convert primitive variables from Cartesian coordinates to the chosen global 
     # coordinate system, which depends on the equation type
-    return cartesian2global(SVector(h, vx, vy, vz, 0.0f0), x, equations)
+    return cartesian2global(SVector(h, vx, vy, vz, zero(RealT)), x, equations)
 end
 
 @doc raw"""
@@ -104,7 +104,8 @@ test suite described in the following paper:
 
     # Convert primitive variables from spherical coordinates to the chosen global 
     # coordinate system, which depends on the equation type
-    return spherical2global(SVector(h, vlon, vlat, zero(RealT)), x, equations)
+    return spherical2global(SVector(h, vlon, vlat, zero(RealT), zero(RealT)), x,
+                            equations)
 end
 
 @doc raw"""
@@ -126,12 +127,12 @@ $g = 9.80616 \ \mathrm{m}/\mathrm{s}^2$, $\Omega = 7.292 \times 10^{-5} \ \mathr
 and $h_0 = 8000 \ \mathrm{m}$ and defining the functions 
 ```math
 \begin{aligned}
-A(\theta) &:= \frac{\omega}{2}(2 \Omega+\omega) \cos^2 \theta + 
+A(\theta) &= \frac{\omega}{2}(2 \Omega+\omega) \cos^2 \theta + 
 \frac{1}{4} K^2 \cos^{2 R} \theta\Big((R+1) \cos^2\theta +\left(2 R^2-R-2\right) - 
 \big(2 R^2 / \cos^2 \theta\big) \Big), \\
-B(\theta) &:= \frac{2(\Omega+\omega) K}{(R+1)(R+2)} \cos ^R \theta\big((R^2+2 R+2) - 
+B(\theta) &= \frac{2(\Omega+\omega) K}{(R+1)(R+2)} \cos ^R \theta\big((R^2+2 R+2) - 
 (R+1)^2 \cos^2 \theta\big), \\
-C(\theta) &:=  \frac{1}{4} K^2 \cos^{2 R} \theta\big((R+1) \cos^2 \theta-(R+2)\big),
+C(\theta) &=  \frac{1}{4} K^2 \cos^{2 R} \theta\big((R+1) \cos^2 \theta-(R+2)\big),
 \end{aligned}
 ```
 the initial height field is given by
@@ -147,9 +148,8 @@ This problem corresponds to Case 6 of the test suite described in the following 
 """
 @inline function initial_condition_rossby_haurwitz(x, t, equations)
     RealT = eltype(x)
-    a = sqrt(x[1]^2 + x[2]^2 + x[3]^2)
-    lon = atan(x[2], x[1])
-    lat = asin(x[3] / a)
+    a = sqrt(x[1]^2 + x[2]^2 + x[3]^2)  # radius of the sphere
+    lon, lat = atan(x[2], x[1]), asin(x[3] / a)
 
     h_0 = 8.0f3
     omega = 7.848f-6
@@ -176,7 +176,8 @@ This problem corresponds to Case 6 of the test suite described in the following 
 
     # Convert primitive variables from spherical coordinates to the chosen global 
     # coordinate system, which depends on the equation type
-    return spherical2global(SVector(h, vlon, vlat, zero(RealT)), x, equations)
+    return spherical2global(SVector(h, vlon, vlat, zero(RealT), zero(RealT)), x,
+                            equations)
 end
 
 @doc raw"""
@@ -222,7 +223,8 @@ test suite described in the following paper:
 
     # Convert primitive variables from spherical coordinates to the chosen global 
     # coordinate system, which depends on the equation type
-    return spherical2global(SVector(h, vlon, vlat, zero(RealT)), x, equations)
+    return spherical2global(SVector(h, vlon, vlat, zero(RealT), zero(RealT)), x,
+                            equations)
 end
 
 # Bottom topography function to pass as auxiliary_field keyword argument in constructor for 
@@ -279,12 +281,12 @@ H(\vec{x},t) =
 \vec{\varphi}(\vec{c},t) \cdot \vec{x}/\lVert \vec{x} \rVert \big)^2 +
 (\vec{\Omega} \cdot \vec{x})^2 + 2k_1\right),
 ```
-where we take $v_0 = 2\pi a / (12 \ \mathrm{days})$ and 
-$k_1 = 133681 \ \mathrm{m}^2/\mathrm{s}^2$, and we use $\lVert \cdot \rVert$ to denote the 
-Euclidean norm. To use this test case with [`SplitCovariantShallowWaterEquations2D`](@ref), 
-the keyword argument `auxiliary_field = bottom_topography_unsteady_solid_body_rotation` 
-should be passed into the `SemidiscretizationHyperbolic` constructor. This analytical 
-solution was derived in the following paper:
+where $v_0 = 2\pi a / (12 \ \mathrm{days})$, $k_1 = 133681 \ \mathrm{m}^2/\mathrm{s}^2$,
+and $\lVert \cdot \rVert$ denotes the Euclidean norm. To use this test case with
+[`SplitCovariantShallowWaterEquations2D`](@ref), the keyword argument
+`auxiliary_field = bottom_topography_unsteady_solid_body_rotation` should be passed into
+the `SemidiscretizationHyperbolic` constructor. This analytical solution was derived in the
+following paper:
 - M. Läuter, D. Handorf, and K. Dethloff (2005). Unsteady analytical solutions of the 
   spherical shallow water equations. Journal of Computational Physics 210:535–553.
   [DOI: 10.1016/j.jcp.2005.04.022](https://doi.org/10.1016/j.jcp.2005.04.022)
@@ -320,7 +322,7 @@ solution was derived in the following paper:
 
     # Convert primitive variables from Cartesian coordinates to the chosen global 
     # coordinate system, which depends on the equation type
-    return cartesian2global(SVector(H, v[1], v[2], v[3]), x, equations)
+    return cartesian2global(SVector(H, v[1], v[2], v[3], zero(RealT)), x, equations)
 end
 
 # Bottom topography function to pass as auxiliary_field keyword argument in constructor for 
@@ -332,8 +334,34 @@ end
 @doc raw"""
     initial_condition_barotropic_instability(x, t, equations)
 
-Barotrotropic instability initiated by a perturbation applied to a mid-latitude jet. A full
-description of this case is provided in the following paper:
+Barotrotropic instability initiated by a perturbation applied to a mid-latitude jet. The  velocity field is a purely zonal flow, given as a function of the latitude $\theta$ as
+```math
+v_\lambda(\theta) = \begin{cases}
+u_0 \exp(-4 / (\theta_1 - \theta_0)^{-2})\exp((\theta - \theta_0)^{-1}
+(\theta - \theta_1)^{-1}), & \quad \theta_0 < \theta < \theta_1, \\
+0 & \quad \text{otherwise},
+\end{cases}
+```
+where $u_0 = 80 \ \mathrm{m}/\mathrm{s}$, $\theta_0 = \pi/7$, and 
+$\theta_1 = \pi/2 - \theta_0$. The background geopotential height field is given by 
+```math
+h_0(\theta) = 10158 \ \mathrm{m} - 
+\frac{a}{g} \int_{-\pi/2}^\theta v_\lambda(\theta')\big(2\Omega\sin\theta' + 
+v_\lambda(\theta')\tan\theta' / a \big)\, \mathrm{d}\theta',
+``` 
+where $a = 6.37122 \times 10^3\ \mathrm{m}$ is the Earth's radius, 
+$g = 9.80616 \ \mathrm{m}/\mathrm{s}^2$ is the Earth's gravitational acceleration, and
+$\Omega = 7.292 \times 10^{-5}\ \mathrm{s}^{-1}$ is the Earth's rotation rate. The 
+perturbation is then added to obtain the following geopotential height field:
+```math
+h(\lambda, \theta) = \begin{cases}
+h_0(\theta) + \delta h \cos\theta \exp(-(\lambda/\alpha)^2) 
+\exp(-((\theta_2 -\theta)/\beta)^2), & \quad -\pi < \lambda < \pi,\\
+h_0(\theta), & \quad \text{otherwise},
+\end{cases}
+```
+where $\lambda$ is the longitude coordinate, and we take $\alpha = 1/3$, $\beta = 1/15$, 
+and $\delta h = 120 \ \mathrm{m}$. This problem was proposed in the following paper:
 - J. Galewsky, R. K. Scott, and L. M. Polvani (2004). An initial-value problem for
   testing numerical models of the global shallow-water equations. Tellus A 56.5:429–440.
   [DOI: 10.3402/tellusa.v56i5.14436](https://doi.org/10.3402/tellusa.v56i5.14436)
@@ -366,7 +394,8 @@ description of this case is provided in the following paper:
 
     # Convert primitive variables from spherical coordinates to the chosen global 
     # coordinate system, which depends on the equation type
-    return spherical2global(SVector(h, vlon, vlat, zero(RealT)), x, equations)
+    return spherical2global(SVector(h, vlon, vlat, zero(RealT), zero(RealT)), x,
+                            equations)
 end
 
 @inline function galewsky_velocity(lat, u_0, lat_0, lat_1)

@@ -43,13 +43,13 @@ end
     u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
     aux_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
     relative_vorticity = calc_vorticity_node(u, equations, dg, cache, i, j, element)
-    b = bottom_topography(aux_node, equations)
+    h_s = bottom_topography(aux_node, equations)
     primitive_global = contravariant2global(cons2prim(u_node, aux_node, equations),
                                             aux_node, equations)
-    return SVector(primitive_global..., b, relative_vorticity)
+    return SVector(primitive_global..., h_s, relative_vorticity)
 end
 
-# Calculate relative vorticity ζ = ∂₁v₂ - ∂₂v₁ for equations in covariant form
+# Calculate relative vorticity ζ = (∂₁v₂ - ∂₂v₁)/J for equations in covariant form
 @inline function calc_vorticity_node(u, equations::AbstractCovariantEquations{2},
                                      dg::DGSEM, cache, i, j, element)
     (; derivative_matrix) = dg.basis
