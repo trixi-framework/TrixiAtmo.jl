@@ -5,7 +5,8 @@ using TrixiAtmo: source_terms_rainy, saturation_residual,
                  saturation_residual_jacobian, RainLimiterDG,
                  cons2eq_pot_temp, saturation_vapour_pressure,
                  flux_chandrashekar, flux_LMARS, flux_ec_rain,
-                 source_terms_no_phase_change
+                 source_terms_no_phase_change,
+                 boundary_condition_simple_slip_wall
 using NLsolve: nlsolve
 #using Plots
 
@@ -219,9 +220,9 @@ end
 boundary_conditions = (x_neg = boundary_condition_periodic,
                        x_pos = boundary_condition_periodic,
                        y_neg = boundary_condition_simple_slip_wall,
-                       y_pos = boundary_condition_eimple_slip_wall)
+                       y_pos = boundary_condition_simple_slip_wall)
 
-polydeg = 1
+polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
 
 surface_flux = flux_lax_friedrichs
@@ -229,7 +230,7 @@ volume_integral = VolumeIntegralFluxDifferencing(flux_ec_rain)
 
 solver = DGSEM(basis, surface_flux, volume_integral)
 
-cells_per_dimension = (100, 100)
+cells_per_dimension = (64, 64)
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = (true, false))
 
