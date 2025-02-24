@@ -202,16 +202,14 @@ end
 
 ###  varnames  ###
 
-varnames(::typeof(cons2cons), ::CompressibleRainyEulerEquationsExplicit2D) = ("rho_dry", "rho_moist", "rho_rain",
+varnames(::typeof(cons2cons), ::CompressibleRainyEulerEquationsExplicit2D) = ("rho_dry", "rho_vapour", "rho_cloud", "rho_rain",
                                                                         "rho_v1", "rho_v2",
-                                                                        "energy_density",
-                                                                        "rho_vapour", "rho_cloud", "temperature")
+                                                                        "energy_density")
 
 
-varnames(::typeof(cons2prim), ::CompressibleRainyEulerEquationsExplicit2D) = ("rho_dry", "rho_moist", "rho_rain",
+varnames(::typeof(cons2prim), ::CompressibleRainyEulerEquationsExplicit2D) = ("rho_dry", "rho_vapour", "rho_cloud", "rho_rain",
                                                                         "v1", "v2",
-                                                                        "energy_density",
-                                                                        "rho_vapour", "rho_cloud", "temperature")
+                                                                        "energy_density")
 
 varnames(::typeof(cons2eq_pot_temp), ::CompressibleRainyEulerEquationsExplicit2D) = ("rho_dry", "rho_vapour",
                                                                              "rho_cloud", "rho_rain", 
@@ -356,6 +354,32 @@ end
     p_vapour_saturation *= exp(((ref_L - (c_pv - c_l) * ref_temp) / R_v) * (1 / ref_temp - 1 / temperature))
 
     return p_vapour_saturation
+end
+
+
+@inline function saturation_vapour_pressure_derivative(temperature, equations::CompressibleRainyEulerEquationsExplicit2D)
+    # constants
+    c_l      = equations.c_liquid_water
+    c_pv     = equations.c_vapour_const_pressure
+    R_v      = equations.R_vapour
+    ref_s_p  = equations.ref_saturation_pressure
+    ref_temp = equations.ref_temperature
+    ref_L    = equations.ref_latent_heat_vap_temp
+
+    # testing 
+    if (temperature < 0.0)
+        display(temperature)
+        error("temp less than zero")
+    end
+
+    const_1 = (c_pv - c_l) / R_v
+    const_2 = (ref_L - (c_pv - c_l) * ref_temp) / R_v
+
+    p_vapour_saturation_derivative  = ref_s_p / (ref_temp^const_1)
+    p_vapour_saturation_derivative *= (const_1 * temperature^(const_1 - 1) + const_2 * temperature^(const_1 - 2))
+    p_vapour_saturation_derivative *= exp(const_2 * (1 / ref_temp - 1 / temperature))
+
+    return p_vapour_saturation_derivative
 end
 
 
