@@ -16,13 +16,13 @@ function initial_condition_weak_blast_wave_rainy(x, t, equations::CompressibleRa
     L_ref = equations.ref_latent_heat_vap_temp
 
     if sqrt(x[1]^2 + x[2]^2) > 0.5
-        rho = 1.0
+        rho = 1.0e-4
         v1  = 0.0
         v2  = 0.0
         p   = 1.0
     else
         phi = atan(x[2], x[1])
-        rho = 1.1691
+        rho = 1.1691e-4
         v1  = 0.1882 * cos(phi)
         v2  = 0.1882 * sin(phi)
         p   = 1.245
@@ -72,7 +72,7 @@ semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
 ###############################################################################
 # ODE solvers, callbacks etc.
 
-tspan = (0.0, 8.0)
+tspan = (0.0, 0.4)
 ode = semidiscretize(semi, tspan)
 
 summary_callback = SummaryCallback()
