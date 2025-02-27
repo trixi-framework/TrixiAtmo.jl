@@ -51,7 +51,7 @@ mesh = P4estMesh{2}(mesh_file, polydeg = polydeg)
 initial_condition = initial_condition_schaer_mountain_cloud
 
 # flux and solver 
-surface_flux = FluxLMARS(340.0)
+surface_flux = flux_lax_friedrichs
 
 solver = DGSEM(polydeg = polydeg,
                surface_flux = surface_flux)
