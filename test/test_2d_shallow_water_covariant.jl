@@ -5,6 +5,10 @@ using TrixiAtmo
 
 include("test_trixiatmo.jl")
 
+TEST_POLYDEG = 3
+TEST_CELLS_PER_DIMENSION = (5, 5)
+TEST_TSPAN = (0.0, 1.0 * SECONDS_PER_DAY)
+
 EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
 
 @trixiatmo_testset "elixir_shallowwater_covariant_geostrophic_balance" begin
@@ -20,7 +24,9 @@ EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
                             0.001375460003351342,
                             0.0007564014737142868
                         ],
-                        tspan=(0.0, 1.0 * SECONDS_PER_DAY))
+                        polydeg=TEST_POLYDEG,
+                        cells_per_dimension=TEST_CELLS_PER_DIMENSION,
+                        tspan=TEST_TSPAN)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let
@@ -31,12 +37,14 @@ EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
     end
 end
 
-@trixiatmo_testset "elixir_shallowwater_covariant_rossby_haurwitz_EC" begin
+@trixiatmo_testset "elixir_shallowwater_covariant_rossby_haurwitz" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_shallowwater_covariant_rossby_haurwitz_EC.jl"),
-                        l2=[265.9858131601718, 0.1769083525032968, 0.2538332624036849],
-                        linf=[579.0744773821989, 0.5054767269383715, 0.5628603103981238],
-                        tspan=(0.0, 1.0 * SECONDS_PER_DAY))
+                                 "elixir_shallowwater_covariant_rossby_haurwitz.jl"),
+                        l2=[265.981826097756, 0.17644364627357367, 0.25356217267195796],
+                        linf=[574.6725801771408, 0.5155385127558587, 0.549704048104133],
+                        polydeg=TEST_POLYDEG,
+                        cells_per_dimension=TEST_CELLS_PER_DIMENSION,
+                        tspan=TEST_TSPAN)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let
@@ -47,13 +55,14 @@ end
     end
 end
 
-@trixiatmo_testset "elixir_shallowwater_covariant_rossby_haurwitz_EC (LLF surface flux)" begin
+@trixiatmo_testset "elixir_shallowwater_covariant_isolated_mountain" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_shallowwater_covariant_rossby_haurwitz_EC.jl"),
-                        l2=[265.9818409531758, 0.17644362975403768, 0.2535621643485035],
-                        linf=[574.6722628324133, 0.5155374806433987, 0.5497046315783312],
-                        tspan=(0.0, 1.0 * SECONDS_PER_DAY),
-                        surface_flux=(flux_lax_friedrichs, flux_nonconservative_ec))
+                                 "elixir_shallowwater_covariant_isolated_mountain.jl"),
+                        l2=[13.188835117913722, 0.005698389870463649, 0.007624148100358777],
+                        linf=[116.64112009453402, 0.05208844726941367, 0.07855581195821103],
+                        polydeg=TEST_POLYDEG,
+                        cells_per_dimension=TEST_CELLS_PER_DIMENSION,
+                        tspan=TEST_TSPAN)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let
@@ -63,4 +72,51 @@ end
         @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
     end
 end
+
+@trixiatmo_testset "elixir_shallowwater_covariant_unsteady_solid_body_rotation_EC" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_shallowwater_covariant_unsteady_solid_body_rotation_EC.jl"),
+                        l2=[
+                            0.25498720877863845,
+                            0.0002689081664431078,
+                            0.00015718255978420539
+                        ],
+                        linf=[
+                            2.135538516899487,
+                            0.0013076854064064114,
+                            0.0013246467546383922
+                        ], # For coverage, test with central flux here instead of usual EC
+                        volume_flux=(flux_central, flux_nonconservative_ec),
+                        surface_flux=(flux_lax_friedrichs, flux_nonconservative_ec),
+                        polydeg=TEST_POLYDEG,
+                        cells_per_dimension=TEST_CELLS_PER_DIMENSION,
+                        tspan=TEST_TSPAN)
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    let
+        t = sol.t[end]
+        u_ode = sol.u[end]
+        du_ode = similar(u_ode)
+        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
+    end
+end
+
+@trixiatmo_testset "elixir_shallowwater_covariant_barotropic_instability" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_shallowwater_covariant_barotropic_instability.jl"),
+                        l2=[21.085349167645717, 0.030059547976114206, 0.023419991986079282],
+                        linf=[122.97647708776276, 0.17997838634063137, 0.16658465951310109],
+                        polydeg=TEST_POLYDEG,
+                        cells_per_dimension=TEST_CELLS_PER_DIMENSION,
+                        tspan=TEST_TSPAN)
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    let
+        t = sol.t[end]
+        u_ode = sol.u[end]
+        du_ode = similar(u_ode)
+        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
+    end
+end
+
 end # module

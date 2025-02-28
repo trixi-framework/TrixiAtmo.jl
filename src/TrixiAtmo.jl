@@ -18,6 +18,7 @@ using StaticArrayInterface: static_size
 using LinearAlgebra: cross, norm, dot, det
 using Reexport: @reexport
 using LoopVectorization: @turbo
+using QuadGK: quadgk
 using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
 
 @reexport using StaticArrays: SVector, SMatrix
@@ -39,7 +40,7 @@ export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 export flux_chandrashekar, FluxLMARS
 
 export flux_nonconservative_zeros, flux_nonconservative_ec,
-       source_terms_geometric_coriolis
+       flux_nonconservative_surface_simplified, source_terms_geometric_coriolis
 
 export velocity, waterheight, pressure, energy_total, energy_kinetic, energy_internal,
        lake_at_rest_error, source_terms_lagrange_multiplier,
@@ -57,7 +58,11 @@ export global2contravariant, contravariant2global, spherical2cartesian, cartesia
        transform_initial_condition
 
 export initial_condition_gaussian, initial_condition_geostrophic_balance,
-       initial_condition_rossby_haurwitz
+       initial_condition_rossby_haurwitz, initial_condition_isolated_mountain,
+       initial_condition_unsteady_solid_body_rotation,
+       initial_condition_barotropic_instability
+
+export bottom_topography_isolated_mountain, bottom_topography_unsteady_solid_body_rotation
 
 export examples_dir
 end # module TrixiAtmo

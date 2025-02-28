@@ -8,17 +8,16 @@ using OrdinaryDiffEq, Trixi, TrixiAtmo
 ###############################################################################
 # Parameters
 
-initial_condition = initial_condition_rossby_haurwitz
+initial_condition = initial_condition_unsteady_solid_body_rotation
 polydeg = 3
-cells_per_dimension = 5
+cells_per_dimension = (16, 16)
 n_saves = 10
-tspan = (0.0, 7.0 * SECONDS_PER_DAY)
+tspan = (0.0, 15.0 * SECONDS_PER_DAY)
 
 ###############################################################################
 # Spatial discretization
 
-mesh = P4estMeshCubedSphere2D(cells_per_dimension, EARTH_RADIUS, polydeg = polydeg,
-                              initial_refinement_level = 0,
+mesh = P4estMeshCubedSphere2D(cells_per_dimension[1], EARTH_RADIUS, polydeg = polydeg,
                               element_local_mapping = true)
 
 equations = SplitCovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION,
@@ -27,7 +26,7 @@ equations = SplitCovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATI
 
 # Use entropy-conservative two-point fluxes for volume and surface terms
 volume_flux = (flux_ec, flux_nonconservative_ec)
-surface_flux = (flux_ec, flux_nonconservative_ec)
+surface_flux = (flux_ec, flux_nonconservative_surface_simplified)
 
 # Create DG solver with polynomial degree = polydeg
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
@@ -37,8 +36,11 @@ solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
 initial_condition_transformed = transform_initial_condition(initial_condition, equations)
 
 # A semidiscretization collects data structures and functions for the spatial discretization
+# Here, we pass in the additional keyword argument "auxiliary_field" to specify the bottom 
+# topography.
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver,
-                                    source_terms = source_terms_geometric_coriolis)
+                                    source_terms = source_terms_geometric_coriolis,
+                                    auxiliary_field = bottom_topography_unsteady_solid_body_rotation)
 
 ###############################################################################
 # ODE solvers, callbacks etc.
@@ -75,7 +77,4 @@ callbacks = CallbackSet(summary_callback, analysis_callback, save_solution,
 # OrdinaryDiffEq's `solve` method evolves the solution in time and executes the passed 
 # callbacks
 sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
-            dt = 100.0, save_everystep = false, callback = callbacks);
-
-# Print the timer summary
-summary_callback()
+            dt = 100.0, save_everystep = false, callback = callbacks)

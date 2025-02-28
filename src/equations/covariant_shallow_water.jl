@@ -40,7 +40,9 @@ J \frac{\partial}{\partial t}
 -\Gamma^2_{ac}\tau^{ac} - f J \big(G^{22}hv^1 - G^{21}hv^2\big)
  \end{array}\right].
 ```
-Note that the geometric contribution to the source term involves the Christoffel symbols of the second kind, which can been expressed in terms of the covariant metric tensor components $G_{ab}$ as 
+Note that the geometric contribution to the source term involves the Christoffel symbols of
+the second kind, which can been expressed in terms of the covariant metric tensor 
+components $G_{ab}$ as 
 ```math
 \Gamma_{ac}^b = 
 \frac{1}{2}G^{bd}\big(\partial_aG_{cd} + \partial_c G_{da} - \partial_d G_{ac}\big).
@@ -54,6 +56,11 @@ Note that the geometric contribution to the source term involves the Christoffel
   flux-form high-order discontinuous Galerkin shallow water model on the cubed-sphere. 
   Journal of Computational Physics 271:224-243. 
   [DOI: 10.1016/j.jcp.2013.11.033](https://doi.org/10.1016/j.jcp.2013.11.033)
+
+!!! note
+    When solving problems with variable bottom topography as well as when using
+    entropy-stable schemes, [SplitCovariantShallowWaterEquations2D](@ref) should be used
+    instead.
 """
 struct CovariantShallowWaterEquations2D{GlobalCoordinateSystem, RealT <: Real} <:
        AbstractCovariantShallowWaterEquations2D{GlobalCoordinateSystem}
@@ -78,7 +85,7 @@ end
 
 # The primitive variables are the height and contravariant velocity components
 function Trixi.varnames(::typeof(cons2prim), ::AbstractCovariantShallowWaterEquations2D)
-    return ("h", "vcon1", "vcon2")
+    return ("H", "vcon1", "vcon2")
 end
 
 # The change of variables contravariant2global converts the two local contravariant vector 
@@ -88,7 +95,7 @@ end
 # specifically to transformations from conservative variables.
 function Trixi.varnames(::typeof(contravariant2global),
                         ::AbstractCovariantShallowWaterEquations2D)
-    return ("h", "h_vglo1", "h_vglo2", "h_vglo3")
+    return ("h", "h_v1", "h_v2", "h_v3")
 end
 
 # Convenience functions to extract physical variables from state vector
@@ -103,31 +110,37 @@ end
                                                       u[3])
 
 @inline function Trixi.cons2prim(u, aux_vars,
-                                 ::AbstractCovariantShallowWaterEquations2D)
+                                 equations::AbstractCovariantShallowWaterEquations2D)
     h, h_vcon1, h_vcon2 = u
-    return SVector(h, h_vcon1 / h, h_vcon2 / h)
+    h_s = bottom_topography(aux_vars, equations)
+    return SVector(h + h_s, h_vcon1 / h, h_vcon2 / h)
 end
 
 @inline function Trixi.prim2cons(u, aux_vars,
-                                 ::AbstractCovariantShallowWaterEquations2D)
-    h, vcon1, vcon2 = u
+                                 equations::AbstractCovariantShallowWaterEquations2D)
+    H, vcon1, vcon2 = u
+    h_s = bottom_topography(aux_vars, equations)
+    h = H - h_s
     return SVector(h, h * vcon1, h * vcon2)
 end
 
+# Entropy variables are w = (g(h+hₛ) - (v₁v¹ + v₂v²)/2, v₁, v₂)ᵀ
 @inline function Trixi.cons2entropy(u, aux_vars,
                                     equations::AbstractCovariantShallowWaterEquations2D)
     h = waterheight(u, equations)
+    h_s = bottom_topography(aux_vars, equations)
     vcon = velocity_contravariant(u, equations)
     vcov = metric_covariant(aux_vars, equations) * vcon
-    return SVector{3}(equations.gravity * h - 0.5f0 * dot(vcov, vcon), vcov[1], vcov[2])
+    return SVector{3}(equations.gravity * (h + h_s) - 0.5f0 * dot(vcov, vcon),
+                      vcov[1], vcov[2])
 end
 
 # Convert contravariant momentum components to the global coordinate system
 @inline function contravariant2global(u, aux_vars,
                                       equations::AbstractCovariantShallowWaterEquations2D)
-    h_vglo1, h_vglo2, h_vglo3 = basis_covariant(aux_vars, equations) *
-                                momentum_contravariant(u, equations)
-    return SVector(waterheight(u, equations), h_vglo1, h_vglo2, h_vglo3)
+    h_v1, h_v2, h_v3 = basis_covariant(aux_vars, equations) *
+                       momentum_contravariant(u, equations)
+    return SVector(waterheight(u, equations), h_v1, h_v2, h_v3)
 end
 
 # Convert momentum components in the global coordinate system to contravariant components
@@ -138,13 +151,15 @@ end
     return SVector(u[1], h_vcon1, h_vcon2)
 end
 
-# Entropy function (total energy per unit volume)
+# Entropy function (total energy) given by S = (h(v₁v¹ + v₂v²) + gh² + ghhₛ)/2
 @inline function Trixi.entropy(u, aux_vars,
                                equations::AbstractCovariantShallowWaterEquations2D)
     h = waterheight(u, equations)
+    h_s = bottom_topography(aux_vars, equations)
     vcon = velocity_contravariant(u, equations)
     vcov = metric_covariant(aux_vars, equations) * vcon
-    return 0.5f0 * (h * dot(vcov, vcon) + equations.gravity * h^2)
+    return 0.5f0 * (h * dot(vcov, vcon) + equations.gravity * h^2) +
+           equations.gravity * h * h_s
 end
 
 # Flux as a function of the state vector u, as well as the auxiliary variables aux_vars, 

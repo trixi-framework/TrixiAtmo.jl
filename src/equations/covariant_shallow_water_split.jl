@@ -24,20 +24,19 @@ J\left[\begin{array}{c}0 \\ s^1 \\ s^2 \end{array}\right].
 In the above, the non-conservative differential terms in the momentum equations are given by
 ```math
 \Upsilon^a = \frac{1}{2}hu^b\big(G^{ac}\partial_b u_c - \partial_b u^a\big) 
-+ ghG^{ab}\partial_b h,
++ ghG^{ab}\partial_b (h + h_s),
 ```
-and the algebraic momentum source terms implemented in `source_terms_geometric_coriolis` 
-are given by
+where we allow for a variable bottom topography defined by $h_s$, and the algebraic 
+momentum source terms implemented in `source_terms_geometric_coriolis` are given by
 ```math
 s^a = -\frac{1}{2}\big(\Gamma_{bc}^a hu^bu^c - G^{ac}\Gamma_{bc}^d hu^b u_d \big) 
-- f JG^{ab}\varepsilon_{bc} hu^c,
+- f JG^{ab}\varepsilon_{bc} hu^c.
 ```
-where we use the same notation as in [`CovariantShallowWaterEquations2D`](@ref) (including 
-summation over repeated indices) and note that the covariant velocity components are given 
-by $u_a = G_{ab} u^b$. To obtain an entropy-conservative scheme with respect to the total 
-energy
+In the above, we employ the same notation as in [`CovariantShallowWaterEquations2D`](@ref) 
+(including summation over repeated indices) and note that the covariant velocity components are given by $u_a = G_{ab} u^b$. To obtain an entropy-conservative scheme with respect to 
+the total energy
 ```math
-S = \frac{1}{2}h(u_1 u^1 + u_2u^2)  + \frac{1}{2}gh^2,
+S = \frac{1}{2}h(u_1 u^1 + u_2u^2)  + \frac{1}{2}gh^2 + gh h_s,
 ```
 this equation type should be used with `volume_flux = (flux_ec, flux_nonconservative_ec)`.
 !!! warning "Experimental implementation"
@@ -103,7 +102,7 @@ end
                    0.5f0 * (vcon_ll[2] + vcon_rr[2]) * mass_flux)
 end
 
-# Non-symmetric part of entropy-conservative flux
+# Non-symmetric part of entropy-conservative flux. Can be used in both surface and volume.
 @inline function flux_nonconservative_ec(u_ll, u_rr, aux_vars_ll,
                                          aux_vars_rr,
                                          orientation::Integer,
@@ -112,21 +111,45 @@ end
     Gcon_ll = metric_contravariant(aux_vars_ll, equations)
     Gcov_rr = metric_covariant(aux_vars_rr, equations)
     J_ll = area_element(aux_vars_ll, equations)
+    h_s_jump = bottom_topography(aux_vars_rr, equations) -
+               bottom_topography(aux_vars_ll, equations)
 
     # Physical variables
     h_ll = waterheight(u_ll, equations)
     h_rr = waterheight(u_rr, equations)
     h_vcon_ll = momentum_contravariant(u_ll, equations)
     vcon_rr = velocity_contravariant(u_rr, equations)
+    vcov_rr = Gcov_rr * vcon_rr
 
-    # Nonconservative momentum term, consisting of curvature correction and pressure term
-    momentum_noncons = J_ll * (0.5f0 * h_vcon_ll[orientation] *
-                        (Gcon_ll * Gcov_rr * vcon_rr - vcon_rr) +
-                        Gcon_ll[:, orientation] * equations.gravity * h_ll * h_rr)
+    geometric_term = 0.5f0 * h_vcon_ll[orientation] * (Gcon_ll * vcov_rr - vcon_rr)
+    pressure_term = equations.gravity * Gcon_ll[:, orientation] * h_ll *
+                    (h_rr + h_s_jump)
 
-    return SVector(zero(eltype(u_ll)), momentum_noncons[1], momentum_noncons[2])
+    return SVector(zero(eltype(u_ll)), J_ll * (geometric_term[1] + pressure_term[1]),
+                   J_ll * (geometric_term[2] + pressure_term[2]))
 end
 
+# For smooth bottom topography, we can significantly simplify the nonconservative surface
+# term, such that only the pressure term remains.
+@inline function flux_nonconservative_surface_simplified(u_ll, u_rr, aux_vars_ll,
+                                                         aux_vars_rr,
+                                                         orientation::Integer,
+                                                         equations::SplitCovariantShallowWaterEquations2D)
+    # Geometric variables
+    Gcon_ll = metric_contravariant(aux_vars_ll, equations)
+    J_ll = area_element(aux_vars_ll, equations)
+
+    # Physical variables
+    h_ll = waterheight(u_ll, equations)
+    h_rr = waterheight(u_rr, equations)
+
+    pressure_term = equations.gravity * Gcon_ll[:, orientation] * h_ll * h_rr
+
+    return SVector(zero(eltype(u_ll)), J_ll * pressure_term[1], J_ll * pressure_term[2])
+end
+
+# Geometric and Coriolis source terms for a rotating sphere for use with the modified 
+# split covariant formulation
 @inline function source_terms_geometric_coriolis(u, x, t, aux_vars,
                                                  equations::SplitCovariantShallowWaterEquations2D)
     # Geometric variables
