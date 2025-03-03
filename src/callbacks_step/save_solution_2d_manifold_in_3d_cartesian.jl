@@ -179,8 +179,7 @@ end
 
 # Variable names for cons2prim_and_vorticity
 function Trixi.varnames(::typeof(cons2prim_and_vorticity),
-                        equations::Union{ShallowWaterEquations3D,
-                                         AbstractCovariantEquations{2}})
+                        equations::ShallowWaterEquations3D)
     return (varnames(cons2prim, equations)..., "vorticity")
 end
 end # @muladd
