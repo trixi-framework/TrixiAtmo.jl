@@ -19,5 +19,3 @@ end
        equation::LinearScalarAdvectionEquation2D)
 λ_max = abs(aux_vars[orientation])
 end
-
-end

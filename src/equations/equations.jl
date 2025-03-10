@@ -317,11 +317,34 @@ end
 
     # return spherical components
     vlon = -sinlon * vx + coslon * vy
-    vlat = -sinlat * coslon * vx - sinlat * sinlon * vy + coslat * vz
+    vlat = -sinlat * coslon * vx - sinlat * sinlon * vy + coslat * vz 
     vrad = coslat * coslon * vx + coslat * sinlon * vy + sinlat * vz
 
     return vlon, vlat, vrad
 end
+
+abstract type AbstractVariableCoefficientEquations{NDIMS, NVARS} <:
+              AbstractEquations{NDIMS, NVARS} end
+
+@inline n_aux_node_vars(::AbstractVariableCoefficientEquations{2}) = 2
+
+# Return auxiliary variable names for 2D covariant form
+@inline function auxvarnames(::AbstractVariableCoefficientEquations{2})
+    return ("aux_velocity[1]", #horizontal auxiliary velocity
+            "aux_velocity[2]") #vertical auxiliary velocity
+
+end
+
+@inline have_aux_node_vars(::AbstractVariableCoefficientEquations) = True()
+
+@inline function Trixi.flux_central(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
+    orientation_or_normal_direction,
+    equations::AbstractVariableCoefficientEquations)
+flux_ll = Trixi.flux(u_ll, aux_vars_ll, orientation_or_normal_direction, equations)
+flux_rr = Trixi.flux(u_rr, aux_vars_rr, orientation_or_normal_direction, equations)
+return 0.5f0 * (flux_ll + flux_rr)
+end
+
 
 abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:
               AbstractEquations{NDIMS, NVARS} end

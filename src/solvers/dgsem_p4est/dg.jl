@@ -30,7 +30,7 @@ function Trixi.create_cache(mesh::P4estMesh, equations::AbstractEquations, dg::D
 end
 
 # If there are auxiliary variables, initialize them
-function create_cache_auxiliary(mesh, equations, have_aux_node_vars::True, dg, elements,
+function create_cache_auxiliary(mesh, equations, have_aux_node_vars::Trixi.True, dg, elements,
                                 interfaces, auxiliary_field)
     auxiliary_variables = init_auxiliary_node_variables(mesh, equations, dg, elements,
                                                         interfaces, auxiliary_field)
@@ -38,13 +38,15 @@ function create_cache_auxiliary(mesh, equations, have_aux_node_vars::True, dg, e
 end
 
 # Do nothing if there are no auxiliary variables
-function create_cache_auxiliary(mesh, equations, have_aux_node_vars::False, dg, elements,
+function create_cache_auxiliary(mesh, equations, have_aux_node_vars::Trixi.False, dg, elements,
                                 interfaces, auxiliary_field)
     return NamedTuple()
 end
 
 include("containers_2d_manifold_in_3d_cartesian.jl")
 include("containers_2d_manifold_in_3d_covariant.jl")
+include("containers_2d_variable_coefficient.jl")
 
 include("dg_2d_manifold_in_3d_cartesian.jl")
 include("dg_2d_manifold_in_3d_covariant.jl")
+include("dg_2d_variable_coefficient.jl")
