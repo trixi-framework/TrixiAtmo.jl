@@ -23,6 +23,5 @@ function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2},
             end
         end
     end 
-
     return nothing
 end
