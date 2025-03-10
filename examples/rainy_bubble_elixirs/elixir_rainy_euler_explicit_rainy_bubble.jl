@@ -8,7 +8,6 @@ using TrixiAtmo: source_terms_rainy, saturation_residual,
                  source_terms_no_phase_change,
                  boundary_condition_simple_slip_wall
 using NLsolve: nlsolve
-#using Plots
 
 
 
@@ -249,7 +248,7 @@ summary_callback = SummaryCallback()
 
 analysis_interval = 1000
 
-# entropy?
+# entropy
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
                                      extra_analysis_errors = (:entropy_conservation_error,))
 

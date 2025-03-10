@@ -554,7 +554,7 @@ end
     # densities
     rho_dry, rho_vapour, rho_cloud, rho_rain, rho, rho_inv = densities(u, equations)
 
-    Q_ph   = phase_change_term(u, equations)
+    Q_ph = moist_air_phase_change(u, equations)
 
     return SVector(0.0, Q_ph, -Q_ph, 0.0, 0.0,
                    -rho * g, -rho_v2 * g)
