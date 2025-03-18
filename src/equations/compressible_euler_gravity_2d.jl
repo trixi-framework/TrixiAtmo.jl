@@ -119,7 +119,7 @@ Should be used together with [`UnstructuredMesh2D`](@ref).
     # Get the solution of the pressure Riemann problem
     # See Section 6.3.3 of
     # Eleuterio F. Toro (2009)
-    # Riemann Solvers and Numerical Methods for Fluid Dynamics: A Pratical Introduction
+    # Riemann Solvers and Numerical Methods for Fluid Dynamics: A Practical Introduction
     # [DOI: 10.1007/b79761](https://doi.org/10.1007/b79761)
     if v_normal <= 0.0
         sound_speed = sqrt(equations.gamma * p_local / rho_local) # local sound speed
