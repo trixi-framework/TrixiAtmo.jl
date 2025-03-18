@@ -48,7 +48,7 @@ ode = semidiscretize(semi, tspan)
 
 summary_callback = SummaryCallback()
 
-analysis_interval = 1
+analysis_interval = 100
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
                                      analysis_polydeg = polydeg)
 
