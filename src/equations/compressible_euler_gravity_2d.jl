@@ -986,7 +986,8 @@ end
 
     # convert to entropy `-rho * s`
     # instead of `-rho * s / (gamma - 1)`
-    V1, V2, V3, V5, phi = w .* (gamma - 1)
+    V1, V2, V3, V5, _ = w .* (gamma - 1)
+    phi = w[5]
 
     # s = specific entropy
     s = gamma - V1 + (V2^2 + V3^2) / (2 * V5) - V5 * phi
@@ -998,7 +999,7 @@ end
     rho_v1 = rho_iota * V2
     rho_v2 = rho_iota * V3
     rho_e = rho_iota * (1 - (V2^2 + V3^2) / (2 * V5)) + rho * phi
-    return SVector(rho, rho_v1, rho_v2, rho_e, w[5])
+    return SVector(rho, rho_v1, rho_v2, rho_e, phi)
 end
 
 # Convert primitive to conservative variables
