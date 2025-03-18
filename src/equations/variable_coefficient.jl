@@ -13,9 +13,16 @@ end
        return a * u
 end
 
+@inline function flux(u, aux_vars, normal_direction::AbstractVector,
+       equation::VariableCoefficientAdvectionEquation2D)
+       a = dot(aux_vars, normal_direction) # velocity in normal direction
+return a * u
+end
+
 
 # Calculate maximum wave speed for local Lax-Friedrichs-type dissipation
 @inline function max_abs_speed_naive(u_ll, u_rr, aux_vars, orientation::Integer,
        equation::LinearScalarAdvectionEquation2D)
-λ_max = abs(aux_vars[orientation])
+       λ_max = abs(aux_vars[orientation])
+       return λ_max 
 end

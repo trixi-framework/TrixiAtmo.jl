@@ -29,11 +29,12 @@ include("meshes/meshes.jl")
 include("semidiscretization/semidiscretization.jl")
 include("solvers/solvers.jl")
 include("semidiscretization/semidiscretization_hyperbolic_2d_manifold_in_3d.jl")
+include("semidiscretization/semidiscretization_variable_coefficient.jl")
 include("callbacks_step/callbacks_step.jl")
 
 export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
        CovariantLinearAdvectionEquation2D, CovariantShallowWaterEquations2D,
-       SplitCovariantShallowWaterEquations2D
+       SplitCovariantShallowWaterEquations2D, VariableCoefficientAdvectionEquation2D
 
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 

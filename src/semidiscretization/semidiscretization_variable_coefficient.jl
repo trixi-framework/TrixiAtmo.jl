@@ -22,5 +22,4 @@ function Trixi.SemidiscretizationHyperbolic(mesh::P4estMesh{2},
                                      _boundary_conditions,
                                      source_terms, solver,
                                      cache)
-        print("hi")
 end

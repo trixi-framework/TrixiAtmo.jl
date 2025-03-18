@@ -1,4 +1,5 @@
-using OrdinaryDiffEq, Trixi, TrixiAtmo
+using OrdinaryDiffEq, Trixi
+using TrixiAtmo
 
 ##############################################################################################
 # initial condition
@@ -28,7 +29,7 @@ end
     u_0 = 10.0f0
     z_1 = 4000.0f0
     z_2 = 5000.0f0
-    
+
     if x[2] <= z_1
         u_1 = 0.0f0
     elseif z_2 <= x[2]
@@ -51,7 +52,7 @@ mesh = P4estMesh{2}(mesh_file, polydeg = polydeg)
 initial_condition = initial_condition_schaer_mountain_cloud
 
 # flux and solver 
-surface_flux = flux_central #?
+surface_flux = flux_central 
 
 solver = DGSEM(polydeg = polydeg,
                surface_flux = surface_flux,
@@ -70,7 +71,7 @@ boundary_conditions_dirichlet = Dict(:left => BoundaryConditionDirichlet(initial
                                      :right => BoundaryConditionDirichlet(initial_condition_schaer_mountain_cloud),
                                      :bottom => boundary_condition_slip_wall,
                                      :top => boundary_condition_slip_wall)
-                                     
+
 semi = SemidiscretizationHyperbolic(mesh,
                                     equations,
                                     initial_condition,

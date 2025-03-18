@@ -340,11 +340,32 @@ end
 @inline function Trixi.flux_central(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
     orientation_or_normal_direction,
     equations::AbstractVariableCoefficientEquations)
-flux_ll = Trixi.flux(u_ll, aux_vars_ll, orientation_or_normal_direction, equations)
-flux_rr = Trixi.flux(u_rr, aux_vars_rr, orientation_or_normal_direction, equations)
-return 0.5f0 * (flux_ll + flux_rr)
+    flux_ll = Trixi.flux(u_ll, aux_vars_ll, orientation_or_normal_direction, equations)
+    flux_rr = Trixi.flux(u_rr, aux_vars_rr, orientation_or_normal_direction, equations)
+    return 0.5f0 * (flux_ll + flux_rr)
 end
 
+struct BoundaryConditionDirichletAux{B,A}
+    boundary_value_function::B
+    boundary_auxilliar_value_function::A
+end
+
+@inline function (boundary_condition::BoundaryConditionDirichlet)(u_inner, aux_vars_inner,
+    normal_direction::AbstractVector,
+    x, t,
+    surface_flux_function,
+    equations::AbstractVariableCoefficientEquations)
+    
+    # get the external value of the solution
+    u_boundary = boundary_condition.boundary_value_function(x, t, equations)
+    aux_vars_boundary = boundary_condition.boundary_auxilliar_value_function(x)
+
+
+    # Calculate boundary flux
+    flux = surface_flux_function(u_inner, u_boundary, aux_vars_inner, aux_vars_boundary, normal_direction, equations)
+
+    return flux
+end
 
 abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:
               AbstractEquations{NDIMS, NVARS} end
@@ -352,9 +373,7 @@ abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:
 abstract type AbstractCovariantShallowWaterEquations2D{GlobalCoordinateSystem} <:
               AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 3} end
 
-abstract type AbstractVariableCoefficientEquations{NDIMS, NVARS} <:
-              AbstractEquations{NDIMS, NVARS} end
-
+              
 include("covariant_advection.jl")
 include("covariant_shallow_water.jl")
 include("covariant_shallow_water_split.jl")
