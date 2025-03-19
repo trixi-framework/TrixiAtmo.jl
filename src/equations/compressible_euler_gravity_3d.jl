@@ -59,7 +59,7 @@ struct CompressibleEulerEquationsWithGravity3D{RealT <: Real} <:
     end
 end
 
-Trixi.have_nonconservative_terms(::CompressibleEulerEquationsWithGravity2D) = True()
+Trixi.have_nonconservative_terms(::CompressibleEulerEquationsWithGravity3D) = True()
 function Trixi.varnames(::typeof(cons2cons), ::CompressibleEulerEquationsWithGravity3D)
     ("rho", "rho_v1", "rho_v2", "rho_v3", "rho_e", "phi")
 end
@@ -100,10 +100,10 @@ Details about the 1D pressure Riemann solution can be found in Section 6.3.3 of 
     tangent1 = SVector(normal_direction[2], normal_direction[3], -normal_direction[1])
     # Orthogonal projection
     tangent1 -= dot(normal, tangent1) * normal
-    tangent1 = normalize(tangent1)
+    tangent1 = Trixi.normalize(tangent1)
 
     # Third orthogonal vector
-    tangent2 = normalize(cross(normal_direction, tangent1))
+    tangent2 = Trixi.normalize(cross(normal_direction, tangent1))
 
     # rotate the internal solution state
     u_local = Trixi.rotate_to_x(u_inner, normal, tangent1, tangent2, equations)
@@ -837,7 +837,7 @@ end
                    normal_vector[3] * u[4],
                    tangent1[1] * u[2] + tangent1[2] * u[3] + tangent1[3] * u[4],
                    tangent2[1] * u[2] + tangent2[2] * u[3] + tangent2[3] * u[4],
-                   u[5], zero(eltype(u)))
+                   u[5], u[6])
 end
 
 # Rotate x-axis to normal vector; normal, tangent1 and tangent2 need to be orthonormal
@@ -854,7 +854,7 @@ end
                    normal_vector[1] * u[2] + tangent1[1] * u[3] + tangent2[1] * u[4],
                    normal_vector[2] * u[2] + tangent1[2] * u[3] + tangent2[2] * u[4],
                    normal_vector[3] * u[2] + tangent1[3] * u[3] + tangent2[3] * u[4],
-                   u[5], zero(eltype(u)))
+                   u[5], u[6])
 end
 
 @inline function Trixi.max_abs_speeds(u,
@@ -875,7 +875,7 @@ end
     p = (equations.gamma - 1) *
         (rho_e - 0.5f0 * (rho_v1 * v1 + rho_v2 * v2 + rho_v3 * v3) - rho * phi)
 
-    return SVector(rho, v1, v2, v3, p)
+    return SVector(rho, v1, v2, v3, p, phi)
 end
 
 # Convert conservative variables to entropy
@@ -898,7 +898,7 @@ end
     w4 = rho_p * v3
     w5 = -rho_p
 
-    return SVector(w1, w2, w3, w4, w5)
+    return SVector(w1, w2, w3, w4, w5, phi)
 end
 
 @inline function Trixi.entropy2cons(w,
@@ -1018,5 +1018,15 @@ end
                                        equations::CompressibleEulerEquationsWithGravity3D)
     return energy_total(cons, equations) - energy_kinetic(cons, equations) -
            cons[1] * cons[6]
+end
+
+# Specialized `DissipationLocalLaxFriedrichs` to avoid spurious dissipation in the bottom topography
+@inline function (dissipation::DissipationLocalLaxFriedrichs)(u_ll, u_rr,
+                                                              orientation_or_normal_direction,
+                                                              equations::CompressibleEulerEquationsWithGravity3D)
+    λ = dissipation.max_abs_speed(u_ll, u_rr, orientation_or_normal_direction,
+                                  equations)
+    diss = -0.5 * λ * (u_rr - u_ll)
+    return SVector(diss[1], diss[2], diss[3], diss[4], diss[5], zero(eltype(u_ll)))
 end
 end # @muladd
