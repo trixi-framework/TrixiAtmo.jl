@@ -65,5 +65,7 @@ export initial_condition_gaussian, initial_condition_geostrophic_balance,
 
 export bottom_topography_isolated_mountain, bottom_topography_unsteady_solid_body_rotation
 
+export BoundaryConditionDirichletAux
+
 export examples_dir
 end # module TrixiAtmo

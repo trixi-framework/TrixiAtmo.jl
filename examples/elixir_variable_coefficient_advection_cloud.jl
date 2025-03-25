@@ -6,6 +6,7 @@ using TrixiAtmo
 
 equations = VariableCoefficientAdvectionEquation2D()
 
+# initial condition, round density cloud is defined
 @inline function initial_condition_schaer_mountain_cloud(x, t, equations)
     RealT = eltype(x)
     x_0, z_0 = -50000.0f0, 9000.0f0
@@ -23,7 +24,7 @@ equations = VariableCoefficientAdvectionEquation2D()
     return SVector(rho)
 end
 
-# wind profile 
+# wind profile in horizontal direktion
 @inline function velocity_schaer_mountain(x)
     RealT = eltype(x)
     u_0 = 10.0f0
@@ -45,7 +46,7 @@ end
 
 polydeg = 3
 
-# mesh 
+# P4est HOHQ mesh 
 mesh_file = joinpath("src/meshes", "schaer_mountain_1000.inp")
 mesh = P4estMesh{2}(mesh_file, polydeg = polydeg)
 
@@ -57,26 +58,20 @@ surface_flux = flux_central
 solver = DGSEM(polydeg = polydeg,
                surface_flux = surface_flux,
                volume_integral = VolumeIntegralWeakForm())
-
-# source terms 
-@inline function source(u, x, t, equations::VariableCoefficientAdvectionEquation2D)
-    return (source_terms_gravity(u, equations::VariableCoefficientAdvectionEquation2D))
-end
-
-source_term = source
-
+               
 # boundary conditions 
 
-boundary_conditions_dirichlet = Dict(:left => BoundaryConditionDirichlet(initial_condition_schaer_mountain_cloud),
-                                     :right => BoundaryConditionDirichlet(initial_condition_schaer_mountain_cloud),
-                                     :bottom => boundary_condition_slip_wall,
-                                     :top => boundary_condition_slip_wall)
+boundary_conditions_dirichlet = Dict(:left => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
+                                     :right => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
+                                     :bottom => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),#boundary_condition_slip_wall,
+                                     :top => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain))#boundary_condition_slip_wall)
 
+# the velocity is passed as auxiliary_field into the cache
 semi = SemidiscretizationHyperbolic(mesh,
                                     equations,
                                     initial_condition,
                                     solver,
-                                    source_terms = source_term,
+                                    #source_terms = source_term,
                                     boundary_conditions = boundary_conditions_dirichlet,
                                     auxiliary_field = velocity_schaer_mountain)
 

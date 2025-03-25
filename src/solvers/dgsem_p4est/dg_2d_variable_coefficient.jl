@@ -72,7 +72,7 @@ end
     end
 end
 
-@inline function calc_boundary_flux!(surface_flux_values, t, boundary_condition,
+@inline function Trixi.calc_boundary_flux!(surface_flux_values, t, boundary_condition,
                                      mesh::P4estMesh{2},
                                      nonconservative_terms::Trixi.False,
                                      equations::AbstractVariableCoefficientEquations{2},
@@ -81,19 +81,20 @@ end
                                      node_index, direction_index, element_index,
                                      boundary_index)
     (; boundaries) = cache
-    (; node_coordinates), contravariant_vectors = cache.elements
+    (; node_coordinates, contravariant_vectors) = cache.elements
     (; surface_flux) = surface_integral
+    (; aux_node_vars) = cache.auxiliary_variables
 
     # Extract solution data from boundary container
-    u_inner = get_node_vars(boundaries.u, equations, dg, node_index, boundary_index)
-    aux_vars_inner = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
+    u_inner = Trixi.get_node_vars(boundaries.u, equations, dg, node_index, boundary_index)
+    aux_vars_inner = get_node_aux_vars(aux_node_vars, equations, dg, i_index, j_index, element_index)
 
     # Outward-pointing normal direction (not normalized)
-    normal_direction = get_normal_direction(direction_index, contravariant_vectors,
+    normal_direction = Trixi.get_normal_direction(direction_index, contravariant_vectors,
                                             i_index, j_index, element_index)
 
     # Coordinates at boundary node
-    x = get_node_coords(node_coordinates, equations, dg, i_index, j_index,
+    x = Trixi.get_node_coords(node_coordinates, equations, dg, i_index, j_index,
                         element_index)
 
     flux_ = boundary_condition(u_inner, aux_vars_inner, normal_direction, x, t,

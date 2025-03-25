@@ -350,7 +350,7 @@ struct BoundaryConditionDirichletAux{B,A}
     boundary_auxilliar_value_function::A
 end
 
-@inline function (boundary_condition::BoundaryConditionDirichlet)(u_inner, aux_vars_inner,
+@inline function (boundary_condition::BoundaryConditionDirichletAux)(u_inner, aux_vars_inner,
     normal_direction::AbstractVector,
     x, t,
     surface_flux_function,
@@ -366,6 +366,15 @@ end
 
     return flux
 end
+
+#@inline function (boundary_condition::boundary_condition_slip_wall_aux)(u_inner, aux_vars_inner,
+#    normal_direction::AbstractVector,
+#    x, t,
+#    surface_flux_function,
+#    equations::AbstractVariableCoefficientEquations)
+#    return flux
+#end
+
 
 abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:
               AbstractEquations{NDIMS, NVARS} end
