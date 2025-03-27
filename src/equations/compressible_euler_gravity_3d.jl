@@ -379,8 +379,6 @@ end
 @inline function Trixi.flux_kennedy_gruber(u_ll, u_rr, normal_direction::AbstractVector,
                                            equations::CompressibleEulerEquationsWithGravity3D)
     # Unpack left and right state
-    rho_e_ll = u_ll[5]
-    rho_e_rr = u_rr[5]
     rho_ll, rho_v1_ll, rho_v2_ll, rho_v3_ll, rho_e_ll, phi_ll = u_ll
     rho_rr, rho_v1_rr, rho_v2_rr, rho_v3_rr, rho_e_rr, phi_rr = u_rr
 
