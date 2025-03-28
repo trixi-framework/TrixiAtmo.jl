@@ -1,0 +1,44 @@
+\begin{MODEL}
+   \begin{OUTER_BOUNDARY}
+      \begin{END_POINTS_LINE}
+         name = right
+         xEnd = [20000.0,16000.0,0.0]
+         xStart = [20000.0,0.9975062344139651,0.0]
+      \end{END_POINTS_LINE}
+      \begin{END_POINTS_LINE}
+         name = top
+         xEnd = [-20000.0,16000.0,0.0]
+         xStart = [20000.0,16000.0,0.0]
+      \end{END_POINTS_LINE}
+      \begin{PARAMETRIC_EQUATION_CURVE}
+         name = left
+         yEqn = y(t) = 0.9975062344139651 + (1 - t) * (16000.0 - 0.9975062344139651)
+         zEqn = z(t) = 0.0
+         xEqn = x(t) = -20000.0
+      \end{PARAMETRIC_EQUATION_CURVE}
+      \begin{PARAMETRIC_EQUATION_CURVE}
+         name = bottom
+         yEqn = y(t) = 400 / ( 1 + ((-20000.0 + t * 40000.0) / 1000)^2 )
+         zEqn = z(t) = 0.0
+         xEqn = x(t) = -20000.0 + t * 40000.0
+      \end{PARAMETRIC_EQUATION_CURVE}
+   \end{OUTER_BOUNDARY}
+\end{MODEL}
+\begin{CONTROL_INPUT}
+   \begin{SPRING_SMOOTHER}
+      smoothing type = LinearAndCrossbarSpring
+      smoothing = ON
+   \end{SPRING_SMOOTHER}
+   \begin{BACKGROUND_GRID}
+      background grid size = [2000.0,2000.0,0.0]
+   \end{BACKGROUND_GRID}
+   \begin{RUN_PARAMETERS}
+      mesh file name = mesh/Mountain.mesh
+      plot file format = skeleton
+      plot file name = mesh/Mountain.tec
+      stats file name = mesh/Mountain.txt
+      mesh file format = ISM-V2
+      polynomial order = 5
+   \end{RUN_PARAMETERS}
+\end{CONTROL_INPUT}
+\end{FILE}

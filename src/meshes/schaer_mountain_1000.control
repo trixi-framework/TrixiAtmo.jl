@@ -34,10 +34,10 @@
       background grid size = [1000.0,840.0,0.0]
    \end{BACKGROUND_GRID}
    \begin{RUN_PARAMETERS}
-      mesh file name = src/meshes/schaer_mountain_1000.inp
+      mesh file name = mesh/schaer_mountain_1000.inp
       plot file format = sem
-      plot file name = src/meshes/schaer_mountain_1000.tec
-      stats file name = src/meshes/schaer_mountain_1000.txt
+      plot file name = mesh/schaer_mountain_1000.tec
+      stats file name = mesh/schaer_mountain_1000.txt
       mesh file format = ABAQUS
       polynomial order = 2
    \end{RUN_PARAMETERS}

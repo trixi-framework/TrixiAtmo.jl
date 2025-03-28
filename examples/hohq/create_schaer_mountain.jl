@@ -1,6 +1,6 @@
 using HOHQMesh
 
-p = newProject("schaer_mountain_1000", "mesh")
+p = newProject("schaer_mountain_1000", "src/meshes")
 
 y_top = 21000.0
 x_ll = -25000.0

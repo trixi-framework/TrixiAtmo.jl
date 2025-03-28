@@ -33,9 +33,7 @@ function Trixi.max_dt(u, t,
             max_lambda2 = max(max_lambda2, lambda2_transformed * inv_jacobian)
         end
         
-        inv_jacobian = cache.elements.inverse_jacobian[element]
-        max_scaled_speed = max(max_scaled_speed,
-                               inv_jacobian * (max_lambda1 + max_lambda2))
+        max_scaled_speed = max(max_scaled_speed, max_lambda1 + max_lambda2)
     end
     
     return 2 / (nnodes(dg) * max_scaled_speed)

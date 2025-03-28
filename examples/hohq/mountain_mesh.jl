@@ -1,7 +1,7 @@
 using HOHQMesh
 #using GLMakie
 
-project = newProject("Mountain", "mesh")  # project name, output folder
+project = newProject("Mountain", "src/meshes")  # project name, output folder
 
 mountainHeight = 400      # height of montain 400 m
 mountainHalfWidth = 1000  # half width of mountain 1 km

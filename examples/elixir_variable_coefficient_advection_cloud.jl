@@ -47,7 +47,7 @@ end
 polydeg = 3
 
 # P4est HOHQ mesh 
-mesh_file = joinpath("src/meshes", "schaer_mountain_1000.inp")
+mesh_file = joinpath("src/meshes", "schaer_mountain_advection.inp")
 mesh = P4estMesh{2}(mesh_file, polydeg = polydeg)
 
 initial_condition = initial_condition_schaer_mountain_cloud
@@ -64,7 +64,12 @@ solver = DGSEM(polydeg = polydeg,
 boundary_conditions_dirichlet = Dict(:left => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
                                      :right => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
                                      :bottom => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),#boundary_condition_slip_wall,
-                                     :top => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain))#boundary_condition_slip_wall)
+                                     :top => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain), #boundary_condition_slip_wall,
+                                     :bottom_left => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain), 
+                                     :bottom_right => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain))
+                                     #:bottom_left_connection => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
+                                     #:bottom_right_connection => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain))
+
 
 # the velocity is passed as auxiliary_field into the cache
 semi = SemidiscretizationHyperbolic(mesh,

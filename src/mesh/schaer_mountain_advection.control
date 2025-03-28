@@ -1,0 +1,65 @@
+\begin{MODEL}
+   \begin{OUTER_BOUNDARY}
+      \begin{END_POINTS_LINE}
+         name = bottom_left
+         xEnd = [-25000.0,0.0,0.0]
+         xStart = [-75000.0,0.0,0.0]
+      \end{END_POINTS_LINE}
+      \begin{PARAMETRIC_EQUATION_CURVE}
+         name = bottom_left_connection
+         yEqn = y(t) = t * 9.600937856748462e-30
+         zEqn = z(t) = 0.0
+         xEqn = x(t) = -25000.0
+      \end{PARAMETRIC_EQUATION_CURVE}
+      \begin{PARAMETRIC_EQUATION_CURVE}
+         name = bottom
+         yEqn = y(t) = cos(pi*(-25000.0+t*50000.0)/8000.0)^2.0*3000.0*cos(pi*(-25000.0+t*50000.0)/(2.0*25000.0))^2.0
+         zEqn = z(t) = 0.0
+         xEqn = x(t) = -25000.0 + t * 50000.0
+      \end{PARAMETRIC_EQUATION_CURVE}
+      \begin{PARAMETRIC_EQUATION_CURVE}
+         name = bottom_right_connection
+         yEqn = y(t) = 9.600937856748462e-30 - t * 9.600937856748462e-30
+         zEqn = z(t) = 0.0
+         xEqn = x(t) = 25000.0
+      \end{PARAMETRIC_EQUATION_CURVE}
+      \begin{END_POINTS_LINE}
+         name = bottom_right
+         xEnd = [75000.0,0.0,0.0]
+         xStart = [25000.0,0.0,0.0]
+      \end{END_POINTS_LINE}
+      \begin{END_POINTS_LINE}
+         name = right
+         xEnd = [75000.0,25000.0,0.0]
+         xStart = [75000.0,0.0,0.0]
+      \end{END_POINTS_LINE}
+      \begin{END_POINTS_LINE}
+         name = top
+         xEnd = [-75000.0,25000.0,0.0]
+         xStart = [75000.0,25000.0,0.0]
+      \end{END_POINTS_LINE}
+      \begin{END_POINTS_LINE}
+         name = left
+         xEnd = [-75000.0,0.0,0.0]
+         xStart = [-75000.0,25000.0,0.0]
+      \end{END_POINTS_LINE}
+   \end{OUTER_BOUNDARY}
+\end{MODEL}
+\begin{CONTROL_INPUT}
+   \begin{SPRING_SMOOTHER}
+      smoothing type = LinearAndCrossbarSpring
+      smoothing = ON
+   \end{SPRING_SMOOTHER}
+   \begin{BACKGROUND_GRID}
+      background grid size = [1000.0,840.0,0.0]
+   \end{BACKGROUND_GRID}
+   \begin{RUN_PARAMETERS}
+      mesh file name = src/mesh/schaer_mountain_advection.inp
+      plot file format = sem
+      plot file name = src/mesh/schaer_mountain_advection.tec
+      stats file name = src/mesh/schaer_mountain_advection.txt
+      mesh file format = ABAQUS
+      polynomial order = 2
+   \end{RUN_PARAMETERS}
+\end{CONTROL_INPUT}
+\end{FILE}
