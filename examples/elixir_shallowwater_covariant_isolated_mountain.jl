@@ -1,5 +1,5 @@
 ###############################################################################
-# Entropy-conservative DGSEM for the shallow water equations in covariant form 
+# Entropy-stable DGSEM for the shallow water equations in covariant form 
 # on the cubed sphere
 ###############################################################################
 
