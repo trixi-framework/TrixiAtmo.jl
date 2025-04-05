@@ -1,4 +1,4 @@
-module TestSphericalAdvection
+module TestShallowWaterCartesian
 
 using Test
 using TrixiAtmo

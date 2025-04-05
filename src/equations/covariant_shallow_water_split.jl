@@ -79,8 +79,24 @@ Trixi.have_nonconservative_terms(::SplitCovariantShallowWaterEquations2D) = True
     return SVector(mass_flux, mass_flux * vcon[1], mass_flux * vcon[2])
 end
 
-# Symmetric part of entropy-conservative flux. Note that this does not include the pressure 
-# term or the non-symmetric curvature correction term, which are in flux_nonconservative_ec.
+@doc raw"""
+    Trixi.flux_ec(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
+                               orientation::Integer,
+                               equations::SplitCovariantShallowWaterEquations2D)
+
+Symmetric part of an entropy-conservative flux for the shallow water equations in covariant 
+form. Note that this does not include the pressure term or the non-symmetric curvature 
+correction term. When used with [`flux_nonconservative_ec`](@ref) for the nonconservative volume and surface terms, this flux recovers the formulation described in the following 
+paper for the special case of the Euclidean metric $G_{ab} = \delta_{ab}$:
+- N. Wintermeyer, A. R. Winters, G. J. Gassner, and D. A. Kopriva (2017). An entropy stable
+  nodal discontinuous Galerkin method for the two dimensional shallow water equations on 
+  unstructured curvilinear meshes with discontinuous bathymetry. Journal of Computational 
+  Physics 300:240-242. 
+  [DOI: 10.1016/j.jcp.2017.03.036](https://doi.org/10.1016/j.jcp.2017.03.036)
+!!! warning "Experimental implementation"
+    The use of entropy-stable split-form/flux-differencing formulations for covariant 
+    equations is an experimental feature and may change in future releases.
+"""
 @inline function Trixi.flux_ec(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
                                orientation::Integer,
                                equations::SplitCovariantShallowWaterEquations2D)
@@ -102,7 +118,18 @@ end
                    0.5f0 * (vcon_ll[2] + vcon_rr[2]) * mass_flux)
 end
 
-# Non-symmetric part of entropy-conservative flux. Can be used in both surface and volume.
+@doc raw"""
+    flux_nonconservative_ec(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
+                            orientation::Integer,
+                            equations::SplitCovariantShallowWaterEquations2D)
+
+  Non-symmetric part of an entropy-conservative flux for the shallow water equations in 
+  covariant form, consisting of pressure and bottom topography terms, as well as a 
+  curvature correction term. This can be used for both the volume and surface terms.
+!!! warning "Experimental implementation"
+    The use of entropy-stable split-form/flux-differencing formulations for covariant 
+    equations is an experimental feature and may change in future releases.
+"""
 @inline function flux_nonconservative_ec(u_ll, u_rr, aux_vars_ll,
                                          aux_vars_rr,
                                          orientation::Integer,
@@ -129,8 +156,18 @@ end
                    J_ll * (geometric_term[2] + pressure_term[2]))
 end
 
-# For smooth bottom topography, we can significantly simplify the nonconservative surface
-# term, such that only the pressure term remains.
+@doc raw"""
+    flux_nonconservative_surface_simplified(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
+                                            orientation::Integer,
+                                            equations::SplitCovariantShallowWaterEquations2D)
+
+  For bottom topography which is continuous across element interfaces, we can significantly 
+  simplify the nonconservative surface terms, such that only the pressure contribution 
+  remains. In such cases, this flux is equivalent to [`flux_nonconservative_ec`](@ref) when used as a surface flux, but should not be used as a volume flux.
+!!! warning "Experimental implementation"
+    The use of entropy-stable split-form/flux-differencing formulations for covariant 
+    equations is an experimental feature and may change in future releases.
+"""
 @inline function flux_nonconservative_surface_simplified(u_ll, u_rr, aux_vars_ll,
                                                          aux_vars_rr,
                                                          orientation::Integer,

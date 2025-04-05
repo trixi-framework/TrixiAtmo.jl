@@ -15,11 +15,11 @@ on a two-dimensional surface in three-dimensional ambient space as
 &= -fJ G^{ab}\varepsilon_{bc} hv^c,
 \end{aligned}
 ```
-where $h$ is the fluid height, $v^a$ and $G^{ab}$ are the contravariant velocity and metric 
-tensor components, $g$ is the gravitational constant, $f$ is the Coriolis parameter, 
-$J$ is the area element, and $\partial_a$ is used as a shorthand for 
-$\partial / \partial \xi^a$. Combining the advective and pressure terms in order to define 
-the momentum flux components
+where $h$ is the geopotential height (equal to the total geopotential height $H$ for zero
+bottom topography), $v^a$ and $G^{ab}$ are the contravariant velocity and metric tensor
+components, $g$ is the gravitational constant, $f$ is the Coriolis parameter, $J$ is the 
+area element, and $\partial_a$ is used as a shorthand for $\partial / \partial \xi^a$. 
+Combining the advective and pressure terms in order to define the momentum flux components
 ```math
 \tau^{ab} = hv^a v^b + \frac{1}{2}G^{ab}gh^2,
 ```

@@ -1,4 +1,4 @@
-module TestSphericalAdvection
+module TestShallowWaterCovariant
 
 using Test
 using TrixiAtmo
@@ -109,6 +109,24 @@ end
                         polydeg=TEST_POLYDEG,
                         cells_per_dimension=TEST_CELLS_PER_DIMENSION,
                         tspan=TEST_TSPAN)
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    let
+        t = sol.t[end]
+        u_ode = sol.u[end]
+        du_ode = similar(u_ode)
+        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
+    end
+end
+
+@trixiatmo_testset "elixir_shallowwater_covariant_well_balanced" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_shallowwater_covariant_well_balanced.jl"),
+                        l2=[0.0, 0.0, 0.0], linf=[0.0, 0.0, 0.0],
+                        polydeg=TEST_POLYDEG,
+                        cells_per_dimension=TEST_CELLS_PER_DIMENSION,
+                        tspan=TEST_TSPAN,
+                        cfl=0.01)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let
