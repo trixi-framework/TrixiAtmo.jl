@@ -122,11 +122,10 @@ end
 @trixiatmo_testset "elixir_shallowwater_covariant_well_balanced" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_covariant_well_balanced.jl"),
-                        l2=[0.0, 0.0, 0.0], linf=[0.0, 0.0, 0.0],
+                        l2=[0.0, 0.0, 0.0], linf=[0.0,0.0,0.0], 
                         polydeg=TEST_POLYDEG,
                         cells_per_dimension=TEST_CELLS_PER_DIMENSION,
-                        tspan=TEST_TSPAN,
-                        cfl=0.01)
+                        tspan=TEST_TSPAN)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let
