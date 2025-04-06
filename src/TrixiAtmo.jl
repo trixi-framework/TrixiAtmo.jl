@@ -22,7 +22,7 @@ using QuadGK: quadgk
 using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
 
 @reexport using StaticArrays: SVector, SMatrix
-@reexport using Trixi: waterheight
+@reexport import Trixi: waterheight
 
 include("auxiliary/auxiliary.jl")
 include("equations/equations.jl")
@@ -45,7 +45,7 @@ export flux_nonconservative_zeros, flux_nonconservative_ec,
 
 export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!
 
-export cons2prim_and_vorticity
+export cons2prim_and_vorticity, contravariant2global
 
 export P4estMeshCubedSphere2D, P4estMeshQuadIcosahedron2D, MetricTermsCrossProduct,
        MetricTermsInvariantCurl
