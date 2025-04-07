@@ -1,0 +1,45 @@
+\begin{MODEL}
+   \begin{OUTER_BOUNDARY}
+      \begin{PARAMETRIC_EQUATION_CURVE}
+         name = bottom
+         yEqn = y(t) = (0.016 * 16.0^2) / (16.0^2 + (t*409.6-(409.6/2))^2)
+         zEqn = z(t) = 0.0
+         xEqn = x(t) = t * 409.6
+      \end{PARAMETRIC_EQUATION_CURVE}
+      \begin{PARAMETRIC_EQUATION_CURVE}
+         name = right
+         yEqn = y(t) = 9.706381946129578e-5 + t * (30.0 - 9.706381946129578e-5)
+         zEqn = z(t) = 0.0
+         xEqn = x(t) = 409.6
+      \end{PARAMETRIC_EQUATION_CURVE}
+      \begin{END_POINTS_LINE}
+         name = top
+         xEnd = [0.0,30.0,0.0]
+         xStart = [409.6,30.0,0.0]
+      \end{END_POINTS_LINE}
+      \begin{PARAMETRIC_EQUATION_CURVE}
+         name = left
+         yEqn = y(t) = 30.0 + t * (9.706381946129578e-5 - 30.0)
+         zEqn = z(t) = 0.0
+         xEqn = x(t) = 0.0
+      \end{PARAMETRIC_EQUATION_CURVE}
+   \end{OUTER_BOUNDARY}
+\end{MODEL}
+\begin{CONTROL_INPUT}
+   \begin{SPRING_SMOOTHER}
+      smoothing type = LinearAndCrossbarSpring
+      smoothing = ON
+   \end{SPRING_SMOOTHER}
+   \begin{BACKGROUND_GRID}
+      background grid size = [400.0,300.0,0.0]
+   \end{BACKGROUND_GRID}
+   \begin{RUN_PARAMETERS}
+      mesh file name = src/mesh/agnesi_hill.inp
+      plot file format = sem
+      plot file name = src/mesh/agnesi_hill.tec
+      stats file name = src/mesh/agnesi_hill.txt
+      mesh file format = ABAQUS
+      polynomial order = 2
+   \end{RUN_PARAMETERS}
+\end{CONTROL_INPUT}
+\end{FILE}
