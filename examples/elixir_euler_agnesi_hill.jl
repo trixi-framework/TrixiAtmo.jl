@@ -48,7 +48,7 @@ initial_condition = initial_condition_agnesi_hill
 source_term = source
 
 boundary_condition = Dict(:left => boundary_condition_periodic,
-                    :right => oundary_condition_periodic,
+                    :right => boundary_condition_periodic,
                     :bottom => boundary_condition_slip_wall,
                     :top => boundary_condition_slip_wall)
 

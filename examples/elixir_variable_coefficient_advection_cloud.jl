@@ -104,13 +104,13 @@ save_solution = SaveSolutionCallback(interval = analysis_interval,
                                      output_directory = "out",
                                      solution_variables = solution_variables)
 
-stepsize_callback = StepsizeCallback(cfl = 1.0)
+#stepsize_callback = StepsizeCallback(cfl = 1.0)
 
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,
                         alive_callback,
-                        save_solution,
-                        stepsize_callback)
+                        save_solution)
+                        #stepsize_callback)
 
 ###############################################################################
 # run the simulation
