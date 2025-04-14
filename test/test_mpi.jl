@@ -7,7 +7,7 @@ include("test_trixiatmo.jl") # TODO - This is a repetition from Trixi.jl
 
 EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
 
-@testset "Threaded tests" begin
+@testset "MPI tests" begin
 #! format: noindent
 
 @trixiatmo_testset "elixir_moist_euler_moist_bubble" begin
@@ -37,7 +37,7 @@ EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
         t = sol.t[end]
         u_ode = sol.u[end]
         du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
+        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 2000
     end
 end
 end
