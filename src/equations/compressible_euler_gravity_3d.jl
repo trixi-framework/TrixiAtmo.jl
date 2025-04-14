@@ -404,4 +404,17 @@ end
     diss = -0.5 * λ * (u_rr - u_ll)
     return SVector(diss[1], diss[2], diss[3], diss[4], diss[5], zero(eltype(u_ll)))
 end
+
+@inline function Trixi.density(u, equations::CompressibleEulerEquationsWithGravity3D)
+    rho = u[1]
+    return rho
+end
+
+@inline function Trixi.velocity(u, equations::CompressibleEulerEquationsWithGravity3D)
+    rho = u[1]
+    v1 = u[2] / rho
+    v2 = u[3] / rho
+    v3 = u[4] / rho
+    return SVector(v1, v2, v3)
+end
 end # @muladd
