@@ -5,6 +5,7 @@ using Test
 #
 # We could do the same once we have a lot of tests
 const TRIXIATMO_TEST = get(ENV, "TRIXIATMO_TEST", "all")
+const TRIXI_TEST = get(ENV, "TRIXI_TEST", "none")
 const TRIXIATMO_MPI_NPROCS = clamp(Sys.CPU_THREADS, 2, 3)
 const TRIXIATMO_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
 
@@ -27,5 +28,9 @@ const TRIXIATMO_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
 
     @time if TRIXIATMO_TEST == "all" || TRIXIATMO_TEST == "shallow_water_2d_covariant"
         include("test_2d_shallow_water_covariant.jl")
+    end
+
+    @time if TRIXI_TEST == "upstream"
+        include("test_trixi_consistency.jl")
     end
 end
