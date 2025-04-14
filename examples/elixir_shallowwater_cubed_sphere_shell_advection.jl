@@ -21,7 +21,7 @@ cells_per_dimension = (5, 5)
 
 # We use the ShallowWaterEquations3D equations structure but modify the rhs! function to
 # convert it to a variable-coefficient advection equation
-equations = ShallowWaterEquations3D(gravity_constant = 0.0)
+equations = ShallowWaterEquations3D(gravity = 0.0)
 
 # Create DG solver with polynomial degree = 3 and (local) Lax-Friedrichs/Rusanov flux as surface flux
 solver = DGSEM(polydeg = 3, surface_flux = flux_lax_friedrichs)

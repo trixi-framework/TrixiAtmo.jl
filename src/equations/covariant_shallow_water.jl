@@ -16,7 +16,7 @@ on a two-dimensional surface in three-dimensional ambient space as
 \end{aligned}
 ```
 where $h$ is the fluid height, $v^a$ and $G^{ab}$ are the contravariant velocity and metric 
-tensor components, $g$ is the gravitational constant, $f$ is the Coriolis parameter, 
+tensor components, $g$ is the gravitational acceleration, $f$ is the Coriolis parameter, 
 $J$ is the area element, and $\partial_a$ is used as a shorthand for 
 $\partial / \partial \xi^a$. Combining the advective and pressure terms in order to define 
 the momentum flux components
@@ -92,7 +92,7 @@ function Trixi.varnames(::typeof(contravariant2global),
 end
 
 # Convenience functions to extract physical variables from state vector
-@inline waterheight(u, ::AbstractCovariantShallowWaterEquations2D) = u[1]
+@inline Trixi.waterheight(u, ::AbstractCovariantShallowWaterEquations2D) = u[1]
 @inline velocity_contravariant(u,
 ::AbstractCovariantShallowWaterEquations2D) = SVector(u[2] /
                                                       u[1],

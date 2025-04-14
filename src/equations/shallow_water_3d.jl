@@ -19,7 +19,7 @@ The equations are given by
 \end{aligned}
 ```
 The unknown quantities of the SWE are the water height ``h`` and the velocities ``\mathbf{v} = (v_1, v_2, v_3)^T``.
-The gravitational constant is denoted by `g`.
+The gravitational acceleration is denoted by `g`.
 
 The 3D Shallow Water Equations (SWE) extend the 2D SWE to model shallow water flows on 2D manifolds embedded within 3D space. 
 To confine the flow to the 2D manifold, a source term incorporating a Lagrange multiplier is applied. 
@@ -48,17 +48,17 @@ References:
 """
 struct ShallowWaterEquations3D{RealT <: Real} <:
        Trixi.AbstractShallowWaterEquations{3, 5}
-    gravity::RealT # gravitational constant
+    gravity::RealT # gravitational acceleration
     H0::RealT      # constant "lake-at-rest" total water height
 end
 
-# Allow for flexibility to set the gravitational constant within an elixir depending on the
-# application where `gravity_constant=1.0` or `gravity_constant=9.81` are common values.
+# Allow for flexibility to set the gravitational acceleration within an elixir depending on the
+# application where `gravity=1.0` or `gravity=9.81` are common values.
 # The reference total water height H0 defaults to 0.0 but is used for the "lake-at-rest"
 # well-balancedness test cases.
-function ShallowWaterEquations3D(; gravity_constant, H0 = zero(gravity_constant))
-    T = promote_type(typeof(gravity_constant), typeof(H0))
-    ShallowWaterEquations3D(gravity_constant, H0)
+function ShallowWaterEquations3D(; gravity, H0 = zero(gravity))
+    T = promote_type(typeof(gravity), typeof(H0))
+    ShallowWaterEquations3D(gravity, H0)
 end
 
 Trixi.have_nonconservative_terms(::ShallowWaterEquations3D) = False() # Deactivate non-conservative terms for the moment...
@@ -346,7 +346,7 @@ end
     return SVector(h, h_v1, h_v2, h_v3, b)
 end
 
-@inline function waterheight(u, equations::ShallowWaterEquations3D)
+@inline function Trixi.waterheight(u, equations::ShallowWaterEquations3D)
     return u[1]
 end
 
