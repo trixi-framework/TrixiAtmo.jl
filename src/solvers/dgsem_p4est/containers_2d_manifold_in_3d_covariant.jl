@@ -213,10 +213,16 @@ function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 
             aux_node_vars[17:19, i, j, element] = SVector(metric_contravariant[1, 1],
                                                           metric_contravariant[1, 2],
                                                           metric_contravariant[2, 2])
-        end
 
-        # Christoffel symbols of the second kind (aux_node_vars[20:25, :, :, element])
-        calc_christoffel_symbols!(aux_node_vars, mesh, equations, dg, element)
+            # Christoffel symbols of the second kind
+            aux_node_vars[20:25, i, j, element] = calc_christoffel_symbols(v1, v2, v3,
+                                                                           v4,
+                                                                           dg.basis.nodes[i],
+                                                                           dg.basis.nodes[j],
+                                                                           radius,
+                                                                           metric_contravariant,
+                                                                           equations)
+        end
     end
 
     return nothing
@@ -290,68 +296,46 @@ end
     return SMatrix{3, 2}(A[1, 1], A[2, 1], 0.0f0, A[1, 2], A[2, 2], 0.0f0)
 end
 
-# Calculate Christoffel symbols approximately using the collocation derivative. Note that
-# they could alternatively be computed exactly without affecting the entropy stability 
-# properties of the scheme.
-function calc_christoffel_symbols!(aux_node_vars, mesh::P4estMesh{2, 3},
-                                   equations::AbstractCovariantEquations{2, 3}, dg,
-                                   element)
-    (; derivative_matrix) = dg.basis
+# Calculate the covariant metric tensor components G₁₁, G₁₂ (= G₂₁), and G₂₂ and return in 
+# that order as an SVector of length 3
+function calc_metric_covariant(v1, v2, v3, v4, xi1, xi2, radius, equations)
+    A = calc_basis_covariant(v1, v2, v3, v4, xi1, xi2, radius,
+                             equations.global_coordinate_system)
+    Gcov = A' * A
+    return SVector(Gcov[1, 1], Gcov[1, 2], Gcov[2, 2])
+end
 
-    for j in eachnode(dg), i in eachnode(dg)
+# Calculate the Christoffel symbols of the second kind using ForwardDiff to automatically 
+# differentiate the metric, and return the components Γ¹₁₁, Γ¹₁₂ (= Γ¹₂₁), Γ¹₂₂, Γ²₁₁, 
+# Γ²₁₂ (= Γ²₂₁), and Γ²₂₂ as an SVector of length 6
+function calc_christoffel_symbols(v1, v2, v3, v4, xi1, xi2, radius, Gcon, equations)
 
-        # Numerically differentiate covariant metric components with respect to ξ¹
-        dG11dxi1 = zero(eltype(aux_node_vars))
-        dG12dxi1 = zero(eltype(aux_node_vars))
-        dG22dxi1 = zero(eltype(aux_node_vars))
-        for ii in eachnode(dg)
-            aux_node_ii = get_node_aux_vars(aux_node_vars, equations, dg, ii, j,
-                                            element)
-            Gcov_ii = metric_covariant(aux_node_ii, equations)
-            dG11dxi1 = dG11dxi1 + derivative_matrix[i, ii] * Gcov_ii[1, 1]
-            dG12dxi1 = dG12dxi1 + derivative_matrix[i, ii] * Gcov_ii[1, 2]
-            dG22dxi1 = dG22dxi1 + derivative_matrix[i, ii] * Gcov_ii[2, 2]
-        end
+    # Use ForwardDiff to differentiate the covariant metric tensor components
+    dGdxi1 = derivative(x -> calc_metric_covariant(v1, v2, v3, v4, x, xi2, radius,
+                                                   equations), xi1)
+    dGdxi2 = derivative(x -> calc_metric_covariant(v1, v2, v3, v4, xi1, x, radius,
+                                                   equations), xi2)
 
-        # Numerically differentiate covariant metric components with respect to ξ²
-        dG11dxi2 = zero(eltype(aux_node_vars))
-        dG12dxi2 = zero(eltype(aux_node_vars))
-        dG22dxi2 = zero(eltype(aux_node_vars))
-        for jj in eachnode(dg)
-            aux_node_jj = get_node_aux_vars(aux_node_vars, equations, dg, i, jj,
-                                            element)
-            Gcov_jj = metric_covariant(aux_node_jj, equations)
-            dG11dxi2 = dG11dxi2 + derivative_matrix[j, jj] * Gcov_jj[1, 1]
-            dG12dxi2 = dG12dxi2 + derivative_matrix[j, jj] * Gcov_jj[1, 2]
-            dG22dxi2 = dG22dxi2 + derivative_matrix[j, jj] * Gcov_jj[2, 2]
-        end
+    # Extract SVector components from derivatives of vectors
+    dG11dxi1, dG12dxi1, dG22dxi1 = dGdxi1
+    dG11dxi2, dG12dxi2, dG22dxi2 = dGdxi2
 
-        # Compute Christoffel symbols of the first kind
-        christoffel_firstkind_1 = SMatrix{2, 2}(0.5f0 * dG11dxi1,
-                                                0.5f0 * dG11dxi2,
-                                                0.5f0 * dG11dxi2,
-                                                dG12dxi2 - 0.5f0 * dG22dxi1)
-        christoffel_firstkind_2 = SMatrix{2, 2}(dG12dxi1 - 0.5f0 * dG11dxi2,
-                                                0.5f0 * dG22dxi1,
-                                                0.5f0 * dG22dxi1,
-                                                0.5f0 * dG22dxi2)
+    # Compute Christoffel symbols of the first kind
+    Gamma_1 = SMatrix{2, 2}(0.5f0 * dG11dxi1,             # Γ₁₁₁
+                            0.5f0 * dG11dxi2,             # Γ₁₂₁
+                            0.5f0 * dG11dxi2,             # Γ₁₁₂
+                            dG12dxi2 - 0.5f0 * dG22dxi1)  # Γ₁₂₂
+    Gamma_2 = SMatrix{2, 2}(dG12dxi1 - 0.5f0 * dG11dxi2,  # Γ₂₁₁
+                            0.5f0 * dG22dxi1,             # Γ₂₂₁
+                            0.5f0 * dG22dxi1,             # Γ₂₁₂
+                            0.5f0 * dG22dxi2)             # Γ₂₂₂
 
-        # Raise indices to get Christoffel symbols of the second kind
-        aux_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
-        Gcon = metric_contravariant(aux_node, equations)
-        aux_node_vars[20, i, j, element] = Gcon[1, 1] * christoffel_firstkind_1[1, 1] +
-                                           Gcon[1, 2] * christoffel_firstkind_2[1, 1]
-        aux_node_vars[21, i, j, element] = Gcon[1, 1] * christoffel_firstkind_1[1, 2] +
-                                           Gcon[1, 2] * christoffel_firstkind_2[1, 2]
-        aux_node_vars[22, i, j, element] = Gcon[1, 1] * christoffel_firstkind_1[2, 2] +
-                                           Gcon[1, 2] * christoffel_firstkind_2[2, 2]
-
-        aux_node_vars[23, i, j, element] = Gcon[2, 1] * christoffel_firstkind_1[1, 1] +
-                                           Gcon[2, 2] * christoffel_firstkind_2[1, 1]
-        aux_node_vars[24, i, j, element] = Gcon[2, 1] * christoffel_firstkind_1[1, 2] +
-                                           Gcon[2, 2] * christoffel_firstkind_2[1, 2]
-        aux_node_vars[25, i, j, element] = Gcon[2, 1] * christoffel_firstkind_1[2, 2] +
-                                           Gcon[2, 2] * christoffel_firstkind_2[2, 2]
-    end
+    # Raise indices to get Christoffel symbols of the second kind
+    return SVector(Gcon[1, 1] * Gamma_1[1, 1] + Gcon[1, 2] * Gamma_2[1, 1],  # Γ¹₁₁
+                   Gcon[1, 1] * Gamma_1[1, 2] + Gcon[1, 2] * Gamma_2[1, 2],  # Γ¹₁₂ (= Γ¹₂₁)
+                   Gcon[1, 1] * Gamma_1[2, 2] + Gcon[1, 2] * Gamma_2[2, 2],  # Γ¹₂₂
+                   Gcon[2, 1] * Gamma_1[1, 1] + Gcon[2, 2] * Gamma_2[1, 1],  # Γ²₁₁
+                   Gcon[2, 1] * Gamma_1[1, 2] + Gcon[2, 2] * Gamma_2[1, 2],  # Γ²₁₂ (= Γ²₂₁)
+                   Gcon[2, 1] * Gamma_1[2, 2] + Gcon[2, 2] * Gamma_2[2, 2])  # Γ²₂₂
 end
 end # @muladd
