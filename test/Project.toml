@@ -1,5 +1,4 @@
 [deps]
-MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
 NLsolve = "2774e3e8-f4cf-5e23-947b-6d7e65073b56"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 OrdinaryDiffEqLowStorageRK = "b0944070-b475-4768-8dec-fb6eb410534d"
@@ -8,7 +7,6 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Trixi = "a7f1ee26-1774-49b1-8366-f1abc58fbfcb"
 
 [compat]
-MPI = "0.20.6"
 NLsolve = "4.5.1"
 OrdinaryDiffEq = "6.91"
 OrdinaryDiffEqLowStorageRK = "1.2"

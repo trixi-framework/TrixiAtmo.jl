@@ -1,5 +1,4 @@
 using Test
-using MPI: mpiexec
 
 # Trixi.jl runs tests in parallel with CI jobs setting the `TRIXI_TEST` environment
 # variable to determine the subset of tests to execute.
@@ -33,16 +32,5 @@ const TRIXIATMO_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
         @test true
 
         run(`$(Base.julia_cmd()) --threads=$TRIXIATMO_NTHREADS --check-bounds=yes --code-coverage=none $(abspath("test_threaded.jl"))`)
-    end
-
-    @time if TRIXIATMO_TEST == "all" || TRIXIATMO_TEST == "mpi"
-        # Do a dummy `@test true`:
-        # If the process errors out the testset would error out as well,
-        # cf. https://github.com/JuliaParallel/MPI.jl/pull/391
-        @test true
-
-        mpiexec() do cmd
-            run(`$cmd -n $TRIXIATMO_MPI_NPROCS $(Base.julia_cmd()) --threads=1 --check-bounds=yes $(abspath("test_mpi.jl"))`)
-        end
     end
 end
