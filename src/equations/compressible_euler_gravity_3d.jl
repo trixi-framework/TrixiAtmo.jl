@@ -100,17 +100,16 @@ Details about the 1D pressure Riemann solution can be found in Section 6.3.3 of 
     tangent1 = SVector(normal_direction[2], normal_direction[3], -normal_direction[1])
     # Orthogonal projection
     tangent1 -= dot(normal, tangent1) * normal
-    tangent1 = Trixi.normalize(tangent1)
+    tangent1 = normalize(tangent1)
 
     # Third orthogonal vector
-    tangent2 = Trixi.normalize(cross(normal_direction, tangent1))
+    tangent2 = normalize(cross(normal_direction, tangent1))
 
     # rotate the internal solution state
     u_local = Trixi.rotate_to_x(u_inner, normal, tangent1, tangent2, equations)
 
     # compute the primitive variables
-    rho_local, v_normal, v_tangent1, v_tangent2, p_local, _ = cons2prim(u_local,
-                                                                        equations)
+    rho_local, v_normal, v_tangent1, v_tangent2, p_local, _ = cons2prim(u_local, equations)
 
     # Get the solution of the pressure Riemann problem
     # See Section 6.3.3 of
@@ -132,12 +131,18 @@ Details about the 1D pressure Riemann solution can be found in Section 6.3.3 of 
     end
 
     # For the slip wall we directly set the flux as the normal velocity is zero
-    return SVector(0,
-                   p_star * normal[1],
-                   p_star * normal[2],
-                   p_star * normal[3],
-                   0,
-                   0) * norm_
+    return (SVector(zero(eltype(u_inner)),
+                    p_star * normal[1],
+                    p_star * normal[2],
+                    p_star * normal[3],
+                    zero(eltype(u_inner)),
+                    zero(eltype(u_inner))) * norm_,
+            SVector(zero(eltype(u_inner)),
+                    zero(eltype(u_inner)),
+                    zero(eltype(u_inner)),
+                    zero(eltype(u_inner)),
+                    zero(eltype(u_inner)),
+                    zero(eltype(u_inner))) * norm_)
 end
 
 """
@@ -191,7 +196,7 @@ Should be used together with [`StructuredMesh`](@ref).
     return boundary_flux
 end
 
-# Calculate 1D flux for a single point
+# Calculate 3D flux for a single point
 @inline function Trixi.flux(u, orientation::Integer,
                             equations::CompressibleEulerEquationsWithGravity3D)
     rho, rho_v1, rho_v2, rho_v3, rho_e, phi = u
@@ -222,6 +227,8 @@ end
     return SVector(f1, f2, f3, f4, f5, zero(eltype(u)))
 end
 
+# Calculate 2D flux for a single point in the normal direction
+# Note, this directional vector is not normalized
 @inline function Trixi.flux(u, normal_direction::AbstractVector,
                             equations::CompressibleEulerEquationsWithGravity3D)
     rho_e = u[5]
@@ -345,64 +352,14 @@ Kinetic energy preserving two-point flux by
     rho_rr, v1_rr, v2_rr, v3_rr, p_rr, _ = cons2prim(u_rr, equations)
 
     # Average each factor of products in flux
-    rho_avg = 0.5f0 * (rho_ll + rho_rr)
-    v1_avg = 0.5f0 * (v1_ll + v1_rr)
-    v2_avg = 0.5f0 * (v2_ll + v2_rr)
-    v3_avg = 0.5f0 * (v3_ll + v3_rr)
-    p_avg = 0.5f0 * (p_ll + p_rr)
-    e_avg = 0.5f0 * (rho_e_ll / rho_ll + rho_e_rr / rho_rr)
-
-    # Calculate fluxes depending on orientation
-    if orientation == 1
-        f1 = rho_avg * v1_avg
-        f2 = f1 * v1_avg + p_avg
-        f3 = f1 * v2_avg
-        f4 = f1 * v3_avg
-        f5 = (rho_avg * e_avg + p_avg) * v1_avg
-    elseif orientation == 2
-        f1 = rho_avg * v2_avg
-        f2 = f1 * v1_avg
-        f3 = f1 * v2_avg + p_avg
-        f4 = f1 * v3_avg
-        f5 = (rho_avg * e_avg + p_avg) * v2_avg
-    else
-        f1 = rho_avg * v3_avg
-        f2 = f1 * v1_avg
-        f3 = f1 * v2_avg
-        f4 = f1 * v3_avg + p_avg
-        f5 = (rho_avg * e_avg + p_avg) * v3_avg
-    end
-
-    return SVector(f1, f2, f3, f4, f5, zero(eltype(u_ll)))
-end
-
-@inline function Trixi.flux_kennedy_gruber(u_ll, u_rr, normal_direction::AbstractVector,
-                                           equations::CompressibleEulerEquationsWithGravity3D)
-    # Unpack left and right state
-    rho_ll, rho_v1_ll, rho_v2_ll, rho_v3_ll, rho_e_ll, phi_ll = u_ll
-    rho_rr, rho_v1_rr, rho_v2_rr, rho_v3_rr, rho_e_rr, phi_rr = u_rr
-
-    v1_ll = rho_v1_ll / rho_ll
-    v2_ll = rho_v2_ll / rho_ll
-    v3_ll = rho_v3_ll / rho_ll
-    v1_rr = rho_v1_rr / rho_rr
-    v2_rr = rho_v2_rr / rho_rr
-    v3_rr = rho_v3_rr / rho_rr
-
-    # Average each factor of products in flux
-    rho_avg = 0.5f0 * (rho_ll + rho_rr)
-    v1_avg = 0.5f0 * (v1_ll + v1_rr)
-    v2_avg = 0.5f0 * (v2_ll + v2_rr)
-    v3_avg = 0.5f0 * (v3_ll + v3_rr)
+    rho_avg = 0.5 * (rho_ll + rho_rr)
+    v1_avg = 0.5 * (v1_ll + v1_rr)
+    v2_avg = 0.5 * (v2_ll + v2_rr)
+    v3_avg = 0.5 * (v3_ll + v3_rr)
     v_dot_n_avg = v1_avg * normal_direction[1] + v2_avg * normal_direction[2] +
                   v3_avg * normal_direction[3]
-    p_avg = 0.5f0 * ((equations.gamma - 1) *
-             (rho_e_ll - 0.5f0 * rho_ll * (v1_ll^2 + v2_ll^2 + v3_ll^2) -
-              rho_ll * phi_ll) +
-             (equations.gamma - 1) *
-             (rho_e_rr - 0.5f0 * rho_rr * (v1_rr^2 + v2_rr^2 + v3_rr^2) -
-              rho_rr * phi_rr))
-    e_avg = 0.5f0 * (rho_e_ll / rho_ll + rho_e_rr / rho_rr)
+    p_avg = 0.5 * (p_ll + p_rr)
+    e_avg = 0.5 * (rho_e_ll / rho_ll + rho_e_rr / rho_rr)
 
     # Calculate fluxes depending on normal_direction
     f1 = rho_avg * v_dot_n_avg
@@ -723,10 +680,10 @@ end
     # We treat the energy term analogous to the potential temperature term in the paper by
     # Chen et al., i.e. we use p_ll and p_rr, and not p
     if v >= 0
-        f1, f2, f3, f4, f5 = v * u_ll
+        f1, f2, f3, f4, f5, _ = u_ll * v
         f5 = f5 + p_ll * v
     else
-        f1, f2, f3, f4, f5 = v * u_rr
+        f1, f2, f3, f4, f5, _ = u_rr * v
         f5 = f5 + p_rr * v
     end
 
@@ -769,14 +726,14 @@ end
 
     # Calculate normal velocities and sound speed
     # left
-    v_ll = (v1_ll * normal_direction[1]
-            + v2_ll * normal_direction[2]
-            + v3_ll * normal_direction[3])
+    v_ll = (v1_ll * normal_direction[1] +
+            v2_ll * normal_direction[2] + 
+            v3_ll * normal_direction[3])
     c_ll = sqrt(equations.gamma * p_ll / rho_ll)
     # right
-    v_rr = (v1_rr * normal_direction[1]
-            + v2_rr * normal_direction[2]
-            + v3_rr * normal_direction[3])
+    v_rr = (v1_rr * normal_direction[1] +
+            v2_rr * normal_direction[2] +
+            v3_rr * normal_direction[3])
     c_rr = sqrt(equations.gamma * p_rr / rho_rr)
 
     return max(abs(v_ll), abs(v_rr)) + max(c_ll, c_rr) * norm(normal_direction)
