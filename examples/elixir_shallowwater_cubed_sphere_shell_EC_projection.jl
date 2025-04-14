@@ -8,7 +8,7 @@ using TrixiAtmo
 # form obtained through the projection of the momentum onto the divergence-free
 # tangential contravariant vectors
 
-equations = ShallowWaterEquations3D(gravity_constant = 9.81)
+equations = ShallowWaterEquations3D(gravity = 9.81)
 
 # Create DG solver with polynomial degree = 3 and Wintemeyer et al.'s flux as surface flux
 polydeg = 3
