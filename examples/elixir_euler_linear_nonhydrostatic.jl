@@ -84,7 +84,7 @@ function (setup::NonHydrostaticSetup)(x, t, equations::CompressibleEulerEquation
 	return prim2cons(SVector(rho, v1, v2, p), equations)
 end
 
-linear_hydrostatic_setup = NonHydrostaticSetup()
+linear_nonhydrostatic_setup = NonHydrostaticSetup()
 
 boundary_conditions = (x_neg = boundary_condition_periodic,
 	x_pos = boundary_condition_periodic,
@@ -115,7 +115,7 @@ cells_per_dimension = (100, 50)
 
 mesh = StructuredMesh(cells_per_dimension, (f1, f2, f3, f4), periodicity = (true, false))
 
-semi = SemidiscretizationHyperbolic(mesh, equations, linear_hydrostatic_setup, solver, source_terms = linear_hydrostatic_setup,
+semi = SemidiscretizationHyperbolic(mesh, equations, linear_nonhydrostatic_setup, solver, source_terms = linear_nonhydrostatic_setup,
 	boundary_conditions = boundary_conditions)
 
 ###############################################################################
@@ -145,3 +145,5 @@ sol = solve(ode,
 	maxiters = 1.0e7,
 	dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
 	save_everystep = false, callback = callbacks)
+
+summary_callback()
