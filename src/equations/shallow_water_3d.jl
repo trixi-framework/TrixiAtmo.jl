@@ -346,7 +346,7 @@ end
     return SVector(h, h_v1, h_v2, h_v3, b)
 end
 
-@inline function waterheight(u, equations::ShallowWaterEquations3D)
+@inline function Trixi.waterheight(u, equations::ShallowWaterEquations3D)
     return u[1]
 end
 
