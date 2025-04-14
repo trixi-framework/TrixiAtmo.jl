@@ -6,7 +6,7 @@ using TrixiAtmo
 # Entropy consistency test for the spherical shallow water equations in Cartesian
 # form using the standard DGSEM with LLF dissipation
 
-equations = ShallowWaterEquations3D(gravity_constant = 9.81)
+equations = ShallowWaterEquations3D(gravity = 9.81)
 
 # Create DG solver with polynomial degree = 3 and (local) Lax-Friedrichs as surface flux
 polydeg = 3
