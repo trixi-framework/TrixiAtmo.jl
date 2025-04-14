@@ -1076,6 +1076,13 @@ end
            cons[1] * cons[5]
 end
 
+@inline function Trixi.velocity(u, equations::CompressibleEulerEquationsWithGravity2D)
+    rho = u[1]
+    v1 = u[2] / rho
+    v2 = u[3] / rho
+    return SVector(v1, v2)
+end
+
 # Specialized `DissipationLocalLaxFriedrichs` to avoid spurious dissipation in the
 # gravitational potential
 @inline function (dissipation::DissipationLocalLaxFriedrichs)(u_ll, u_rr,
