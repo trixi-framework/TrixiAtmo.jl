@@ -32,7 +32,7 @@ Currently available features include:
 
 If you have not yet installed Julia, please [follow the instructions for your
 operating system](https://julialang.org/downloads/platform/). TrixiAtmo.jl works
-with Julia v1.9 and newer. We recommend using the latest stable release of Julia.
+with Julia v1.10 and newer. We recommend using the latest stable release of Julia.
 
 TrixiAtmo.jl is **not** a registered Julia package yet, and therefore needs to be
 downloaded manually and then run from within the cloned directory:
