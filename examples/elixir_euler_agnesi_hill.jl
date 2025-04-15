@@ -68,15 +68,15 @@ function mapping(xi_, eta_)
     return SVector(x, y)
 end
 
-
-# Create curved mesh with 200 x 100 elements
 cells_per_dimension = (32,75) 
 # in the paper are 3 different resolutions:
 # H1: (128, 300), dx = 3200 m,  dz = 100 m
 # H2: (64, 150),  dx = 64000 m, dz = 200 m 
 # H3: (32, 75),   dx = 12800 m, dz = 400 m 
+
 mesh_Structured = StructuredMesh(cells_per_dimension, mapping,
                       periodicity = true)
+
 ###############################################################################
 # semidiscretization of the compressible Euler equations
 equations = CompressibleEulerEquations2D(1004.0 / 717.0)
@@ -110,7 +110,7 @@ semi = SemidiscretizationHyperbolic(mesh_Structured, equations, initial_conditio
 ###############################################################################
 # ODE solvers, callbacks etc.
 
-tspan = (0.0, 120.0)
+tspan = (0.0, 240000.0)
 
 ode = semidiscretize(semi, tspan)
 
@@ -130,18 +130,21 @@ save_solution = SaveSolutionCallback(interval = analysis_interval,
                                      output_directory = "out",
                                      solution_variables = solution_variables)
 
-stepsize_callback = StepsizeCallback(cfl = 1.0)
+#stepsize_callback = StepsizeCallback(cfl = 1.0)
 
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,
                         alive_callback,
                         save_solution)
+                        #stepsize_callback)
 
 ###############################################################################
 # run the simulation
+
+# H1: dt = 100.0, H2: dt = 200.0, H3: dt = 400.0
 sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
             maxiters = 1.0e7,
-            dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
+            dt = 400.0, # solve needs some value here but it will be overwritten by the stepsize_callback
             save_everystep = false, callback = callbacks);
 
 summary_callback()

@@ -104,9 +104,6 @@ volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
 solver = DGSEM(basis, surface_flux, volume_integral)
 
-coordinates_min = (-25_000.0, 0.0)
-coordinates_max = (25_000.0, 21_000.0)
-
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_term,
                                     boundary_conditions = boundary_conditions_dirichlet)
