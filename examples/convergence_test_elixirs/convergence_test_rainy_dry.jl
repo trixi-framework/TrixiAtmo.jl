@@ -25,10 +25,8 @@ end
 
 # adapted from compressible_euler_2d.jl
 function source_terms_convergence_test(u, x, t, equations::CompressibleRainyEulerEquations2D)
-    c_pd     = equations.c_dry_air_const_pressure
-    c_vd     = equations.c_dry_air_const_volume
-    #R_d      = equations.R_dry_air
-    #ref_temp = equations.ref_temperature
+    c_pd = equations.c_dry_air_const_pressure
+    c_vd = equations.c_dry_air_const_volume
 
     # Same settings as in `initial_condition`
     RealT = eltype(u)
@@ -43,7 +41,7 @@ function source_terms_convergence_test(u, x, t, equations::CompressibleRainyEule
     si, co = sincos(ω * (x1 + x2 - t))
     rho = c + A * si
     rho_x = ω * A * co
-    # Note that d/dt rho = -d/dx rho = -d/dy rho.
+    # Notice that d/dt rho = -d/dx rho = -d/dy rho.
 
     tmp = (2 * rho - 1) * (γ - 1) #+ R_d * ref_temp
 

@@ -3,10 +3,10 @@ using Trixi
 using TrixiAtmo
 using TrixiAtmo: saturation_residual, saturation_residual_jacobian,
                  flux_ec_rain, saturation_vapour_pressure, flux_chandrashekar,
-                 RainLimiterDG, cons2eq_pot_temp
+                 RainLimiterDG, cons2eq_pot_temp, entropy
 
 
-function initial_condition_weak_blast_wave_rainy(x, t, equations::CompressibleRainyEulerEquationsExplicit2D)
+function initial_condition_weak_blast_wave_rainy(x, t, equations::CompressibleRainyEulerExplicitEquations2D)
     # constants
     c_l   = equations.c_liquid_water
     c_vd  = equations.c_dry_air_const_volume
@@ -46,7 +46,7 @@ end
 ###############################################################################
 # semidiscretization of the compressible Euler equations
 
-equations = CompressibleRainyEulerEquationsExplicit2D()
+equations = CompressibleRainyEulerExplicitEquations2D()
 
 initial_condition = initial_condition_weak_blast_wave_rainy
 
@@ -78,7 +78,9 @@ ode = semidiscretize(semi, tspan)
 summary_callback = SummaryCallback()
 
 analysis_interval = 1000
-analysis_callback = AnalysisCallback(semi, interval = analysis_interval)
+analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
+                                     save_analysis = true,
+                                     extra_analysis_integrals = (entropy,))
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
@@ -88,7 +90,7 @@ save_solution = SaveSolutionCallback(interval = 1000,
                                      output_directory = "out",
                                      solution_variables = cons2eq_pot_temp)
 
-stepsize_callback = StepsizeCallback(cfl = 1.0)
+stepsize_callback = StepsizeCallback(cfl = 0.1)
 
 callbacks = CallbackSet(summary_callback,
                         analysis_callback, 

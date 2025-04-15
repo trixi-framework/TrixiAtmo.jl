@@ -5,7 +5,7 @@ using TrixiAtmo: flux_ec_rain, flux_chandrashekar,
                  RainLimiterDG, cons2eq_pot_temp
 
 
-function initial_condition_weak_blast_wave_dry(x, t, equations::CompressibleRainyEulerEquationsExplicit2D)
+function initial_condition_weak_blast_wave_dry(x, t, equations::CompressibleRainyEulerExplicitEquations2D)
     # constants
     c_vd  = equations.c_dry_air_const_volume
     R_d   = equations.R_dry_air
@@ -37,7 +37,7 @@ end
 ###############################################################################
 # semidiscretization of the compressible Euler equations
 
-equations = CompressibleRainyEulerEquationsExplicit2D()
+equations = CompressibleRainyEulerExplicitEquations2D()
 
 initial_condition = initial_condition_weak_blast_wave_dry
 

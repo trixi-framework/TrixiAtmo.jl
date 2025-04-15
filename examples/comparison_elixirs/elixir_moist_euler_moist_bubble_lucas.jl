@@ -229,8 +229,8 @@ end
 
 initial_condition = initial_condition_moist
 
-boundary_condition = (x_neg = boundary_condition_slip_wall,
-                      x_pos = boundary_condition_slip_wall,
+boundary_condition = (x_neg = boundary_condition_periodic,
+                      x_pos = boundary_condition_periodic,
                       y_neg = boundary_condition_slip_wall,
                       y_pos = boundary_condition_slip_wall)
 
@@ -242,21 +242,16 @@ source_term = source_terms_moist_bubble
 polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
 
-#surface_flux = flux_LMARS
-#volume_flux = flux_chandrashekar
-
-#volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
-surface_flux = flux_lax_friedrichs
-solver = DGSEM(basis, surface_flux)#, volume_integral)
+surface_flux = flux_LMARS
+solver = DGSEM(basis, surface_flux)
 
 coordinates_min = (0.0, 0.0)
 coordinates_max = (20000.0, 10000.0)
 
-cells_per_dimension = (64, 32)
+cells_per_dimension = (128, 64)
 
-# Create curved mesh with 64 x 32 elements
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
-                      periodicity = (false, false))
+                      periodicity = (true, false))
 
 ###############################################################################
 # create the semi discretization object

@@ -276,13 +276,10 @@ save_solution = SaveSolutionCallback(interval = 1000,
                                      output_directory = "out",
                                      solution_variables = cons2eq_pot_temp)
 
-stepsize_callback = StepsizeCallback(cfl = 1.0)
-
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,
                         alive_callback,
-                        save_solution,
-                        stepsize_callback)
+                        save_solution)
 
 stage_limiter! = NonlinearSolveDG(saturation_residual, saturation_residual_jacobian, SVector(7, 8, 9), 1e-9)
 

@@ -251,7 +251,6 @@ boundary_conditions = (; :left   => boundary_condition_periodic,
 solver = DGMulti(polydeg = 3, element_type = Quad(), approximation_type = StartUpDG.Polynomial{MultidimensionalQuadrature}(),
                  surface_integral = SurfaceIntegralWeakForm(flux_LMARS),
                  volume_integral = VolumeIntegralWeakForm(),
-                 #volume_integral = VolumeIntegralFluxDifferencing(flux_chandrashekar);
                  quad_rule_vol = StartUpDG.quad_nodes(Quad(), 6)
                  )
 
@@ -281,18 +280,11 @@ analysis_callback = AnalysisCallback(semi, interval = analysis_interval, uEltype
 
 alive_callback = AliveCallback(analysis_interval = 1000)
 
-#save_solution = SaveSolutionCallback(interval = 1000,
-                                     #save_initial_solution = true,
-                                     #save_final_solution = true,
-                                     #output_directory = "out",
-                                     #solution_variables = cons2eq_pot_temp)
-
 stepsize_callback = StepsizeCallback(cfl = 1.0)
 
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,
                         alive_callback,
-                        #save_solution,
                         stepsize_callback)
 
 ###############################################################################
@@ -305,4 +297,4 @@ sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
 summary_callback()
 
 pd = PlotData2D(sol; solution_variables = cons2aeqpot);
-plot(pd["aeqpottemp"], c = :vik, dpi = 1000)
+plot(pd["aeqpottemp"])

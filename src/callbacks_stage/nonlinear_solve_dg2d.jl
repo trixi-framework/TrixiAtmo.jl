@@ -9,10 +9,6 @@ using StaticArrays
 function nonlinear_solve_dg_2d!(u, residual, jacobian, variables_index_vector, tolerance,
                                 equations::AbstractCompressibleRainyEulerEquations, dg::DGSEM, cache, mesh)
     max_iterations = 20
-    rain_threshold = 1e-4
-    #=threshold = 0.0
-    @unpack weights = dg.basis
-    @unpack inverse_jacobian = cache.elements=#
     
     # iterate over every DGSEM element
     @batch for element in eachelement(dg, cache)

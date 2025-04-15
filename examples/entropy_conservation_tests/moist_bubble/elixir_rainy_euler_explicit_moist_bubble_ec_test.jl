@@ -191,9 +191,6 @@ function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
             rho_d_new = p_loc / (R_d * T_loc)
             θ_new = θ_dens_new * (1 + rt) / (1 + (R_v / R_d) * rvs)
         end
-        # test
-        #T_loc = θ_new * (p_loc / p_0)^kappa
-        #
         rho_qv = rvs * rho_d_new
         rho_ql = (rt - rvs) * rho_d_new
         rho = rho_d_new * (1 + rt)
@@ -210,7 +207,7 @@ end
 atmosphere_data = AtmosphereLayers(CompressibleMoistEulerEquations2D())
 
 # Create the initial condition with the initial data set
-function initial_condition_moist(x, t, equations::CompressibleRainyEulerEquationsExplicit2D)
+function initial_condition_moist(x, t, equations::CompressibleRainyEulerExplicitEquations2D)
     return initial_condition_moist_bubble(x, t, CompressibleMoistEulerEquations2D(), atmosphere_data)
 end
 
@@ -219,7 +216,7 @@ end
 ###############################################################################
 # semidiscretization of the compressible rainy Euler equations
 
-equations = CompressibleRainyEulerEquationsExplicit2D()
+equations = CompressibleRainyEulerExplicitEquations2D()
 
 boundary_conditions = (x_neg = boundary_condition_periodic,
                        x_pos = boundary_condition_periodic,

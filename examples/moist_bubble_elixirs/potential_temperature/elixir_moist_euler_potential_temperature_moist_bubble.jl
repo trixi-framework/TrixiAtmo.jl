@@ -251,9 +251,8 @@ solver = DGSEM(basis, surface_flux)
 coordinates_min = (0.0, 0.0)
 coordinates_max = (20000.0, 10000.0)
 
-cells_per_dimension = (201, 100)
+cells_per_dimension = (128, 64)
 
-# Create curved mesh with 64 x 32 elements
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = (true, false))
 

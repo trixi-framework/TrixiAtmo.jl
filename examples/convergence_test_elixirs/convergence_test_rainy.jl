@@ -9,11 +9,11 @@ using TrixiAtmo: saturation_vapour_pressure, saturation_vapour_pressure_derivati
 
 function initial_condition_convergence_test_rainy(x, t, equations::CompressibleRainyEulerEquations2D)
     # constants
-    c_l      = equations.c_liquid_water
-    c_vd     = equations.c_dry_air_const_volume
-    c_vv     = equations.c_vapour_const_volume
-    R_v      = equations.R_vapour
-    ref_L    = equations.ref_latent_heat_vap_temp
+    c_l   = equations.c_liquid_water
+    c_vd  = equations.c_dry_air_const_volume
+    c_vv  = equations.c_vapour_const_volume
+    R_v   = equations.R_vapour
+    ref_L = equations.ref_latent_heat_vap_temp
 
     # define rho like in dry convergence test
     c = 2.0
@@ -41,14 +41,14 @@ end
 
 function source_terms_convergence_test_rainy(u, x, t, equations::CompressibleRainyEulerEquations2D)
     # constants
-    c_l      = equations.c_liquid_water
-    c_vd     = equations.c_dry_air_const_volume
-    c_vv     = equations.c_vapour_const_volume
-    R_d      = equations.R_dry_air
-    R_v      = equations.R_vapour
-    ref_L    = equations.ref_latent_heat_vap_temp
-    N_0      = equations.rain_water_distr
-    v_0      = equations.v_mean_rain
+    c_l   = equations.c_liquid_water
+    c_vd  = equations.c_dry_air_const_volume
+    c_vv  = equations.c_vapour_const_volume
+    R_d   = equations.R_dry_air
+    R_v   = equations.R_vapour
+    ref_L = equations.ref_latent_heat_vap_temp
+    N_0   = equations.rain_water_distr
+    v_0   = equations.v_mean_rain
 
     # help constant for terminal rain velocity derivative ( \Gamma(4.5) / 6 ~= 1.9386213994279082 )
     c_help   = v_0 * 1.9386213994279082 * (pi * N_0)^(-0.125)

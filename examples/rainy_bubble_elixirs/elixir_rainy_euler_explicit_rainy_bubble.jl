@@ -17,7 +17,7 @@ coordinates_max = (2400.0, 2400.0)
 
 
 # hydrostatic dry potential temperature
-function theta_d(z, equations::CompressibleRainyEulerEquationsExplicit2D)
+function theta_d(z, equations::CompressibleRainyEulerExplicitEquations2D)
     # constants
     c_pd          = equations.c_dry_air_const_pressure
     R_d           = equations.R_dry_air
@@ -38,7 +38,7 @@ end
 
 
 # hydrostatic base state residual
-function generate_hydrostatic_residual(pressure_lower, humidity_rel0, z, dz, equations::CompressibleRainyEulerEquationsExplicit2D)
+function generate_hydrostatic_residual(pressure_lower, humidity_rel0, z, dz, equations::CompressibleRainyEulerExplicitEquations2D)
     # equations constants
     c_pd          = equations.c_dry_air_const_pressure
     R_d           = equations.R_dry_air
@@ -72,7 +72,7 @@ function generate_hydrostatic_residual(pressure_lower, humidity_rel0, z, dz, equ
 end
 
 
-function generate_perturbation_residual(pressure_hydrostatic, H_init, z, equations::CompressibleRainyEulerEquationsExplicit2D)
+function generate_perturbation_residual(pressure_hydrostatic, H_init, z, equations::CompressibleRainyEulerExplicitEquations2D)
     # equations constants
     c_pd          = equations.c_dry_air_const_pressure
     R_d           = equations.R_dry_air
@@ -111,7 +111,7 @@ struct AtmosphereLayers{RealT <: Real}
 end
 
 
-function AtmosphereLayers(equations::CompressibleRainyEulerEquationsExplicit2D; total_height = coordinates_max[2] + 1.0, precision = 1.0, RealT = Float64)
+function AtmosphereLayers(equations::CompressibleRainyEulerExplicitEquations2D; total_height = coordinates_max[2] + 1.0, precision = 1.0, RealT = Float64)
     # constants
     humidity_rel0    = 0.2      # hydrostatic relative humidity
     surface_pressure = 8.5e4
@@ -145,11 +145,11 @@ end
 
 
 # create layers for initial condition
-equations = CompressibleRainyEulerEquationsExplicit2D()
+equations = CompressibleRainyEulerExplicitEquations2D()
 layers    = AtmosphereLayers(equations)
 
 
-function initial_condition_bubble_rainy(x, t, equations::CompressibleRainyEulerEquationsExplicit2D; atmosphere_layers = layers)
+function initial_condition_bubble_rainy(x, t, equations::CompressibleRainyEulerExplicitEquations2D; atmosphere_layers = layers)
     # equations constants
     c_vd  = equations.c_dry_air_const_volume
     c_vv  = equations.c_vapour_const_volume
@@ -260,13 +260,10 @@ save_solution = SaveSolutionCallback(interval = 1000,
                                      output_directory = "out",
                                      solution_variables = cons2eq_pot_temp)
 
-stepsize_callback = StepsizeCallback(cfl = 1.0)
-
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,
                         alive_callback,
-                        save_solution,
-                        stepsize_callback)
+                        save_solution)
 
 stage_limiter! = RainLimiterDG()
 

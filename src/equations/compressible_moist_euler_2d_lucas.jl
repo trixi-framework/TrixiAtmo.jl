@@ -584,7 +584,7 @@ end
         rho_v = exp(s_v - c_pv * log(T) + R_v * log(R_v * T))
     end
     if (s_l != 0.0)
-        rho_l = 0.0#TODO no information in cons2entropy????
+        rho_l = 0.0
     end
 
     rho    = rho_d + rho_v + rho_l 

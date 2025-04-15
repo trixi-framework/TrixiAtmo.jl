@@ -191,9 +191,7 @@ function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
             rho_d_new = p_loc / (R_d * T_loc)
             θ_new = θ_dens_new * (1 + rt) / (1 + (R_v / R_d) * rvs)
         end
-        # test
-        #T_loc = θ_new * (p_loc / p_0)^kappa
-        #
+
         rho_qv = rvs * rho_d_new
         rho_ql = (rt - rvs) * rho_d_new
         rho = rho_d_new * (1 + rt)
@@ -234,9 +232,6 @@ boundary_conditions = (; :left   => boundary_condition_periodic,
                          :bottom => boundary_condition_slip_wall,
                          :right  => boundary_condition_periodic)
 
-#volume_flux  = flux_chandrashekar
-#volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
-
 solver = DGMulti(polydeg = 1, element_type = Quad(), approximation_type = GaussSBP(),
                  surface_integral = SurfaceIntegralWeakForm(flux_lax_friedrichs),
                  volume_integral = VolumeIntegralWeakForm())
@@ -267,18 +262,11 @@ analysis_callback = AnalysisCallback(semi, interval = analysis_interval, uEltype
 
 alive_callback = AliveCallback(analysis_interval = 1000)
 
-#save_solution = SaveSolutionCallback(interval = 1000,
-                                     #save_initial_solution = true,
-                                     #save_final_solution = true,
-                                     #output_directory = "out",
-                                     #solution_variables = cons2eq_pot_temp)
-
 stepsize_callback = StepsizeCallback(cfl = 1.0)
 
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,
                         alive_callback,
-                        #save_solution,
                         stepsize_callback)
 
 stage_limiter! = NonlinearSolveDG(saturation_residual, saturation_residual_jacobian, SVector(7, 8, 9), 1e-9)
@@ -293,4 +281,4 @@ sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false, stage_limite
 summary_callback()
 
 pd = PlotData2D(sol; solution_variables = cons2eq_pot_temp);
-plot(pd["eq_pot_temp"], c = :vik, dpi = 1000)
+plot(pd["eq_pot_temp"])

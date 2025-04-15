@@ -6,13 +6,13 @@ using TrixiAtmo: saturation_vapour_pressure, saturation_vapour_pressure_derivati
 
 
 
-function initial_condition_convergence_test_rainy_no_rain(x, t, equations::CompressibleRainyEulerEquationsExplicit2D)
+function initial_condition_convergence_test_rainy_no_rain(x, t, equations::CompressibleRainyEulerExplicitEquations2D)
     # needed constants
-    c_l      = equations.c_liquid_water
-    c_vd     = equations.c_dry_air_const_volume
-    c_vv     = equations.c_vapour_const_volume
-    R_v      = equations.R_vapour
-    ref_L    = equations.ref_latent_heat_vap_temp
+    c_l   = equations.c_liquid_water
+    c_vd  = equations.c_dry_air_const_volume
+    c_vv  = equations.c_vapour_const_volume
+    R_v   = equations.R_vapour
+    ref_L = equations.ref_latent_heat_vap_temp
 
     # define rho like in dry convergence test
     c = 2.0
@@ -37,14 +37,14 @@ function initial_condition_convergence_test_rainy_no_rain(x, t, equations::Compr
 end
 
 
-function source_terms_convergence_test_rainy_no_rain(u, x, t, equations::CompressibleRainyEulerEquationsExplicit2D)
+function source_terms_convergence_test_rainy_no_rain(u, x, t, equations::CompressibleRainyEulerExplicitEquations2D)
     # needed constants
-    c_l      = equations.c_liquid_water
-    c_vd     = equations.c_dry_air_const_volume
-    c_vv     = equations.c_vapour_const_volume
-    R_d      = equations.R_dry_air
-    R_v      = equations.R_vapour
-    ref_L    = equations.ref_latent_heat_vap_temp
+    c_l   = equations.c_liquid_water
+    c_vd  = equations.c_dry_air_const_volume
+    c_vv  = equations.c_vapour_const_volume
+    R_d   = equations.R_dry_air
+    R_v   = equations.R_vapour
+    ref_L = equations.ref_latent_heat_vap_temp
 
     # define rho like initial condition
     c = 2.0
@@ -112,7 +112,7 @@ end
 ###############################################################################
 # semidiscretization of the compressible Euler equations
 
-equations = CompressibleRainyEulerEquationsExplicit2D()
+equations = CompressibleRainyEulerExplicitEquations2D()
 
 initial_condition = initial_condition_convergence_test_rainy_no_rain
 

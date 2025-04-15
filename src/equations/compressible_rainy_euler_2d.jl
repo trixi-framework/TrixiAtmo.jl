@@ -185,10 +185,7 @@ end
     eq_pot = (temperature * (ref_p / p_d)^(R_d / c_p) * H^(-r_v * R_v / c_p) *
                exp(L_v * r_v * inv(c_p * temperature)))
 
-    #TODO
-    entropy = 0.0
-
-    return SVector(rho_dry, rho_vapour, rho_cloud, rho_rain, v1, v2, eq_pot, p, entropy)
+    return SVector(rho_dry, rho_vapour, rho_cloud, rho_rain, v1, v2, eq_pot, p)
 end
 
 
@@ -271,7 +268,7 @@ varnames(::typeof(cons2prim), ::CompressibleRainyEulerEquations2D) = ("rho_dry",
 varnames(::typeof(cons2eq_pot_temp), ::CompressibleRainyEulerEquations2D) = ("rho_dry", "rho_vapour",
                                                                              "rho_cloud", "rho_rain", 
                                                                              "v1", "v2", "eq_pot_temp",
-                                                                             "pressure", "entropy")
+                                                                             "pressure")
 
 
 
@@ -426,13 +423,13 @@ end
 
 @inline function flux(u, orientation::Integer, equations::CompressibleRainyEulerEquations2D)
     # constants
-    c_l      = equations.c_liquid_water
+    c_l = equations.c_liquid_water
 
     #densities
     rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
 
     # recover rho_vapour, rho_cloud, temperature from nonlinear system
-    rho_vapour, _, temperature = cons2nonlinearsystemsol(u, equations)
+    _, _, temperature = cons2nonlinearsystemsol(u, equations)
 
     # velocity
     v1, v2 = velocities(u, rho_inv, equations)
@@ -479,13 +476,13 @@ end
 
 @inline function flux(u, normal_direction::AbstractVector, equations::CompressibleRainyEulerEquations2D)
     # constants
-    c_l      = equations.c_liquid_water
+    c_l = equations.c_liquid_water
 
     # densities
     rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
 
     # recover rho_vapour, rho_cloud, temperature from nonlinear system
-    rho_vapour, _, temperature = cons2nonlinearsystemsol(u, equations)
+    _, _, temperature = cons2nonlinearsystemsol(u, equations)
 
     # velocity
     v1, v2 = velocities(u, rho_inv, equations)
@@ -1038,12 +1035,12 @@ end
     normal = normal_direction / norm(normal_direction)
 
     # compute the normal velocity
-    u_normal = normal[1] * u_inner[2] + normal[2] * u_inner[5]
+    u_normal = normal[1] * u_inner[4] + normal[2] * u_inner[5]
 
     # create the "external" boundary solution state
     u_boundary = SVector(u_inner[1], u_inner[2], u_inner[3],
-                         u_inner[4] - 2 * u_normal * normal[5],
-                         u_inner[5] - 2 * u_normal * normal[4],
+                         u_inner[4] - 2 * u_normal * normal[1],
+                         u_inner[5] - 2 * u_normal * normal[2],
                          u_inner[6], u_inner[7], u_inner[8], u_inner[9])
 
     # calculate the boundary flux

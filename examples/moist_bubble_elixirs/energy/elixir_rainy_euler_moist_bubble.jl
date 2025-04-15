@@ -4,7 +4,7 @@ using TrixiAtmo
 using TrixiAtmo: source_terms_no_phase_change, saturation_residual,
                  saturation_residual_jacobian, NonlinearSolveDG,
                  cons2eq_pot_temp, flux_LMARS, flux_chandrashekar,
-                 flux_ec_rain
+                 flux_ec_rain, boundary_condition_simple_slip_wall
 using NLsolve: nlsolve
 
 
@@ -192,9 +192,6 @@ function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
             rho_d_new = p_loc / (R_d * T_loc)
             θ_new = θ_dens_new * (1 + rt) / (1 + (R_v / R_d) * rvs)
         end
-        # test
-        #T_loc = θ_new * (p_loc / p_0)^kappa
-        #
         rho_qv = rvs * rho_d_new
         rho_ql = (rt - rvs) * rho_d_new
         rho = rho_d_new * (1 + rt)
@@ -230,7 +227,6 @@ boundary_conditions = (x_neg = boundary_condition_periodic,
 polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
 
-#surface_flux = flux_lax_friedrichs
 surface_flux = flux_LMARS
 volume_flux  = flux_ec_rain
 
@@ -241,7 +237,7 @@ solver = DGSEM(basis, surface_flux, volume_integral)
 coordinates_min = (     0.0,      0.0)
 coordinates_max = (20_000.0, 10_000.0)
 
-cells_per_dimension = (65, 32)
+cells_per_dimension = (128, 64)
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = (true, false))
 
@@ -261,7 +257,6 @@ summary_callback = SummaryCallback()
 
 analysis_interval = 1000
 
-# entropy?
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
                                      extra_analysis_errors = (:entropy_conservation_error,))
 

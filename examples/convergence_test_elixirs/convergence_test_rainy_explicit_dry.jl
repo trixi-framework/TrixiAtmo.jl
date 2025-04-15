@@ -5,7 +5,7 @@ using TrixiAtmo
 
 
 # adapted from compressible_euler_2d.jl
-function initial_condition_convergence_test(x, t, equations::CompressibleRainyEulerEquationsExplicit2D)
+function initial_condition_convergence_test(x, t, equations::CompressibleRainyEulerExplicitEquations2D)
     RealT = eltype(x)
     c = 2
     A = convert(RealT, 0.1)
@@ -24,9 +24,9 @@ end
 
 
 # adapted from compressible_euler_2d.jl
-function source_terms_convergence_test(u, x, t, equations::CompressibleRainyEulerEquationsExplicit2D)
-    c_pd     = equations.c_dry_air_const_pressure
-    c_vd     = equations.c_dry_air_const_volume
+function source_terms_convergence_test(u, x, t, equations::CompressibleRainyEulerExplicitEquations2D)
+    c_pd = equations.c_dry_air_const_pressure
+    c_vd = equations.c_dry_air_const_volume
 
     # Same settings as in `initial_condition`
     RealT = eltype(u)
@@ -41,7 +41,7 @@ function source_terms_convergence_test(u, x, t, equations::CompressibleRainyEule
     si, co = sincos(ω * (x1 + x2 - t))
     rho = c + A * si
     rho_x = ω * A * co
-    # Note that d/dt rho = -d/dx rho = -d/dy rho.
+    # Notice that d/dt rho = -d/dx rho = -d/dy rho.
 
     tmp = (2 * rho - 1) * (γ - 1)
     du1 = rho_x
@@ -57,7 +57,7 @@ end
 ###############################################################################
 # semidiscretization of the compressible Euler equations
 
-equations = CompressibleRainyEulerEquationsExplicit2D()
+equations = CompressibleRainyEulerExplicitEquations2D()
 
 initial_condition = initial_condition_convergence_test
 

@@ -87,7 +87,7 @@ semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
 ###############################################################################
 # ODE solvers, callbacks etc.
 
-tspan = (0.0, 1100.0)
+tspan = (0.0, 1000.0)
 
 ode = semidiscretize(semi, tspan)
 
@@ -95,7 +95,6 @@ summary_callback = SummaryCallback()
 
 analysis_interval = 1000
 
-# entropy?
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
                                      extra_analysis_errors = (:entropy_conservation_error,))
 
