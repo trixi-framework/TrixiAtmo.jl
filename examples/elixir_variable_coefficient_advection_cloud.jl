@@ -36,9 +36,9 @@ end
     elseif z_2 <= x[2]
         u_1 = 1.0f0
     else
-        u_1 = convert(RealT, u_0 * (sin((pi / 2) * (x[2] - z_1) / (z_2 - z_1))))^2
+        u_1 = convert(RealT, (sin((pi / 2) * (x[2] - z_1) / (z_2 - z_1))))^2
     end
-    return SVector(u_1, 0.0f0)
+    return SVector(u_0 *u_1, 0.0f0)
 end
 
 ##############################################################################################
@@ -63,7 +63,7 @@ solver = DGSEM(polydeg = polydeg,
 
 boundary_conditions_dirichlet = Dict(:left => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
                                      :right => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
-                                     :bottom => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),#boundary_condition_slip_wall,
+                                     :bottom => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
                                      :top => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain), #boundary_condition_slip_wall,
                                      :bottom_left => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain), 
                                      :bottom_right => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain))

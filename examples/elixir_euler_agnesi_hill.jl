@@ -36,10 +36,47 @@ end
 end #needs slightly different sponge term for the upper boundary
 
 ###############################################################################
+#P4estMesh 
+function mapping_HOHQ(xi, eta) 
+    # transform the mesh from 409.6 m  x 30.0 m to 409600.0 x 30000
+
+    x, y = 1000.0 * xi, 1000.0 * eta 
+
+    return SVector(x, y)
+end 
+
+
+polydeg = 3
 
 mesh_file = joinpath("src/meshes", "agnesi_hill.inp")
-mesh = P4estMesh{2}(mesh_file, polydeg = polydeg)
+mesh_P4est = P4estMesh{2}(mesh_file, polydeg = polydeg, mapping = mapping_HOHQ)
 
+###############################################################################
+#
+function mapping(xi_, eta_)
+    xi = xi_ * 204800.0 + 204800.0  # L = 409600.0 m 
+    eta = eta_ * 15000.0 + 15000.0  # H = 30000.0 m
+
+    H = 30000.0 #upper boundary
+    a = 16000.0 #half width mountain
+    h = 0.016   #height mountain
+
+    topo = (h * a^2)/(a^2 + xi^2)
+
+    x = xi
+    y = H * (eta - topo) / (H - topo)
+    return SVector(x, y)
+end
+
+
+# Create curved mesh with 200 x 100 elements
+cells_per_dimension = (32,75) 
+# in the paper are 3 different resolutions:
+# H1: (128, 300), dx = 3200 m,  dz = 100 m
+# H2: (64, 150),  dx = 64000 m, dz = 200 m 
+# H3: (32, 75),   dx = 12800 m, dz = 400 m 
+mesh_Structured = StructuredMesh(cells_per_dimension, mapping,
+                      periodicity = true)
 ###############################################################################
 # semidiscretization of the compressible Euler equations
 equations = CompressibleEulerEquations2D(1004.0 / 717.0)
@@ -47,12 +84,16 @@ equations = CompressibleEulerEquations2D(1004.0 / 717.0)
 initial_condition = initial_condition_agnesi_hill
 source_term = source
 
-boundary_condition = Dict(:left => boundary_condition_periodic,
-                    :right => boundary_condition_periodic,
+boundary_condition_HOHQ = Dict(:left => BoundaryConditionDirichlet(initial_condition_agnesi_hill),
+                    :right => BoundaryConditionDirichlet(initial_condition_agnesi_hill),
                     :bottom => boundary_condition_slip_wall,
                     :top => boundary_condition_slip_wall)
 
-polydeg = 3
+boundary_condition_Structured = (x_neg = boundary_condition_periodic, 
+                    x_pos = boundary_condition_periodic, 
+                    y_neg = boundary_condition_slip_wall,
+                    y_pos = boundary_condition_slip_wall)
+
 basis = LobattoLegendreBasis(polydeg)
 
 surface_flux = FluxLMARS(340.0)
@@ -62,9 +103,9 @@ volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
 solver = DGSEM(basis, surface_flux, volume_integral)
 
-semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
+semi = SemidiscretizationHyperbolic(mesh_Structured, equations, initial_condition, solver,
                                     source_terms = source_term,
-                                    boundary_conditions = boundary_condition)
+                                    boundary_conditions = boundary_condition_Structured)
 
 ###############################################################################
 # ODE solvers, callbacks etc.
@@ -94,8 +135,7 @@ stepsize_callback = StepsizeCallback(cfl = 1.0)
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,
                         alive_callback,
-                        save_solution,
-                        stepsize_callback)
+                        save_solution)
 
 ###############################################################################
 # run the simulation
