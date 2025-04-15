@@ -555,8 +555,8 @@ References:
     c = flux_lmars.speed_of_sound
 
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, p_ll, phi_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr, phi_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, p_ll, _ = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr, _ = cons2prim(u_rr, equations)
 
     if orientation == 1
         v_ll = v1_ll
@@ -594,8 +594,8 @@ end
     c = flux_lmars.speed_of_sound
 
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, p_ll, phi_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr, phi_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, p_ll, _ = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr, _ = cons2prim(u_rr, equations)
 
     v_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2]
     v_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2]
@@ -1076,7 +1076,15 @@ end
            cons[1] * cons[5]
 end
 
-# Specialized `DissipationLocalLaxFriedrichs` to avoid spurious dissipation in the bottom topography
+@inline function Trixi.velocity(u, equations::CompressibleEulerEquationsWithGravity2D)
+    rho = u[1]
+    v1 = u[2] / rho
+    v2 = u[3] / rho
+    return SVector(v1, v2)
+end
+
+# Specialized `DissipationLocalLaxFriedrichs` to avoid spurious dissipation in the
+# gravitational potential
 @inline function (dissipation::DissipationLocalLaxFriedrichs)(u_ll, u_rr,
                                                               orientation_or_normal_direction,
                                                               equations::CompressibleEulerEquationsWithGravity2D)

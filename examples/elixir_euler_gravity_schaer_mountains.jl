@@ -81,7 +81,7 @@ boundary_conditions_dirichlet = Dict(:x_neg => BoundaryConditionDirichlet(initia
 
 basis = LobattoLegendreBasis(polydeg)
 
-volume_flux = (flux_ranocha, flux_nonconservative_waruszewski)
+volume_flux = (flux_kennedy_gruber, flux_nonconservative_waruszewski)
 surface_flux = (FluxLMARS(340.0), flux_nonconservative_waruszewski)
 
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)

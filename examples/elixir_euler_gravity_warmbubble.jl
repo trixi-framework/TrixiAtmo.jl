@@ -1,6 +1,6 @@
 
-using OrdinaryDiffEqSSPRK, OrdinaryDiffEqLowStorageRK
-using Trixi
+using OrdinaryDiffEqLowStorageRK
+using Trixi, TrixiAtmo
 
 # Warm bubble test case from
 # - Wicker, L. J., and Skamarock, W. C. (1998)
