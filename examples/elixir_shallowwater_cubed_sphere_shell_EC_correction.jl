@@ -6,7 +6,7 @@ using TrixiAtmo
 # Entropy conservation for the spherical shallow water equations in Cartesian
 # form obtained through an entropy correction term
 
-equations = ShallowWaterEquations3D(gravity_constant = 9.81)
+equations = ShallowWaterEquations3D(gravity = 9.81)
 
 # Create DG solver with polynomial degree = 3 and Wintemeyer et al.'s flux as surface flux
 polydeg = 3

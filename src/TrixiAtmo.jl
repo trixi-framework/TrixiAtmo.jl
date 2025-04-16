@@ -41,7 +41,7 @@ export flux_chandrashekar, FluxLMARS
 export flux_nonconservative_zeros, flux_nonconservative_ec,
        source_terms_geometric_coriolis
 
-export velocity, waterheight, pressure, energy_total, energy_kinetic, energy_internal,
+export velocity, pressure, energy_total, energy_kinetic, energy_internal,
        lake_at_rest_error, source_terms_lagrange_multiplier,
        clean_solution_lagrange_multiplier!
 
