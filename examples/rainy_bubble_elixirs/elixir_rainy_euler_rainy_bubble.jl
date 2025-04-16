@@ -105,14 +105,14 @@ end
 
 
 # for approximating the dz pressure gradient
-struct AtmosphereLayers{RealT <: Real}
+struct AtmosphereLayersRainyBubble{RealT <: Real}
     layer_data   ::Matrix{RealT}
     total_height ::RealT
     precision    ::RealT
 end
 
 
-function AtmosphereLayers(equations::CompressibleRainyEulerEquations2D; total_height = coordinates_max[2] + 1.0, precision = 1.0, RealT = Float64)
+function AtmosphereLayersRainyBubble(equations::CompressibleRainyEulerEquations2D; total_height = coordinates_max[2] + 1.0, precision = 1.0, RealT = Float64)
     # constants
     humidity_rel0    = 0.2      # hydrostatic relative humidity
     surface_pressure = 8.5e4
@@ -141,13 +141,13 @@ function AtmosphereLayers(equations::CompressibleRainyEulerEquations2D; total_he
         layer_data[i + 1, :] .= nlsolve(residual_function!, guess, ftol = 1e-10, iterations = 20).zero
     end
     
-    return AtmosphereLayers{RealT}(layer_data, total_height, precision)
+    return AtmosphereLayersRainyBubble{RealT}(layer_data, total_height, precision)
 end
 
 
 # create layers for initial condition
 equations = CompressibleRainyEulerEquations2D()
-layers    = AtmosphereLayers(equations)
+layers    = AtmosphereLayersRainyBubble(equations)
 
 
 function initial_condition_bubble_rainy(x, t, equations::CompressibleRainyEulerEquations2D; atmosphere_layers = layers)
@@ -222,7 +222,7 @@ boundary_conditions = (x_neg = boundary_condition_periodic,
                        y_neg = boundary_condition_simple_slip_wall,
                        y_pos = boundary_condition_simple_slip_wall)
 
-polydeg = 1
+polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
 
 surface_flux = flux_lax_friedrichs
@@ -230,7 +230,7 @@ volume_integral = VolumeIntegralFluxDifferencing(flux_ec_rain)
 
 solver = DGSEM(basis, surface_flux, volume_integral)
 
-cells_per_dimension = (100, 100)
+cells_per_dimension = (64, 64)
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = (true, false))
 
