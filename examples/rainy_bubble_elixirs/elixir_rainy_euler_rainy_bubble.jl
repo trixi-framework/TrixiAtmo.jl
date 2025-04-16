@@ -8,7 +8,6 @@ using TrixiAtmo: source_terms_rainy, saturation_residual,
                  source_terms_no_phase_change, 
                  boundary_condition_simple_slip_wall
 using NLsolve: nlsolve
-#using Plots
 
 
 
