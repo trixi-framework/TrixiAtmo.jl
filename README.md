@@ -19,14 +19,14 @@
 
 **TrixiAtmo.jl** is a numerical simulation package focused on atmospheric flows. It builds
 upon [Trixi.jl](https://github.com/trixi-framework/Trixi.jl), a generic flow solver for
-conservation laws, implementing the discontinuous Galerkin method and written in Julia.
+conservation laws, implementing discontinuous Galerkin methods and written in Julia.
 
 Currently available features include:
 
 * Compressible Euler and shallow water models on cubed sphere meshes, discretizing the
   atmosphere or its two-dimensional surface
-* Moist compressible Euler equation, including cloud and rain microphysics
-
+* Moist compressible Euler equations, including cloud and rain microphysics
+* Flux-differencing formulations, including entropy-stable schemes
 
 ## Installation
 
@@ -72,8 +72,8 @@ It was initiated by
 Andrés Rueda-Ramírez
 (Polytechnic University of Madrid (UPM), Spain),
 [Benedict Geihe](https://www.mi.uni-koeln.de/NumSim/), and
-[Tristan Montoya](https://www.mi.uni-koeln.de/NumSim/)
-(University of Cologne, Germany)..
+[Tristan Montoya](https://tjbmontoya.com/)
+(University of Cologne, Germany).
 
 ## License and contributing
 TrixiAtmo.jl is licensed under the MIT license (see [LICENSE.md](LICENSE.md)).
@@ -91,5 +91,5 @@ or [create an issue](https://github.com/trixi-framework/TrixiAtmo.jl/issues/new)
 This project has benefited from funding from the German Federal Ministry of
 Education and Research through the project grants "Adaptive earth system modeling
 with significantly reduced computation time for exascale supercomputers
-(ADAPTEX)" (funding id: 16ME0668K)
-and "ICON-DG, WarmWorld Smarter " (funding id: 01LK2315B).
+(ADAPTEX)" (funding id: 16ME0668K) and 
+"ICON-DG, WarmWorld Smarter " (funding id: 01LK2315B).
