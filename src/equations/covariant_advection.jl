@@ -7,13 +7,13 @@
 Denoting the [covariant derivative](https://en.wikipedia.org/wiki/Covariant_derivative) by 
 $\nabla_j$ and summing over repeated indices, a variable-coefficient linear advection equation can be defined on a two-dimensional manifold in three-dimensional ambient space as
 ```math
-\partial_t h + \nabla_j (hv^j) = 0
+\partial_t h + \nabla_j (hv^j) = 0.
 ```
 We treat this problem as a system of equations in which the first variable is the scalar 
 conserved quantity $h$, and the second two are the contravariant components $v^1$ and $v^2$ 
 used in the expansion 
 ```math
-\vec{v} = v^1 \vec{a}_1 + v^2 \vec{a}_2,
+\vec{v} = v^i \vec{a}_i =  v^1 \vec{a}_1 + v^2 \vec{a}_2,
 ```
 where $\vec{a}_1 = \partial \vec{x} / \partial \xi^1$ and 
 $\vec{a}_2 = \partial \vec{x} / \partial \xi^2$ are the so-called covariant basis vectors, 
