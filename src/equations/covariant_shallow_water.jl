@@ -6,26 +6,27 @@
         AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 3}
 
 Denoting the [covariant derivative](https://en.wikipedia.org/wiki/Covariant_derivative) by 
-$\nabla_b$ and summing over repeated indices, the shallow water equations can be expressed 
+$\nabla_j$ and summing over repeated indices, the shallow water equations can be expressed 
 on a two-dimensional surface in three-dimensional ambient space as
 ```math
 \begin{aligned}
-\partial_t h + \nabla_b (hv^b) &= 0,\\
-\partial_t (hv^a) + \nabla_b (hv^av^b) + gh G^{ab}\partial_b(h + b) 
-&= -fJ G^{ab}\varepsilon_{bc} hv^c,
+\partial_t h + \nabla_j (hv^j) &= 0,\\
+\partial_t (hv^i) + \nabla_j \tau^{ij} + gh G^{ij}\partial_j b
+&= -fJ G^{ij}\varepsilon_{jk} hv^k,
 \end{aligned}
 ```
 where $h$ is the geopotential height (equal to the total geopotential height $H$ for zero
-bottom topography), $v^a$ and $G^{ab}$ are the contravariant velocity and metric tensor
-components, $g$ is the gravitational constant, $f$ is the Coriolis parameter, $J$ is the 
-area element, and $\partial_a$ is used as a shorthand for $\partial / \partial \xi^a$. 
-Combining the advective and pressure terms in order to define the momentum flux components
+bottom topography), $v^i$ and $G^{ij}$ are the contravariant velocity and metric tensor
+components, $g$ is the gravitational acceleration, $b$ is the bottom topography, $f$ is the 
+Coriolis parameter, $J$ is the area element, $\varepsilon$ is the Levi-Civita symbol, and 
+$\partial_j$ is used as a shorthand for $\partial / \partial \xi^j$. The contravariant 
+momentum flux tensor components are given by
 ```math
-\tau^{ab} = hv^a v^b + \frac{1}{2}G^{ab}gh^2,
+\tau^{ij} = hv^i v^j + \frac{1}{2}G^{ij}gh^2.
 ```
-the covariant shallow water equations can be expressed as a system of conservation laws 
-with a source term (implemented in the exported function 
-`source_terms_geometric_coriolis`), as given by
+The covariant shallow water equations with constant bottom topography can be formulated on 
+the reference element as a system of conservation laws with a source term (implemented in 
+the exported function `source_terms_geometric_coriolis`), as given by
 ```math
 J \frac{\partial}{\partial t}
 \left[\begin{array}{c} h \\ hv^1 \\ hv^2 \end{array}\right] 
@@ -36,16 +37,16 @@ J \frac{\partial}{\partial t}
 \frac{\partial}{\partial \xi^2} 
 \left[\begin{array}{c} J h v^2 \\ J \tau^{21} \\ J \tau^{22}  \end{array}\right] 
 = J \left[\begin{array}{c} 0 \\ 
--\Gamma^1_{ac}\tau^{ac} - f J \big(G^{12}hv^1 - G^{11}hv^2\big) \\ 
--\Gamma^2_{ac}\tau^{ac} - f J \big(G^{22}hv^1 - G^{21}hv^2\big)
+-\Gamma^1_{jk}\tau^{jk} - f J \big(G^{12}hv^1 - G^{11}hv^2\big) \\ 
+-\Gamma^2_{jk}\tau^{jk} - f J \big(G^{22}hv^1 - G^{21}hv^2\big)
  \end{array}\right].
 ```
 Note that the geometric contribution to the source term involves the Christoffel symbols of
 the second kind, which can been expressed in terms of the covariant metric tensor 
-components $G_{ab}$ as 
+components $G_{ij}$ as 
 ```math
-\Gamma_{ac}^b = 
-\frac{1}{2}G^{bd}\big(\partial_aG_{cd} + \partial_c G_{da} - \partial_d G_{ac}\big).
+\Gamma_{jk}^i = 
+\frac{1}{2}G^{il}\big(\partial_j G_{kl} + \partial_k G_{jl} - \partial_l G_{jk}\big).
 ```
 ## References
 - M. Baldauf (2020). Discontinuous Galerkin solver for the shallow-water equations in
