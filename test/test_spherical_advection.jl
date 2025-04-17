@@ -5,7 +5,7 @@ using TrixiAtmo
 
 include("test_trixiatmo.jl")
 
-EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
+EXAMPLES_DIR = TrixiAtmo.examples_dir()
 
 @trixiatmo_testset "Spherical advection (cubed sphere), Cartesian weak form, LLF surface flux" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,

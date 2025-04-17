@@ -3,7 +3,6 @@ module TestTrixiConsistency
 include("test_trixiatmo.jl")
 
 EXAMPLES_DIR = TrixiAtmo.examples_dir()
-TRIXI_EXAMPLES_DIR = Trixi.examples_dir()
 
 # Start with a clean environment: remove Trixi.jl output directory if it exists
 outdir = "out"
@@ -12,7 +11,7 @@ isdir(outdir) && rm(outdir, recursive = true)
 @trixiatmo_testset "Dry air consistency check" begin
     # Dry air warm bubble test case in Trixi.jl
     maxiters = 100
-    trixi_elixir = joinpath(TRIXI_EXAMPLES_DIR, "structured_2d_dgsem",
+    trixi_elixir = joinpath(Trixi.examples_dir(), "structured_2d_dgsem",
                             "elixir_euler_warm_bubble.jl")
 
     # Override maxiter and fluxes

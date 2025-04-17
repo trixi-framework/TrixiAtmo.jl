@@ -23,20 +23,20 @@ J\left[\begin{array}{c}0 \\ s^1 \\ s^2 \end{array}\right].
 ```
 In the above, the non-conservative differential terms in the momentum equations are given by
 ```math
-\Upsilon^i := \frac{1}{2}hv^j\big(G^{ik}\partial_j v_k - \partial_j v^i\big) 
+\Upsilon^i = \frac{1}{2}hv^j\big(G^{ik}\partial_j v_k - \partial_j v^i\big) 
 + ghG^{ij}\partial_j (h + b),
 ```
 where we allow for a variable bottom topography defined by $h_s$, and the algebraic 
 momentum source terms implemented in `source_terms_geometric_coriolis` are given by
 ```math
-s^i := -\frac{1}{2}\big(\Gamma_{jk}^i hv^j v^k - G^{ik}\Gamma_{jk}^lh v^j v_l \big) 
+s^i = -\frac{1}{2}\big(\Gamma_{jk}^i hv^j v^k - G^{ik}\Gamma_{jk}^lh v^j v_l \big) 
 - f JG^{ij}\varepsilon_{jk} hv^k.
 ```
 In the above, we employ the same notation as in [`CovariantShallowWaterEquations2D`](@ref) 
 (including summation over repeated indices) and note that the covariant velocity components are given by $v_i = G_{ij} v^j$. To obtain an entropy-conservative scheme with respect to 
 the total energy
 ```math
-\eta := \frac{1}{2}h(v_1 v^1 + v_2v^2)  + \frac{1}{2}gh^2 + ghb,
+\eta = \frac{1}{2}h(v_1 v^1 + v_2v^2)  + \frac{1}{2}gh^2 + ghb,
 ```
 this equation type should be used with `volume_flux = (flux_ec, flux_nonconservative_ec)`.
 !!! warning "Experimental implementation"

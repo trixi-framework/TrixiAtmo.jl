@@ -4,16 +4,14 @@
 @doc raw"""
     CovariantLinearAdvectionEquation2D{GlobalCoordinateSystem} <:  
         AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 3}
-
-A variable-coefficient linear advection equation can be defined on a two-dimensional
-manifold $S \subset \mathbb{R}^3$ as
+Denoting the [covariant derivative](https://en.wikipedia.org/wiki/Covariant_derivative) by 
+$\nabla_j$ and summing over repeated indices, a variable-coefficient linear advection equation can be defined on a two-dimensional manifold in three-dimensional ambient space as
 ```math
-\partial_t h + \nabla_S \cdot (h \vec{v}) = 0,
+\partial_t h + \nabla_j (hv^j) = 0
 ```
-where $\nabla_S \cdot$ is the horizontal divergence operator on $S$. We treat this problem 
-as a system of equations in which the first variable is the scalar conserved quantity $h$, 
-and the second two are the contravariant components $v^1$ and $v^2$ used in the expansion 
-with respect to the covariant basis vectors $\vec{a}_1$ and $\vec{a}_2$ as
+We treat this problem as a system of equations in which the first variable is the scalar 
+conserved quantity $h$, and the second two are the contravariant components $v^1$ and $v^2$ 
+used in the expansion 
 ```math
 \vec{v} = v^1 \vec{a}_1 + v^2 \vec{a}_2,
 ```

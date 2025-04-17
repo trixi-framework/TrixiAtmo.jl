@@ -69,9 +69,7 @@ save_solution = SaveSolutionCallback(dt = (tspan[2] - tspan[1]) / n_saves,
                                      solution_variables = cons2prim_and_vorticity)
 
 # The StepsizeCallback handles the re-calculation of the maximum Δt after each time step.
-# Here we take a small CFL value to make the time integration error negligible when
-# verifying well balancedness.
-stepsize_callback = StepsizeCallback(cfl = 0.01)
+stepsize_callback = StepsizeCallback(cfl = 0.1)
 
 # Create a CallbackSet to collect all callbacks such that they can be passed to the ODE 
 # solver
