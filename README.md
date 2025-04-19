@@ -88,8 +88,10 @@ or [create an issue](https://github.com/trixi-framework/TrixiAtmo.jl/issues/new)
   <img align="middle" src="https://user-images.githubusercontent.com/3637659/231436391-b28a76a4-f027-40f9-bd28-14e3a2f3e16a.png" height="100" />
 </p>
 
-This project has benefited from funding from the German Federal Ministry of
-Education and Research through the project grants "Adaptive earth system modeling
-with significantly reduced computation time for exascale supercomputers
-(ADAPTEX)" (funding id: 16ME0668K) and 
-"ICON-DG, WarmWorld Smarter " (funding id: 01LK2315B).
+This project has benefited from funding from the 
+[Federal Ministry of Education and Research](https://www.bmbf.de) (BMBF) 
+through the following grants:
+
+* Project grant "Adaptive earth system modeling with significantly reduced computation time for
+  exascale supercomputers (ADAPTEX)" (funding id: 16ME0668K)
+* Project grant "ICON-DG" of the WarmWorld initiative (funding id: 01LK2315B).
