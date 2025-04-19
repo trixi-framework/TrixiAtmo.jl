@@ -94,4 +94,4 @@ through the following grants:
 
 * Project grant "Adaptive earth system modeling with significantly reduced computation time for
   exascale supercomputers (ADAPTEX)" (funding id: 16ME0668K)
-* Project grant "ICON-DG" of the WarmWorld initiative (funding id: 01LK2315B).
+* Project grant "ICON-DG" of the WarmWorld initiative (funding id: 01LK2315B)
