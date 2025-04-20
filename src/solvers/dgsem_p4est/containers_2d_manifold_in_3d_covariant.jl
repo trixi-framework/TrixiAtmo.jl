@@ -321,9 +321,9 @@ function calc_metric_covariant(v1, v2, v3, v4, xi1, xi2, radius, equations)
     return SVector(Gcov[1, 1], Gcov[1, 2], Gcov[2, 2])
 end
 
-# Calculate the Christoffel symbols of the second kind using ForwardDiff to automatically 
-# differentiate the metric, and return the components Γ¹₁₁, Γ¹₁₂ (= Γ¹₂₁), Γ¹₂₂, Γ²₁₁, 
-# Γ²₁₂ (= Γ²₂₁), and Γ²₂₂ as an SVector of length 6
+# Calculate the Christoffel symbols of the second kind using ForwardDiff.jl to 
+# automatically differentiate the metric, and return the components 
+# Γ¹₁₁, Γ¹₁₂ (= Γ¹₂₁), Γ¹₂₂, Γ²₁₁, Γ²₁₂ (= Γ²₂₁), and Γ²₂₂ as an SVector of length 6
 function calc_christoffel_symbols(v1, v2, v3, v4, xi1, xi2, radius, Gcon, equations)
 
     # Use ForwardDiff to differentiate the covariant metric tensor components
