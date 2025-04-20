@@ -29,7 +29,8 @@ end
 
 # Create auxiliary node variable container and initialize auxiliary variables
 function init_auxiliary_node_variables(mesh::Union{P4estMesh, T8codeMesh},
-                                       equations, dg, elements, interfaces)
+                                       equations, dg, elements, interfaces,
+                                       auxiliary_field)
     nelements = Trixi.ncells(mesh)
     ninterfaces = Trixi.count_required_surfaces(mesh).interfaces
     NDIMS = ndims(elements)
@@ -60,7 +61,8 @@ function init_auxiliary_node_variables(mesh::Union{P4estMesh, T8codeMesh},
                                                                          _aux_node_vars,
                                                                          _aux_surface_node_vars)
 
-    init_auxiliary_node_variables!(auxiliary_variables, mesh, equations, dg, elements)
+    init_auxiliary_node_variables!(auxiliary_variables, mesh, equations, dg, elements,
+                                   auxiliary_field)
     init_auxiliary_surface_node_variables!(auxiliary_variables, mesh, equations, dg,
                                            interfaces)
     return auxiliary_variables
@@ -157,10 +159,16 @@ end
 # Otherwise, the mesh's tree node coordinates will be interpolated to the solver's 
 # physical node coordinates, and this would introduce a polynomial approximation of the 
 # geometry, making the analytical metric terms computed here no longer correct.
+# 
+# The last argument is the bottom topography field as a function of Cartesian coordinates, 
+# which is passed into the SemidiscretizationHyperbolic constructor as the keyword argument
+# "auxiliary_field", which is set to nothing by default, corresponding to zero bottom 
+# topography
 function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 3},
                                         equations::AbstractCovariantEquations{2, 3}, dg,
-                                        elements)
+                                        elements, bottom_topography)
     (; tree_node_coordinates) = mesh
+    (; node_coordinates) = elements
     (; aux_node_vars) = auxiliary_variables
 
     # Check that the degree of the mesh matches that of the solver
@@ -213,9 +221,17 @@ function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 
             aux_node_vars[17:19, i, j, element] = SVector(metric_contravariant[1, 1],
                                                           metric_contravariant[1, 2],
                                                           metric_contravariant[2, 2])
+            # Bottom topography
+            if !isnothing(bottom_topography)
+                x_node = Trixi.get_node_coords(node_coordinates, equations, dg, i, j,
+                                               element)
+                aux_node_vars[20, i, j, element] = bottom_topography(x_node)
+            else
+                aux_node_vars[20, i, j, element] = zero(eltype(aux_node_vars))
+            end
 
             # Christoffel symbols of the second kind
-            aux_node_vars[20:25, i, j, element] = calc_christoffel_symbols(v1, v2, v3,
+            aux_node_vars[21:26, i, j, element] = calc_christoffel_symbols(v1, v2, v3,
                                                                            v4,
                                                                            dg.basis.nodes[i],
                                                                            dg.basis.nodes[j],

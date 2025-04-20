@@ -1,6 +1,6 @@
 ###############################################################################
-# Standard DGSEM for the shallow water equations in covariant form on the cubed 
-# sphere: Steady geostrophic balance (Case 2, Williamson et al., 1992)
+# Entropy-stable DGSEM for the shallow water equations in covariant form on the 
+# cubed sphere: Rossby-Haurwitz wave (Case 6, Williamson et al., 1992)
 ###############################################################################
 
 using OrdinaryDiffEq, Trixi, TrixiAtmo
@@ -8,11 +8,11 @@ using OrdinaryDiffEq, Trixi, TrixiAtmo
 ###############################################################################
 # Parameters
 
-initial_condition = initial_condition_geostrophic_balance
-polydeg = 3
-cells_per_dimension = (5, 5)
+initial_condition = initial_condition_rossby_haurwitz
+polydeg = 7
+cells_per_dimension = (9, 9)
 n_saves = 10
-tspan = (0.0, 5.0 * SECONDS_PER_DAY)
+tspan = (0.0, 14.0 * SECONDS_PER_DAY)
 
 ###############################################################################
 # Spatial discretization
@@ -20,13 +20,19 @@ tspan = (0.0, 5.0 * SECONDS_PER_DAY)
 mesh = P4estMeshCubedSphere2D(cells_per_dimension[1], EARTH_RADIUS, polydeg = polydeg,
                               element_local_mapping = true)
 
-equations = CovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION,
-                                             EARTH_ROTATION_RATE,
-                                             global_coordinate_system = GlobalSphericalCoordinates())
+equations = SplitCovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION,
+                                                  EARTH_ROTATION_RATE,
+                                                  global_coordinate_system = GlobalCartesianCoordinates())
+
+# Use entropy-conservative two-point flux for volume terms, dissipative surface flux with 
+# simplification for continuous (zero) bottom topography
+volume_flux = (flux_ec, flux_nonconservative_ec)
+surface_flux = (FluxPlusDissipation(flux_ec, DissipationLocalLaxFriedrichs()),
+                flux_nonconservative_surface_simplified)
 
 # Create DG solver with polynomial degree = polydeg
-solver = DGSEM(polydeg = polydeg, surface_flux = flux_lax_friedrichs,
-               volume_integral = VolumeIntegralWeakForm())
+solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
+               volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
 
 # Transform the initial condition to the proper set of conservative variables
 initial_condition_transformed = transform_initial_condition(initial_condition, equations)
@@ -45,15 +51,16 @@ ode = semidiscretize(semi, tspan)
 # setup and resets the timers
 summary_callback = SummaryCallback()
 
-# The AnalysisCallback allows to analyse the solution in regular intervals and prints the 
-# results
+# The AnalysisCallback allows to analyse the solution in regular intervals and prints the
+# results. Note that entropy should be conserved at the semi-discrete level.
 analysis_callback = AnalysisCallback(semi, interval = 200,
                                      save_analysis = true,
-                                     extra_analysis_errors = (:conservation_error,))
+                                     extra_analysis_errors = (:conservation_error,),
+                                     extra_analysis_integrals = (entropy,))
 
 # The SaveSolutionCallback allows to save the solution to a file in regular intervals
 save_solution = SaveSolutionCallback(dt = (tspan[2] - tspan[1]) / n_saves,
-                                     solution_variables = cons2cons)
+                                     solution_variables = cons2prim_and_vorticity)
 
 # The StepsizeCallback handles the re-calculation of the maximum Δt after each time step
 stepsize_callback = StepsizeCallback(cfl = 0.4)
