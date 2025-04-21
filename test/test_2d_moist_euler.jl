@@ -3,9 +3,9 @@ module TestExamples2DMoistEuler
 using Test
 using TrixiAtmo
 
-include("test_trixiatmo.jl") # TODO - This is a repetition from Trixi.jl
+include("test_trixiatmo.jl")
 
-EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples") # TODO - Do we need a subdirectory for examples?
+EXAMPLES_DIR = TrixiAtmo.examples_dir()
 
 @trixiatmo_testset "elixir_moist_euler_dry_bubble" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,

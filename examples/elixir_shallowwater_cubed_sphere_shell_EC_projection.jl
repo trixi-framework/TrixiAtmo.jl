@@ -8,7 +8,7 @@ using TrixiAtmo
 # form obtained through the projection of the momentum onto the divergence-free
 # tangential contravariant vectors
 
-equations = ShallowWaterEquations3D(gravity_constant = 9.81)
+equations = ShallowWaterEquations3D(gravity = 9.81)
 
 # Create DG solver with polynomial degree = 3 and Wintemeyer et al.'s flux as surface flux
 polydeg = 3
@@ -121,7 +121,4 @@ callbacks = CallbackSet(summary_callback, analysis_callback, save_solution,
 # OrdinaryDiffEq's `solve` method evolves the solution in time and executes the passed callbacks
 sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
             dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
-            save_everystep = false, callback = callbacks);
-
-# Print the timer summary
-summary_callback()
+            save_everystep = false, callback = callbacks)

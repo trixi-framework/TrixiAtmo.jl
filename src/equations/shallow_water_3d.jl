@@ -19,7 +19,7 @@ The equations are given by
 \end{aligned}
 ```
 The unknown quantities of the SWE are the water height ``h`` and the velocities ``\mathbf{v} = (v_1, v_2, v_3)^T``.
-The gravitational constant is denoted by `g`.
+The gravitational acceleration is denoted by `g`.
 
 The 3D Shallow Water Equations (SWE) extend the 2D SWE to model shallow water flows on 2D manifolds embedded within 3D space. 
 To confine the flow to the 2D manifold, a source term incorporating a Lagrange multiplier is applied. 
@@ -48,17 +48,17 @@ References:
 """
 struct ShallowWaterEquations3D{RealT <: Real} <:
        Trixi.AbstractShallowWaterEquations{3, 5}
-    gravity::RealT # gravitational constant
+    gravity::RealT # gravitational acceleration
     H0::RealT      # constant "lake-at-rest" total water height
 end
 
-# Allow for flexibility to set the gravitational constant within an elixir depending on the
-# application where `gravity_constant=1.0` or `gravity_constant=9.81` are common values.
+# Allow for flexibility to set the gravitational acceleration within an elixir depending on the
+# application where `gravity=1.0` or `gravity=9.81` are common values.
 # The reference total water height H0 defaults to 0.0 but is used for the "lake-at-rest"
 # well-balancedness test cases.
-function ShallowWaterEquations3D(; gravity_constant, H0 = zero(gravity_constant))
-    T = promote_type(typeof(gravity_constant), typeof(H0))
-    ShallowWaterEquations3D(gravity_constant, H0)
+function ShallowWaterEquations3D(; gravity, H0 = zero(gravity))
+    T = promote_type(typeof(gravity), typeof(H0))
+    ShallowWaterEquations3D(gravity, H0)
 end
 
 Trixi.have_nonconservative_terms(::ShallowWaterEquations3D) = True()
@@ -168,7 +168,7 @@ is nonzero this should only be used as a surface flux otherwise the scheme will 
 For well-balancedness in the volume flux use [`flux_wintermeyer_etal`](@ref).
 
 Details are available in Eq. (4.1) in the paper:
-- Ulrik S. Fjordholm, Siddhartha Mishr and Eitan Tadmor (2011)
+- Ulrik S. Fjordholm, Siddhartha Mishra and Eitan Tadmor (2011)
   Well-balanced and energy stable schemes for the shallow water equations with discontinuous topography
   [DOI: 10.1016/j.jcp.2011.03.042](https://doi.org/10.1016/j.jcp.2011.03.042)
 """
@@ -399,7 +399,7 @@ end
 end
 
 # Helper function to extract the velocity vector from the conservative variables
-@inline function velocity(u, equations::ShallowWaterEquations3D)
+@inline function Trixi.velocity(u, equations::ShallowWaterEquations3D)
     h, h_v1, h_v2, h_v3, _ = u
 
     v1 = h_v1 / h
@@ -455,11 +455,11 @@ end
     return SVector(h, h_v1, h_v2, h_v3, b)
 end
 
-@inline function waterheight(u, equations::ShallowWaterEquations3D)
+@inline function Trixi.waterheight(u, equations::ShallowWaterEquations3D)
     return u[1]
 end
 
-@inline function pressure(u, equations::ShallowWaterEquations3D)
+@inline function Trixi.pressure(u, equations::ShallowWaterEquations3D)
     h = waterheight(u, equations)
     p = 0.5f0 * equations.gravity * h^2
     return p
@@ -471,7 +471,7 @@ end
 end
 
 # Calculate total energy for a conservative state `cons`
-@inline function energy_total(cons, equations::ShallowWaterEquations3D)
+@inline function Trixi.energy_total(cons, equations::ShallowWaterEquations3D)
     h, h_v1, h_v2, h_v3, b = cons
 
     e = (h_v1^2 + h_v2^2 + h_v3^2) / (2 * h) + 0.5f0 * equations.gravity * h^2 +
@@ -480,13 +480,13 @@ end
 end
 
 # Calculate kinetic energy for a conservative state `cons`
-@inline function energy_kinetic(u, equations::ShallowWaterEquations3D)
+@inline function Trixi.energy_kinetic(u, equations::ShallowWaterEquations3D)
     h, h_v1, h_v2, h_v3, _ = u
     return (h_v1^2 + h_v2^2 + h_v3^2) / (2 * h)
 end
 
 # Calculate potential energy for a conservative state `cons`
-@inline function energy_internal(cons, equations::ShallowWaterEquations3D)
+@inline function Trixi.energy_internal(cons, equations::ShallowWaterEquations3D)
     return energy_total(cons, equations) - energy_kinetic(cons, equations)
 end
 
