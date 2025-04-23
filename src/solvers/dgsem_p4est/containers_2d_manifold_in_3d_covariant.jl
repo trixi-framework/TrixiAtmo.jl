@@ -294,16 +294,11 @@ function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 
             else
                 aux_node_vars[20, i, j, element] = zero(eltype(aux_node_vars))
             end
-
-            # Christoffel symbols of the second kind
-            aux_node_vars[21:26, i, j, element] = calc_christoffel_symbols(v1, v2, v3,
-                                                                           v4,
-                                                                           dg.basis.nodes[i],
-                                                                           dg.basis.nodes[j],
-                                                                           radius,
-                                                                           metric_contravariant,
-                                                                           equations)
         end
+
+        # Christoffel symbols of the second kind (aux_node_vars[21:26, :, :, element])
+        calc_christoffel_symbols!(aux_node_vars, mesh, equations, metric_terms, dg,
+                                  element, v1, v2, v3, v4, radius)
     end
 
     return nothing
@@ -386,18 +381,52 @@ function calc_metric_covariant(v1, v2, v3, v4, xi1, xi2, radius, equations)
     return SVector(Gcov[1, 1], Gcov[1, 2], Gcov[2, 2])
 end
 
-# Calculate the Christoffel symbols of the second kind using ForwardDiff.jl to 
-# automatically differentiate the metric, and return the components 
-# Γ¹₁₁, Γ¹₁₂ (= Γ¹₂₁), Γ¹₂₂, Γ²₁₁, Γ²₁₂ (= Γ²₂₁), and Γ²₂₂ as an SVector of length 6
-function calc_christoffel_symbols(v1, v2, v3, v4, xi1, xi2, radius, Gcon, equations)
-
-    # Use ForwardDiff to differentiate the covariant metric tensor components
+# Use ForwardDiff.jl to automatically differentiate the covariant metric tensor components 
+function calc_metric_derivatives(v1, v2, v3, v4, xi1, xi2, radius, equations)
     dGdxi1 = derivative(x -> calc_metric_covariant(v1, v2, v3, v4, x, xi2, radius,
                                                    equations), xi1)
     dGdxi2 = derivative(x -> calc_metric_covariant(v1, v2, v3, v4, xi1, x, radius,
                                                    equations), xi2)
+    return dGdxi1, dGdxi2
+end
 
-    # Extract SVector components from derivatives of vectors
+# Use the collocation derivative operator to numerically differentiate the covariant 
+# metric tensor components
+function calc_metric_derivatives(aux_node_vars, equations, dg, i, j, element)
+    (; derivative_matrix) = dg.basis
+
+    # Numerically differentiate covariant metric components with respect to ξ¹
+    dG11dxi1 = zero(eltype(aux_node_vars))
+    dG12dxi1 = zero(eltype(aux_node_vars))
+    dG22dxi1 = zero(eltype(aux_node_vars))
+    for ii in eachnode(dg)
+        aux_node_ii = get_node_aux_vars(aux_node_vars, equations, dg, ii, j,
+                                        element)
+        Gcov_ii = metric_covariant(aux_node_ii, equations)
+        dG11dxi1 = dG11dxi1 + derivative_matrix[i, ii] * Gcov_ii[1, 1]
+        dG12dxi1 = dG12dxi1 + derivative_matrix[i, ii] * Gcov_ii[1, 2]
+        dG22dxi1 = dG22dxi1 + derivative_matrix[i, ii] * Gcov_ii[2, 2]
+    end
+
+    # Numerically differentiate covariant metric components with respect to ξ²
+    dG11dxi2 = zero(eltype(aux_node_vars))
+    dG12dxi2 = zero(eltype(aux_node_vars))
+    dG22dxi2 = zero(eltype(aux_node_vars))
+    for jj in eachnode(dg)
+        aux_node_jj = get_node_aux_vars(aux_node_vars, equations, dg, i, jj,
+                                        element)
+        Gcov_jj = metric_covariant(aux_node_jj, equations)
+        dG11dxi2 = dG11dxi2 + derivative_matrix[j, jj] * Gcov_jj[1, 1]
+        dG12dxi2 = dG12dxi2 + derivative_matrix[j, jj] * Gcov_jj[1, 2]
+        dG22dxi2 = dG22dxi2 + derivative_matrix[j, jj] * Gcov_jj[2, 2]
+    end
+
+    return SVector(dG11dxi1, dG12dxi1, dG22dxi1), SVector(dG11dxi2, dG12dxi2, dG22dxi2)
+end
+
+# Calculate the Christoffel symbols given the contravariant metric tensor components and 
+# the partial derivatives of the covariant metric tensor components
+function calc_christoffel_symbols(dGdxi1, dGdxi2, Gcon)
     dG11dxi1, dG12dxi1, dG22dxi1 = dGdxi1
     dG11dxi2, dG12dxi2, dG22dxi2 = dGdxi2
 
@@ -418,5 +447,41 @@ function calc_christoffel_symbols(v1, v2, v3, v4, xi1, xi2, radius, Gcon, equati
                    Gcon[2, 1] * Gamma_1[1, 1] + Gcon[2, 2] * Gamma_2[1, 1],  # Γ²₁₁
                    Gcon[2, 1] * Gamma_1[1, 2] + Gcon[2, 2] * Gamma_2[1, 2],  # Γ²₁₂ (= Γ²₂₁)
                    Gcon[2, 1] * Gamma_1[2, 2] + Gcon[2, 2] * Gamma_2[2, 2])  # Γ²₂₂
+end
+
+# Calculate Christoffel symbols using automatic differentiation based on the exact 
+# spherical geometry
+function calc_christoffel_symbols!(aux_node_vars, mesh::P4estMesh{2, 3},
+                                   equations::AbstractCovariantEquations{2, 3},
+                                   metric_terms::MetricTermsCovariantSphere{ChristoffelSymbolsAutodiff},
+                                   dg, element, v1, v2, v3, v4, radius)
+    for j in eachnode(dg), i in eachnode(dg)
+        # Differentiate the metric tensor components 
+        dGdxi1, dGdxi2 = calc_metric_derivatives(v1, v2, v3, v4,
+                                                 dg.basis.nodes[i], dg.basis.nodes[j],
+                                                 radius, equations)
+        # Compute Christoffel symbols of the first kind
+        aux_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
+        Gcon = metric_contravariant(aux_node, equations)
+        aux_node_vars[21:26, i, j, element] = calc_christoffel_symbols(dGdxi1, dGdxi2,
+                                                                       Gcon)
+    end
+end
+
+# Calculate Christoffel symbols approximately using the collocation derivative
+function calc_christoffel_symbols!(aux_node_vars, mesh::P4estMesh{2, 3},
+                                   equations::AbstractCovariantEquations{2, 3},
+                                   metric_terms::MetricTermsCovariantSphere{ChristoffelSymbolsCollocationDerivative},
+                                   dg, element, v1, v2, v3, v4, radius)
+    for j in eachnode(dg), i in eachnode(dg)
+        # Differentiate the metric tensor components 
+        dGdxi1, dGdxi2 = calc_metric_derivatives(aux_node_vars, equations, dg, i, j,
+                                                 element)
+        # Compute Christoffel symbols of the first kind
+        aux_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
+        Gcon = metric_contravariant(aux_node, equations)
+        aux_node_vars[21:26, i, j, element] = calc_christoffel_symbols(dGdxi1, dGdxi2,
+                                                                       Gcon)
+    end
 end
 end # @muladd

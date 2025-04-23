@@ -25,16 +25,18 @@ contravariant vectors are computed using the invariant curl form.
 struct MetricTermsInvariantCurl end
 
 """
-    MetricTermsExactSphere(ChristoffelSymbolsAutodiff())
+    MetricTermsCovariantSphere(christoffel_symbols = ChristoffelSymbolsAutodiff())
 
 Struct specifying options for computing geometric information for discretizations in 
 covariant form based on an exact representation of the spherical geometry.  Currently, the 
-only field is `christoffel_symbols`, specifying the approach used to compute the Christoffel symbols, for which the options are [`ChristoffelSymbolsAutodiff`](@ref) or 
+only field is `christoffel_symbols`, specifying the approach used to compute the 
+Christoffel symbols, for which the options are [`ChristoffelSymbolsAutodiff`](@ref) or 
 [`ChristoffelSymbolsCollocationDerivative`](@ref). 
 """
 struct MetricTermsCovariantSphere{ChristoffelSymbols}
     christoffel_symbols::ChristoffelSymbols
-    function MetricTermsCovariantSphere(christoffel_symbols::ChristoffelSymbols = ChristoffelSymbolsAutodiff()) where {ChristoffelSymbols}
+    function MetricTermsCovariantSphere(;
+                                        christoffel_symbols::ChristoffelSymbols = ChristoffelSymbolsAutodiff()) where {ChristoffelSymbols}
         return new{ChristoffelSymbols}(christoffel_symbols)
     end
 end
@@ -60,8 +62,9 @@ struct ChristoffelSymbolsAutodiff end
     ChristoffelSymbolsCollocationDerivative()
 
 Struct used for multiple dispatch on functions that compute the Christoffel symbols. 
-Letting $I^N$ denotes a degree $N$ polynomial interpolation operator on the scheme's quadrature nodes, this option computes the Christoffel symbols at each quadrature node 
-using the approximation
+Letting $I^N$ denote the degree $N$ polynomial interpolation operator collocated with the 
+scheme's quadrature nodes, this option computes the Christoffel symbols at each quadrature 
+node using the approximation
 ```math
 \Gamma_{jk}^i \approx
 \frac{1}{2}G^{il}\big(\partial_j I^N G_{kl} + \partial_k I^N G_{jl} - \partial_l I^N G_{jk}\big).

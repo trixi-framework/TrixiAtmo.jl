@@ -36,11 +36,12 @@ end
 @trixiatmo_testset "elixir_shallowwater_covariant_rossby_haurwitz" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_covariant_rossby_haurwitz.jl"),
-                        l2=[265.98095267805803, 0.1764452313672691, 0.25356292962842114],
-                        linf=[574.6708171274768, 0.5155477330239119, 0.5497352934063009],
+                        l2=[265.9818260977567, 0.17644364627357362, 0.2535621726719579],
+                        linf=[574.6725801771354, 0.5155385127558593, 0.5497040481041348],
                         polydeg=3,
                         cells_per_dimension=(5, 5),
-                        tspan=(0.0, 1.0 * SECONDS_PER_DAY))
+                        tspan=(0.0, 1.0 * SECONDS_PER_DAY),
+                        metric_terms=MetricTermsCovariantSphere(christoffel_symbols = ChristoffelSymbolsCollocationDerivative()))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let

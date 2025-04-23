@@ -28,7 +28,8 @@ mesh = P4estMeshQuadIcosahedron2D(cells_per_dimension[1], EARTH_RADIUS,
 initial_condition_transformed = transform_initial_condition(initial_condition, equations)
 
 # A semidiscretization collects data structures and functions for the spatial discretization
-semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver)
+semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver,
+                                    metric_terms = MetricTermsCovariantSphere())
 
 ###############################################################################
 # ODE solvers, callbacks etc.
