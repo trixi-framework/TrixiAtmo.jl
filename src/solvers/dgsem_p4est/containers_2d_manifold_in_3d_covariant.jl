@@ -1,6 +1,22 @@
 @muladd begin
 #! format: noindent
 
+# Container storing element information used by the covariant form. Note that most of the 
+# geometric information is stored in `cache.auxiliary_variables` (allowing such data to 
+# be passed into flux functions and treated as "variable coefficients") rather than in 
+# `cache.elements` (the contents of which are inaccessible to the flux functions).
+struct P4estElementContainerCovariant{NDIMS, RealT <: Real, uEltype <: Real,
+                                      NDIMSP2} <: Trixi.AbstractContainer
+    # Physical coordinates at each node
+    node_coordinates::Array{RealT, NDIMSP2}   # [orientation, node_i, node_j, node_k, element]
+    # Buffer for calculated surface flux
+    surface_flux_values::Array{uEltype, NDIMSP2} # [variable, i, j, direction, element]
+
+    # internal `resize!`able storage
+    _node_coordinates::Vector{RealT}
+    _surface_flux_values::Vector{uEltype}
+end
+
 # Container for storing values of auxiliary variables at volume/surface quadrature nodes
 struct P4estAuxiliaryNodeVariableContainer{NDIMS, uEltype <: Real, NDIMSP2}
     aux_node_vars::Array{uEltype, NDIMSP2} # [variable, i, j, k, element]
@@ -9,6 +25,20 @@ struct P4estAuxiliaryNodeVariableContainer{NDIMS, uEltype <: Real, NDIMSP2}
     # internal `resize!`able storage
     _aux_node_vars::Vector{uEltype}
     _aux_surface_node_vars::Vector{uEltype}
+end
+
+@inline function Trixi.nelements(elements::P4estElementContainerCovariant)
+    return size(elements.node_coordinates, ndims(elements) + 2)
+end
+@inline Base.ndims(::P4estElementContainerCovariant{NDIMS}) where {NDIMS} = NDIMS
+@inline function Base.eltype(::P4estElementContainerCovariant{NDIMS,
+                                                              RealT,
+                                                              uEltype}) where {
+                                                                               NDIMS,
+                                                                               RealT,
+                                                                               uEltype
+                                                                               }
+    return uEltype
 end
 
 # Return the auxiliary variables at a given volume node index
@@ -27,10 +57,45 @@ end
     return aux_vars_ll, aux_vars_rr
 end
 
+function Trixi.init_elements(mesh::P4estMesh{NDIMS, NDIMS_AMBIENT, RealT},
+                             equations::AbstractCovariantEquations{NDIMS,
+                                                                   NDIMS_AMBIENT},
+                             basis, metric_terms,
+                             ::Type{uEltype}) where {NDIMS, NDIMS_AMBIENT,
+                                                     RealT <: Real, uEltype <: Real}
+    nelements = Trixi.ncells(mesh)
+
+    _node_coordinates = Vector{RealT}(undef,
+                                      NDIMS_AMBIENT * nnodes(basis)^NDIMS * nelements)
+    node_coordinates = Trixi.unsafe_wrap(Array, pointer(_node_coordinates),
+                                         (NDIMS_AMBIENT,
+                                          ntuple(_ -> nnodes(basis), NDIMS)...,
+                                          nelements))
+
+    _surface_flux_values = Vector{uEltype}(undef,
+                                           nvariables(equations) *
+                                           nnodes(basis)^(NDIMS - 1) * (NDIMS * 2) *
+                                           nelements)
+    surface_flux_values = Trixi.unsafe_wrap(Array, pointer(_surface_flux_values),
+                                            (nvariables(equations),
+                                             ntuple(_ -> nnodes(basis), NDIMS - 1)...,
+                                             NDIMS * 2, nelements))
+
+    elements = P4estElementContainerCovariant{NDIMS, RealT, uEltype,
+                                              NDIMS + 2}(node_coordinates,
+                                                         surface_flux_values,
+                                                         _node_coordinates,
+                                                         _surface_flux_values)
+
+    Trixi.calc_node_coordinates!(elements.node_coordinates, mesh, basis)
+
+    return elements
+end
+
 # Create auxiliary node variable container and initialize auxiliary variables
 function init_auxiliary_node_variables(mesh::Union{P4estMesh, T8codeMesh},
                                        equations, dg, elements, interfaces,
-                                       auxiliary_field)
+                                       metric_terms, auxiliary_field)
     nelements = Trixi.ncells(mesh)
     ninterfaces = Trixi.count_required_surfaces(mesh).interfaces
     NDIMS = ndims(elements)
@@ -62,7 +127,7 @@ function init_auxiliary_node_variables(mesh::Union{P4estMesh, T8codeMesh},
                                                                          _aux_surface_node_vars)
 
     init_auxiliary_node_variables!(auxiliary_variables, mesh, equations, dg, elements,
-                                   auxiliary_field)
+                                   metric_terms, auxiliary_field)
     init_auxiliary_surface_node_variables!(auxiliary_variables, mesh, equations, dg,
                                            interfaces)
     return auxiliary_variables
@@ -166,7 +231,7 @@ end
 # topography
 function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 3},
                                         equations::AbstractCovariantEquations{2, 3}, dg,
-                                        elements, bottom_topography)
+                                        elements, metric_terms, bottom_topography)
     (; tree_node_coordinates) = mesh
     (; node_coordinates) = elements
     (; aux_node_vars) = auxiliary_variables

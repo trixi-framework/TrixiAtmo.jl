@@ -45,6 +45,7 @@ initial_condition_transformed = transform_initial_condition(initial_condition, e
 # case.
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver,
                                     source_terms = source_terms_geometric_coriolis,
+                                    metric_terms = MetricTermsExact(),
                                     auxiliary_field = bottom_topography_isolated_mountain)
 
 ###############################################################################
