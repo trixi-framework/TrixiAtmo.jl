@@ -160,6 +160,7 @@ end
     nvars_area_element = 1
     nvars_metric_covariant = NDIMS * (NDIMS + 1) ÷ 2
     nvars_metric_contravariant = NDIMS * (NDIMS + 1) ÷ 2
+    nvars_bottom_topography = 1
     nvars_christoffel = NDIMS * NDIMS * (NDIMS + 1) ÷ 2
 
     return nvars_basis_covariant +
@@ -167,10 +168,12 @@ end
            nvars_area_element +
            nvars_metric_covariant +
            nvars_metric_contravariant +
+           nvars_bottom_topography +
            nvars_christoffel
 end
 
-# Return auxiliary variable names for 2D covariant form
+# Return auxiliary variable names for 2D covariant form. Note that e₁, e₂, e₃ are the
+# global basis vectors, which may be Cartesian or spherical
 @inline function auxvarnames(::AbstractCovariantEquations{2})
     return ("basis_covariant[1,1]",         # e₁ ⋅ a₁
             "basis_covariant[2,1]",         # e₂ ⋅ a₁
@@ -191,6 +194,7 @@ end
             "metric_contravariant[1,1]",    # G¹¹
             "metric_contravariant[1,2]",    # G¹² = G²¹
             "metric_contravariant[2,2]",    # G²²
+            "bottom_topography",            # hₛ
             "christoffel_symbols[1][1,1]",  # Γ¹₁₁
             "christoffel_symbols[1][1,2]",  # Γ¹₁₂ = Γ¹₂₁
             "christoffel_symbols[1][2,2]",  # Γ¹₂₂
@@ -233,10 +237,15 @@ end
                          aux_vars[18], aux_vars[19])
 end
 
+# Extract the bottom topography hₛ from the auxiliary variables
+@inline function bottom_topography(aux_vars, ::AbstractCovariantEquations{2})
+    return aux_vars[20]
+end
+
 # Extract the Christoffel symbols of the second kind Γⁱⱼₖ from the auxiliary variables
 @inline function christoffel_symbols(aux_vars, ::AbstractCovariantEquations{2})
-    return (SMatrix{2, 2}(aux_vars[20], aux_vars[21], aux_vars[21], aux_vars[22]),
-            SMatrix{2, 2}(aux_vars[23], aux_vars[24], aux_vars[24], aux_vars[25]))
+    return (SMatrix{2, 2}(aux_vars[21], aux_vars[22], aux_vars[22], aux_vars[23]),
+            SMatrix{2, 2}(aux_vars[24], aux_vars[25], aux_vars[25], aux_vars[26]))
 end
 
 # Numerical flux plus dissipation for abstract covariant equations as a function of the 
