@@ -15,7 +15,7 @@ using Printf: @sprintf
 using Static: True, False
 using StrideArrays: PtrArray
 using StaticArrayInterface: static_size
-using LinearAlgebra: cross, norm, dot, det
+using LinearAlgebra: cross, norm, normalize, dot, det
 using Reexport: @reexport
 using LoopVectorization: @turbo
 using QuadGK: quadgk
@@ -34,7 +34,8 @@ include("callbacks_step/callbacks_step.jl")
 
 export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
        CovariantLinearAdvectionEquation2D, CovariantShallowWaterEquations2D,
-       SplitCovariantShallowWaterEquations2D, CompressibleEulerEquationsWithGravity2D
+       SplitCovariantShallowWaterEquations2D,
+       CompressibleEulerEquationsWithGravity2D, CompressibleEulerEquationsWithGravity3D
 
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
