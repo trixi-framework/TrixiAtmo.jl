@@ -1,6 +1,7 @@
 ###############################################################################
-# Entropy-conservative DGSEM for the shallow water equations in covariant form 
-# on the cubed sphere
+# Entropy-stable DGSEM for the shallow water equations in covariant form on the 
+# cubed sphere: Zonal flow over an isolated mountain (Case 5, Williamson et 
+# al., 1992)
 ###############################################################################
 
 using OrdinaryDiffEq, Trixi, TrixiAtmo
@@ -8,26 +9,27 @@ using OrdinaryDiffEq, Trixi, TrixiAtmo
 ###############################################################################
 # Parameters
 
-initial_condition = initial_condition_rossby_haurwitz
-polydeg = 3
-cells_per_dimension = 5
+initial_condition = initial_condition_isolated_mountain
+polydeg = 5
+cells_per_dimension = (30, 30)
 n_saves = 10
-tspan = (0.0, 7.0 * SECONDS_PER_DAY)
+tspan = (0.0, 15.0 * SECONDS_PER_DAY)
 
 ###############################################################################
 # Spatial discretization
 
-mesh = P4estMeshCubedSphere2D(cells_per_dimension, EARTH_RADIUS, polydeg = polydeg,
-                              initial_refinement_level = 0,
+mesh = P4estMeshCubedSphere2D(cells_per_dimension[1], EARTH_RADIUS, polydeg = polydeg,
                               element_local_mapping = true)
 
 equations = SplitCovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION,
                                                   EARTH_ROTATION_RATE,
                                                   global_coordinate_system = GlobalCartesianCoordinates())
 
-# Use entropy-conservative two-point fluxes for volume and surface terms
+# Use entropy-conservative two-point flux for volume terms, dissipative surface flux with 
+# simplification for continuous bottom topography
 volume_flux = (flux_ec, flux_nonconservative_ec)
-surface_flux = (flux_ec, flux_nonconservative_ec)
+surface_flux = (FluxPlusDissipation(flux_ec, DissipationLocalLaxFriedrichs()),
+                flux_nonconservative_surface_simplified)
 
 # Create DG solver with polynomial degree = polydeg
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
@@ -36,9 +38,12 @@ solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
 # Transform the initial condition to the proper set of conservative variables
 initial_condition_transformed = transform_initial_condition(initial_condition, equations)
 
-# A semidiscretization collects data structures and functions for the spatial discretization
+# A semidiscretization collects data structures and functions for the spatial 
+# discretization. Here, we pass in the additional keyword argument "auxiliary_field" to 
+# specify the bottom topography.
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver,
-                                    source_terms = source_terms_geometric_coriolis)
+                                    source_terms = source_terms_geometric_coriolis,
+                                    auxiliary_field = bottom_topography_isolated_mountain)
 
 ###############################################################################
 # ODE solvers, callbacks etc.
@@ -75,7 +80,4 @@ callbacks = CallbackSet(summary_callback, analysis_callback, save_solution,
 # OrdinaryDiffEq's `solve` method evolves the solution in time and executes the passed 
 # callbacks
 sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
-            dt = 100.0, save_everystep = false, callback = callbacks);
-
-# Print the timer summary
-summary_callback()
+            dt = 100.0, save_everystep = false, callback = callbacks)

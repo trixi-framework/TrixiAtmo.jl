@@ -290,7 +290,7 @@ end
 end
 
 # Helper function to extract the velocity vector from the conservative variables
-@inline function velocity(u, equations::ShallowWaterEquations3D)
+@inline function Trixi.velocity(u, equations::ShallowWaterEquations3D)
     h, h_v1, h_v2, h_v3, _ = u
 
     v1 = h_v1 / h
@@ -350,7 +350,7 @@ end
     return u[1]
 end
 
-@inline function pressure(u, equations::ShallowWaterEquations3D)
+@inline function Trixi.pressure(u, equations::ShallowWaterEquations3D)
     h = waterheight(u, equations)
     p = 0.5f0 * equations.gravity * h^2
     return p
@@ -362,7 +362,7 @@ end
 end
 
 # Calculate total energy for a conservative state `cons`
-@inline function energy_total(cons, equations::ShallowWaterEquations3D)
+@inline function Trixi.energy_total(cons, equations::ShallowWaterEquations3D)
     h, h_v1, h_v2, h_v3, b = cons
 
     e = (h_v1^2 + h_v2^2 + h_v3^2) / (2 * h) + 0.5f0 * equations.gravity * h^2 +
@@ -371,13 +371,13 @@ end
 end
 
 # Calculate kinetic energy for a conservative state `cons`
-@inline function energy_kinetic(u, equations::ShallowWaterEquations3D)
+@inline function Trixi.energy_kinetic(u, equations::ShallowWaterEquations3D)
     h, h_v1, h_v2, h_v3, _ = u
     return (h_v1^2 + h_v2^2 + h_v3^2) / (2 * h)
 end
 
 # Calculate potential energy for a conservative state `cons`
-@inline function energy_internal(cons, equations::ShallowWaterEquations3D)
+@inline function Trixi.energy_internal(cons, equations::ShallowWaterEquations3D)
     return energy_total(cons, equations) - energy_kinetic(cons, equations)
 end
 
