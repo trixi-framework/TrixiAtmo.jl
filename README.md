@@ -69,7 +69,7 @@ Please see our documentation for more advanced setups.
 TrixiAtmo.jl is maintained by the
 [Trixi authors](https://github.com/trixi-framework/Trixi.jl/blob/main/AUTHORS.md).
 It was initiated by
-Andrés Rueda-Ramírez
+[Andrés Rueda-Ramírez](https://andres.rueda-ramirez.com)
 (Polytechnic University of Madrid (UPM), Spain),
 [Benedict Geihe](https://www.mi.uni-koeln.de/NumSim/), and
 [Tristan Montoya](https://tjbmontoya.com/)
