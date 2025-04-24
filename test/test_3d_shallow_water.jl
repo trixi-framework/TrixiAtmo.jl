@@ -1,11 +1,11 @@
-module TestSphericalAdvection
+module TestShallowWaterCartesian
 
 using Test
 using TrixiAtmo
 
 include("test_trixiatmo.jl")
 
-EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
+EXAMPLES_DIR = TrixiAtmo.examples_dir()
 
 @trixiatmo_testset "elixir_shallowwater_cubed_sphere_shell_EC_correction" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
