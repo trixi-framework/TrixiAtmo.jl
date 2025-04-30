@@ -25,6 +25,10 @@ const TRIXIATMO_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
         include("test_3d_shallow_water.jl")
     end
 
+    @time if TRIXIATMO_TEST == "all" || TRIXIATMO_TEST == "shallow_water_2d_covariant"
+        include("test_2d_shallow_water_covariant.jl")
+    end
+
     @time if TRIXIATMO_TEST == "all" || TRIXIATMO_TEST == "threaded"
         # Do a dummy `@test true`:
         # If the process errors out the testset would error out as well,
