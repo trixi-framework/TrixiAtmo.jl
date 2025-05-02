@@ -37,7 +37,7 @@ This affects the implementation and use of these equations in various ways:
 * The flux values corresponding to the bottom topography must be zero.
 * The bottom topography values must be included when defining initial conditions, boundary conditions or
   source terms.
-* [`AnalysisCallback`](https://trixi-framework.github.io/Trixi.jl/stable/reference-trixi/#Trixi.AnalysisCallback) analyzes this variable.
+* [`AnalysisCallback`](https://trixi-framework.github.io/TrixiDocumentation/stable/reference-trixi/#Trixi.AnalysisCallback) analyzes this variable.
 * Trixi.jl's visualization tools will visualize the bottom topography by default.
 
 References:
