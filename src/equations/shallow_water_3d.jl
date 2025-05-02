@@ -115,7 +115,8 @@ end
 end
 
 """
-    flux_wintermeyer_etal(u_ll, u_rr, orientation_or_normal_direction,
+    flux_wintermeyer_etal(u_ll, u_rr,
+                          normal_direction::AbstractVector,
                           equations::ShallowWaterEquations3D)
 
 Total energy conservative (mathematical entropy for shallow water equations) split form.
@@ -160,7 +161,8 @@ Further details are available in Theorem 1 of the paper:
 end
 
 """
-    flux_fjordholm_etal(u_ll, u_rr, orientation,
+    flux_fjordholm_etal(u_ll, u_rr,
+                        normal_direction::AbstractVector,
                         equations::ShallowWaterEquations3D)
 
 Total energy conservative (mathematical entropy for shallow water equations). When the bottom topography
