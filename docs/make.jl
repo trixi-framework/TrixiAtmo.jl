@@ -10,8 +10,8 @@ end
 using TrixiAtmo
 
 # Provide external links to the Trixi.jl docs (project root and inventory file)
-links = InterLinks("Trixi" => ("https://trixi-framework.github.io/Trixi.jl/stable/",
-                               "https://trixi-framework.github.io/Trixi.jl/stable/objects.inv"))
+links = InterLinks("Trixi" => ("https://trixi-framework.github.io/TrixiDocumentation/stable/",
+                               "https://trixi-framework.github.io/TrixiDocumentation/stable/objects.inv"))
 
 DocMeta.setdocmeta!(TrixiAtmo, :DocTestSetup, :(using TrixiAtmo);
                     recursive = true)
