@@ -28,4 +28,13 @@ const TRIXIATMO_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
     @time if TRIXIATMO_TEST == "all" || TRIXIATMO_TEST == "shallow_water_2d_covariant"
         include("test_2d_shallow_water_covariant.jl")
     end
+
+    @time if TRIXIATMO_TEST == "all" || TRIXIATMO_TEST == "threaded"
+        # Do a dummy `@test true`:
+        # If the process errors out the testset would error out as well,
+        # cf. https://github.com/JuliaParallel/MPI.jl/pull/391
+        @test true
+
+        run(`$(Base.julia_cmd()) --threads=$TRIXIATMO_NTHREADS --check-bounds=yes --code-coverage=none $(abspath("test_threaded.jl"))`)
+    end
 end
