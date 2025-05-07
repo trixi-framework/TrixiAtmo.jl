@@ -29,7 +29,7 @@ const TRIXI_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
         include("test_2d_shallow_water_covariant.jl")
     end
 
-    @time if TRIXIATMO_TEST == "all" || TRIXIATMO_TEST == "threaded"
+    @time if TRIXI_TEST == "all" || TRIXI_TEST == "threaded"
         # Do a dummy `@test true`:
         # If the process errors out the testset would error out as well,
         # cf. https://github.com/JuliaParallel/MPI.jl/pull/391
