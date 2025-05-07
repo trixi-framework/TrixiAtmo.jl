@@ -335,4 +335,5 @@ include("covariant_shallow_water_split.jl")
 include("compressible_moist_euler_2d_lucas.jl")
 include("shallow_water_3d.jl")
 include("reference_data.jl")
+include("compressible_euler_gravity_2d.jl")
 end # @muladd
