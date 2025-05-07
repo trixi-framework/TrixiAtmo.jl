@@ -37,7 +37,7 @@ const TRIXI_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
 
         run(`$(Base.julia_cmd()) --threads=$TRIXIATMO_NTHREADS --check-bounds=yes --code-coverage=none $(abspath("test_threaded.jl"))`)
     end
-  
+
     @time if TRIXI_TEST == "upstream"
         include("test_trixi_consistency.jl")
     end
