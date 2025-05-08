@@ -35,7 +35,7 @@ const TRIXI_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
         # cf. https://github.com/JuliaParallel/MPI.jl/pull/391
         @test true
 
-        run(`$(Base.julia_cmd()) --threads=$TRIXIATMO_NTHREADS --check-bounds=yes --code-coverage=none $(abspath("test_threaded.jl"))`)
+        run(`$(Base.julia_cmd()) --threads=$TRIXI_NTHREADS --check-bounds=yes --code-coverage=none $(abspath("test_threaded.jl"))`)
     end
 
     @time if TRIXI_TEST == "upstream"
