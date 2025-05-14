@@ -11,7 +11,7 @@ isdir(outdir) && rm(outdir, recursive = true)
 @trixiatmo_testset "Dry air consistency check" begin
     # Dry air warm bubble test case in Trixi.jl
     maxiters = 100
-    trixi_elixir = joinpath(Trixi.examples_dir(), "structured_2d_dgsem",
+    trixi_elixir = joinpath(Trixi.examples_dir(), "tree_2d_dgsem",
                             "elixir_euler_warm_bubble.jl")
 
     # Override maxiter and fluxes

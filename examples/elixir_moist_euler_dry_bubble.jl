@@ -1,4 +1,4 @@
-using OrdinaryDiffEq
+using OrdinaryDiffEqLowStorageRK
 using Trixi
 using TrixiAtmo
 using TrixiAtmo: source_terms_geopotential, cons2drypot
@@ -48,10 +48,8 @@ end
 
 initial_condition = initial_condition_warm_bubble
 
-boundary_condition = (x_neg = boundary_condition_periodic,
-                      x_pos = boundary_condition_periodic,
-                      y_neg = boundary_condition_slip_wall,
-                      y_pos = boundary_condition_slip_wall)
+boundary_conditions = Dict(:y_neg => boundary_condition_slip_wall,
+                           :y_pos => boundary_condition_slip_wall)
 
 # Gravity source since Q_ph=0
 source_term = source_terms_geopotential
@@ -70,18 +68,18 @@ volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 # and the EC flux (chandrashekar) as volume flux
 solver = DGSEM(basis, surface_flux, volume_integral)
 
-coordinates_min = (0.0, 0.0)
-coordinates_max = (20000.0, 10000.0)
+coordinates_min = (0.0, -5000.0)
+coordinates_max = (20000.0, 15000.0)
 
-cells_per_dimension = (64, 32)
-
-# Create curved mesh with 64 x 32 elements
-mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
-                      periodicity = (true, false))
+trees_per_dimension = (2, 2)
+mesh = P4estMesh(trees_per_dimension, polydeg = 1,
+                 coordinates_min = coordinates_min, coordinates_max = coordinates_max,
+                 initial_refinement_level = 5,
+                 periodicity = (true, false))
 
 # A semidiscretization collects data structures and functions for the spatial discretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
-                                    boundary_conditions = boundary_condition,
+                                    boundary_conditions = boundary_conditions,
                                     source_terms = source_term)
 
 ###############################################################################
