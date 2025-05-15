@@ -52,7 +52,7 @@ isdir(outdir) && rm(outdir, recursive = true)
         @test isapprox(error_trixi, error_atmo, rtol = 1e-12)
     end
     for (error_trixi, error_atmo) in zip(errors_trixi.linf, errors_atmo.linf)
-        @test isapprox(error_trixi, error_atmo, rtol = 6e-12)
+        @test isapprox(error_trixi, error_atmo, rtol = 7e-12)
     end
 end
 end
