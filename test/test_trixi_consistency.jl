@@ -23,34 +23,14 @@ isdir(outdir) && rm(outdir, recursive = true)
     # Save errors
     errors_trixi = Main.analysis_callback(Main.sol)
 
-    # Create an instance of Trixi's equations, just used for dispatch below
-    equations_trixi = Trixi.CompressibleEulerEquations2D(Main.warm_bubble_setup.gamma)
-    add_zeros = SVector(zero(eltype(Main.sol)), zero(eltype(Main.sol)))
+    # Dry air warm bubble test case in TrixiAtmo.jl
+    elixir_atmo = joinpath(TrixiAtmo.examples_dir(), "elixir_moist_euler_dry_bubble.jl")
 
-    # Now use moist equations instead
-    equations_moist = CompressibleMoistEulerEquations2D()
-
-    # Redefine source terms for CompressibleMoistEulerEquations2D
-    @inline function (setup::Main.WarmBubbleSetup)(u, x, t,
-                                                   equations_moist::CompressibleMoistEulerEquations2D)
-        ret_trixi = setup(u, x, t, equations_trixi)
-        return vcat(ret_trixi, add_zeros)
-    end
-
-    # Redefine initial condition for CompressibleMoistEulerEquations2D
-    @inline function (setup::Main.WarmBubbleSetup)(x, t,
-                                                   equations_moist::CompressibleMoistEulerEquations2D)
-        ret_trixi = setup(x, t, equations_trixi)
-        return vcat(ret_trixi, add_zeros)
-    end
-
-    # Run again with overrides
-    trixi_include(trixi_elixir,
-                  equations = equations_moist,
-                  volume_flux = flux_chandrashekar,
-                  surface_flux = FluxLMARS(360.0),
+    # Run with overrides
+    trixi_include(elixir_atmo,
                   maxiters = maxiters)
 
+    # Save errors
     errors_atmo = Main.analysis_callback(Main.sol)
 
     for (error_trixi, error_atmo) in zip(errors_trixi.l2, errors_atmo.l2)
