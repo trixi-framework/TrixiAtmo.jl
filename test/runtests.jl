@@ -39,7 +39,7 @@ const TRIXI_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
         run(`$(Base.julia_cmd()) --threads=$TRIXI_NTHREADS --check-bounds=yes --code-coverage=none $(abspath("test_threaded.jl"))`)
     end
 
-    @time if TRIXIATMO_TEST == "all" || TRIXIATMO_TEST == "mpi"
+    @time if TRIXI_TEST == "all" || TRIXI_TEST == "mpi"
         # Do a dummy `@test true`:
         # If the process errors out the testset would error out as well,
         # cf. https://github.com/JuliaParallel/MPI.jl/pull/391
