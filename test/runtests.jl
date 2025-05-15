@@ -45,9 +45,7 @@ const TRIXI_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
         # cf. https://github.com/JuliaParallel/MPI.jl/pull/391
         @test true
 
-        mpiexec() do cmd
-            run(`$cmd -n $TRIXI_MPI_NPROCS $(Base.julia_cmd()) --threads=1 --check-bounds=yes $(abspath("test_mpi.jl"))`)
-        end
+        run(`$(mpiexec()) -n $TRIXI_MPI_NPROCS $(Base.julia_cmd()) --threads=1 --check-bounds=yes $(abspath("test_mpi.jl"))`)
     end
 
     @time if TRIXI_TEST == "upstream"
