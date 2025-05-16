@@ -11,43 +11,40 @@ using TrixiAtmo: source_terms_rainy, saturation_residual,
                  boundary_condition_simple_slip_wall
 using NLsolve: nlsolve
 
-
-
 # domain
-coordinates_min = (   0.0,    0.0)
+coordinates_min = (0.0, 0.0)
 coordinates_max = (2400.0, 2400.0)
-
 
 # hydrostatic dry potential temperature
 function theta_d(z, equations::CompressibleRainyEulerExplicitEquations2D)
     # constants
-    c_pd          = equations.c_dry_air_const_pressure
-    R_d           = equations.R_dry_air
-    ref_pressure  = equations.ref_pressure
+    c_pd = equations.c_dry_air_const_pressure
+    R_d = equations.R_dry_air
+    ref_pressure = equations.ref_pressure
 
     # problem specific constants
     surface_temperature = 283.0
-    surface_pressure    = 8.5e4
-    stratification      = 1.3e-5
+    surface_pressure = 8.5e4
+    stratification = 1.3e-5
 
     # dry potential temperature at surface
-    Theta0  = surface_temperature * (ref_pressure / surface_pressure)^(R_d / c_pd)
+    Theta0 = surface_temperature * (ref_pressure / surface_pressure)^(R_d / c_pd)
     # at height z
     theta_d = Theta0 * exp(stratification * z)
 
     return theta_d
 end
 
-
 # hydrostatic base state residual
-function generate_hydrostatic_residual(pressure_lower, humidity_rel0, z, dz, equations::CompressibleRainyEulerExplicitEquations2D)
+function generate_hydrostatic_residual(pressure_lower, humidity_rel0, z, dz,
+                                       equations::CompressibleRainyEulerExplicitEquations2D)
     # equations constants
-    c_pd          = equations.c_dry_air_const_pressure
-    R_d           = equations.R_dry_air
-    R_v           = equations.R_vapour
-    eps           = equations.eps
-    ref_pressure  = equations.ref_pressure
-    g             = equations.gravity
+    c_pd = equations.c_dry_air_const_pressure
+    R_d = equations.R_dry_air
+    R_v = equations.R_vapour
+    eps = equations.eps
+    ref_pressure = equations.ref_pressure
+    g = equations.gravity
 
     function hydrostatic_residual!(residual, guess)
         # variables
@@ -62,10 +59,11 @@ function generate_hydrostatic_residual(pressure_lower, humidity_rel0, z, dz, equ
         residual[2] = pressure - temperature * (rho_dry * R_d + rho_vapour * R_v)
 
         # hydrostatic dry potential temperature residual
-        residual[3] = theta_d(z, equations) - temperature * (ref_pressure / pressure)^(R_d / c_pd)
+        residual[3] = theta_d(z, equations) -
+                      temperature * (ref_pressure / pressure)^(R_d / c_pd)
 
         # humidity residual
-        residual[4]  = rho_vs * (rho_dry + rho_vapour / eps) * humidity_rel0
+        residual[4] = rho_vs * (rho_dry + rho_vapour / eps) * humidity_rel0
         residual[4] -= rho_vapour * (rho_dry + rho_vs / eps)
         residual[4] *= 1000.0
     end
@@ -73,29 +71,30 @@ function generate_hydrostatic_residual(pressure_lower, humidity_rel0, z, dz, equ
     return hydrostatic_residual!
 end
 
-
-function generate_perturbation_residual(pressure_hydrostatic, H_init, z, equations::CompressibleRainyEulerExplicitEquations2D)
+function generate_perturbation_residual(pressure_hydrostatic, H_init, z,
+                                        equations::CompressibleRainyEulerExplicitEquations2D)
     # equations constants
-    c_pd          = equations.c_dry_air_const_pressure
-    R_d           = equations.R_dry_air
-    R_v           = equations.R_vapour
-    eps           = equations.eps
-    ref_pressure  = equations.ref_pressure
+    c_pd = equations.c_dry_air_const_pressure
+    R_d = equations.R_dry_air
+    R_v = equations.R_vapour
+    eps = equations.eps
+    ref_pressure = equations.ref_pressure
 
     function perturbation_residual!(residual, guess)
         # variables
         rho_dry, rho_vapour, temperature = guess
-        
+
         rho_vs = saturation_vapour_pressure(temperature, equations) / (R_v * temperature)
         pressure = (rho_dry * R_d + rho_vapour * R_v) * temperature
-        
+
         # humidity residual
-        residual[1]  = rho_vs * (rho_dry + rho_vapour / eps) * H_init
+        residual[1] = rho_vs * (rho_dry + rho_vapour / eps) * H_init
         residual[1] -= rho_vapour * (rho_dry + rho_vs / eps)
         residual[1] *= 30.0
 
         # hydrostatic dry potential temperature residual
-        residual[2] = theta_d(z, equations) - temperature * (ref_pressure / pressure_hydrostatic)^(R_d / c_pd)
+        residual[2] = theta_d(z, equations) -
+                      temperature * (ref_pressure / pressure_hydrostatic)^(R_d / c_pd)
 
         # pressure residual
         residual[3] = pressure_hydrostatic - pressure
@@ -104,32 +103,33 @@ function generate_perturbation_residual(pressure_hydrostatic, H_init, z, equatio
     return perturbation_residual!
 end
 
-
 # for approximating the dz pressure gradient
 struct AtmosphereLayersRainyBubble{RealT <: Real}
-    layer_data   ::Matrix{RealT}
-    total_height ::RealT
-    precision    ::RealT
+    layer_data   :: Matrix{RealT}
+    total_height :: RealT
+    precision    :: RealT
 end
 
-
-function AtmosphereLayersRainyBubble(equations::CompressibleRainyEulerExplicitEquations2D; total_height = coordinates_max[2] + 1.0, precision = 1.0, RealT = Float64)
+function AtmosphereLayersRainyBubble(equations::CompressibleRainyEulerExplicitEquations2D;
+                                     total_height = coordinates_max[2] + 1.0,
+                                     precision = 1.0, RealT = Float64)
     # constants
-    humidity_rel0    = 0.2      # hydrostatic relative humidity
+    humidity_rel0 = 0.2      # hydrostatic relative humidity
     surface_pressure = 8.5e4
 
     # surface layer with initial guesses for rho_dry, rho_vapour and temperature
     surface_layer = [surface_pressure, 1.4, 0.04, 300.0]
-    
+
     # allocate layer_data
     n = convert(Int, total_height / precision)
     layer_data = zeros(RealT, n + 1, 4)
 
     # solve (slightly above) surface layer
     dz = 0.01
-    z  = 0.01
-    residual_function!  = generate_hydrostatic_residual(surface_pressure, humidity_rel0, z, dz, equations)
-    layer_data[1, :]   .= nlsolve(residual_function!, surface_layer).zero
+    z = 0.01
+    residual_function! = generate_hydrostatic_residual(surface_pressure, humidity_rel0, z,
+                                                       dz, equations)
+    layer_data[1, :] .= nlsolve(residual_function!, surface_layer).zero
 
     # adjust to chosen precision
     dz = precision
@@ -137,33 +137,35 @@ function AtmosphereLayersRainyBubble(equations::CompressibleRainyEulerExplicitEq
     # iterate up the atmosphere
     for i in (1:n)
         z += dz
-        residual_function! = generate_hydrostatic_residual(layer_data[i, 1], humidity_rel0, z, dz, equations)
+        residual_function! = generate_hydrostatic_residual(layer_data[i, 1], humidity_rel0,
+                                                           z, dz, equations)
         guess = deepcopy(layer_data[i, :])
-        layer_data[i + 1, :] .= nlsolve(residual_function!, guess, ftol = 1e-10, iterations = 20).zero
+        layer_data[i + 1, :] .= nlsolve(residual_function!, guess, ftol = 1e-10,
+                                        iterations = 20).zero
     end
-    
+
     return AtmosphereLayersRainyBubble{RealT}(layer_data, total_height, precision)
 end
 
-
 # create layers for initial condition
 equations = CompressibleRainyEulerExplicitEquations2D()
-layers    = AtmosphereLayersRainyBubble(equations)
+layers = AtmosphereLayersRainyBubble(equations)
 
-
-function initial_condition_bubble_rainy(x, t, equations::CompressibleRainyEulerExplicitEquations2D; atmosphere_layers = layers)
+function initial_condition_bubble_rainy(x, t,
+                                        equations::CompressibleRainyEulerExplicitEquations2D;
+                                        atmosphere_layers = layers)
     # equations constants
-    c_vd  = equations.c_dry_air_const_volume
-    c_vv  = equations.c_vapour_const_volume
+    c_vd = equations.c_dry_air_const_volume
+    c_vv = equations.c_vapour_const_volume
     ref_L = equations.ref_latent_heat_vap_temp
 
     # problem specific constants
     humidity_rel_bar = 0.2                # background relative humidity field
-    humidity_max     = 1.0
+    humidity_max = 1.0
 
     # bubble parameters
-    radius_outer, radius_inner =  300.0, 200.0      # radii of humidity bubble
-    x_center, z_center         = 1200.0, 800.0      # center of humidity bubble
+    radius_outer, radius_inner = 300.0, 200.0      # radii of humidity bubble
+    x_center, z_center = 1200.0, 800.0      # center of humidity bubble
 
     # radius relative to bubble center
     r = sqrt((x[1] - x_center)^2 + (x[2] - z_center)^2)
@@ -174,20 +176,22 @@ function initial_condition_bubble_rainy(x, t, equations::CompressibleRainyEulerE
         humidity = humidity_rel_bar
     elseif (r > radius_inner)
         # outer layers of the bubble
-        humidity = humidity_rel_bar + (humidity_max - humidity_rel_bar) * cos(pi * (r - radius_inner) / (2.0 * (radius_outer - radius_inner)))^2
+        humidity = humidity_rel_bar +
+                   (humidity_max - humidity_rel_bar) *
+                   cos(pi * (r - radius_inner) / (2.0 * (radius_outer - radius_inner)))^2
     else
         # inner layer
         humidity = humidity_max
     end
-    
+
     # get atmosphere layer and height information
     @unpack layer_data, total_height, precision = atmosphere_layers
     dz = precision
-    z  = x[2]
-    n  = convert(Int, floor((z + eps()) / dz)) + 1
+    z = x[2]
+    n = convert(Int, floor((z + eps()) / dz)) + 1
     z_lower = (n - 1) * dz
-    z_upper =  n      * dz
-    
+    z_upper = n * dz
+
     if (z_lower == total_height)
         z_upper = z_lower + dz
         n = n - 1
@@ -201,22 +205,23 @@ function initial_condition_bubble_rainy(x, t, equations::CompressibleRainyEulerE
     if (z > total_height && !(isapprox(z, total_height)))
         error("The atmosphere does not match the simulation domain")
     end
-    
+
     # get hydrostatic pressures and approximate between lower and upper data point
     pressure_hydrostatic_lower = layer_data[n, 1]
     pressure_hydrostatic_upper = layer_data[n + 1, 1]
-    pressure_hydrostatic       = (pressure_hydrostatic_upper * (z - z_lower) + pressure_hydrostatic_lower * (z_upper - z)) / dz
+    pressure_hydrostatic = (pressure_hydrostatic_upper * (z - z_lower) +
+                            pressure_hydrostatic_lower * (z_upper - z)) / dz
 
     # solve perturbation
-    residual_function! = generate_perturbation_residual(pressure_hydrostatic, humidity, z, equations)
-    rho_dry, rho_vapour, temperature = nlsolve(residual_function!, layer_data[n, 2:4], ftol = 1e-9, iterations = 20).zero
+    residual_function! = generate_perturbation_residual(pressure_hydrostatic, humidity, z,
+                                                        equations)
+    rho_dry, rho_vapour, temperature = nlsolve(residual_function!, layer_data[n, 2:4],
+                                               ftol = 1e-9, iterations = 20).zero
 
     energy_density = (c_vd * rho_dry + c_vv * rho_vapour) * temperature + rho_vapour * ref_L
 
     return SVector(rho_dry, rho_vapour, 0.0, 0.0, 0.0, 0.0, energy_density)
 end
-
-
 
 ###############################################################################
 # semidiscretization of the compressible rainy Euler equations
@@ -224,18 +229,15 @@ end
 diffusivity = 0.5
 equations_parabolic = LaplaceDiffusion2D(diffusivity, equations)
 
-
 boundary_conditions = (x_neg = boundary_condition_periodic,
                        x_pos = boundary_condition_periodic,
                        y_neg = boundary_condition_simple_slip_wall,
                        y_pos = boundary_condition_simple_slip_wall)
 
-boundary_conditions_parabolic = (
-                       x_neg = boundary_condition_periodic,
-                       x_pos = boundary_condition_periodic,
-                       y_neg = boundary_condition_laplace,
-                       y_pos = boundary_condition_laplace)
-
+boundary_conditions_parabolic = (x_neg = boundary_condition_periodic,
+                                 x_pos = boundary_condition_periodic,
+                                 y_neg = boundary_condition_laplace,
+                                 y_pos = boundary_condition_laplace)
 
 polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
@@ -246,12 +248,15 @@ volume_integral = VolumeIntegralFluxDifferencing(flux_ec_rain)
 solver = DGSEM(basis, surface_flux, volume_integral)
 
 initial_condition = initial_condition_bubble_rainy
-source_terms      = source_terms_rainy
+source_terms = source_terms_rainy
 
-mesh = TreeMesh(coordinates_min, coordinates_max, initial_refinement_level = 6, periodicity = (true, false), n_cells_max = 1_000_000)
+mesh = TreeMesh(coordinates_min, coordinates_max, initial_refinement_level = 6,
+                periodicity = (true, false), n_cells_max = 1_000_000)
 
-semi = SemidiscretizationHyperbolicParabolic(mesh, (equations, equations_parabolic), initial_condition, solver; source_terms,
-                                             boundary_conditions = (boundary_conditions, boundary_conditions_parabolic))
+semi = SemidiscretizationHyperbolicParabolic(mesh, (equations, equations_parabolic),
+                                             initial_condition, solver; source_terms,
+                                             boundary_conditions = (boundary_conditions,
+                                                                    boundary_conditions_parabolic))
 
 ###############################################################################
 # ODE solvers, callbacks etc.

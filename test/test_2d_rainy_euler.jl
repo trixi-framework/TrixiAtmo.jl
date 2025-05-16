@@ -9,7 +9,7 @@ EXAMPLES_DIR = TrixiAtmo.examples_dir() * "moist_bubble/"
 
 @trixiatmo_testset "../examples/elixir_moist_euler_dry_bubble" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-        "rainy_bubble_elixirs/elixir_rainy_euler_rainy_bubble_diffusion.jl"),
+                                 "rainy_bubble_elixirs/elixir_rainy_euler_rainy_bubble_diffusion.jl"),
                         l2=[
                             1.300428671901329e-6,
                             2.601090012108739e-5,

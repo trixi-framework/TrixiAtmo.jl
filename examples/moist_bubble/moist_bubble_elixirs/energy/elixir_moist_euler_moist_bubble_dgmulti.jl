@@ -8,8 +8,6 @@ using NLsolve: nlsolve
 using Plots
 using StartUpDG
 
-
-
 equations = CompressibleMoistEulerEquations2D()
 
 function moist_state(y, dz, y0, r_t0, theta_e0,
@@ -236,29 +234,30 @@ end
 initial_condition = initial_condition_moist
 
 # tag different boundary segments
-left(x, tol = 50 * eps())   = abs(x[1] - coordinates_min[1]) < tol
-right(x, tol = 50 * eps())  = abs(x[1] - coordinates_max[1]) < tol
+left(x, tol = 50 * eps()) = abs(x[1] - coordinates_min[1]) < tol
+right(x, tol = 50 * eps()) = abs(x[1] - coordinates_max[1]) < tol
 bottom(x, tol = 50 * eps()) = abs(x[2] - coordinates_min[2]) < tol
-top(x, tol = 50 * eps())    = abs(x[2] - coordinates_max[2]) < tol
+top(x, tol = 50 * eps()) = abs(x[2] - coordinates_max[2]) < tol
 
 is_on_boundary = Dict(:left => left, :right => right, :top => top, :bottom => bottom)
 
-boundary_conditions = (; :left   => boundary_condition_periodic,
-                         :top    => boundary_condition_slip_wall,
-                         :bottom => boundary_condition_slip_wall,
-                         :right  => boundary_condition_periodic)
+boundary_conditions = (; :left => boundary_condition_periodic,
+                       :top => boundary_condition_slip_wall,
+                       :bottom => boundary_condition_slip_wall,
+                       :right => boundary_condition_periodic)
 
-solver = DGMulti(polydeg = 3, element_type = Quad(), approximation_type = StartUpDG.Polynomial{MultidimensionalQuadrature}(),
+solver = DGMulti(polydeg = 3, element_type = Quad(),
+                 approximation_type = StartUpDG.Polynomial{MultidimensionalQuadrature}(),
                  surface_integral = SurfaceIntegralWeakForm(flux_LMARS),
                  volume_integral = VolumeIntegralWeakForm(),
-                 quad_rule_vol = StartUpDG.quad_nodes(Quad(), 6)
-                 )
+                 quad_rule_vol = StartUpDG.quad_nodes(Quad(), 6))
 
-coordinates_min = (     0.0,      0.0)
+coordinates_min = (0.0, 0.0)
 coordinates_max = (20_000.0, 10_000.0)
 
 cells_per_dimension = (200, 100)
-mesh = DGMultiMesh(solver, cells_per_dimension; coordinates_min, coordinates_max, is_on_boundary, periodicity = (true, false))
+mesh = DGMultiMesh(solver, cells_per_dimension; coordinates_min, coordinates_max,
+                   is_on_boundary, periodicity = (true, false))
 
 semi = SemidiscretizationHyperbolic(mesh, equations,
                                     initial_condition, solver;
@@ -276,7 +275,8 @@ summary_callback = SummaryCallback()
 
 analysis_interval = 1000
 
-analysis_callback = AnalysisCallback(semi, interval = analysis_interval, uEltype = real(solver))
+analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
+                                     uEltype = real(solver))
 
 alive_callback = AliveCallback(analysis_interval = 1000)
 

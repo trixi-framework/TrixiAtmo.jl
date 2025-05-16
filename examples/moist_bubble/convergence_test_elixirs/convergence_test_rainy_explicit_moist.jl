@@ -4,14 +4,13 @@ using TrixiAtmo
 using TrixiAtmo: saturation_vapour_pressure, saturation_vapour_pressure_derivative,
                  saturation_residual, saturation_residual_jacobian
 
-
-
-function initial_condition_convergence_test_rainy_no_rain(x, t, equations::CompressibleRainyEulerExplicitEquations2D)
+function initial_condition_convergence_test_rainy_no_rain(x, t,
+                                                          equations::CompressibleRainyEulerExplicitEquations2D)
     # needed constants
-    c_l   = equations.c_liquid_water
-    c_vd  = equations.c_dry_air_const_volume
-    c_vv  = equations.c_vapour_const_volume
-    R_v   = equations.R_vapour
+    c_l = equations.c_liquid_water
+    c_vd = equations.c_dry_air_const_volume
+    c_vv = equations.c_vapour_const_volume
+    R_v = equations.R_vapour
     ref_L = equations.ref_latent_heat_vap_temp
 
     # define rho like in dry convergence test
@@ -24,26 +23,26 @@ function initial_condition_convergence_test_rainy_no_rain(x, t, equations::Compr
 
     # define variables of rho
     temperature = rho + 250.0
-    rho_vapour  = saturation_vapour_pressure(temperature, equations) / (R_v * temperature)
-    rho_cloud   = rho / c_l * 4000
-    rho_moist   = rho_vapour + rho_cloud
-    rho_dry     = rho - rho_moist
+    rho_vapour = saturation_vapour_pressure(temperature, equations) / (R_v * temperature)
+    rho_cloud = rho / c_l * 4000
+    rho_moist = rho_vapour + rho_cloud
+    rho_dry = rho - rho_moist
 
     # define matching energydensity with v1 := 1 and v2 := 1 , initially
-    energy  = (c_vd * rho_dry + c_vv * rho_vapour + c_l * rho_cloud) * temperature
+    energy = (c_vd * rho_dry + c_vv * rho_vapour + c_l * rho_cloud) * temperature
     energy += rho_vapour * ref_L + rho
 
     return SVector(rho_dry, rho_vapour, rho_cloud, 0.0, rho, rho, energy)
 end
 
-
-function source_terms_convergence_test_rainy_no_rain(u, x, t, equations::CompressibleRainyEulerExplicitEquations2D)
+function source_terms_convergence_test_rainy_no_rain(u, x, t,
+                                                     equations::CompressibleRainyEulerExplicitEquations2D)
     # needed constants
-    c_l   = equations.c_liquid_water
-    c_vd  = equations.c_dry_air_const_volume
-    c_vv  = equations.c_vapour_const_volume
-    R_d   = equations.R_dry_air
-    R_v   = equations.R_vapour
+    c_l = equations.c_liquid_water
+    c_vd = equations.c_dry_air_const_volume
+    c_vv = equations.c_vapour_const_volume
+    R_d = equations.R_dry_air
+    R_v = equations.R_vapour
     ref_L = equations.ref_latent_heat_vap_temp
 
     # define rho like initial condition
@@ -53,61 +52,60 @@ function source_terms_convergence_test_rainy_no_rain(u, x, t, equations::Compres
     f = 1.0 / L
     ω = 2 * pi * f
     si, co = sincos(ω * (x[1] + x[2] - t))
-    rho    = c + A * si
-    rho_x  = ω * A * co
-    rho_t  = -rho_x
+    rho = c + A * si
+    rho_x = ω * A * co
+    rho_t = -rho_x
 
     # define variables of rho
     temperature = rho + 250.0
-    sat_vap_p   = saturation_vapour_pressure(temperature, equations)
-    rho_vapour  = sat_vap_p / (R_v * temperature)
-    rho_cloud   = rho / c_l * 4000
-    rho_moist   = rho_vapour + rho_cloud
-    rho_dry     = rho - rho_moist
+    sat_vap_p = saturation_vapour_pressure(temperature, equations)
+    rho_vapour = sat_vap_p / (R_v * temperature)
+    rho_cloud = rho / c_l * 4000
+    rho_moist = rho_vapour + rho_cloud
+    rho_dry = rho - rho_moist
 
     # define needed derivatives
-    sat_vap_p_t  = rho_t * saturation_vapour_pressure_derivative(temperature, equations)
-    sat_vap_p_x  = rho_x * saturation_vapour_pressure_derivative(temperature, equations)
+    sat_vap_p_t = rho_t * saturation_vapour_pressure_derivative(temperature, equations)
+    sat_vap_p_x = rho_x * saturation_vapour_pressure_derivative(temperature, equations)
 
     rho_vapour_t = (sat_vap_p_t * temperature - rho_t * sat_vap_p) / (R_v * temperature^2)
     rho_vapour_x = (sat_vap_p_x * temperature - rho_x * sat_vap_p) / (R_v * temperature^2)
 
-    rho_cloud_t  = rho_t / c_l * 4000
-    rho_cloud_x  = rho_x / c_l * 4000
+    rho_cloud_t = rho_t / c_l * 4000
+    rho_cloud_x = rho_x / c_l * 4000
 
-    rho_moist_t  = rho_vapour_t + rho_cloud_t
-    rho_moist_x  = rho_vapour_x + rho_cloud_x
-    
-    rho_dry_t    = rho_t - rho_moist_t
-    rho_dry_x    = rho_x - rho_moist_x
+    rho_moist_t = rho_vapour_t + rho_cloud_t
+    rho_moist_x = rho_vapour_x + rho_cloud_x
 
-    energy_t     = (c_vd * rho_dry_t + c_vv * rho_vapour_t + c_l * rho_cloud_t) * temperature
-    energy_t    += (c_vd * rho_dry   + c_vv * rho_vapour   + c_l * rho_cloud  ) * rho_t
-    energy_t    += rho_vapour_t * ref_L + rho_t
+    rho_dry_t = rho_t - rho_moist_t
+    rho_dry_x = rho_x - rho_moist_x
 
-    energy_x     = (c_vd * rho_dry_x + c_vv * rho_vapour_x + c_l * rho_cloud_x) * temperature
-    energy_x    += (c_vd * rho_dry   + c_vv * rho_vapour   + c_l * rho_cloud  ) * rho_x
-    energy_x    += rho_vapour_x * ref_L + rho_x
+    energy_t = (c_vd * rho_dry_t + c_vv * rho_vapour_t + c_l * rho_cloud_t) * temperature
+    energy_t += (c_vd * rho_dry + c_vv * rho_vapour + c_l * rho_cloud) * rho_t
+    energy_t += rho_vapour_t * ref_L + rho_t
 
-    pressure_x   = (rho_dry_x * R_d + rho_vapour_x * R_v) * temperature
-    pressure_x  += (rho_dry   * R_d + rho_vapour   * R_v) * rho_x         # temperature_x = rho_x
+    energy_x = (c_vd * rho_dry_x + c_vv * rho_vapour_x + c_l * rho_cloud_x) * temperature
+    energy_x += (c_vd * rho_dry + c_vv * rho_vapour + c_l * rho_cloud) * rho_x
+    energy_x += rho_vapour_x * ref_L + rho_x
+
+    pressure_x = (rho_dry_x * R_d + rho_vapour_x * R_v) * temperature
+    pressure_x += (rho_dry * R_d + rho_vapour * R_v) * rho_x         # temperature_x = rho_x
 
     # calculate source terms for manufactured solution
     # density
-    S_rho_dry    = rho_dry_t    + 2.0 * rho_dry_x
+    S_rho_dry = rho_dry_t + 2.0 * rho_dry_x
     S_rho_vapour = rho_vapour_t + 2.0 * rho_vapour_x
-    S_rho_cloud  = rho_cloud_t  + 2.0 * rho_cloud_x
-    
+    S_rho_cloud = rho_cloud_t + 2.0 * rho_cloud_x
+
     # "momentum"
-    S_rho_v1    = rho_x       + pressure_x
-    S_rho_v2    = rho_x       + pressure_x
+    S_rho_v1 = rho_x + pressure_x
+    S_rho_v2 = rho_x + pressure_x
 
     # "energy"
-    S_energy    = energy_t    + 2.0 * (energy_x + pressure_x)
+    S_energy = energy_t + 2.0 * (energy_x + pressure_x)
 
     return SVector(S_rho_dry, S_rho_vapour, S_rho_cloud, 0.0, S_rho_v1, S_rho_v2, S_energy)
 end
-
 
 ###############################################################################
 # semidiscretization of the compressible Euler equations

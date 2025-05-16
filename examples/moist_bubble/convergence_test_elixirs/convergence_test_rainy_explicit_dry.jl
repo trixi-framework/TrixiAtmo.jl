@@ -2,10 +2,9 @@ using OrdinaryDiffEq
 using Trixi
 using TrixiAtmo
 
-
-
 # adapted from compressible_euler_2d.jl
-function initial_condition_convergence_test(x, t, equations::CompressibleRainyEulerExplicitEquations2D)
+function initial_condition_convergence_test(x, t,
+                                            equations::CompressibleRainyEulerExplicitEquations2D)
     RealT = eltype(x)
     c = 2
     A = convert(RealT, 0.1)
@@ -22,9 +21,9 @@ function initial_condition_convergence_test(x, t, equations::CompressibleRainyEu
     return SVector(rho, 0.0, 0.0, 0.0, rho_v1, rho_v2, rho_e)
 end
 
-
 # adapted from compressible_euler_2d.jl
-function source_terms_convergence_test(u, x, t, equations::CompressibleRainyEulerExplicitEquations2D)
+function source_terms_convergence_test(u, x, t,
+                                       equations::CompressibleRainyEulerExplicitEquations2D)
     c_pd = equations.c_dry_air_const_pressure
     c_vd = equations.c_dry_air_const_volume
 
@@ -51,7 +50,6 @@ function source_terms_convergence_test(u, x, t, equations::CompressibleRainyEule
 
     return SVector(du1, 0.0, 0.0, 0.0, du2, du3, du4)
 end
-
 
 # from elixir_euler_source_terms.jl
 ###############################################################################
@@ -105,7 +103,6 @@ sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
             dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
             save_everystep = false, callback = callbacks);
 summary_callback() # print the timer summary
-
 
 #= For copy-paste convenience:
 #convergence_test("TrixiAtmo.jl/examples/convergence_test_elixirs/convergence_test_rainy_dry_explicit.jl", 5)

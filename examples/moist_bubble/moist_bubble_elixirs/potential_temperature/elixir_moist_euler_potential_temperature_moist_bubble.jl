@@ -64,7 +64,7 @@ function AtmosphereLayers(equations; total_height = 10010.0, preciseness = 10,
                           equivalent_potential_temperature = 320,
                           mixing_ratios = (0.02, 0.02), RealT = Float64)
     @unpack p_0, c_pd, c_vd, c_pv, c_vv, R_d, R_v, c_pl = equations
-    kappa = 1- inv(equations.gamma)
+    kappa = 1 - inv(equations.gamma)
     rho0, p0 = ground_state
     r_t0, r_v0 = mixing_ratios
     theta_e0 = equivalent_potential_temperature
@@ -111,7 +111,8 @@ end
 # G.H. Bryan, J.M. Fritsch, A Benchmark Simulation for Moist Nonhydrostatic Numerical
 # Models, MonthlyWeather Review Vol.130, 2917–2928, 2002,
 # https://journals.ametsoc.org/view/journals/mwre/130/12/1520-0493_2002_130_2917_absfmn_2.0.co_2.xml.
-function initial_condition_moist_bubble(x, t, equations::CompressibleMoistEulerPotentialTemperatureEquations2D,
+function initial_condition_moist_bubble(x, t,
+                                        equations::CompressibleMoistEulerPotentialTemperatureEquations2D,
                                         atmosphere_layers::AtmosphereLayers)
     @unpack layer_data, preciseness, total_height = atmosphere_layers
     dz = preciseness
@@ -148,7 +149,7 @@ end
 
 function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
                                 equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
-    @unpack  p_0, c_pd, c_vd, c_pv, c_vv, R_d, R_v, c_pl, L_00 = equations
+    @unpack p_0, c_pd, c_vd, c_pv, c_vv, R_d, R_v, c_pl, L_00 = equations
     kappa = 1 - inv(equations.gamma)
     xc = 10000.0
     zc = 2000.0

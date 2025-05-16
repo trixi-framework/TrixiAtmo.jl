@@ -343,5 +343,4 @@ include("reference_data.jl")
 include("compressible_rainy_euler_2d.jl")
 include("compressible_moist_euler_potential_temperature_2d.jl")
 include("compressible_rainy_euler_explicit_2d.jl")
-
 end # @muladd

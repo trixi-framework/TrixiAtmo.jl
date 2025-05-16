@@ -3,11 +3,9 @@ using Trixi
 using TrixiAtmo
 using TrixiAtmo: source_terms_no_phase_change
 
-
-
 # copied from elixir_euler_warm_bubble.jl for quick tests
 function initial_condition_bubble_dry(x, t, equations::CompressibleRainyEulerEquations2D)
-    g   = equations.gravity
+    g = equations.gravity
     c_p = equations.c_dry_air_const_pressure
     c_v = equations.c_dry_air_const_volume
 
@@ -43,12 +41,10 @@ function initial_condition_bubble_dry(x, t, equations::CompressibleRainyEulerEqu
 
     v1 = 0.0
     v2 = 0.0
-    E  = c_v * T + 0.5 * (v1^2 + v2^2)
+    E = c_v * T + 0.5 * (v1^2 + v2^2)
 
     return SVector(rho, 0.0, 0.0, rho * v1, rho * v2, rho * E, 0.0, 0.0, 0.0)
 end
-
-
 
 ###############################################################################
 # semidiscretization of the compressible rainy Euler equations
@@ -67,7 +63,7 @@ surface_flux = flux_lax_friedrichs
 
 solver = DGSEM(basis, surface_flux)
 
-coordinates_min = (     0.0,      0.0)
+coordinates_min = (0.0, 0.0)
 coordinates_max = (20_000.0, 10_000.0)
 
 cells_per_dimension = (64, 32)
@@ -78,7 +74,7 @@ mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = periodicity)
 
 initial_condition = initial_condition_bubble_dry
-source_terms      = source_terms_no_phase_change
+source_terms = source_terms_no_phase_change
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_terms,
@@ -118,7 +114,7 @@ callbacks = CallbackSet(summary_callback,
 # run the simulation
 sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
             maxiters = 1.0e7,
-            dt = 1.0, 
+            dt = 1.0,
             save_everystep = false, callback = callbacks);
 
 summary_callback()

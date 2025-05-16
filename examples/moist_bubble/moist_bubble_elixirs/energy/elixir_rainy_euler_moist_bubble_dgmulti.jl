@@ -7,21 +7,20 @@ using TrixiAtmo: source_terms_no_phase_change, saturation_residual,
 using NLsolve: nlsolve
 using Plots
 
-
 # Initial condition from elixir_moist_euler_bubble.jl
-function moist_state(y, dz, y0, r_t0, theta_e0, equations::CompressibleMoistEulerEquations2D)
-
+function moist_state(y, dz, y0, r_t0, theta_e0,
+                     equations::CompressibleMoistEulerEquations2D)
     @unpack p_0, g, c_pd, c_pv, c_vd, c_vv, R_d, R_v, c_pl, L_00 = equations
 
     (p, rho, T, r_t, r_v, rho_qv, theta_e) = y
     p0 = y0[1]
 
-    F     = zeros(7, 1)
+    F = zeros(7, 1)
     rho_d = rho / (1 + r_t)
-    p_d   = R_d * rho_d * T
-    T_C   = T - 273.15
-    p_vs  = 611.2 * exp(17.62 * T_C / (243.12 + T_C))
-    L     = L_00 - (c_pl - c_pv) * T
+    p_d = R_d * rho_d * T
+    T_C = T - 273.15
+    p_vs = 611.2 * exp(17.62 * T_C / (243.12 + T_C))
+    L = L_00 - (c_pl - c_pv) * T
 
     F[1] = (p - p0) / dz + g * rho
     F[2] = p - (R_d * rho_d + R_v * rho_qv) * T
@@ -32,15 +31,16 @@ function moist_state(y, dz, y0, r_t0, theta_e0, equations::CompressibleMoistEule
     F[4] = r_t - r_t0
     F[5] = rho_qv - rho_d * r_v
     F[6] = theta_e - theta_e0
-    a    = p_vs / (R_v * T) - rho_qv
-    b    = rho - rho_qv - rho_d
+    a = p_vs / (R_v * T) - rho_qv
+    b = rho - rho_qv - rho_d
     # H=1 => phi=0
     F[7] = a + b - sqrt(a * a + b * b)
 
     return F
 end
 
-function generate_function_of_y(dz, y0, r_t0, theta_e0, equations::CompressibleMoistEulerEquations2D)
+function generate_function_of_y(dz, y0, r_t0, theta_e0,
+                                equations::CompressibleMoistEulerEquations2D)
     function function_of_y(y)
         return moist_state(y, dz, y0, r_t0, theta_e0, equations)
     end
@@ -62,7 +62,6 @@ function AtmosphereLayers(equations; total_height = 10010.0, preciseness = 10,
                           ground_state = (1.4, 100000.0),
                           equivalent_potential_temperature = 320,
                           mixing_ratios = (0.02, 0.02), RealT = Float64)
-
     @unpack kappa, p_0, c_pd, c_vd, c_pv, c_vv, R_d, R_v, c_pl = equations
     rho0, p0 = ground_state
     r_t0, r_v0 = mixing_ratios
@@ -110,7 +109,8 @@ end
 # G.H. Bryan, J.M. Fritsch, A Benchmark Simulation for Moist Nonhydrostatic Numerical
 # Models, MonthlyWeather Review Vol.130, 2917–2928, 2002,
 # https://journals.ametsoc.org/view/journals/mwre/130/12/1520-0493_2002_130_2917_absfmn_2.0.co_2.xml.
-function initial_condition_moist_bubble(x, t, equations::CompressibleMoistEulerEquations2D, atmosphere_layers::AtmosphereLayers)
+function initial_condition_moist_bubble(x, t, equations::CompressibleMoistEulerEquations2D,
+                                        atmosphere_layers::AtmosphereLayers)
     @unpack layer_data, preciseness, total_height = atmosphere_layers
     dz = preciseness
     z = x[2]
@@ -132,8 +132,9 @@ function initial_condition_moist_bubble(x, t, equations::CompressibleMoistEulerE
     rho_qv = rho * (rho_qv_r / rho_r * (z - z_l) + rho_qv_l / rho_l * (z_r - z)) / dz
     rho_ql = rho * (rho_ql_r / rho_r * (z - z_l) + rho_ql_l / rho_l * (z_r - z)) / dz
 
-    rho, rho_e, rho_qv, rho_ql, T_loc = perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
-                                                        equations::CompressibleMoistEulerEquations2D)
+    rho, rho_e, rho_qv, rho_ql, T_loc = perturb_moist_profile!(x, rho, rho_theta, rho_qv,
+                                                               rho_ql,
+                                                               equations::CompressibleMoistEulerEquations2D)
 
     v1 = 0.0
     v2 = 0.0
@@ -141,7 +142,8 @@ function initial_condition_moist_bubble(x, t, equations::CompressibleMoistEulerE
     rho_v2 = rho * v2
     rho_E = rho_e + 1 / 2 * rho * (v1^2 + v2^2)
 
-    return SVector(rho - rho_qv - rho_ql, rho_qv + rho_ql, 0.0, rho_v1, rho_v2, rho_E, rho_qv, rho_ql, T_loc)
+    return SVector(rho - rho_qv - rho_ql, rho_qv + rho_ql, 0.0, rho_v1, rho_v2, rho_E,
+                   rho_qv, rho_ql, T_loc)
 end
 
 function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
@@ -209,7 +211,8 @@ atmosphere_data = AtmosphereLayers(CompressibleMoistEulerEquations2D())
 
 # Create the initial condition with the initial data set
 function initial_condition_moist(x, t, equations::CompressibleRainyEulerEquations2D)
-    return initial_condition_moist_bubble(x, t, CompressibleMoistEulerEquations2D(), atmosphere_data)
+    return initial_condition_moist_bubble(x, t, CompressibleMoistEulerEquations2D(),
+                                          atmosphere_data)
 end
 
 ###############################################################################
@@ -220,27 +223,28 @@ equations = CompressibleRainyEulerEquations2D()
 initial_condition = initial_condition_moist
 
 # tag different boundary segments
-left(x, tol = 50 * eps())   = abs(x[1] - coordinates_min[1]) < tol
-right(x, tol = 50 * eps())  = abs(x[1] - coordinates_max[1]) < tol
+left(x, tol = 50 * eps()) = abs(x[1] - coordinates_min[1]) < tol
+right(x, tol = 50 * eps()) = abs(x[1] - coordinates_max[1]) < tol
 bottom(x, tol = 50 * eps()) = abs(x[2] - coordinates_min[2]) < tol
-top(x, tol = 50 * eps())    = abs(x[2] - coordinates_max[2]) < tol
+top(x, tol = 50 * eps()) = abs(x[2] - coordinates_max[2]) < tol
 
 is_on_boundary = Dict(:left => left, :right => right, :top => top, :bottom => bottom)
 
-boundary_conditions = (; :left   => boundary_condition_periodic,
-                         :top    => boundary_condition_slip_wall,
-                         :bottom => boundary_condition_slip_wall,
-                         :right  => boundary_condition_periodic)
+boundary_conditions = (; :left => boundary_condition_periodic,
+                       :top => boundary_condition_slip_wall,
+                       :bottom => boundary_condition_slip_wall,
+                       :right => boundary_condition_periodic)
 
 solver = DGMulti(polydeg = 1, element_type = Quad(), approximation_type = GaussSBP(),
                  surface_integral = SurfaceIntegralWeakForm(flux_lax_friedrichs),
                  volume_integral = VolumeIntegralWeakForm())
 
-coordinates_min = (     0.0,      0.0)
+coordinates_min = (0.0, 0.0)
 coordinates_max = (20_000.0, 10_000.0)
 
 cells_per_dimension = (200, 100)
-mesh = DGMultiMesh(solver, cells_per_dimension; coordinates_min, coordinates_max, is_on_boundary, periodicity = (true, false))
+mesh = DGMultiMesh(solver, cells_per_dimension; coordinates_min, coordinates_max,
+                   is_on_boundary, periodicity = (true, false))
 
 semi = SemidiscretizationHyperbolic(mesh, equations,
                                     initial_condition, solver;
@@ -258,7 +262,8 @@ summary_callback = SummaryCallback()
 
 analysis_interval = 1000
 
-analysis_callback = AnalysisCallback(semi, interval = analysis_interval, uEltype = real(solver))
+analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
+                                     uEltype = real(solver))
 
 alive_callback = AliveCallback(analysis_interval = 1000)
 
@@ -269,7 +274,8 @@ callbacks = CallbackSet(summary_callback,
                         alive_callback,
                         stepsize_callback)
 
-stage_limiter! = NonlinearSolveDG(saturation_residual, saturation_residual_jacobian, SVector(7, 8, 9), 1e-9)
+stage_limiter! = NonlinearSolveDG(saturation_residual, saturation_residual_jacobian,
+                                  SVector(7, 8, 9), 1e-9)
 
 ###############################################################################
 # run the simulation

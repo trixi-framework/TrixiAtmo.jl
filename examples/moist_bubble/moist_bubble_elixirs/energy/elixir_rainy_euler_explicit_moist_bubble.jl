@@ -6,22 +6,20 @@ using TrixiAtmo: source_terms_moist, saturation_residual,
                  cons2eq_pot_temp, flux_LMARS, flux_ec_rain
 using NLsolve: nlsolve
 
-
-
 # Initial condition from elixir_moist_euler_bubble.jl
-function moist_state(y, dz, y0, r_t0, theta_e0, equations::CompressibleMoistEulerEquations2D)
-
+function moist_state(y, dz, y0, r_t0, theta_e0,
+                     equations::CompressibleMoistEulerEquations2D)
     @unpack p_0, g, c_pd, c_pv, c_vd, c_vv, R_d, R_v, c_pl, L_00 = equations
 
     (p, rho, T, r_t, r_v, rho_qv, theta_e) = y
     p0 = y0[1]
 
-    F     = zeros(7, 1)
+    F = zeros(7, 1)
     rho_d = rho / (1 + r_t)
-    p_d   = R_d * rho_d * T
-    T_C   = T - 273.15
-    p_vs  = 611.2 * exp(17.62 * T_C / (243.12 + T_C))
-    L     = L_00 - (c_pl - c_pv) * T
+    p_d = R_d * rho_d * T
+    T_C = T - 273.15
+    p_vs = 611.2 * exp(17.62 * T_C / (243.12 + T_C))
+    L = L_00 - (c_pl - c_pv) * T
 
     F[1] = (p - p0) / dz + g * rho
     F[2] = p - (R_d * rho_d + R_v * rho_qv) * T
@@ -32,15 +30,16 @@ function moist_state(y, dz, y0, r_t0, theta_e0, equations::CompressibleMoistEule
     F[4] = r_t - r_t0
     F[5] = rho_qv - rho_d * r_v
     F[6] = theta_e - theta_e0
-    a    = p_vs / (R_v * T) - rho_qv
-    b    = rho - rho_qv - rho_d
+    a = p_vs / (R_v * T) - rho_qv
+    b = rho - rho_qv - rho_d
     # H=1 => phi=0
     F[7] = a + b - sqrt(a * a + b * b)
 
     return F
 end
 
-function generate_function_of_y(dz, y0, r_t0, theta_e0, equations::CompressibleMoistEulerEquations2D)
+function generate_function_of_y(dz, y0, r_t0, theta_e0,
+                                equations::CompressibleMoistEulerEquations2D)
     function function_of_y(y)
         return moist_state(y, dz, y0, r_t0, theta_e0, equations)
     end
@@ -62,7 +61,6 @@ function AtmosphereLayers(equations; total_height = 10010.0, preciseness = 10,
                           ground_state = (1.4, 100000.0),
                           equivalent_potential_temperature = 320,
                           mixing_ratios = (0.02, 0.02), RealT = Float64)
-
     @unpack kappa, p_0, c_pd, c_vd, c_pv, c_vv, R_d, R_v, c_pl = equations
     rho0, p0 = ground_state
     r_t0, r_v0 = mixing_ratios
@@ -110,7 +108,8 @@ end
 # G.H. Bryan, J.M. Fritsch, A Benchmark Simulation for Moist Nonhydrostatic Numerical
 # Models, MonthlyWeather Review Vol.130, 2917–2928, 2002,
 # https://journals.ametsoc.org/view/journals/mwre/130/12/1520-0493_2002_130_2917_absfmn_2.0.co_2.xml.
-function initial_condition_moist_bubble(x, t, equations::CompressibleMoistEulerEquations2D, atmosphere_layers::AtmosphereLayers)
+function initial_condition_moist_bubble(x, t, equations::CompressibleMoistEulerEquations2D,
+                                        atmosphere_layers::AtmosphereLayers)
     @unpack layer_data, preciseness, total_height = atmosphere_layers
     dz = preciseness
     z = x[2]
@@ -132,8 +131,9 @@ function initial_condition_moist_bubble(x, t, equations::CompressibleMoistEulerE
     rho_qv = rho * (rho_qv_r / rho_r * (z - z_l) + rho_qv_l / rho_l * (z_r - z)) / dz
     rho_ql = rho * (rho_ql_r / rho_r * (z - z_l) + rho_ql_l / rho_l * (z_r - z)) / dz
 
-    rho, rho_e, rho_qv, rho_ql, T_loc = perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
-                                                        equations::CompressibleMoistEulerEquations2D)
+    rho, rho_e, rho_qv, rho_ql, T_loc = perturb_moist_profile!(x, rho, rho_theta, rho_qv,
+                                                               rho_ql,
+                                                               equations::CompressibleMoistEulerEquations2D)
 
     v1 = 0.0
     v2 = 0.0
@@ -209,10 +209,9 @@ atmosphere_data = AtmosphereLayers(CompressibleMoistEulerEquations2D())
 
 # Create the initial condition with the initial data set
 function initial_condition_moist(x, t, equations::CompressibleRainyEulerExplicitEquations2D)
-    return initial_condition_moist_bubble(x, t, CompressibleMoistEulerEquations2D(), atmosphere_data)
+    return initial_condition_moist_bubble(x, t, CompressibleMoistEulerEquations2D(),
+                                          atmosphere_data)
 end
-
-
 
 ###############################################################################
 # semidiscretization of the compressible rainy Euler equations
@@ -228,13 +227,13 @@ polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
 
 surface_flux = flux_LMARS
-volume_flux  = flux_ec_rain
+volume_flux = flux_ec_rain
 
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
 solver = DGSEM(basis, surface_flux, volume_integral)
 
-coordinates_min = (     0.0,      0.0)
+coordinates_min = (0.0, 0.0)
 coordinates_max = (20_000.0, 10_000.0)
 
 cells_per_dimension = (128, 64)

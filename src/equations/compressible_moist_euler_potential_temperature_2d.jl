@@ -26,7 +26,8 @@ struct CompressibleMoistEulerPotentialTemperatureEquations2D{RealT <: Real} <:
     K::RealT
 end
 
-function CompressibleMoistEulerPotentialTemperatureEquations2D(; g = 9.81, RealT = Float64)
+function CompressibleMoistEulerPotentialTemperatureEquations2D(; g = 9.81,
+                                                               RealT = Float64)
     p_0 = 100000.0
     c_pd = 1004.0
     c_vd = 717.0
@@ -37,14 +38,17 @@ function CompressibleMoistEulerPotentialTemperatureEquations2D(; g = 9.81, RealT
     c_pl = 4186.0
     gamma = c_pd / c_vd # = 1/(1 - kappa)
     inv_gamma_minus_one = inv(1 - gamma)
-    K = 
-    L_00 = 2.5e6 #+ (c_pl - c_pv)*273.15
+    K = L_00 = 2.5e6 #+ (c_pl - c_pv)*273.15
     K = p_0 * (R_d / p_0)^gamma
-    return CompressibleMoistEulerPotentialTemperatureEquations2D{RealT}(p_0, c_pd, c_vd, R_d, c_pv, c_vv,
-                                                    R_v, c_pl, g, inv_gamma_minus_one, gamma, L_00, K)
+    return CompressibleMoistEulerPotentialTemperatureEquations2D{RealT}(p_0, c_pd, c_vd,
+                                                                        R_d, c_pv, c_vv,
+                                                                        R_v, c_pl, g,
+                                                                        inv_gamma_minus_one,
+                                                                        gamma, L_00, K)
 end
 
-@inline function pressure(u, equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
+@inline function pressure(u,
+                          equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
     @unpack p_0, R_d, R_v, c_pd, c_pv, c_pl, c_vd, c_vv = equations
     rho, rho_v1, rho_v2, rho_theta, rho_v, rho_l = u
 
@@ -195,7 +199,7 @@ end
 
 # Recreates the convergence test initial condition from compressible euler 2D.
 function initial_condition_warm_bubble(x, t,
-                                                equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
+                                       equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
     @unpack R_d, R_v, c_vd, c_vv, c_pl, L_00 = equations
     xc = 0
     zc = 2000
@@ -207,16 +211,17 @@ function initial_condition_warm_bubble(x, t,
     Δtheta = 0
     Δqv = 0
     Δqc = 0
-  
+
     if r <= rc
-       Δtheta = 2 * cospi(0.5*r/rc)^2
+        Δtheta = 2 * cospi(0.5 * r / rc)^2
     end
-  
+
     #Perturbed state:
     theta = theta_ref + Δtheta # potential temperature
     π_exner = 1 - equation._grav / (equation.c_pd * theta) * x[2] # exner pressure
-    rho = equation.p_0 / (equation.R_d * theta) * (π_exner)^(equation.c_vd / equation.R_d) # density
-  
+    rho = equation.p_0 / (equation.R_d * theta) *
+          (π_exner)^(equation.c_vd / equation.R_d) # density
+
     v1 = 20
     v2 = 0
     qv = 0
@@ -230,11 +235,9 @@ function initial_condition_warm_bubble(x, t,
     return SVector(rho, rho_v1, rho_v2, rho_e, rho_qv, rho_qc)
 end
 
-
-
 # Gravity source term
 @inline function source_terms_gravity(u, x, t,
-                                           equations::CompressibleMoistEulerEquations2D)
+                                      equations::CompressibleMoistEulerEquations2D)
     @unpack g = equations
     rho, _, _, _, _, _ = u
 
@@ -276,14 +279,14 @@ end
                    zero(eltype(u)), zero(eltype(u)), zero(eltype(u)))
 end
 
-function source_terms_moist_bubble(u, x, t, equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
-
+function source_terms_moist_bubble(u, x, t,
+                                   equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
     rho, rho_v1, rho_v2, rho_theta, rho_qv, rho_qc = u
     RelCloud = 1
     rho_d = rho - rho_qv - rho_qc
     c_pml = equations.c_pd * rho_d + equations.c_pv * rho_qv + equations.c_pl * rho_qc
     c_vml = equations.c_vd * rho_d + equations.c_vv * rho_qv + equations.c_pl * rho_qc
-    R_m   = equations.R_d * rho_d + equations.R_v * rho_qv
+    R_m = equations.R_d * rho_d + equations.R_v * rho_qv
     kappa_M = R_m / c_pml
     p = pressure(u, equations)
     T = p / R_m
@@ -293,15 +296,18 @@ function source_terms_moist_bubble(u, x, t, equations::CompressibleMoistEulerPot
     b = rho_qc
     rho_q_cond = RelCloud * (a + b - sqrt(a * a + b * b))
     L = equations.L_00 - (equations.c_pl - equations.c_pv) * T
-    du4 = rho_theta * ((-L / (c_pml * T) - log(p / equations.p_0) * kappa_M * (equations.R_v / R_m - equations.c_pv / c_pml) + 
-    equations.R_v / R_m) * rho_q_cond +  (log(p / equations.p_0) * kappa_M * (equations.c_pl / c_pml)) * (-rho_q_cond))
+    du4 = rho_theta * ((-L / (c_pml * T) -
+            log(p / equations.p_0) * kappa_M *
+            (equations.R_v / R_m - equations.c_pv / c_pml) +
+            equations.R_v / R_m) * rho_q_cond +
+           (log(p / equations.p_0) * kappa_M * (equations.c_pl / c_pml)) *
+           (-rho_q_cond))
 
-    du5 =  rho_q_cond
+    du5 = rho_q_cond
     du6 = -rho_q_cond
 
-    return SVector(zero(eltype(u)), zero(eltype(u)), -equations.g*rho, du4, du5, du6)
+    return SVector(zero(eltype(u)), zero(eltype(u)), -equations.g * rho, du4, du5, du6)
 end
-
 
 # Low Mach number approximate Riemann solver (LMARS) from
 # X. Chen, N. Andronova, B. Van Leer, J. E. Penner, J. P. Boyd, C. Jablonowski, S.
@@ -347,11 +353,12 @@ end
 end
 
 # Convert conservative variables to primitive.
-@inline function cons2prim(u, equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
+@inline function cons2prim(u,
+                           equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
     rho, rho_v1, rho_v2, rho_theta, rho_qv, rho_ql = u
     v1 = rho_v1 / rho
     v2 = rho_v2 / rho
-    p =  pressure(u, equations)
+    p = pressure(u, equations)
     qv = rho_qv / rho
     ql = rho_ql / rho
 
@@ -359,29 +366,31 @@ end
 end
 
 # Convert conservative variables to entropy
-@inline function cons2entropy(u, equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
+@inline function cons2entropy(u,
+                              equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
     @unpack R_d, R_v, c_pd, c_pv, c_pl, L_00 = equations
     rho, rho_v1, rho_v2, rho_theta, rho_qv, rho_qc = u
 
-  v1 = rho_v1 / rho
-  v2 = rho_v2 / rho
-  v_square = v1^2 + v2^2
-  p = pressure(u, equations)
-  s = log(p) - equations.gamma*log(rho)
-  rho_p = rho / p
+    v1 = rho_v1 / rho
+    v2 = rho_v2 / rho
+    v_square = v1^2 + v2^2
+    p = pressure(u, equations)
+    s = log(p) - equations.gamma * log(rho)
+    rho_p = rho / p
 
-  w1 = (equations.gamma - s) / (equations.gamma-1) - 0.5 * rho_p * v_square
-  w2 = rho_p * v1
-  w3 = rho_p * v2
-  w4 = -rho_p
-  w5 = rho_p * rho_qv / rho
-  w6 = rho_p * rho_qc / rho
+    w1 = (equations.gamma - s) / (equations.gamma - 1) - 0.5 * rho_p * v_square
+    w2 = rho_p * v1
+    w3 = rho_p * v2
+    w4 = -rho_p
+    w5 = rho_p * rho_qv / rho
+    w6 = rho_p * rho_qc / rho
 
     return SVector(w1, w2, w3, w4, w5, w6)
 end
 
 # Convert primitive to conservative variables.
-@inline function prim2cons(prim, equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
+@inline function prim2cons(prim,
+                           equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
     rho, v1, v2, p, qv, ql = prim
     rho_v1 = rho * v1
     rho_v2 = rho * v2
@@ -391,32 +400,30 @@ end
     return SVector(rho, rho_v1, rho_v2, rho_theta, rho_qv, rho_ql)
 end
 
-
-@inline function density(u, equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
+@inline function density(u,
+                         equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
     rho = u[1]
     return rho
 end
 
-@inline function density_dry(u, equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
+@inline function density_dry(u,
+                             equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
     rho_qd = u[1] - (u[5] + u[6])
     return rho_qd
 end
 
-@inline function density_vapor(u, equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
+@inline function density_vapor(u,
+                               equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
     rho_qv = u[5]
     return rho_qv
 end
 
-
-
-
-
 # Calculate kinetic energy for a conservative state `cons`.
-@inline function energy_kinetic(u, equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
+@inline function energy_kinetic(u,
+                                equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
     rho, rho_v1, rho_v2, rho_theta, rho_qv, rho_ql = u
     return (rho_v1^2 + rho_v2^2) / (2 * rho)
 end
-
 
 @inline function max_abs_speed_naive(u_ll, u_rr, orientation::Integer,
                                      equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
@@ -469,7 +476,8 @@ end
 end
 
 # Adjusted version of lambda_max from compressible euler.
-@inline function max_abs_speeds(u, equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
+@inline function max_abs_speeds(u,
+                                equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
     @unpack c_pd, c_pv, c_pl, c_vd, c_vv = equations
     rho, v1, v2, p, qv, ql = cons2prim(u, equations)
     qd = 1 - qv - ql
@@ -480,7 +488,8 @@ end
     return (abs(v1) + c, abs(v2) + c)
 end
 
-@inline function cons2aeqpot(u, equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
+@inline function cons2aeqpot(u,
+                             equations::CompressibleMoistEulerPotentialTemperatureEquations2D)
     @unpack c_pd, c_pv, c_pl, R_d, R_v, p_0, L_00 = equations
     rho, rho_v1, rho_v2, rho_theta, rho_qv, rho_ql = u
     rho_d = rho - rho_qv - rho_ql
@@ -513,16 +522,23 @@ end
     return SVector(pot1, pot2, pot3, pot4, pot5, pot6)
 end
 
-varnames(::typeof(cons2aeqpot), ::CompressibleMoistEulerPotentialTemperatureEquations2D) = ("rho", "v1",
-                                                                        "v2",
-                                                                        "aeqpottemp",
-                                                                        "rv", "rt")
+varnames(::typeof(cons2aeqpot), ::CompressibleMoistEulerPotentialTemperatureEquations2D) = ("rho",
+                                                                                            "v1",
+                                                                                            "v2",
+                                                                                            "aeqpottemp",
+                                                                                            "rv",
+                                                                                            "rt")
 
-
-varnames(::typeof(cons2cons), ::CompressibleMoistEulerPotentialTemperatureEquations2D) = ("rho", "rho_v1",
-                                                                      "rho_v2", "rho_theta",
-                                                                      "rho_qv",
-                                                                      "rho_ql")
-varnames(::typeof(cons2prim), ::CompressibleMoistEulerPotentialTemperatureEquations2D) = ("rho", "v1", "v2",
-                                                                      "p", "qv", "ql")
+varnames(::typeof(cons2cons), ::CompressibleMoistEulerPotentialTemperatureEquations2D) = ("rho",
+                                                                                          "rho_v1",
+                                                                                          "rho_v2",
+                                                                                          "rho_theta",
+                                                                                          "rho_qv",
+                                                                                          "rho_ql")
+varnames(::typeof(cons2prim), ::CompressibleMoistEulerPotentialTemperatureEquations2D) = ("rho",
+                                                                                          "v1",
+                                                                                          "v2",
+                                                                                          "p",
+                                                                                          "qv",
+                                                                                          "ql")
 end # @muladd
