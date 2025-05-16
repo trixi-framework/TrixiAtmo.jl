@@ -1,4 +1,4 @@
-using OrdinaryDiffEq
+using OrdinaryDiffEqSSPRK
 using Trixi
 using TrixiAtmo
 using TrixiAtmo: source_terms_rainy, saturation_residual,
@@ -248,7 +248,8 @@ solver = DGSEM(basis, surface_flux, volume_integral)
 initial_condition = initial_condition_bubble_rainy
 source_terms      = source_terms_rainy
 
-mesh = TreeMesh(coordinates_min, coordinates_max, initial_refinement_level = 6, periodicity = (true, false), n_cells_max = 1_000_000)
+initial_refinement_level = 6
+mesh = TreeMesh(coordinates_min, coordinates_max, initial_refinement_level = initial_refinement_level, periodicity = (true, false), n_cells_max = 1_000_000)
 
 semi = SemidiscretizationHyperbolicParabolic(mesh, (equations, equations_parabolic), initial_condition, solver; source_terms,
                                              boundary_conditions = (boundary_conditions, boundary_conditions_parabolic))
