@@ -44,7 +44,6 @@ initial_condition_transformed = transform_initial_condition(initial_condition, e
 # specify the bottom topography, which is the same as for the standard isolated mountain 
 # case.
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver,
-                                    metric_terms = MetricTermsCovariantSphere(),
                                     source_terms = source_terms_geometric_coriolis,
                                     auxiliary_field = bottom_topography_isolated_mountain)
 

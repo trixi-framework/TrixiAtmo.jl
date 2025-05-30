@@ -41,7 +41,6 @@ initial_condition_transformed = transform_initial_condition(initial_condition, e
 # discretization. Here, we pass in the additional keyword argument "auxiliary_field" to 
 # specify the bottom topography.
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver,
-                                    metric_terms = MetricTermsCovariantSphere(),
                                     source_terms = source_terms_geometric_coriolis,
                                     auxiliary_field = bottom_topography_unsteady_solid_body_rotation)
 
