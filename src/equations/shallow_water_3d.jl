@@ -37,7 +37,7 @@ This affects the implementation and use of these equations in various ways:
 * The flux values corresponding to the bottom topography must be zero.
 * The bottom topography values must be included when defining initial conditions, boundary conditions or
   source terms.
-* [`AnalysisCallback`](https://trixi-framework.github.io/Trixi.jl/stable/reference-trixi/#Trixi.AnalysisCallback) analyzes this variable.
+* [`AnalysisCallback`](https://trixi-framework.github.io/TrixiDocumentation/stable/reference-trixi/#Trixi.AnalysisCallback) analyzes this variable.
 * Trixi.jl's visualization tools will visualize the bottom topography by default.
 
 References:
@@ -115,8 +115,9 @@ end
 end
 
 """
-    flux_wintermeyer_etal(u_ll, u_rr, orientation_or_normal_direction,
-                          equations::ShallowWaterEquations2D)
+    flux_wintermeyer_etal(u_ll, u_rr,
+                          normal_direction::AbstractVector,
+                          equations::ShallowWaterEquations3D)
 
 Total energy conservative (mathematical entropy for shallow water equations) split form.
 When the bottom topography is nonzero this scheme will be well-balanced when used as a `volume_flux`.
@@ -160,8 +161,9 @@ Further details are available in Theorem 1 of the paper:
 end
 
 """
-    flux_fjordholm_etal(u_ll, u_rr, orientation,
-                        equations::ShallowWaterEquations1D)
+    flux_fjordholm_etal(u_ll, u_rr,
+                        normal_direction::AbstractVector,
+                        equations::ShallowWaterEquations3D)
 
 Total energy conservative (mathematical entropy for shallow water equations). When the bottom topography
 is nonzero this should only be used as a surface flux otherwise the scheme will not be well-balanced.
