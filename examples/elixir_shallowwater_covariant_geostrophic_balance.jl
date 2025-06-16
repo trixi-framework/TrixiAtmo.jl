@@ -1,5 +1,6 @@
 ###############################################################################
-# DGSEM for the shallow water equations in covariant form on the cubed sphere
+# Standard DGSEM for the shallow water equations in covariant form on the cubed 
+# sphere: Steady geostrophic balance (Case 2, Williamson et al., 1992)
 ###############################################################################
 
 using OrdinaryDiffEq, Trixi, TrixiAtmo

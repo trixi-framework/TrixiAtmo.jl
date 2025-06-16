@@ -1,6 +1,7 @@
 ###############################################################################
-# Entropy-conservative DGSEM for the shallow water equations in covariant form 
-# on the cubed sphere
+# Entropy-stable DGSEM for the shallow water equations in covariant form on the 
+# cubed sphere: Zonal flow over an isolated mountain (Case 5, Williamson et 
+# al., 1992)
 ###############################################################################
 
 using OrdinaryDiffEq, Trixi, TrixiAtmo
@@ -24,7 +25,8 @@ equations = SplitCovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATI
                                                   EARTH_ROTATION_RATE,
                                                   global_coordinate_system = GlobalCartesianCoordinates())
 
-# Use entropy-conservative two-point fluxes for volume terms, dissipative flux for surface
+# Use entropy-conservative two-point flux for volume terms, dissipative surface flux with 
+# simplification for continuous bottom topography
 volume_flux = (flux_ec, flux_nonconservative_ec)
 surface_flux = (FluxPlusDissipation(flux_ec, DissipationLocalLaxFriedrichs()),
                 flux_nonconservative_surface_simplified)
@@ -36,9 +38,9 @@ solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
 # Transform the initial condition to the proper set of conservative variables
 initial_condition_transformed = transform_initial_condition(initial_condition, equations)
 
-# A semidiscretization collects data structures and functions for the spatial discretization
-# Here, we pass in the additional keyword argument "auxiliary_field" to specify the bottom 
-# topography.
+# A semidiscretization collects data structures and functions for the spatial 
+# discretization. Here, we pass in the additional keyword argument "auxiliary_field" to 
+# specify the bottom topography.
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver,
                                     source_terms = source_terms_geometric_coriolis,
                                     auxiliary_field = bottom_topography_isolated_mountain)

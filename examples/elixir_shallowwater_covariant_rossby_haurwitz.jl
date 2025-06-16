@@ -1,6 +1,6 @@
 ###############################################################################
-# Entropy-conservative DGSEM for the shallow water equations in covariant form 
-# on the cubed sphere
+# Entropy-stable DGSEM for the shallow water equations in covariant form on the 
+# cubed sphere: Rossby-Haurwitz wave (Case 6, Williamson et al., 1992)
 ###############################################################################
 
 using OrdinaryDiffEq, Trixi, TrixiAtmo
@@ -24,7 +24,12 @@ equations = SplitCovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATI
                                                   EARTH_ROTATION_RATE,
                                                   global_coordinate_system = GlobalCartesianCoordinates())
 
+<<<<<<< HEAD
 # Use entropy-conservative two-point fluxes for volume terms, dissipative flux for surface
+=======
+# Use entropy-conservative two-point flux for volume terms, dissipative surface flux with 
+# simplification for continuous (zero) bottom topography
+>>>>>>> main
 volume_flux = (flux_ec, flux_nonconservative_ec)
 surface_flux = (FluxPlusDissipation(flux_ec, DissipationLocalLaxFriedrichs()),
                 flux_nonconservative_surface_simplified)
