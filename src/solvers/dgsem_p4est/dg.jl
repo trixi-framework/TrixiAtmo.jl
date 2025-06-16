@@ -3,7 +3,7 @@
 # the RHS etc, and is modified here to use custom metric terms as well as provide the 
 # option to # use auxiliary variables. 
 function Trixi.create_cache(mesh::P4estMesh, equations::AbstractEquations, dg::DG, ::Any,
-                            metric_terms, auxiliary_field,
+                            metric_terms, aux_field,
                             ::Type{uEltype}) where {uEltype <: Real}
     # Make sure to balance the `p4est` before creating any containers
     # in case someone has tampered with the `p4est` after creating the mesh
@@ -23,23 +23,23 @@ function Trixi.create_cache(mesh::P4estMesh, equations::AbstractEquations, dg::D
 
     # Add specialized parts of the cache for auxiliary node variables
     cache = (; cache...,
-             create_cache_auxiliary(mesh, equations,
+             create_cache_aux(mesh, equations,
                                     have_aux_node_vars(equations),
-                                    dg, elements, interfaces, auxiliary_field)...)
+                                    dg, elements, interfaces, aux_field)...)
     return cache
 end
 
 # If there are auxiliary variables, initialize them
-function create_cache_auxiliary(mesh, equations, have_aux_node_vars::Trixi.True, dg, elements,
-                                interfaces, auxiliary_field)
-    auxiliary_variables = init_auxiliary_node_variables(mesh, equations, dg, elements,
-                                                        interfaces, auxiliary_field)
-    return (; auxiliary_variables)
+function create_cache_aux(mesh, equations, have_aux_node_vars::Trixi.True, dg, elements,
+                                interfaces, aux_field)
+    aux_vars = init_aux_node_variables(mesh, equations, dg, elements,
+                                                        interfaces, aux_field)
+    return (; aux_vars)
 end
 
 # Do nothing if there are no auxiliary variables
-function create_cache_auxiliary(mesh, equations, have_aux_node_vars::Trixi.False, dg, elements,
-                                interfaces, auxiliary_field)
+function create_cache_aux(mesh, equations, have_aux_node_vars::Trixi.False, dg, elements,
+                                interfaces, aux_field)
     return NamedTuple()
 end
 
