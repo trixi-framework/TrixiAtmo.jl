@@ -9,9 +9,9 @@ equations = VariableCoefficientAdvectionEquation2D()
 # initial condition, round density cloud is defined
 @inline function initial_condition_schaer_mountain_cloud(x, t, equations)
     RealT = eltype(x)
-    x_0, z_0 = -50000.0f0, 9000.0f0
+    x_0, z_0 = -50000.0f0, 9000.0f0 #center location of the cloud at t=0
     rho_0 = 1.0f0
-    A_x, A_z = 25000.0f0, 3000.0f0
+    A_x, A_z = 25000.0f0, 3000.0f0 #halfwidths in both directions
 
     r = sqrt(((x[1] - x_0) / A_x)^2 + ((x[2] - z_0) / A_z)^2)
 
@@ -24,7 +24,7 @@ equations = VariableCoefficientAdvectionEquation2D()
     return SVector(rho)
 end
 
-# wind profile in horizontal direktion
+# wind profile in horizontal direction
 @inline function velocity_schaer_mountain(x)
     RealT = eltype(x)
     u_0 = 10.0f0
@@ -40,6 +40,13 @@ end
     end
     return SVector(u_0 *u_1, 0.0f0)
 end
+
+# constant wind profile for testing 
+@inline function velocity_schaer_mountain_constant(x)
+    u_0 = 10.0f0
+    return SVector(u_0, 0.0f0)
+end
+
 
 ##############################################################################################
 # semidiscretization
@@ -78,7 +85,7 @@ semi = SemidiscretizationHyperbolic(mesh,
                                     solver,
                                     #source_terms = source_term,
                                     boundary_conditions = boundary_conditions_dirichlet,
-                                    auxiliary_field = velocity_schaer_mountain)
+                                    auxiliary_field = velocity_schaer_mountain_constant)
 
 ##############################################################################################
 # ODE solvers, callbacks etc.

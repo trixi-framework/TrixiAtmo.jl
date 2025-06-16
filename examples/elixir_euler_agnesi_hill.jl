@@ -29,11 +29,43 @@ function initial_condition_agnesi_hill(x, t,
 end
 
 # Source terms 
+@inline function source_terms_sponge(u, x, t, equations:: CompressibleEulerEquations2D)
+    rho, rho_v1, rho_v2, rho_e = u
+
+    v1 = rho_v1 / rho
+    v2 = rho_v2 / rho
+    z = x[2]
+    
+    H = 30000.0
+
+    # relaxed background velocity
+    vr1, vr2 = (10.0, 0.0)
+    # damping threshold
+    z_s = 15000.0
+    # boundary top
+    z_top = 21000.0
+    # positive even power with default value 2
+    gamma = 2.0
+    # relaxation coefficient > 0
+    alpha = 0.5
+
+    tau_s = zero(eltype(u))
+    if z > z_s
+        tau_s = alpha * sin(0.5 * (z - z_s) * inv(z_top - z_s))^(gamma)
+    end
+
+    return SVector(zero(eltype(u)),
+                   -tau_s * rho * (v1 - vr1),
+                   -tau_s * rho * (v2 - vr2),
+                   zero(eltype(u)))
+end
+
+
 @inline function source(u, x, t, equations::CompressibleEulerEquations2D)
-    return (source_terms_rayleigh_sponge(u, x, t,
+    return (source_terms_sponge(u, x, t,
                                                        equations::CompressibleEulerEquations2D) +
             source_terms_gravity(u, equations::CompressibleEulerEquations2D))
-end #needs slightly different sponge term for the upper boundary
+end #needs different sponge term for the upper boundary
 
 ###############################################################################
 #P4estMesh 
@@ -135,8 +167,8 @@ save_solution = SaveSolutionCallback(interval = analysis_interval,
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,
                         alive_callback,
-                        save_solution)
-                        #stepsize_callback)
+                        save_solution,
+                        stepsize_callback)
 
 ###############################################################################
 # run the simulation
