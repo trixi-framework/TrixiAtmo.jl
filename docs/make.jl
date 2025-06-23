@@ -16,7 +16,42 @@ links = InterLinks("Trixi" => ("https://trixi-framework.github.io/Trixi.jl/stabl
 DocMeta.setdocmeta!(TrixiAtmo, :DocTestSetup, :(using TrixiAtmo);
                     recursive = true)
 
-# Copy list of authors to not need to synchronize it manually.
+# Copy some files from the repository root directory to the docs and modify them
+# as necessary
+# Based on: https://github.com/ranocha/SummationByPartsOperators.jl/blob/0206a74140d5c6eb9921ca5021cb7bf2da1a306d/docs/make.jl#L27-L41
+open(joinpath(@__DIR__, "src", "code_of_conduct.md"), "w") do io
+    # Point to source license file
+    println(io,
+            """
+            ```@meta
+            EditURL = "https://github.com/trixi-framework/Trixi.jl/blob/main/CODE_OF_CONDUCT.md"
+            ```
+            """)
+    # Write the modified contents
+    println(io, "# [Code of Conduct](@id code-of-conduct)")
+    println(io, "")
+    for line in eachline(joinpath(dirname(@__DIR__), "CODE_OF_CONDUCT.md"))
+        line = replace(line, "[AUTHORS.md](AUTHORS.md)" => "[Authors](@ref trixi_atmo_authors)")
+        println(io, "> ", line)
+    end
+end
+
+open(joinpath(@__DIR__, "src", "contributing.md"), "w") do io
+    # Point to source license file
+    println(io,
+            """
+            ```@meta
+            EditURL = "https://github.com/trixi-framework/Trixi.jl/blob/main/CONTRIBUTING.md"
+            ```
+            """)
+    # Write the modified contents
+    for line in eachline(joinpath(dirname(@__DIR__), "CONTRIBUTING.md"))
+        line = replace(line, "[LICENSE.md](LICENSE.md)" => "[License](@ref)")
+        line = replace(line, "[AUTHORS.md](AUTHORS.md)" => "[Authors](@ref trixi_atmo_authors)")
+        println(io, line)
+    end
+end
+
 # Since the authors header exists twice we create a unique identifier for the docs section.
 authors_text = read(joinpath(dirname(@__DIR__), "AUTHORS.md"), String)
 authors_text = replace(authors_text,
@@ -24,26 +59,12 @@ authors_text = replace(authors_text,
                        "# Authors" => "# [Authors](@id trixi_atmo_authors)")
 write(joinpath(@__DIR__, "src", "authors.md"), authors_text)
 
-# Copy contributing information to not need to synchronize it manually
-contributing_text = read(joinpath(dirname(@__DIR__), "CONTRIBUTING.md"), String)
-contributing_text = replace(contributing_text,
-                            "[LICENSE.md](LICENSE.md)" => "[License](@ref)",
-                            "[AUTHORS.md](AUTHORS.md)" => "[Authors](@ref trixi_atmo_authors)")
-write(joinpath(@__DIR__, "src", "contributing.md"), contributing_text)
-
-# Copy code of conduct to not need to synchronize it manually
-code_of_conduct_text = read(joinpath(dirname(@__DIR__), "CODE_OF_CONDUCT.md"), String)
-code_of_conduct_text = replace(code_of_conduct_text,
-                               "[AUTHORS.md](AUTHORS.md)" => "[Authors](@ref trixi_atmo_authors)")
-write(joinpath(@__DIR__, "src", "code_of_conduct.md"), code_of_conduct_text)
-
 # Copy license not need to synchronize it manually
-open(joinpath(@__DIR__, "src", "license.md"), "w") do license_file
+open(joinpath(@__DIR__, "src", "license.md"), "w") do io
     write(license_file, "# License\n\n")
     for line in eachline(joinpath(dirname(@__DIR__), "LICENSE.md"))
-        line_replaced = replace(line,
-            "[AUTHORS.md](AUTHORS.md)" => "[Authors](@ref trixi_atmo_authors)")
-        write(license_file, "> " * line_replaced * "\n")
+        line = replace(line, "[AUTHORS.md](AUTHORS.md)" => "[Authors](@ref trixi_atmo_authors)")
+        write(io, "> " * line_replaced * "\n")
     end
 end
 
@@ -55,11 +76,10 @@ readme_text = replace(readme_text,
                       "<p" => "```@raw html\n<p",
                       "p>" => "p>\n```",
                       r"\[comment\].*\n" => "")    # remove comments
-write(joinpath(@__DIR__, "src", "home.md"), readme_text)
+write(joinpath(@__DIR__, "src", "index.md"), readme_text)
 
 makedocs(;
          modules = [TrixiAtmo],
-         authors = "Benedict Geihe <bgeihe@uni-koeln.de>, Tristan Montoya <montoya.tristan@gmail.com, Hendrik Ranocha <hendrik.ranocha@uni-mainz.de>, Andrés Rueda-Ramírez <am.rueda@upm.es>, Michael Schlottke-Lakemper <michael@sloede.com>",
          repo = Remotes.GitHub("trixi-framework", "TrixiAtmo.jl"),
          sitename = "TrixiAtmo.jl",
          format = Documenter.HTML(;
