@@ -37,6 +37,16 @@ code_of_conduct_text = replace(code_of_conduct_text,
                                "[AUTHORS.md](AUTHORS.md)" => "[Authors](@ref trixi_atmo_authors)")
 write(joinpath(@__DIR__, "src", "code_of_conduct.md"), code_of_conduct_text)
 
+# Copy license not need to synchronize it manually
+open(joinpath(@__DIR__, "src", "license.md"), "w") do license_file
+    write(license_file, "# License\n\n")
+    for line in eachline(joinpath(dirname(@__DIR__), "LICENSE.md"))
+        line_replaced = replace(line,
+            "[AUTHORS.md](AUTHORS.md)" => "[Authors](@ref trixi_atmo_authors)")
+        write(license_file, "> " * line_replaced * "\n")
+    end
+end
+
 # Copy contents form README to the starting page to not need to synchronize it manually
 readme_text = read(joinpath(dirname(@__DIR__), "README.md"), String)
 readme_text = replace(readme_text,
