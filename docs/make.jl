@@ -8,13 +8,13 @@ if (get(ENV, "CI", nothing) != "true") &&
     push!(LOAD_PATH, dirname(@__DIR__))
 end
 
-# Define module-wide setups such that the respective modules are available in doctests
-DocMeta.setdocmeta!(TrixiAtmo, :DocTestSetup, :(using TrixiAtmo);
-                    recursive = true)
-
 # Provide external links to the Trixi.jl docs (project root and inventory file)
 links = InterLinks("Trixi" => ("https://trixi-framework.github.io/Trixi.jl/stable/",
                                "https://trixi-framework.github.io/Trixi.jl/stable/objects.inv"))
+
+# Define module-wide setups such that the respective modules are available in doctests
+DocMeta.setdocmeta!(TrixiAtmo, :DocTestSetup, :(using TrixiAtmo);
+                    recursive = true)
 
 # Copy list of authors to not need to synchronize it manually.
 # Since the authors header exists twice we create a unique identifier for the docs section.
@@ -47,7 +47,7 @@ open(joinpath(@__DIR__, "src", "license.md"), "w") do license_file
     end
 end
 
-# Copy contents form README to the starting page to not need to synchronize it manually
+# Copy contents from README to the starting page to not need to synchronize it manually
 readme_text = read(joinpath(dirname(@__DIR__), "README.md"), String)
 readme_text = replace(readme_text,
                       "[LICENSE.md](LICENSE.md)" => "[License](@ref)",
