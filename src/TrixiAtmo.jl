@@ -1,5 +1,5 @@
 """
-    🌍 TrixiAtmo 🌍
+    TrixiAtmo
 
 **TrixiAtmo.jl** is a simulation package for atmospheric models based on
 [Trixi.jl](https://github.com/trixi-framework/Trixi.jl)

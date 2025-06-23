@@ -1,20 +1,16 @@
 # 🌎 TrixiAtmo.jl 🌍
 
-<!--
-[![Docs-stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://trixi-framework.github.io/TrixiAtmo.jl/stable)
--->
+[comment]: <> ([![Docs-stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://trixi-framework.github.io/TrixiAtmo.jl/stable))
 [![Docs-dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://trixi-framework.github.io/TrixiAtmo.jl/dev)
 [![Slack](https://img.shields.io/badge/chat-slack-e01e5a)](https://join.slack.com/t/trixi-framework/shared_invite/zt-sgkc6ppw-6OXJqZAD5SPjBYqLd8MU~g)
 [![Build Status](https://github.com/trixi-framework/TrixiAtmo.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/trixi-framework/TrixiAtmo.jl/actions?query=workflow%3ACI)
 [![Codecov](https://codecov.io/gh/trixi-framework/TrixiAtmo.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/trixi-framework/TrixiAtmo.jl)
 [![Coveralls](https://coveralls.io/repos/github/trixi-framework/TrixiAtmo.jl/badge.svg?branch=main)](https://coveralls.io/github/trixi-framework/TrixiAtmo.jl?branch=main)
 [![License: MIT](https://img.shields.io/badge/License-MIT-success.svg)](https://opensource.org/licenses/MIT)
-<!--
-[![DOI](https://zenodo.org/badge/DOI/TODO.svg)](https://doi.org/TODO)
--->
+[comment]: <> ([![DOI](https://zenodo.org/badge/DOI/TODO.svg)](https://doi.org/TODO))
 
 <p align="center">
-  <img width="300px" src="https://trixi-framework.github.io/assets/logo_atmo.png">
+  <img width="70%" src="https://trixi-framework.github.io/assets/logo_atmo.png">
 </p>
 
 **Note: This repository is still in its alpha stage and anything might change at
@@ -88,7 +84,7 @@ or [create an issue](https://github.com/trixi-framework/TrixiAtmo.jl/issues/new)
 ## Acknowledgments
 <p align="center">
   <!-- BMBF -->
-  <img align="middle" src="https://user-images.githubusercontent.com/3637659/231436391-b28a76a4-f027-40f9-bd28-14e3a2f3e16a.png" height="100" />
+  <img width="100px" src="https://user-images.githubusercontent.com/3637659/231436391-b28a76a4-f027-40f9-bd28-14e3a2f3e16a.png"/>
 </p>
 
 This project has benefited from funding from the 
