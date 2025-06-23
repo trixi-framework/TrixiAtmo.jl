@@ -31,7 +31,8 @@ open(joinpath(@__DIR__, "src", "code_of_conduct.md"), "w") do io
     println(io, "# [Code of Conduct](@id code-of-conduct)")
     println(io, "")
     for line in eachline(joinpath(dirname(@__DIR__), "CODE_OF_CONDUCT.md"))
-        line = replace(line, "[AUTHORS.md](AUTHORS.md)" => "[Authors](@ref trixi_atmo_authors)")
+        line = replace(line,
+                       "[AUTHORS.md](AUTHORS.md)" => "[Authors](@ref trixi_atmo_authors)")
         println(io, "> ", line)
     end
 end
@@ -47,7 +48,8 @@ open(joinpath(@__DIR__, "src", "contributing.md"), "w") do io
     # Write the modified contents
     for line in eachline(joinpath(dirname(@__DIR__), "CONTRIBUTING.md"))
         line = replace(line, "[LICENSE.md](LICENSE.md)" => "[License](@ref)")
-        line = replace(line, "[AUTHORS.md](AUTHORS.md)" => "[Authors](@ref trixi_atmo_authors)")
+        line = replace(line,
+                       "[AUTHORS.md](AUTHORS.md)" => "[Authors](@ref trixi_atmo_authors)")
         println(io, line)
     end
 end
@@ -59,11 +61,11 @@ authors_text = replace(authors_text,
                        "# Authors" => "# [Authors](@id trixi_atmo_authors)")
 write(joinpath(@__DIR__, "src", "authors.md"), authors_text)
 
-# Copy license not need to synchronize it manually
 open(joinpath(@__DIR__, "src", "license.md"), "w") do io
-    write(license_file, "# License\n\n")
+    write(io, "# License\n\n")
     for line in eachline(joinpath(dirname(@__DIR__), "LICENSE.md"))
-        line = replace(line, "[AUTHORS.md](AUTHORS.md)" => "[Authors](@ref trixi_atmo_authors)")
+        line = replace(line,
+                       "[AUTHORS.md](AUTHORS.md)" => "[Authors](@ref trixi_atmo_authors)")
         write(io, "> " * line_replaced * "\n")
     end
 end
@@ -88,11 +90,11 @@ makedocs(;
                                   edit_link = "main",
                                   assets = String[],),
          pages = ["Home" => "index.md",
-                  "Reference" => "reference.md",
-                  "Authors" => "authors.md",
-                  "Contributing" => "contributing.md",
-                  "Code of Conduct" => "code_of_conduct.md",
-                  "License" => "license.md"],
+             "Reference" => "reference.md",
+             "Authors" => "authors.md",
+             "Contributing" => "contributing.md",
+             "Code of Conduct" => "code_of_conduct.md",
+             "License" => "license.md"],
          plugins = [links],)
 
 deploydocs(;
