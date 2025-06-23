@@ -66,7 +66,7 @@ open(joinpath(@__DIR__, "src", "license.md"), "w") do io
     for line in eachline(joinpath(dirname(@__DIR__), "LICENSE.md"))
         line = replace(line,
                        "[AUTHORS.md](AUTHORS.md)" => "[Authors](@ref trixi_atmo_authors)")
-        write(io, "> " * line_replaced * "\n")
+        write(io, "> " * line * "\n")
     end
 end
 
