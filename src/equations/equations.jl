@@ -3,7 +3,7 @@
 
 using Trixi: AbstractEquations
 
-"""
+@doc raw"""
     AbstractCovariantEquations{NDIMS, 
                                NDIMS_AMBIENT, 
                                GlobalCoordinateSystem,
@@ -69,7 +69,7 @@ dispatching on the return type.
 """
 @inline have_aux_node_vars(::AbstractEquations) = False()
 
-"""
+@doc raw"""
     transform_initial_condition(initial_condition, equations)
 
 Takes in a function with the signature `initial_condition(x, t, equations)` which returns 

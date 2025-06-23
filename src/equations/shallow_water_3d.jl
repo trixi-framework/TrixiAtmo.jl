@@ -1,7 +1,7 @@
 @muladd begin
 #! format: noindent
 
-"""
+@doc raw"""
     ShallowWaterEquations3D(; gravity, H0 = 0)
 
 Shallow water equations (SWE) in three space dimensions in conservation form (with constant bottom topography). 

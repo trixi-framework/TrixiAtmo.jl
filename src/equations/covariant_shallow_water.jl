@@ -1,7 +1,7 @@
 @muladd begin
 #! format: noindent
 
-"""
+@doc raw"""
     CovariantShallowWaterEquations2D{GlobalCoordinateSystem} <:  
         AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 3}
 

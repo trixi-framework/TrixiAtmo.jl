@@ -7,7 +7,7 @@ const EARTH_GRAVITATIONAL_ACCELERATION = 9.80616  # m/s²
 const EARTH_ROTATION_RATE = 7.292e-5  # rad/s
 const SECONDS_PER_DAY = 8.64e4
 
-"""
+@doc raw"""
     initial_condition_gaussian(x, t, equations)
 
 This Gaussian bell case is a smooth initial condition suitable for testing the convergence 
@@ -67,7 +67,7 @@ This problem is adapted from Case 1 of the test suite described in the following
     return cartesian2global(SVector(h, vx, vy, vz, 0.0f0), x, equations)
 end
 
-"""
+@doc raw"""
     initial_condition_geostrophic_balance(x, t, equations)
 
 Steady geostrophic balance for the spherical shallow water equations, corresponding to a 
@@ -106,7 +106,7 @@ test suite described in the following paper:
     return spherical2global(SVector(h, vlon, vlat, zero(RealT)), x, equations)
 end
 
-"""
+@doc raw"""
     initial_condition_rossby_haurwitz(x, t, equations)
 
 Rossby-Haurwitz wave case for the spherical shallow water equations, where the zonal and 
