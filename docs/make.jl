@@ -9,8 +9,8 @@ if (get(ENV, "CI", nothing) != "true") &&
 end
 
 # Provide external links to the Trixi.jl docs (project root and inventory file)
-links = InterLinks("Trixi" => ("https://trixi-framework.github.io/Trixi.jl/stable/",
-                               "https://trixi-framework.github.io/Trixi.jl/stable/objects.inv"))
+links = InterLinks("Trixi" => ("https://trixi-framework.github.io/TrixiDocumentation/stable/",
+                               "https://trixi-framework.github.io/TrixiDocumentation/stable/objects.inv"))
 
 # Define module-wide setups such that the respective modules are available in doctests
 DocMeta.setdocmeta!(TrixiAtmo, :DocTestSetup, :(using TrixiAtmo);

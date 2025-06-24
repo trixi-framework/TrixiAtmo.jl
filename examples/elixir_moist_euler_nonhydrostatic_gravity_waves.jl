@@ -128,6 +128,4 @@ callbacks = CallbackSet(summary_callback,
 sol = solve(ode, SSPRK33(),
             maxiters = 1.0e7,
             dt = 1, # solve needs some value here but it will be overwritten by the stepsize_callback
-            save_everystep = false, callback = callbacks);
-
-summary_callback() # print the timer summary
+            save_everystep = false, callback = callbacks)
