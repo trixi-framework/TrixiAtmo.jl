@@ -22,7 +22,7 @@ using QuadGK: quadgk
 using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
 
 @reexport using StaticArrays: SVector, SMatrix
-@reexport import Trixi: waterheight
+@reexport using Trixi: waterheight
 
 include("auxiliary/auxiliary.jl")
 include("equations/equations.jl")
@@ -31,12 +31,16 @@ include("semidiscretization/semidiscretization.jl")
 include("solvers/solvers.jl")
 include("semidiscretization/semidiscretization_hyperbolic_2d_manifold_in_3d.jl")
 include("callbacks_step/callbacks_step.jl")
+include("callbacks_stage/callbacks_stage.jl")
 
-export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
+export CompressibleMoistEulerEquations2D,
+       CompressibleRainyEulerEquations2D,
        CovariantLinearAdvectionEquation2D, CovariantShallowWaterEquations2D,
-       SplitCovariantShallowWaterEquations2D
+       ShallowWaterEquations3D, SplitCovariantShallowWaterEquations2D
 
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
+
+export NonlinearSolveDG
 
 export flux_chandrashekar, FluxLMARS
 
