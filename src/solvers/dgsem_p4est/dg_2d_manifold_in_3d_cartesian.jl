@@ -20,8 +20,7 @@ function Trixi.rhs!(du, u, t,
 
     # Prolong solution to interfaces
     Trixi.@trixi_timeit Trixi.timer() "prolong2interfaces" begin
-        Trixi.prolong2interfaces!(cache, u, mesh, equations,
-                                  dg.surface_integral, dg)
+        Trixi.prolong2interfaces!(cache, u, mesh, equations, dg)
     end
 
     # Calculate interface fluxes
