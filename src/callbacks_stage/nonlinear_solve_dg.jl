@@ -11,14 +11,14 @@ struct NonlinearSolveDG
 end
 
 function (limiter!::NonlinearSolveDG)(u_ode, integrator,
-                                        semi::AbstractSemidiscretization, t)
+                                      semi::AbstractSemidiscretization, t)
     u = wrap_array(u_ode, semi)
 
     @trixi_timeit timer() "nonlinear system solver" begin
         nonlinear_solve_dg_2d!(u, limiter!.residual, limiter!.jacobian,
-                                limiter!.variables_index_vector,
-                                limiter!.tolerance, semi.equations, semi.solver,
-                                semi.cache, semi.mesh)
+                               limiter!.variables_index_vector,
+                               limiter!.tolerance, semi.equations, semi.solver,
+                               semi.cache, semi.mesh)
     end
 end
 end

@@ -7,7 +7,43 @@ include("test_trixiatmo.jl")
 
 EXAMPLES_DIR = joinpath(TrixiAtmo.examples_dir(), "moist_euler")
 
-@trixiatmo_testset "elixir_rainy_euler_rainy_bubble_diffusion" begin
+@trixiatmo_testset "elixir_rainy_euleconvergence_test_rainyr_moist_bubble" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "convergence_test",
+                                 "convergence_test_rainy.jl"),
+                        l2=[
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        linf=[
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0
+                        ])
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    let
+        t = sol.t[end]
+        u_ode = sol.u[end]
+        du_ode = similar(u_ode)
+        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
+    end
+end
+
+@trixiatmo_testset "elixir_rainy_euler_moist_bubble" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "moist_bubble",
                                  "elixir_rainy_euler_moist_bubble.jl"),
@@ -33,8 +69,45 @@ EXAMPLES_DIR = joinpath(TrixiAtmo.examples_dir(), "moist_euler")
                             0.0,
                             0.0
                         ],
-                        cells_per_dimension = (64, 32),
-                        tspan=(0.0, 10.0))
+                        cells_per_dimension=(64, 32),
+                        tspan=(0.0, 100.0))
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    let
+        t = sol.t[end]
+        u_ode = sol.u[end]
+        du_ode = similar(u_ode)
+        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
+    end
+end
+
+@trixiatmo_testset "elixir_rainy_euler_rainy_bubble" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "rainy_bubble",
+                                 "elixir_rainy_euler_rainy_bubble.jl"),
+                        l2=[
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        linf=[
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        tspan=(0.0, 100.0))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let
@@ -72,7 +145,7 @@ end
                             0.0
                         ],
                         initial_refinement_level=3,
-                        tspan=(0.0, 10.0))
+                        tspan=(0.0, 100.0))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let

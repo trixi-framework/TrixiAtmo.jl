@@ -291,10 +291,6 @@ import Trixi: varnames,
         return SVector(rho_dry, rho_moist, rho_rain, rho, rho_inv)
     end
 
-    @inline function rain_density(u, equations::CompressibleRainyEulerEquations2D)
-        return u[3]
-    end
-
     @inline function velocities(u, rho_inv, equations::CompressibleRainyEulerEquations2D)
         return SVector(u[4] * rho_inv, u[5] * rho_inv)
     end
@@ -851,107 +847,6 @@ import Trixi: varnames,
                        f4 + p_interface * normal_direction[1],
                        f5 + p_interface * normal_direction[2],
                        f6, 0.0, 0.0, 0.0)
-    end
-
-    # Adjusted EC flux in a normal direction with R_q=0. This is based on
-    # A. Gouasmi, K. Duraisamy, S. M. Murman, Formulation of Entropy-Stable schemes for the
-    # multicomponent compressible Euler equations, 4 Feb 2020, doi:10.1016/j.cma.2020.112912,
-    # https://arxiv.org/abs/1904.00972 [math.NA].
-    # Adapted from compressible_moist_euler_2d.jl, careful, does NOT work for rain!
-    @inline function flux_chandrashekar(u_ll, u_rr, normal_direction::AbstractVector,
-                                        equations::CompressibleRainyEulerEquations2D)
-        # constants
-        c_l = equations.c_liquid_water
-        c_vd = equations.c_dry_air_const_volume
-        c_vv = equations.c_vapour_const_volume
-        R_d = equations.R_dry_air
-        R_v = equations.R_vapour
-        ref_L = equations.ref_latent_heat_vap_temp
-        R_q = 0.0
-
-        # densities and temperatures
-        rho_dry_ll, rho_moist_ll, rho_rain_ll, rho_ll, rho_inv_ll = densities(u_ll,
-                                                                              equations)
-        rho_dry_rr, rho_moist_rr, rho_rain_rr, rho_rr, rho_inv_rr = densities(u_rr,
-                                                                              equations)
-        rho_vapour_ll, rho_cloud_ll, temperature_ll = cons2nonlinearsystemsol(u_ll,
-                                                                              equations)
-        rho_vapour_rr, rho_cloud_rr, temperature_rr = cons2nonlinearsystemsol(u_rr,
-                                                                              equations)
-
-        # velocities
-        v1_ll, v2_ll = velocities(u_ll, rho_inv_ll, equations)
-        v1_rr, v2_rr = velocities(u_rr, rho_inv_rr, equations)
-        vr_ll = terminal_velocity_rain(rho_moist_ll, rho_rain_ll, equations)
-        vr_rr = terminal_velocity_rain(rho_moist_rr, rho_rain_rr, equations)
-
-        # mean values
-        rho_dry_mean = 0.0
-        rho_vapour_mean = 0.0
-        rho_cloud_mean = 0.0
-        rho_rain_mean = 0.0
-        inv_temperature_mean = 0.0
-
-        if (!(rho_dry_ll == 0.0) && !(rho_dry_rr == 0.0))
-            rho_dry_mean = ln_mean(rho_dry_ll, rho_dry_rr)
-        end
-
-        if (!(rho_vapour_ll == 0.0) && !(rho_vapour_rr == 0.0))
-            rho_vapour_mean = ln_mean(rho_vapour_ll, rho_vapour_rr)
-        end
-
-        if (!(rho_cloud_ll == 0.0) && !(rho_cloud_rr == 0.0))
-            rho_cloud_mean = ln_mean(rho_cloud_ll, rho_cloud_rr)
-        end
-
-        if (!(rho_rain_ll == 0.0) && !(rho_rain_rr == 0.0))
-            rho_rain_mean = ln_mean(rho_rain_ll, rho_rain_rr)
-        end
-
-        if (!(inv(temperature_ll) == 0.0) && !(inv(temperature_rr) == 0.0))
-            inv_temperature_mean = inv_ln_mean(inv(temperature_ll), inv(temperature_rr))
-        end
-
-        v1_avg = 0.5 * (v1_ll + v1_rr)
-        v2_avg = 0.5 * (v2_ll + v2_rr)
-        v1_square_avg = 0.5 * (v1_ll^2 + v1_rr^2)
-        v2_square_avg = 0.5 * (v2_ll^2 + v2_rr^2)
-        rho_dry_avg = 0.5 * (rho_dry_ll + rho_dry_rr)
-        rho_vapour_avg = 0.5 * (rho_vapour_ll + rho_vapour_rr)
-        rho_cloud_avg = 0.5 * (rho_cloud_ll + rho_cloud_rr)
-        rho_rain_avg = 0.5 * (rho_rain_ll + rho_rain_rr)
-        inv_temperature_avg = 0.5 * (inv(temperature_ll) + inv(temperature_rr))
-        v_dot_n_avg = normal_direction[1] * v1_avg + normal_direction[2] * v2_avg
-
-        p_int = inv(inv_temperature_avg) * (R_d * rho_dry_avg + R_v * rho_vapour_avg +
-                 R_q * (rho_cloud_avg + rho_rain_avg))
-        K_avg = 0.5 * (v1_square_avg + v2_square_avg)
-        vr_normal_avg = 0.5 * normal_direction[2] * (vr_ll + vr_rr)
-        rho_rain_avg = 0.5 * (rho_rain_ll + rho_rain_rr)
-
-        # assemble the flux
-        f_dry = rho_dry_mean * v_dot_n_avg
-        f_rain = rho_rain_avg * (v_dot_n_avg - vr_normal_avg)
-        f_vapour = rho_vapour_mean * v_dot_n_avg
-        f_cloud = rho_cloud_mean * v_dot_n_avg
-        f_moist = (rho_vapour_mean + rho_cloud_mean) * v_dot_n_avg
-        f_rhov1 = (f_dry + f_moist + f_rain) * v1_avg + normal_direction[1] * p_int
-        f_rhov2 = (f_dry + f_moist + f_rain) * v2_avg + normal_direction[2] * p_int
-        f_energy = ((c_vd * inv_temperature_mean - K_avg) * f_dry +
-                    (ref_L + c_vv * inv_temperature_mean - K_avg) * f_vapour +
-                    (c_l * inv_temperature_mean - K_avg) * (f_cloud + f_rain) +
-                    v1_avg * f_rhov1 + v2_avg * f_rhov2)
-
-        return SVector(f_dry, f_moist, f_rain, f_rhov1, f_rhov2, f_energy, 0.0, 0.0, 0.0)
-    end
-
-    @inline function flux_chandrashekar(u_ll, u_rr, orientation::Int,
-                                        equations::CompressibleRainyEulerEquations2D)
-        if (orientation == 1)
-            return flux_chandrashekar(u_ll, u_rr, SVector(1, 0), equations)
-        else
-            return flux_chandrashekar(u_ll, u_rr, SVector(0, 1), equations)
-        end
     end
 
     @inline function flux_ec_rain(u_ll, u_rr, normal_direction::AbstractVector,

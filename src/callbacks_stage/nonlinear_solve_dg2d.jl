@@ -32,11 +32,9 @@ function nonlinear_solve_dg_2d!(u, residual, jacobian, variables_index_vector,
                 jac_matrix = jacobian(u_node, guess, equations)
                 guess += -jac_matrix \ res_vector
 
-                #= warnings seem to have allocations...
                 if iteration == max_iterations
-                    @warn "newton method: tolerance not met"
+                    @warn "Newton method: tolerance not met"
                 end
-                =#
             end
 
             # similar to set_node_vars!
