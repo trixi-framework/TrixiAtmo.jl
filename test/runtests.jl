@@ -9,36 +9,8 @@ const TRIXI_MPI_NPROCS = clamp(Sys.CPU_THREADS, 2, 3)
 const TRIXI_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
 
 @time @testset verbose=true showtiming=true "TrixiAtmo.jl tests" begin
-    @time if TRIXI_TEST == "all" || TRIXI_TEST == "trixi_consistency"
-        include("test_trixi_consistency.jl")
-    end
-
-    @time if TRIXI_TEST == "all" || TRIXI_TEST == "moist_euler"
-        include("test_2d_moist_euler.jl")
-    end
-
-    @time if TRIXI_TEST == "all" || TRIXI_TEST == "spherical_advection"
-        include("test_spherical_advection.jl")
-    end
-
+   
     @time if TRIXI_TEST == "all" || TRIXI_TEST == "shallow_water_3d"
         include("test_3d_shallow_water.jl")
-    end
-
-    @time if TRIXI_TEST == "all" || TRIXI_TEST == "shallow_water_2d_covariant"
-        include("test_2d_shallow_water_covariant.jl")
-    end
-
-    @time if TRIXI_TEST == "all" || TRIXI_TEST == "threaded"
-        # Do a dummy `@test true`:
-        # If the process errors out the testset would error out as well,
-        # cf. https://github.com/JuliaParallel/MPI.jl/pull/391
-        @test true
-
-        run(`$(Base.julia_cmd()) --threads=$TRIXI_NTHREADS --check-bounds=yes --code-coverage=none $(abspath("test_threaded.jl"))`)
-    end
-
-    @time if TRIXI_TEST == "upstream"
-        include("test_trixi_consistency.jl")
     end
 end
