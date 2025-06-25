@@ -38,7 +38,7 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_cubed_sphere_shell_EC_projection.jl"),
                         l2=[
-                            7.25131271e-02,
+                            0.0,
                             1.01017589e-01,
                             4.39697415e-02,
                             3.08898940e-02,
