@@ -77,7 +77,7 @@ readme_text = replace(readme_text,
                       "[AUTHORS.md](AUTHORS.md)" => "[Authors](@ref trixi_atmo_authors)",
                       "<p" => "```@raw html\n<p",
                       "p>" => "p>\n```",
-                      r"\[comment\].*\n" => "")    # remove comments
+                      r"<!--.*-->" => "")    # remove comments
 write(joinpath(@__DIR__, "src", "index.md"), readme_text)
 
 makedocs(;
