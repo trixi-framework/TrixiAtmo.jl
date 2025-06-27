@@ -4,11 +4,9 @@ using Trixi: @threaded, get_inverse_jacobian, set_node_vars!, get_node_coords
 #! format: noindent
 
 function nonlinear_solve_dg_2d!(u, residual, jacobian, variables_index_vector,
-                                tolerance,
+                                tolerance, max_iterations,
                                 equations::AbstractCompressibleRainyEulerEquations,
                                 dg::DGSEM, cache, mesh)
-    max_iterations = 20
-
     # iterate over every DGSEM element
     @threaded for element in eachelement(dg, cache)
         # iterate over every node

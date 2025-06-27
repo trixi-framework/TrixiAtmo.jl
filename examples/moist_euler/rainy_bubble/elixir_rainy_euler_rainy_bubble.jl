@@ -268,7 +268,7 @@ callbacks = CallbackSet(summary_callback,
                         save_solution)
 
 stage_limiter! = NonlinearSolveDG(saturation_residual, saturation_residual_jacobian,
-                                  SVector(7, 8, 9), 1e-9)
+                                  SVector(7, 8, 9))
 
 ###############################################################################
 # run the simulation
