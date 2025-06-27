@@ -23,7 +23,7 @@ struct NonlinearSolveDG{RealT <: Real}
     max_iterations         :: Int64
 
     function NonlinearSolveDG(residual, jacobian, variables_index_vector;
-                                          tolerance = 1e-9, max_iterations = 20)
+                              tolerance = 1e-9, max_iterations = 20)
         new{typeof(tolerance)}(residual, jacobian, variables_index_vector,
                                tolerance, max_iterations)
     end
