@@ -1,9 +1,6 @@
 # 🌎 TrixiAtmo.jl 🌍
 
-<!---
-[![Docs-stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://trixi-framework.github.io/TrixiAtmo.jl/stable))
---->
-
+<!-- [![Docs-stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://trixi-framework.github.io/TrixiAtmo.jl/stable)) -->
 [![Docs-dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://trixi-framework.github.io/TrixiAtmo.jl/dev)
 [![Slack](https://img.shields.io/badge/chat-slack-e01e5a)](https://join.slack.com/t/trixi-framework/shared_invite/zt-sgkc6ppw-6OXJqZAD5SPjBYqLd8MU~g)
 [![Build Status](https://github.com/trixi-framework/TrixiAtmo.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/trixi-framework/TrixiAtmo.jl/actions?query=workflow%3ACI)
