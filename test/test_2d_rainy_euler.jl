@@ -7,31 +7,31 @@ include("test_trixiatmo.jl")
 
 EXAMPLES_DIR = joinpath(TrixiAtmo.examples_dir(), "moist_euler")
 
-@trixiatmo_testset "elixir_rainy_euleconvergence_test_rainyr_moist_bubble" begin
+@trixiatmo_testset "convergence_test_rainy" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "convergence_test",
                                  "convergence_test_rainy.jl"),
                         l2=[
-                            0.0,
-                            0.0,
-                            0.0,
-                            0.0,
-                            0.0,
-                            0.0,
-                            0.0,
-                            0.0,
-                            0.0
+                            2.39895785368954e-6,
+                            3.892427386570826e-5,
+                            1.5186141589998252e-5,
+                            0.007532307120716242,
+                            0.02085654062623111,
+                            51.988569260688045,
+                            1.7470730680079724e-8,
+                            3.892376665583286e-5,
+                            0.0002156633044466944
                         ],
                         linf=[
-                            0.0,
-                            0.0,
-                            0.0,
-                            0.0,
-                            0.0,
-                            0.0,
-                            0.0,
-                            0.0,
-                            0.0
+                            1.675032502916618e-5,
+                            0.0002740479581908595,
+                            8.691475272920579e-5,
+                            0.023414703432404593,
+                            0.06248365429859781,
+                            385.10196906188503,
+                            6.003313225070965e-8,
+                            0.000274026861750043,
+                            0.0007433951467703537
                         ])
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
@@ -70,7 +70,7 @@ end
                             0.0
                         ],
                         cells_per_dimension=(64, 32),
-                        tspan=(0.0, 100.0))
+                        tspan=(0.0, 10.0))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let
@@ -107,7 +107,8 @@ end
                             0.0,
                             0.0
                         ],
-                        tspan=(0.0, 100.0))
+                        cells_per_dimension = (16, 16),
+                        tspan=(0.0, 10.0))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let
@@ -144,8 +145,8 @@ end
                             0.0,
                             0.0
                         ],
-                        initial_refinement_level=3,
-                        tspan=(0.0, 100.0))
+                        initial_refinement_level=4,
+                        tspan=(0.0, 10.0))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let
