@@ -274,5 +274,3 @@ stage_limiter! = NonlinearSolveDG(saturation_residual, saturation_residual_jacob
 # run the simulation
 sol = solve(ode, SSPRK43(stage_limiter!); ode_default_options()...,
             maxiters = 1.0e7, save_everystep = false, callback = callbacks);
-
-summary_callback()
