@@ -11,7 +11,7 @@ file.
 * Fabian Höck
 * Oswald Knoth
 * Andrés Rueda-Ramírez
-* Tristian Montoya
+* Tristan Montoya
 * Hendrik Ranocha
 * Michael Schlottke-Lakemper
 * Andrew Winters
