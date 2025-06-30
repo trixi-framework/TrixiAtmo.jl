@@ -718,23 +718,6 @@ end
                    u[6], u[7], u[8], u[9])
 end
 
-# should be used together with TreeMesh (adapted from compressible_euler_2d.jl)
-@inline function boundary_condition_slip_wall(u_inner, orientation, direction, x, t,
-                                              surface_flux_function,
-                                              equations::CompressibleRainyEulerEquations2D)
-    # get the appropriate normal vector from the orientation
-    RealT = eltype(u_inner)
-    if orientation == 1
-        normal_direction = SVector(one(RealT), zero(RealT))
-    else # orientation == 2
-        normal_direction = SVector(zero(RealT), one(RealT))
-    end
-
-    # compute and return the flux using `boundary_condition_slip_wall` routine above
-    return boundary_condition_slip_wall(u_inner, normal_direction, direction,
-                                        x, t, surface_flux_function, equations)
-end
-
 # for parabolic terms (LaplaceDiffusion2D)
 @inline function boundary_condition_laplace(flux_inner, u_inner, normal::AbstractVector,
                                             x, t, operator_type::Trixi.Gradient,
@@ -973,29 +956,6 @@ end
     else
         return flux_ec_rain(u_ll, u_rr, SVector(0, 1), equations)
     end
-end
-
-# adapted from ShallowWaterEquations2D (Recommended with rain!)
-@inline function boundary_condition_simple_slip_wall(u_inner,
-                                                     normal_direction::AbstractVector,
-                                                     x, t, surface_flux_function,
-                                                     equations::CompressibleRainyEulerEquations2D)
-    # normalize the outward pointing direction
-    normal = normal_direction / norm(normal_direction)
-
-    # compute the normal velocity
-    u_normal = normal[1] * u_inner[4] + normal[2] * u_inner[5]
-
-    # create the "external" boundary solution state
-    u_boundary = SVector(u_inner[1], u_inner[2], u_inner[3],
-                         u_inner[4] - 2 * u_normal * normal[1],
-                         u_inner[5] - 2 * u_normal * normal[2],
-                         u_inner[6], u_inner[7], u_inner[8], u_inner[9])
-
-    # calculate the boundary flux
-    flux = surface_flux_function(u_inner, u_boundary, normal_direction, equations)
-
-    return flux
 end
 
 # adapted from ShallowWaterEquations2D (Recommended with rain!)
