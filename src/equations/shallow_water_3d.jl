@@ -207,13 +207,13 @@ end
 
 """
     flux_nonconservative_wintermeyer_etal(u_ll, u_rr, orientation::Integer,
-                                          equations::ShallowWaterEquations2D)
+                                          equations::ShallowWaterEquations3D)
     flux_nonconservative_wintermeyer_etal(u_ll, u_rr,
                                           normal_direction::AbstractVector,
-                                          equations::ShallowWaterEquations2D)
+                                          equations::ShallowWaterEquations3D)
 
 Non-symmetric two-point volume flux discretizing the nonconservative (source) term
-that contains the gradient of the bottom topography [`ShallowWaterEquations2D`](@ref).
+that contains the gradient of the bottom topography [`ShallowWaterEquations3D`](@ref).
 
 For the `surface_flux` either [`flux_wintermeyer_etal`](@ref) or [`flux_fjordholm_etal`](@ref) can
 be used to ensure well-balancedness and entropy conservation.
@@ -245,13 +245,13 @@ end
 
 """
     flux_nonconservative_fjordholm_etal(u_ll, u_rr, orientation::Integer,
-                                        equations::ShallowWaterEquations2D)
+                                        equations::ShallowWaterEquations3D)
     flux_nonconservative_fjordholm_etal(u_ll, u_rr,
                                         normal_direction::AbstractVector,
-                                        equations::ShallowWaterEquations2D)
+                                        equations::ShallowWaterEquations3D)
 
 Non-symmetric two-point surface flux discretizing the nonconservative (source) term of
-that contains the gradient of the bottom topography [`ShallowWaterEquations2D`](@ref).
+that contains the gradient of the bottom topography [`ShallowWaterEquations3D`](@ref).
 
 This flux can be used together with [`flux_fjordholm_etal`](@ref) at interfaces to ensure entropy
 conservation and well-balancedness.
