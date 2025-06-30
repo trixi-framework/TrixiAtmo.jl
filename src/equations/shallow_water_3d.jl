@@ -2,7 +2,7 @@
 #! format: noindent
 
 @doc raw"""
-    ShallowWaterEquations3D(; gravity, H0 = 0)
+    ShallowWaterEquations3D(; gravity, rotation_rate = 0, H0 = 0)
 
 Shallow water equations (SWE) in three space dimensions in conservation form (with constant bottom topography). 
 The equations are given by
@@ -49,6 +49,7 @@ References:
 struct ShallowWaterEquations3D{RealT <: Real} <:
        Trixi.AbstractShallowWaterEquations{3, 5}
     gravity::RealT # gravitational acceleration
+    rotation_rate::RealT  # rotation rate around z axis for Coriolis term 
     H0::RealT      # constant "lake-at-rest" total water height
 end
 
@@ -56,9 +57,9 @@ end
 # application where `gravity=1.0` or `gravity=9.81` are common values.
 # The reference total water height H0 defaults to 0.0 but is used for the "lake-at-rest"
 # well-balancedness test cases.
-function ShallowWaterEquations3D(; gravity, H0 = zero(gravity))
-    T = promote_type(typeof(gravity), typeof(H0))
-    ShallowWaterEquations3D(gravity, H0)
+function ShallowWaterEquations3D(; gravity, rotation_rate = zero(gravity),
+                                 H0 = zero(gravity))
+    ShallowWaterEquations3D(gravity, rotation_rate, H0)
 end
 
 Trixi.have_nonconservative_terms(::ShallowWaterEquations3D) = True()
@@ -288,9 +289,40 @@ and for curvilinear 2D case in the paper:
 end
 
 """
+    source_terms_coriolis(u, du, x, t, 
+                          equations::ShallowWaterEquations3D,
+                          normal_direction)
+
+Source term function to apply the Coriolis force with an angular velocity of
+equations.rotation_rate around the z+ axis.
+
+The vector normal_direction is perpendicular to the 2D manifold. By default, 
+this is the normal contravariant basis vector.
+"""
+function source_terms_coriolis(u, du, x, t,
+                               equations::ShallowWaterEquations3D,
+                               normal_direction)
+    _, h_v1, h_v2, h_v3, _ = u
+
+    r2 = sum(normal_direction .^ 2) # Square of normal_direction's norm
+
+    # Coriolis parameter scaled by norm of the normal vector
+    # (projection of the angular velocity onto the normal vector to the manifold)
+    f = 2 * equations.rotation_rate * normal_direction[3] / r2  # 2Ωsinθ / norm(normal_direction)
+
+    # Compute the Coriolis source terms for the momentum equation as
+    # s_mom = -f * cross(normal_direction, momentum)
+    s2 = -f * (normal_direction[2] * h_v3 - normal_direction[3] * h_v2)
+    s3 = -f * (normal_direction[3] * h_v1 - normal_direction[1] * h_v3)
+    s4 = -f * (normal_direction[1] * h_v2 - normal_direction[2] * h_v1)
+
+    return SVector(zero(eltype(u)), s2, s3, s4, zero(eltype(u)))
+end
+
+"""
     source_terms_lagrange_multiplier(u, du, x, t,
-                                          equations::ShallowWaterEquations3D,
-                                          normal_direction)
+                                     equations::ShallowWaterEquations3D,
+                                     normal_direction)
 
 Source term function to apply a Lagrange multiplier to the semi-discretization
 in order to constrain the momentum to a 2D manifold.
@@ -311,6 +343,24 @@ function source_terms_lagrange_multiplier(u, du, x, t,
     s4 = -normal_direction[3] * x_dot_div_f
 
     return SVector(0, s2, s3, s4, 0)
+end
+
+"""
+    source_terms_coriolis_lagrange_multiplier(u, du, x, t,
+                                              equations::ShallowWaterEquations3D,
+                                              normal_direction)
+
+Computes the Coriolis source term ([`source_terms_coriolis`](@ref)) and the
+Lagrange multiplier source term ([`source_terms_lagrange_multiplier`](@ref)).
+"""
+function source_terms_coriolis_lagrange_multiplier(u, du, x, t,
+                                                   equations::ShallowWaterEquations3D,
+                                                   normal_direction)
+    s_coriolis = source_terms_coriolis(u, du, x, t, equations, normal_direction)
+    s_lagrange = source_terms_lagrange_multiplier(u, du, x, t, equations,
+                                                  normal_direction)
+
+    return s_coriolis + s_lagrange
 end
 
 """
