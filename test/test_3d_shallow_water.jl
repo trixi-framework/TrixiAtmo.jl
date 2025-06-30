@@ -134,4 +134,34 @@ end
     end
 end
 
+@trixiatmo_testset "elixir_shallowwater_cartesian_geostrophic_balance" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_shallowwater_cartesian_geostrophic_balance.jl"),
+                        l2=[
+                            0.27676841776660416,
+                            103.39838614468358,
+                            103.39838614468256,
+                            47.517273183733906,
+                            0.0
+                        ],
+                        linf=[
+                            1.2383681144717684,
+                            610.2955303677882,
+                            610.2955303680574,
+                            276.4494926100049,
+                            0.0
+                        ],
+                        polydeg=3,
+                        cells_per_dimension=(5, 5),
+                        tspan=(0.0, 1.0 * SECONDS_PER_DAY))
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    let
+        t = sol.t[end]
+        u_ode = sol.u[end]
+        du_ode = similar(u_ode)
+        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
+    end
+end
+
 end # module
