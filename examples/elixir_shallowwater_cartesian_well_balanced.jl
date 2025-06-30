@@ -1,16 +1,15 @@
-
-using OrdinaryDiffEq
-using Trixi
-using TrixiAtmo
-
 ###############################################################################
-# Entropy conservation for the spherical shallow water equations in Cartesian
-# form obtained through the projection of the momentum onto the divergence-free
-# tangential contravariant vectors
+# Entropy-stable DGSEM for the shallow water equations in Cartesian form on the
+# cubed sphere: Well-balancedness test for an isolated mountain (checking that
+# geopotential height remains constant after one day for zero initial velocity)
+###############################################################################
 
-equations = ShallowWaterEquations3D(gravity = 9.81)
+using OrdinaryDiffEq, Trixi, TrixiAtmo
 
-# Create DG solver with polynomial degree = 3 and Wintemeyer et al.'s flux as surface flux
+equations = ShallowWaterEquations3D(gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+
+# Create DG solver with polynomial degree = 3 and Wintemeyer et al.'s flux as 
+# surface and volume fluxes
 polydeg = 3
 volume_flux = (flux_wintermeyer_etal, flux_nonconservative_wintermeyer_etal)
 surface_flux = (flux_wintermeyer_etal, flux_nonconservative_wintermeyer_etal)
@@ -19,23 +18,22 @@ solver = DGSEM(polydeg = polydeg,
                surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
 
-# Initial condition for a Gaussian density profile with constant pressure
-# and the velocity of a rotating solid body
-function initial_condition_advection_sphere(x, t, equations::ShallowWaterEquations3D)
+# Initial condition is atmosphere at rest with constant total geopotential height
+function initial_condition_well_balancedness(x, t, equations::ShallowWaterEquations3D)
     # Constant water height
-    H = 1.0
+    H = 5960.0
+    v1 = v2 = v3 = 0.0
 
     # Non-constant topography
-    lat = asin(x[3] / sqrt(x[1]^2 + x[2]^2 + x[3]^2))
-    b = 0.1 * cos(10 * lat)
+    b = bottom_topography_isolated_mountain(x)
 
-    return prim2cons(SVector(H, 0, 0, 0, b), equations)
+    return prim2cons(SVector(H, v1, v2, v3, b), equations)
 end
 
-initial_condition = initial_condition_advection_sphere
+initial_condition = initial_condition_well_balancedness
 
-mesh = P4estMeshCubedSphere2D(5, 2.0, polydeg = polydeg,
-                              initial_refinement_level = 0)
+cells_per_dimension = (5, 5)
+mesh = P4estMeshCubedSphere2D(cells_per_dimension[1], EARTH_RADIUS, polydeg = polydeg)
 
 # A semidiscretization collects data structures and functions for the spatial discretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
@@ -91,6 +89,3 @@ callbacks = CallbackSet(summary_callback, analysis_callback, save_solution,
 sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
             dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
             save_everystep = false, callback = callbacks);
-
-# Print the timer summary
-summary_callback()

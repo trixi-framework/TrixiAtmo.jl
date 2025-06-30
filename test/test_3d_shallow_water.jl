@@ -118,23 +118,12 @@ end
     end
 end
 
-@trixiatmo_testset "elixir_shallowwater_cubed_sphere_shell_well_balancing" begin
+@trixiatmo_testset "elixir_shallowwater_cartesian_well_balanced" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_shallowwater_cubed_sphere_shell_well_balancing.jl"),
-                        l2=[
-                            0.00000000e+00,
-                            0.00000000e+00,
-                            0.00000000e+00,
-                            0.00000000e+00,
-                            0.00000000e+00
-                        ],
-                        linf=[
-                            0.00000000e+00,
-                            0.00000000e+00,
-                            0.00000000e+00,
-                            0.00000000e+00,
-                            0.00000000e+00
-                        ], atol=8.0e-13) # Needs a slightly larger tolerance for linf
+                                 "elixir_shallowwater_cartesian_well_balanced.jl"),
+                        l2=[0.0, 0.0, 0.0, 0.0, 0.0],
+                        linf=[0.0, 0.0, 0.0, 0.0, 0.0],
+                        atol=8.0e-11) # Needs a slightly larger tolerance for linf
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let
