@@ -41,23 +41,6 @@ macro test_trixi_include(elixir, args...)
         end
     end
 
-    if coverage
-        for key in keys(coverage_override)
-            push!(kwargs, Pair(key, coverage_override[key]))
-        end
-    end
-
-    if coverage && skip_coverage
-        return quote
-            if TrixiAtmo.Trixi.mpi_isroot()
-                println("═"^100)
-                println("Skipping coverage test of ", $elixir)
-                println("═"^100)
-                println("\n\n")
-            end
-        end
-    end
-
     quote
         TrixiAtmo.Trixi.mpi_isroot() && println("═"^100)
         TrixiAtmo.Trixi.mpi_isroot() && println($elixir)
@@ -76,7 +59,7 @@ macro test_trixi_include(elixir, args...)
         @test_nowarn_mod TrixiAtmo.Trixi.trixi_include(@__MODULE__, $elixir; $kwargs...) additional_ignore_content
 
         # if present, compare l2 and linf errors against reference values
-        if !$coverage && (!isnothing($l2) || !isnothing($linf))
+        if !isnothing($l2) || !isnothing($linf)
             l2_measured, linf_measured = analysis_callback(sol)
 
             if TrixiAtmo.Trixi.mpi_isroot() && !isnothing($l2)
