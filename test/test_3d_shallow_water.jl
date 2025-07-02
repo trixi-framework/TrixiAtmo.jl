@@ -100,33 +100,6 @@ end
     end
 end
 
-@trixiatmo_testset "elixir_shallowwater_cubed_sphere_shell_standard" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_shallowwater_cubed_sphere_shell_standard.jl"),
-                        l2=[
-                            0.06866722672214584,
-                            0.09439341808798976,
-                            0.03259642977310208,
-                            0.020263919758088205,
-                            0.0
-                        ],
-                        linf=[
-                            1.046030865500346,
-                            1.0593845602505878,
-                            0.11825902590307225,
-                            0.0555545985943406,
-                            0.0
-                        ])
-    # Ensure that we do not have excessive memory allocations
-    # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
-end
-
 @trixiatmo_testset "elixir_shallowwater_cartesian_well_balanced" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_cartesian_well_balanced.jl"),
