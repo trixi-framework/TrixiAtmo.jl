@@ -4,32 +4,34 @@
 @doc raw"""
     ShallowWaterEquations3D(; gravity, rotation_rate = 0, H0 = 0)
 
-Shallow water equations (SWE) in three space dimensions in conservation form (with constant bottom topography). 
+Rotating shallow water equations (SWE) in three space dimensions to be solved on curved manifolds (e.g., on a spherical shell). 
 The equations are given by
 ```math
 \begin{aligned}
   \frac{\partial h}{\partial t} + \frac{\partial}{\partial x}(h v_1)
-    + \frac{\partial}{\partial y}(h v_2) + \frac{\partial}{\partial z}(h v_3) &= 0 \\
+    + \frac{\partial}{\partial y}(h v_2) + \frac{\partial}{\partial z}(h v_3) &= s_h \\
     \frac{\partial}{\partial t}(h v_1) + \frac{\partial}{\partial x}\left(h v_1^2 + \frac{g}{2}h^2\right)
-    + \frac{\partial}{\partial y}(h v_1 v_2) + \frac{\partial}{\partial z}(h v_1 v_3) &= 0 \\
+    + \frac{\partial}{\partial y}(h v_1 v_2) + \frac{\partial}{\partial z}(h v_1 v_3) g h \frac{\partial b}{\partial x} &= s_{hv_1} \\
     \frac{\partial}{\partial t}(h v_2) + \frac{\partial}{\partial x}(h v_1 v_2)
-    + \frac{\partial}{\partial y}\left(h v_2^2 + \frac{g}{2}h^2\right) + \frac{\partial}{\partial z}(h v_2 v_3) &= 0 \\
+    + \frac{\partial}{\partial y}\left(h v_2^2 + \frac{g}{2}h^2\right) + \frac{\partial}{\partial z}(h v_2 v_3) + g h \frac{\partial b}{\partial y} &= s_{hv_2} \\
     \frac{\partial}{\partial t}(h v_3) + \frac{\partial}{\partial x}(h v_1 v_3)
-    + \frac{\partial}{\partial y}(h v_2 v_3) + \frac{\partial}{\partial z}\left(h v_3^2 + \frac{g}{2}h^2\right) &= 0.
+    + \frac{\partial}{\partial y}(h v_2 v_3) + \frac{\partial}{\partial z}\left(h v_3^2 + \frac{g}{2}h^2\right) + g h \frac{\partial b}{\partial z}&= s_{hv_3}.
 \end{aligned}
 ```
 The unknown quantities of the SWE are the water height ``h`` and the velocities ``\mathbf{v} = (v_1, v_2, v_3)^T``.
 The gravitational acceleration is denoted by `g`.
 
 The 3D Shallow Water Equations (SWE) extend the 2D SWE to model shallow water flows on 2D manifolds embedded within 3D space. 
-To confine the flow to the 2D manifold, a source term incorporating a Lagrange multiplier is applied. 
+To confine the flow to the 2D manifold, a source term incorporating a Lagrange multiplier is applied to the momentum equations using the function [`source_terms_lagrange_multiplier`](@ref). 
 This term effectively removes momentum components that are normal to the manifold, ensuring the flow remains 
 constrained within the 2D surface.
+
+To incorporate the effect of the rotation of the manifold, use the function [`source_terms_coriolis`](@ref), which adds the necessary Coriolis source terms to the momentum equations assuming a rotation around the ``z`` axis with a rotation rate in radians per time unit given by `rotation_rate`. To incorporate both Coriolis forces and the Lagrange multiplier terms, use [`source_terms_coriolis_lagrange_multiplier`](@ref).
 
 The additional quantity ``H_0`` is also available to store a reference value for the total water height that
 is useful to set initial conditions or test the "lake-at-rest" well-balancedness.
 
-In addition to the unknowns, Trixi.jl currently stores the bottom topography values at the approximation points
+In addition to the unknowns, TrixiAtmo.jl currently stores the bottom topography values at the approximation points
 despite being fixed in time. This is done for convenience of computing the bottom topography gradients
 on the fly during the approximation as well as computing auxiliary quantities like the total water height ``H``
 or the entropy variables.
