@@ -164,4 +164,34 @@ end
     end
 end
 
+@trixiatmo_testset "elixir_shallowwater_cartesian_isolated_mountain" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_shallowwater_cartesian_isolated_mountain.jl"),
+                        l2=[
+                            13.189867835225384,
+                            4656.890929855556,
+                            4027.784683604144,
+                            6275.998709859527,
+                            0.0
+                        ],
+                        linf=[
+                            115.53215616900434,
+                            37970.28060001574,
+                            42646.814315962474,
+                            65362.28474927765,
+                            0.0
+                        ],
+                        polydeg=3,
+                        cells_per_dimension=(5, 5),
+                        tspan=(0.0, 1.0 * SECONDS_PER_DAY))
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    let
+        t = sol.t[end]
+        u_ode = sol.u[end]
+        du_ode = similar(u_ode)
+        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
+    end
+end
+
 end # module
