@@ -6,7 +6,8 @@
 
 using OrdinaryDiffEq, Trixi, TrixiAtmo
 
-equations = ShallowWaterEquations3D(gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+equations = ShallowWaterEquations3D(gravity = EARTH_GRAVITATIONAL_ACCELERATION,
+                                    rotation_rate = EARTH_ROTATION_RATE)
 
 # Create DG solver with polynomial degree = 3 and Wintemeyer et al.'s flux as 
 # surface and volume fluxes
