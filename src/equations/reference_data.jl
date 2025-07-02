@@ -323,7 +323,9 @@ following paper:
 
     # Convert primitive variables from Cartesian coordinates to the chosen global 
     # coordinate system, which depends on the equation type
-    return cartesian2global(SVector(H, v[1], v[2], v[3], zero(RealT)), x, equations)
+    return cartesian2global(SVector(H, v[1], v[2], v[3],
+                                    bottom_topography_unsteady_solid_body_rotation(x)),
+                            x, equations)
 end
 
 # Bottom topography function to pass as auxiliary_field keyword argument in constructor for 

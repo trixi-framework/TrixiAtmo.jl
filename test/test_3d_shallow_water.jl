@@ -7,23 +7,26 @@ include("test_trixiatmo.jl")
 
 EXAMPLES_DIR = TrixiAtmo.examples_dir()
 
-@trixiatmo_testset "elixir_shallowwater_cubed_sphere_shell_EC_correction" begin
+@trixiatmo_testset "elixir_shallowwater_cartesian_unsteady_solid_body_rotation_EC_correction" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_shallowwater_cubed_sphere_shell_EC_correction.jl"),
+                                 "elixir_shallowwater_cartesian_unsteady_solid_body_rotation_EC_correction.jl"),
                         l2=[
-                            0.07271743465440743,
-                            0.07435870820933804,
-                            0.05059253372287277,
-                            0.07712245696955002,
-                            0.002166321001178188
+                            1.1385840313143962,
+                            464.82837506217066,
+                            469.1401783834081,
+                            311.3170683216476,
+                            0.0
                         ],
                         linf=[
-                            1.057593830959098,
-                            0.7420535585104321,
-                            0.33165510628037276,
-                            0.6538582658635804,
-                            0.009155117525905546
-                        ])
+                            5.159323444366919,
+                            3303.7491913049016,
+                            3420.553600463765,
+                            3730.0452131916827,
+                            0.0
+                        ],
+                        polydeg=3,
+                        cells_per_dimension=(5, 5),
+                        tspan=(0.0, 1.0 * SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let
@@ -34,23 +37,26 @@ EXAMPLES_DIR = TrixiAtmo.examples_dir()
     end
 end
 
-@trixiatmo_testset "elixir_shallowwater_cubed_sphere_shell_EC_projection" begin
+@trixiatmo_testset "elixir_shallowwater_cartesian_unsteady_solid_body_rotation_EC_projection" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_shallowwater_cubed_sphere_shell_EC_projection.jl"),
+                                 "elixir_shallowwater_cartesian_unsteady_solid_body_rotation_EC_projection.jl"),
                         l2=[
-                            0.07281376793171955,
-                            0.07425222671946745,
-                            0.05069528390329348,
-                            0.07741804767929857,
-                            0.002166321001178188
+                            1.2715065248576713,
+                            598.683530367431,
+                            605.759403715426,
+                            460.96437160416355,
+                            0.0
                         ],
                         linf=[
-                            1.0576298065256564,
-                            0.7245020984321977,
-                            0.3273888680444672,
-                            0.6494576573261298,
-                            0.009155117525905546
-                        ])
+                            4.238740469409095,
+                            5466.431268687156,
+                            5083.837234735748,
+                            3502.6899531778763,
+                            0.0
+                        ],
+                        polydeg=3,
+                        cells_per_dimension=(5, 5),
+                        tspan=(0.0, 1.0 * SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let
@@ -61,26 +67,29 @@ end
     end
 end
 
-@trixiatmo_testset "elixir_shallowwater_cubed_sphere_shell_ES_projection" begin
+@trixiatmo_testset "elixir_shallowwater_cartesian_unsteady_solid_body_rotation_EC_projection (ES)" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_shallowwater_cubed_sphere_shell_EC_projection.jl"),
+                                 "elixir_shallowwater_cartesian_unsteady_solid_body_rotation_EC_projection.jl"),
                         l2=[
-                            0.06942328774989055,
-                            0.06815337757250019,
-                            0.038564087277833003,
-                            0.07127736553644314,
-                            0.002166321001178188
+                            0.2744086984644598,
+                            280.22833657858405,
+                            294.07258247717635,
+                            187.92205847355822,
+                            0.0
                         ],
                         linf=[
-                            1.046573189544382,
-                            0.7379677511543662,
-                            0.1443340255302651,
-                            0.661648435853761,
-                            0.009155117525905546
+                            1.4332199421835412,
+                            1255.449038614228,
+                            1470.6155024602194,
+                            1249.3580783745856,
+                            0.0
                         ],
                         surface_flux=(FluxPlusDissipation(flux_wintermeyer_etal,
                                                           DissipationLaxFriedrichsEntropyVariables()),
-                                      flux_nonconservative_wintermeyer_etal))
+                                      flux_nonconservative_wintermeyer_etal),
+                        polydeg=3,
+                        cells_per_dimension=(5, 5),
+                        tspan=(0.0, 1.0 * SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let

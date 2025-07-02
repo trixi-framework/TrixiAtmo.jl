@@ -8,10 +8,21 @@ using TrixiAtmo
 # form obtained through the projection of the momentum onto the divergence-free
 # tangential contravariant vectors
 
-equations = ShallowWaterEquations3D(gravity = 9.81)
+###############################################################################
+# Parameters
+
+initial_condition = initial_condition_unsteady_solid_body_rotation
+polydeg = 3
+cells_per_dimension = (16, 16)
+n_saves = 10
+tspan = (0.0, 15.0 * SECONDS_PER_DAY)
+
+###############################################################################
+# Spatial discretization
+equations = ShallowWaterEquations3D(gravity = EARTH_GRAVITATIONAL_ACCELERATION,
+                                    rotation_rate = EARTH_ROTATION_RATE)
 
 # Create DG solver with polynomial degree = 3 and Wintemeyer et al.'s flux as surface flux
-polydeg = 3
 volume_flux = (flux_wintermeyer_etal, flux_nonconservative_wintermeyer_etal)
 surface_flux = (flux_wintermeyer_etal, flux_nonconservative_wintermeyer_etal)
 # For provably entropy-stable surface fluxes, use
@@ -22,63 +33,21 @@ solver = DGSEM(polydeg = polydeg,
                surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
 
-# Initial condition for a Gaussian density profile with constant pressure
-# and the velocity of a rotating solid body
-function initial_condition_advection_sphere(x, t, equations::ShallowWaterEquations3D)
-    # Gaussian density
-    rho = 1.0 + exp(-20 * (x[1]^2 + x[3]^2))
+# Transform the initial condition to the proper set of conservative variables
+initial_condition_transformed = transform_initial_condition(initial_condition, equations)
 
-    # Spherical coordinates for the point x
-    if sign(x[2]) == 0.0
-        signy = 1.0
-    else
-        signy = sign(x[2])
-    end
-    # Co-latitude
-    colat = acos(x[3] / sqrt(x[1]^2 + x[2]^2 + x[3]^2))
-    # Latitude (auxiliary variable)
-    lat = -colat + 0.5 * pi
-    # Longitude
-    r_xy = sqrt(x[1]^2 + x[2]^2)
-    if r_xy == 0.0
-        phi = pi / 2
-    else
-        phi = signy * acos(x[1] / r_xy)
-    end
-
-    # Compute the velocity of a rotating solid body
-    # (alpha is the angle between the rotation axis and the polar axis of the spherical coordinate system)
-    v0 = 1.0 # Velocity at the "equator"
-    alpha = pi / 4
-    v_long = v0 * (cos(lat) * cos(alpha) + sin(lat) * cos(phi) * sin(alpha))
-    vlat = -v0 * sin(phi) * sin(alpha)
-
-    # Transform to Cartesian coordinate system
-    v1 = -cos(colat) * cos(phi) * vlat - sin(phi) * v_long
-    v2 = -cos(colat) * sin(phi) * vlat + cos(phi) * v_long
-    v3 = sin(colat) * vlat
-
-    # Non-constant topography
-    b = 0.1 * cos(10 * lat)
-
-    return prim2cons(SVector(rho, v1, v2, v3, b), equations)
-end
-
-initial_condition = initial_condition_advection_sphere
-
-mesh = P4estMeshCubedSphere2D(5, 2.0, polydeg = polydeg,
+mesh = P4estMeshCubedSphere2D(cells_per_dimension[1], EARTH_RADIUS, polydeg = polydeg,
                               initial_refinement_level = 0)
 
 # A semidiscretization collects data structures and functions for the spatial discretization
-semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
+semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver,
                                     metric_terms = MetricTermsInvariantCurl(),
-                                    source_terms = source_terms_lagrange_multiplier)
+                                    source_terms = source_terms_coriolis_lagrange_multiplier)
 
 ###############################################################################
 # ODE solvers, callbacks etc.
 
 # Create ODE problem with time span from 0.0 to π
-tspan = (0.0, pi)
 ode = semidiscretize(semi, tspan)
 
 # Clean the initial condition
@@ -102,11 +71,12 @@ summary_callback = SummaryCallback()
 analysis_callback = AnalysisCallback(semi, interval = 10,
                                      save_analysis = true,
                                      extra_analysis_errors = (:conservation_error,),
-                                     extra_analysis_integrals = (waterheight, energy_total))
+                                     extra_analysis_integrals = (waterheight, energy_total),
+                                     analysis_polydeg = polydeg)
 
 # The SaveSolutionCallback allows to save the solution to a file in regular intervals
-save_solution = SaveSolutionCallback(interval = 10,
-                                     solution_variables = cons2prim_and_vorticity)
+save_solution = SaveSolutionCallback(dt = (tspan[2] - tspan[1]) / n_saves,
+                                     solution_variables = cons2prim)
 
 # The StepsizeCallback handles the re-calculation of the maximum Δt after each time step
 stepsize_callback = StepsizeCallback(cfl = 0.7)
