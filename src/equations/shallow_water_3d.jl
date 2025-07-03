@@ -296,10 +296,10 @@ end
                           normal_direction)
 
 Source term function to apply the Coriolis force with an angular velocity of
-equations.rotation_rate around the z+ axis.
+`equations.rotation_rate` around the ``z`` axis.
 
-The vector normal_direction is perpendicular to the 2D manifold. By default, 
-this is the normal contravariant basis vector.
+The vector `normal_direction` is perpendicular to the 2D manifold. By default, 
+it is the normal contravariant basis vector.
 """
 function source_terms_coriolis(u, du, x, t,
                                equations::ShallowWaterEquations3D,
@@ -329,8 +329,8 @@ end
 Source term function to apply a Lagrange multiplier to the semi-discretization
 in order to constrain the momentum to a 2D manifold.
 
-The vector normal_direction is perpendicular to the 2D manifold. By default, 
-this is the normal contravariant basis vector.
+The vector `normal_direction` is perpendicular to the 2D manifold. By default, 
+it is the normal contravariant basis vector.
 """
 function source_terms_lagrange_multiplier(u, du, x, t,
                                           equations::ShallowWaterEquations3D,
@@ -371,8 +371,8 @@ end
 Function to apply Lagrange multiplier discretely to the solution in order to constrain 
 the momentum to a 2D manifold.
 
-The vector normal_direction is perpendicular to the 2D manifold. By default, 
-this is the normal contravariant basis vector.
+The vector `normal_direction` is perpendicular to the 2D manifold. By default, 
+it is the normal contravariant basis vector.
 """
 function clean_solution_lagrange_multiplier!(u, equations::ShallowWaterEquations3D,
                                              normal_direction)
