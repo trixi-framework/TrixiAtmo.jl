@@ -2,34 +2,36 @@
 #! format: noindent
 
 @doc raw"""
-    ShallowWaterEquations3D(; gravity, H0 = 0)
+    ShallowWaterEquations3D(; gravity, rotation_rate = 0, H0 = 0)
 
-Shallow water equations (SWE) in three space dimensions in conservation form (with constant bottom topography). 
+Rotating shallow water equations (SWE) in three space dimensions to be solved on curved manifolds (e.g., on a spherical shell). 
 The equations are given by
 ```math
 \begin{aligned}
   \frac{\partial h}{\partial t} + \frac{\partial}{\partial x}(h v_1)
-    + \frac{\partial}{\partial y}(h v_2) + \frac{\partial}{\partial z}(h v_3) &= 0 \\
+    + \frac{\partial}{\partial y}(h v_2) + \frac{\partial}{\partial z}(h v_3) &= s_h \\
     \frac{\partial}{\partial t}(h v_1) + \frac{\partial}{\partial x}\left(h v_1^2 + \frac{g}{2}h^2\right)
-    + \frac{\partial}{\partial y}(h v_1 v_2) + \frac{\partial}{\partial z}(h v_1 v_3) &= 0 \\
+    + \frac{\partial}{\partial y}(h v_1 v_2) + \frac{\partial}{\partial z}(h v_1 v_3) g h \frac{\partial b}{\partial x} &= s_{hv_1} \\
     \frac{\partial}{\partial t}(h v_2) + \frac{\partial}{\partial x}(h v_1 v_2)
-    + \frac{\partial}{\partial y}\left(h v_2^2 + \frac{g}{2}h^2\right) + \frac{\partial}{\partial z}(h v_2 v_3) &= 0 \\
+    + \frac{\partial}{\partial y}\left(h v_2^2 + \frac{g}{2}h^2\right) + \frac{\partial}{\partial z}(h v_2 v_3) + g h \frac{\partial b}{\partial y} &= s_{hv_2} \\
     \frac{\partial}{\partial t}(h v_3) + \frac{\partial}{\partial x}(h v_1 v_3)
-    + \frac{\partial}{\partial y}(h v_2 v_3) + \frac{\partial}{\partial z}\left(h v_3^2 + \frac{g}{2}h^2\right) &= 0.
+    + \frac{\partial}{\partial y}(h v_2 v_3) + \frac{\partial}{\partial z}\left(h v_3^2 + \frac{g}{2}h^2\right) + g h \frac{\partial b}{\partial z}&= s_{hv_3}.
 \end{aligned}
 ```
 The unknown quantities of the SWE are the water height ``h`` and the velocities ``\mathbf{v} = (v_1, v_2, v_3)^T``.
 The gravitational acceleration is denoted by `g`.
 
 The 3D Shallow Water Equations (SWE) extend the 2D SWE to model shallow water flows on 2D manifolds embedded within 3D space. 
-To confine the flow to the 2D manifold, a source term incorporating a Lagrange multiplier is applied. 
+To confine the flow to the 2D manifold, a source term incorporating a Lagrange multiplier is applied to the momentum equations using the function [`source_terms_lagrange_multiplier`](@ref). 
 This term effectively removes momentum components that are normal to the manifold, ensuring the flow remains 
 constrained within the 2D surface.
+
+To incorporate the effect of the rotation of the manifold, use the function [`source_terms_coriolis`](@ref), which adds the necessary Coriolis source terms to the momentum equations assuming a rotation around the ``z`` axis with a rotation rate in radians per time unit given by `rotation_rate`. To incorporate both Coriolis forces and the Lagrange multiplier terms, use [`source_terms_coriolis_lagrange_multiplier`](@ref).
 
 The additional quantity ``H_0`` is also available to store a reference value for the total water height that
 is useful to set initial conditions or test the "lake-at-rest" well-balancedness.
 
-In addition to the unknowns, Trixi.jl currently stores the bottom topography values at the approximation points
+In addition to the unknowns, TrixiAtmo.jl currently stores the bottom topography values at the approximation points
 despite being fixed in time. This is done for convenience of computing the bottom topography gradients
 on the fly during the approximation as well as computing auxiliary quantities like the total water height ``H``
 or the entropy variables.
@@ -49,6 +51,7 @@ References:
 struct ShallowWaterEquations3D{RealT <: Real} <:
        Trixi.AbstractShallowWaterEquations{3, 5}
     gravity::RealT # gravitational acceleration
+    rotation_rate::RealT  # rotation rate around z axis for Coriolis term 
     H0::RealT      # constant "lake-at-rest" total water height
 end
 
@@ -56,12 +59,12 @@ end
 # application where `gravity=1.0` or `gravity=9.81` are common values.
 # The reference total water height H0 defaults to 0.0 but is used for the "lake-at-rest"
 # well-balancedness test cases.
-function ShallowWaterEquations3D(; gravity, H0 = zero(gravity))
-    T = promote_type(typeof(gravity), typeof(H0))
-    ShallowWaterEquations3D(gravity, H0)
+function ShallowWaterEquations3D(; gravity, rotation_rate = zero(gravity),
+                                 H0 = zero(gravity))
+    ShallowWaterEquations3D(gravity, rotation_rate, H0)
 end
 
-Trixi.have_nonconservative_terms(::ShallowWaterEquations3D) = False() # Deactivate non-conservative terms for the moment...
+Trixi.have_nonconservative_terms(::ShallowWaterEquations3D) = True()
 Trixi.varnames(::typeof(cons2cons), ::ShallowWaterEquations3D) = ("h", "h_v1", "h_v2",
                                                                   "h_v3", "b")
 # Note, we use the total water height, H = h + b, as the first primitive variable for easier
@@ -206,15 +209,128 @@ Details are available in Eq. (4.1) in the paper:
 end
 
 """
+    flux_nonconservative_wintermeyer_etal(u_ll, u_rr, orientation::Integer,
+                                          equations::ShallowWaterEquations3D)
+    flux_nonconservative_wintermeyer_etal(u_ll, u_rr,
+                                          normal_direction::AbstractVector,
+                                          equations::ShallowWaterEquations3D)
+
+Non-symmetric two-point volume flux discretizing the nonconservative (source) term
+that contains the gradient of the bottom topography [`ShallowWaterEquations3D`](@ref).
+
+For the `surface_flux` either [`flux_wintermeyer_etal`](@ref) or [`flux_fjordholm_etal`](@ref) can
+be used to ensure well-balancedness and entropy conservation.
+
+Further details are available in the papers:
+- Niklas Wintermeyer, Andrew R. Winters, Gregor J. Gassner and David A. Kopriva (2017)
+  An entropy stable nodal discontinuous Galerkin method for the two dimensional
+  shallow water equations on unstructured curvilinear meshes with discontinuous bathymetry
+  [DOI: 10.1016/j.jcp.2017.03.036](https://doi.org/10.1016/j.jcp.2017.03.036)
+- Patrick Ersing, Andrew R. Winters (2023)
+  An entropy stable discontinuous Galerkin method for the two-layer shallow water equations on
+  curvilinear meshes
+  [DOI: 10.48550/arXiv.2306.12699](https://doi.org/10.48550/arXiv.2306.12699)
+"""
+@inline function Trixi.flux_nonconservative_wintermeyer_etal(u_ll, u_rr,
+                                                             normal_direction::AbstractVector,
+                                                             equations::ShallowWaterEquations3D)
+    # Pull the necessary left and right state information
+    h_ll = waterheight(u_ll, equations)
+    b_jump = u_rr[5] - u_ll[5]
+
+    # Bottom gradient nonconservative term: (0, g h b_x, g h b_y, 0)
+    return SVector(0,
+                   normal_direction[1] * equations.gravity * h_ll * b_jump,
+                   normal_direction[2] * equations.gravity * h_ll * b_jump,
+                   normal_direction[3] * equations.gravity * h_ll * b_jump,
+                   0)
+end
+
+"""
+    flux_nonconservative_fjordholm_etal(u_ll, u_rr, orientation::Integer,
+                                        equations::ShallowWaterEquations3D)
+    flux_nonconservative_fjordholm_etal(u_ll, u_rr,
+                                        normal_direction::AbstractVector,
+                                        equations::ShallowWaterEquations3D)
+
+Non-symmetric two-point surface flux discretizing the nonconservative (source) term of
+that contains the gradient of the bottom topography [`ShallowWaterEquations3D`](@ref).
+
+This flux can be used together with [`flux_fjordholm_etal`](@ref) at interfaces to ensure entropy
+conservation and well-balancedness.
+
+Further details for the original finite volume formulation are available in
+- Ulrik S. Fjordholm, Siddhartha Mishra and Eitan Tadmor (2011)
+  Well-balanced and energy stable schemes for the shallow water equations with discontinuous topography
+  [DOI: 10.1016/j.jcp.2011.03.042](https://doi.org/10.1016/j.jcp.2011.03.042)
+and for curvilinear 2D case in the paper:
+- Niklas Wintermeyer, Andrew R. Winters, Gregor J. Gassner and David A. Kopriva (2017)
+  An entropy stable nodal discontinuous Galerkin method for the two dimensional
+  shallow water equations on unstructured curvilinear meshes with discontinuous bathymetry
+  [DOI: 10.1016/j.jcp.2017.03.036](https://doi.org/10.1016/j.jcp.2017.03.036)
+"""
+@inline function Trixi.flux_nonconservative_fjordholm_etal(u_ll, u_rr,
+                                                           normal_direction::AbstractVector,
+                                                           equations::ShallowWaterEquations3D)
+    # Pull the necessary left and right state information
+    h_ll, _, _, _, b_ll = u_ll
+    h_rr, _, _, _, b_rr = u_rr
+
+    h_average = 0.5f0 * (h_ll + h_rr)
+    b_jump = b_rr - b_ll
+
+    # Bottom gradient nonconservative term: (0, g h b_x, g h b_y, 0)
+    f2 = normal_direction[1] * equations.gravity * h_average * b_jump
+    f3 = normal_direction[2] * equations.gravity * h_average * b_jump
+    f4 = normal_direction[3] * equations.gravity * h_average * b_jump
+
+    # First and last equations do not have a nonconservative flux
+    f1 = f5 = 0
+
+    return SVector(f1, f2, f3, f4, f5)
+end
+
+"""
+    source_terms_coriolis(u, du, x, t, 
+                          equations::ShallowWaterEquations3D,
+                          normal_direction)
+
+Source term function to apply the Coriolis force with an angular velocity of
+`equations.rotation_rate` around the ``z`` axis.
+
+The vector `normal_direction` is perpendicular to the 2D manifold. By default, 
+it is the normal contravariant basis vector.
+"""
+function source_terms_coriolis(u, du, x, t,
+                               equations::ShallowWaterEquations3D,
+                               normal_direction)
+    _, h_v1, h_v2, h_v3, _ = u
+
+    r2 = sum(normal_direction .^ 2) # Square of normal_direction's norm
+
+    # Coriolis parameter scaled by norm of the normal vector
+    # (projection of the angular velocity onto the normal vector to the manifold)
+    f = 2 * equations.rotation_rate * normal_direction[3] / r2  # 2Ωsinθ / norm(normal_direction)
+
+    # Compute the Coriolis source terms for the momentum equation as
+    # s_mom = -f * cross(normal_direction, momentum)
+    s2 = -f * (normal_direction[2] * h_v3 - normal_direction[3] * h_v2)
+    s3 = -f * (normal_direction[3] * h_v1 - normal_direction[1] * h_v3)
+    s4 = -f * (normal_direction[1] * h_v2 - normal_direction[2] * h_v1)
+
+    return SVector(zero(eltype(u)), s2, s3, s4, zero(eltype(u)))
+end
+
+"""
     source_terms_lagrange_multiplier(u, du, x, t,
-                                          equations::ShallowWaterEquations3D,
-                                          normal_direction)
+                                     equations::ShallowWaterEquations3D,
+                                     normal_direction)
 
 Source term function to apply a Lagrange multiplier to the semi-discretization
 in order to constrain the momentum to a 2D manifold.
 
-The vector normal_direction is perpendicular to the 2D manifold. By default, 
-this is the normal contravariant basis vector.
+The vector `normal_direction` is perpendicular to the 2D manifold. By default, 
+it is the normal contravariant basis vector.
 """
 function source_terms_lagrange_multiplier(u, du, x, t,
                                           equations::ShallowWaterEquations3D,
@@ -232,13 +348,31 @@ function source_terms_lagrange_multiplier(u, du, x, t,
 end
 
 """
+    source_terms_coriolis_lagrange_multiplier(u, du, x, t,
+                                              equations::ShallowWaterEquations3D,
+                                              normal_direction)
+
+Computes the Coriolis source term ([`source_terms_coriolis`](@ref)) and the
+Lagrange multiplier source term ([`source_terms_lagrange_multiplier`](@ref)).
+"""
+function source_terms_coriolis_lagrange_multiplier(u, du, x, t,
+                                                   equations::ShallowWaterEquations3D,
+                                                   normal_direction)
+    s_coriolis = source_terms_coriolis(u, du, x, t, equations, normal_direction)
+    s_lagrange = source_terms_lagrange_multiplier(u, du, x, t, equations,
+                                                  normal_direction)
+
+    return s_coriolis + s_lagrange
+end
+
+"""
          clean_solution_lagrange_multiplier!(u, equations::ShallowWaterEquations3D, normal_direction)
 
 Function to apply Lagrange multiplier discretely to the solution in order to constrain 
 the momentum to a 2D manifold.
 
-The vector normal_direction is perpendicular to the 2D manifold. By default, 
-this is the normal contravariant basis vector.
+The vector `normal_direction` is perpendicular to the 2D manifold. By default, 
+it is the normal contravariant basis vector.
 """
 function clean_solution_lagrange_multiplier!(u, equations::ShallowWaterEquations3D,
                                              normal_direction)
@@ -281,6 +415,33 @@ end
                                   equations)
     diss = -0.5f0 * λ * (u_rr - u_ll)
     return SVector(diss[1], diss[2], diss[3], diss[4], zero(eltype(u_ll)))
+end
+
+# Specialization of [`DissipationLaxFriedrichsEntropyVariables`](https://trixi-framework.github.io/Trixi.jl/stable/reference-trixi/#Trixi.DissipationLaxFriedrichsEntropyVariables) 
+# for the shallow water system. This is equivalent to `DissipationLocalLaxFriedrichs` if the bottom topography is continuous
+@inline function (dissipation::DissipationLaxFriedrichsEntropyVariables)(u_ll, u_rr,
+                                                                         orientation_or_normal_direction,
+                                                                         equations::ShallowWaterEquations3D)
+    h_ll, h_v1_ll, h_v2_ll, h_v3_ll, b_ll = u_ll
+    h_rr, h_v1_rr, h_v2_rr, h_v3_rr, b_rr = u_rr
+    v1_ll, v2_ll, v3_ll = velocity(u_ll, equations)
+    v1_rr, v2_rr, v3_rr = velocity(u_rr, equations)
+
+    # Compute the maximum wave speed
+    λ = dissipation.max_abs_speed(u_ll, u_rr, orientation_or_normal_direction,
+                                  equations)
+
+    # Get some averages
+    v1_avg = 0.5 * (v1_ll + v1_rr)
+    v2_avg = 0.5 * (v2_ll + v2_rr)
+    v3_avg = 0.5 * (v3_ll + v3_rr)
+
+    # Compute dissipation operator
+    diss1 = -0.5 * λ * ((h_rr + b_rr) - (h_ll + b_ll))
+    diss2 = -0.5 * λ * ((h_v1_rr - h_v1_ll) + v1_avg * (b_rr - b_ll))
+    diss3 = -0.5 * λ * ((h_v2_rr - h_v2_ll) + v2_avg * (b_rr - b_ll))
+    diss4 = -0.5 * λ * ((h_v3_rr - h_v3_ll) + v3_avg * (b_rr - b_ll))
+    return SVector(diss1, diss2, diss3, diss4, zero(eltype(u_ll)))
 end
 
 @inline function Trixi.max_abs_speeds(u, equations::ShallowWaterEquations3D)
