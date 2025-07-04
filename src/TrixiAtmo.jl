@@ -19,6 +19,7 @@ using LinearAlgebra: cross, norm, dot, det
 using Reexport: @reexport
 using LoopVectorization: @turbo
 using QuadGK: quadgk
+using ForwardDiff: derivative
 using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
 
 @reexport using StaticArrays: SVector, SMatrix
@@ -29,7 +30,6 @@ include("equations/equations.jl")
 include("meshes/meshes.jl")
 include("semidiscretization/semidiscretization.jl")
 include("solvers/solvers.jl")
-include("semidiscretization/semidiscretization_hyperbolic_2d_manifold_in_3d.jl")
 include("callbacks_step/callbacks_step.jl")
 
 export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
@@ -49,7 +49,8 @@ export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!
 export cons2prim_and_vorticity, contravariant2global
 
 export P4estMeshCubedSphere2D, P4estMeshQuadIcosahedron2D, MetricTermsCrossProduct,
-       MetricTermsInvariantCurl
+       MetricTermsInvariantCurl, MetricTermsCovariantSphere, ChristoffelSymbolsAutodiff,
+       ChristoffelSymbolsCollocationDerivative
 
 export EARTH_RADIUS, EARTH_GRAVITATIONAL_ACCELERATION,
        EARTH_ROTATION_RATE, SECONDS_PER_DAY
