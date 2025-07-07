@@ -31,8 +31,7 @@ function Trixi.rhs!(du, u, t,
     Trixi.@trixi_timeit Trixi.timer() "interface flux" begin
         Trixi.calc_interface_flux!(cache.elements.surface_flux_values, mesh,
                                    Trixi.have_nonconservative_terms(equations),
-                                   equations,
-                                   dg.surface_integral, dg, cache)
+                                   equations, dg, cache)
     end
 
     # Prolong solution to boundaries
