@@ -1,5 +1,5 @@
 """
-    🌍 TrixiAtmo 🌍
+    TrixiAtmo
 
 **TrixiAtmo.jl** is a simulation package for atmospheric models based on
 [Trixi.jl](https://github.com/trixi-framework/Trixi.jl)
@@ -41,7 +41,8 @@ export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 export flux_chandrashekar, FluxLMARS
 
 export flux_nonconservative_zeros, flux_nonconservative_ec,
-       flux_nonconservative_surface_simplified, source_terms_geometric_coriolis
+       flux_nonconservative_surface_simplified, source_terms_geometric_coriolis,
+       source_terms_coriolis, source_terms_coriolis_lagrange_multiplier
 
 export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!
 
