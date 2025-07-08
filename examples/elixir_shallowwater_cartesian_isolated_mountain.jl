@@ -1,6 +1,7 @@
 ###############################################################################
-# Entropy-stable DGSEM for the shallow water equations in covariant form on the 
-# cubed sphere: Rossby-Haurwitz wave (Case 6, Williamson et al., 1992)
+# Entropy-stable DGSEM for the 3D shallow water equations in Cartesian form on 
+# the cubed sphere: Zonal flow over an isolated mountain (Case 5, Williamson et 
+# al., 1992)
 ###############################################################################
 
 using OrdinaryDiffEq, Trixi, TrixiAtmo
@@ -8,11 +9,11 @@ using OrdinaryDiffEq, Trixi, TrixiAtmo
 ###############################################################################
 # Parameters
 
-initial_condition = initial_condition_rossby_haurwitz
-polydeg = 7
-cells_per_dimension = (9, 9)
+initial_condition = initial_condition_isolated_mountain
+polydeg = 5
+cells_per_dimension = (30, 30)
 n_saves = 10
-tspan = (0.0, 14.0 * SECONDS_PER_DAY)
+tspan = (0.0, 15.0 * SECONDS_PER_DAY)
 
 ###############################################################################
 # Spatial discretization
@@ -20,15 +21,15 @@ tspan = (0.0, 14.0 * SECONDS_PER_DAY)
 mesh = P4estMeshCubedSphere2D(cells_per_dimension[1], EARTH_RADIUS, polydeg = polydeg,
                               element_local_mapping = true)
 
-equations = SplitCovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION,
-                                                  EARTH_ROTATION_RATE,
-                                                  global_coordinate_system = GlobalCartesianCoordinates())
+equations = ShallowWaterEquations3D(gravity = EARTH_GRAVITATIONAL_ACCELERATION,
+                                    rotation_rate = EARTH_ROTATION_RATE)
 
 # Use entropy-conservative two-point flux for volume terms, dissipative surface flux with 
-# simplification for continuous (zero) bottom topography
-volume_flux = (flux_ec, flux_nonconservative_ec)
-surface_flux = (FluxPlusDissipation(flux_ec, DissipationLocalLaxFriedrichs()),
-                flux_nonconservative_surface_simplified)
+# simplification for continuous bottom topography
+volume_flux = (flux_wintermeyer_etal, flux_nonconservative_wintermeyer_etal)
+surface_flux = (FluxPlusDissipation(flux_wintermeyer_etal,
+                                    DissipationLaxFriedrichsEntropyVariables()),
+                flux_nonconservative_wintermeyer_etal)
 
 # Create DG solver with polynomial degree = polydeg
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
@@ -37,12 +38,11 @@ solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
 # Transform the initial condition to the proper set of conservative variables
 initial_condition_transformed = transform_initial_condition(initial_condition, equations)
 
-# A semidiscretization collects data structures and functions for the spatial discretization.
-# Even though `metric_terms = MetricTermsCovariantSphere()` is default, we pass it here
-# explicitly, such that `metric_terms` can be adjusted from the `trixi_include()` call in the tests 
+# A semidiscretization collects data structures and functions for the spatial 
+# discretization. Here, we pass in the additional keyword argument "auxiliary_field" to 
+# specify the bottom topography.
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver,
-                                    metric_terms = MetricTermsCovariantSphere(),
-                                    source_terms = source_terms_geometric_coriolis)
+                                    source_terms = source_terms_coriolis_lagrange_multiplier)
 
 ###############################################################################
 # ODE solvers, callbacks etc.
@@ -59,7 +59,8 @@ summary_callback = SummaryCallback()
 analysis_callback = AnalysisCallback(semi, interval = 200,
                                      save_analysis = true,
                                      extra_analysis_errors = (:conservation_error,),
-                                     extra_analysis_integrals = (entropy,))
+                                     extra_analysis_integrals = (entropy,),
+                                     analysis_polydeg = polydeg)
 
 # The SaveSolutionCallback allows to save the solution to a file in regular intervals
 save_solution = SaveSolutionCallback(dt = (tspan[2] - tspan[1]) / n_saves,

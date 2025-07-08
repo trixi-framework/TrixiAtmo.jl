@@ -9,7 +9,7 @@ EXAMPLES_DIR = TrixiAtmo.examples_dir()
 
 @trixiatmo_testset "Spherical advection (cubed sphere), Cartesian weak form, LLF surface flux" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_shallowwater_cubed_sphere_shell_advection.jl"),
+                                 "elixir_shallowwater_cartesian_advection_cubed_sphere.jl"),
                         l2=[
                             0.796321633853675,
                             20.317829852384286,
@@ -37,7 +37,7 @@ end
 
 @trixiatmo_testset "Spherical advection (quad icosahedron), Cartesian weak form, LLF surface flux" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_shallowwater_quad_icosahedron_shell_advection.jl"),
+                                 "elixir_shallowwater_cartesian_advection_quad_icosahedron.jl"),
                         l2=[
                             0.45702277148735726,
                             11.807355540175404,
@@ -65,7 +65,7 @@ end
 
 @trixiatmo_testset "Spherical advection, Cartesian weak form, element-local mapping" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_shallowwater_cubed_sphere_shell_advection.jl"),
+                                 "elixir_shallowwater_cartesian_advection_cubed_sphere.jl"),
                         l2=[
                             0.8933429672952714,
                             22.84887991902509,

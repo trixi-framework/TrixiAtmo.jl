@@ -1,6 +1,70 @@
 @muladd begin
 #! format: noindent
 
+# Custom rhs! method for equations in covariant form. This differs from the standard 
+# P4estMesh rhs! only in the fact that prolong2mortars! and calc_mortar_flux! are not 
+# called, as we do not currently support nonconforming (i.e. adaptive) meshes in the 
+# covariant solver, and thus appropriate methods have not been implemented for mortars.
+function Trixi.rhs!(du, u, t,
+                    mesh::P4estMesh{2},
+                    equations::AbstractCovariantEquations{2},
+                    boundary_conditions, source_terms::Source,
+                    dg::DG, cache) where {Source}
+    # Reset du
+    Trixi.@trixi_timeit Trixi.timer() "reset ∂u/∂t" Trixi.reset_du!(du, dg, cache)
+
+    # Calculate volume integral
+    Trixi.@trixi_timeit Trixi.timer() "volume integral" begin
+        Trixi.calc_volume_integral!(du, u, mesh,
+                                    Trixi.have_nonconservative_terms(equations),
+                                    equations, dg.volume_integral, dg, cache)
+    end
+
+    # Prolong solution to interfaces
+    Trixi.@trixi_timeit Trixi.timer() "prolong2interfaces" begin
+        Trixi.prolong2interfaces!(cache, u, mesh, equations, dg)
+    end
+
+    # Calculate interface fluxes
+    Trixi.@trixi_timeit Trixi.timer() "interface flux" begin
+        Trixi.calc_interface_flux!(cache.elements.surface_flux_values, mesh,
+                                   Trixi.have_nonconservative_terms(equations),
+                                   equations, dg.surface_integral, dg, cache)
+    end
+
+    # Prolong solution to boundaries
+    Trixi.@trixi_timeit Trixi.timer() "prolong2boundaries" begin
+        Trixi.prolong2boundaries!(cache, u, mesh, equations, dg.surface_integral, dg)
+    end
+
+    # Calculate boundary fluxes
+    Trixi.@trixi_timeit Trixi.timer() "boundary flux" begin
+        Trixi.calc_boundary_flux!(cache, t, boundary_conditions, mesh, equations,
+                                  dg.surface_integral, dg)
+    end
+
+    # In Trixi.jl's standard P4est solver, prolong2mortars! and calc_mortar_flux! would be 
+    # called here.
+
+    # Calculate surface integrals
+    Trixi.@trixi_timeit Trixi.timer() "surface integral" begin
+        Trixi.calc_surface_integral!(du, u, mesh, equations, dg.surface_integral, dg,
+                                     cache)
+    end
+
+    # Apply Jacobian from mapping to reference element
+    Trixi.@trixi_timeit Trixi.timer() "Jacobian" Trixi.apply_jacobian!(du, mesh,
+                                                                       equations, dg,
+                                                                       cache)
+
+    # Calculate source terms
+    Trixi.@trixi_timeit Trixi.timer() "source terms" begin
+        Trixi.calc_sources!(du, u, t, source_terms, equations, dg, cache)
+    end
+
+    return nothing
+end
+
 # Compute coefficients for an initial condition that uses auxiliary variables
 function Trixi.compute_coefficients!(u, func, t, mesh::P4estMesh{2},
                                      equations::AbstractCovariantEquations{2}, dg::DG,
@@ -163,12 +227,75 @@ end
     return nothing
 end
 
+# Calculate the interface flux directly in the local coordinate system. This function 
+# differs from the standard approach in Trixi.jl in that one does not need to pass the 
+# normal vector to the pointwise flux calculation.
+function Trixi.calc_interface_flux!(surface_flux_values,
+                                    mesh::P4estMesh{2},
+                                    nonconservative_terms,
+                                    equations::AbstractCovariantEquations{2},
+                                    surface_integral, dg::DG, cache)
+    (; neighbor_ids, node_indices) = cache.interfaces
+    index_range = eachnode(dg)
+    index_end = last(index_range)
+
+    Trixi.@threaded for interface in Trixi.eachinterface(dg, cache)
+        # Get element and side index information on the primary element
+        primary_element = neighbor_ids[1, interface]
+        primary_indices = node_indices[1, interface]
+        primary_direction = Trixi.indices2direction(primary_indices)
+
+        # Create the local i,j indexing on the primary element used to pull normal 
+        # direction information
+        i_primary_start, i_primary_step = Trixi.index_to_start_step_2d(primary_indices[1],
+                                                                       index_range)
+        j_primary_start, j_primary_step = Trixi.index_to_start_step_2d(primary_indices[2],
+                                                                       index_range)
+
+        i_primary = i_primary_start
+        j_primary = j_primary_start
+
+        # Get element and side index information on the secondary element
+        secondary_element = neighbor_ids[2, interface]
+        secondary_indices = node_indices[2, interface]
+        secondary_direction = Trixi.indices2direction(secondary_indices)
+
+        # Initiate the secondary index to be used in the surface for loop.
+        # This index on the primary side will always run forward but
+        # the secondary index might need to run backwards for flipped sides.
+        if :i_backward in secondary_indices
+            node_secondary = index_end
+            node_secondary_step = -1
+        else
+            node_secondary = 1
+            node_secondary_step = 1
+        end
+
+        for node in eachnode(dg)
+            Trixi.calc_interface_flux!(surface_flux_values, mesh, nonconservative_terms,
+                                       equations, surface_integral, dg, cache,
+                                       interface, node, primary_direction,
+                                       primary_element,
+                                       node_secondary, secondary_direction,
+                                       secondary_element)
+
+            # Increment primary element indices to pull the normal direction
+            i_primary += i_primary_step
+            j_primary += j_primary_step
+            # Increment the surface node index along the secondary element
+            node_secondary += node_secondary_step
+        end
+    end
+
+    return nothing
+end
+
 # Pointwise interface flux in local coordinates for problems without nonconservative terms
 @inline function Trixi.calc_interface_flux!(surface_flux_values, mesh::P4estMesh{2},
                                             nonconservative_terms::False,
                                             equations::AbstractCovariantEquations{2},
                                             surface_integral, dg::DG, cache,
-                                            interface_index, normal_direction,
+                                            interface_index,
                                             primary_node_index,
                                             primary_direction_index,
                                             primary_element_index,
@@ -229,7 +356,7 @@ end
                                             nonconservative_terms::True,
                                             equations::AbstractCovariantEquations{2},
                                             surface_integral, dg::DG, cache,
-                                            interface_index, normal_direction,
+                                            interface_index,
                                             primary_node_index,
                                             primary_direction_index,
                                             primary_element_index,
