@@ -17,27 +17,24 @@ function Trixi.rhs!(du, u, t,
     Trixi.@trixi_timeit Trixi.timer() "volume integral" begin
         Trixi.calc_volume_integral!(du, u, mesh,
                                     Trixi.have_nonconservative_terms(equations),
-                                    equations,
-                                    dg.volume_integral, dg, cache)
+                                    equations, dg.volume_integral, dg, cache)
     end
 
     # Prolong solution to interfaces
     Trixi.@trixi_timeit Trixi.timer() "prolong2interfaces" begin
-        Trixi.prolong2interfaces!(cache, u, mesh, equations,
-                                  dg.surface_integral, dg)
+        Trixi.prolong2interfaces!(cache, u, mesh, equations, dg)
     end
 
     # Calculate interface fluxes
     Trixi.@trixi_timeit Trixi.timer() "interface flux" begin
         Trixi.calc_interface_flux!(cache.elements.surface_flux_values, mesh,
                                    Trixi.have_nonconservative_terms(equations),
-                                   equations, dg, cache)
+                                   equations, dg.surface_integral, dg, cache)
     end
 
     # Prolong solution to boundaries
     Trixi.@trixi_timeit Trixi.timer() "prolong2boundaries" begin
-        Trixi.prolong2boundaries!(cache, u, mesh, equations,
-                                  dg.surface_integral, dg)
+        Trixi.prolong2boundaries!(cache, u, mesh, equations, dg.surface_integral, dg)
     end
 
     # Calculate boundary fluxes
@@ -51,8 +48,8 @@ function Trixi.rhs!(du, u, t,
 
     # Calculate surface integrals
     Trixi.@trixi_timeit Trixi.timer() "surface integral" begin
-        Trixi.calc_surface_integral!(du, u, mesh, equations,
-                                     dg.surface_integral, dg, cache)
+        Trixi.calc_surface_integral!(du, u, mesh, equations, dg.surface_integral, dg,
+                                     cache)
     end
 
     # Apply Jacobian from mapping to reference element
