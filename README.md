@@ -39,7 +39,7 @@ downloaded manually and then run from within the cloned directory:
 git clone https://github.com/trixi-framework/TrixiAtmo.jl.git
 julia --project=@.
 ```
-In addition TrixiAtmo.jl requires the numerical solver framework
+In addition, TrixiAtmo.jl requires the numerical solver framework
 [Trixi.jl](https://github.com/trixi-framework/Trixi.jl), relevant sub-packages of
 [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) for time integration, and
 [Plots.jl](https://github.com/JuliaPlots/Plots.jl) for visualization, which can be
