@@ -20,7 +20,7 @@ StrideArrays = "d1fa6d79-ef01-42a6-86c9-f7c551f8593b"
 Trixi = "a7f1ee26-1774-49b1-8366-f1abc58fbfcb"
 
 [compat]
-ForwardDiff = "0.10.36"
+ForwardDiff = "0.10.36, 1"
 HDF5 = "0.16.10, 0.17"
 LinearAlgebra = "1"
 LoopVectorization = "0.12.118"
