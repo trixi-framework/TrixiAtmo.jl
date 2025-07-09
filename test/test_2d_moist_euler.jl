@@ -1,14 +1,9 @@
 module TestExamples2DMoistEuler
 
-using Test
-using TrixiAtmo
-
 include("test_trixiatmo.jl")
 
-EXAMPLES_DIR = TrixiAtmo.examples_dir()
-
-@trixiatmo_testset "elixir_moist_euler_dry_bubble" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
+@trixi_testset "elixir_moist_euler_dry_bubble" begin
+    @test_trixi_include_base(joinpath(EXAMPLES_DIR,
                                  "elixir_moist_euler_dry_bubble.jl"),
                         l2=[
                             9.103834949215729e-7,
@@ -37,8 +32,8 @@ EXAMPLES_DIR = TrixiAtmo.examples_dir()
     end
 end
 
-@trixiatmo_testset "elixir_moist_euler_EC_bubble" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "elixir_moist_euler_EC_bubble.jl"),
+@trixi_testset "elixir_moist_euler_EC_bubble" begin
+    @test_trixi_include_base(joinpath(EXAMPLES_DIR, "elixir_moist_euler_EC_bubble.jl"),
                         l2=[
                             0.01345154393018332,
                             0.8070926361417218,
@@ -68,8 +63,8 @@ end
     end
 end
 
-@trixiatmo_testset "elixir_moist_euler_moist_bubble" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "elixir_moist_euler_moist_bubble.jl"),
+@trixi_testset "elixir_moist_euler_moist_bubble" begin
+    @test_trixi_include_base(joinpath(EXAMPLES_DIR, "elixir_moist_euler_moist_bubble.jl"),
                         l2=[
                             7.351043427240923e-6,
                             1.1070342432069074e-7,
@@ -99,8 +94,8 @@ end
     end
 end
 
-@trixiatmo_testset "elixir_moist_euler_nonhydrostatic_gravity_waves" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
+@trixi_testset "elixir_moist_euler_nonhydrostatic_gravity_waves" begin
+    @test_trixi_include_base(joinpath(EXAMPLES_DIR,
                                  "elixir_moist_euler_nonhydrostatic_gravity_waves.jl"),
                         l2=[
                             3.5420405147937216e-5,
@@ -131,8 +126,8 @@ end
     end
 end
 
-@trixiatmo_testset "elixir_moist_euler_source_terms_dry" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "elixir_moist_euler_source_terms_dry.jl"),
+@trixi_testset "elixir_moist_euler_source_terms_dry" begin
+    @test_trixi_include_base(joinpath(EXAMPLES_DIR, "elixir_moist_euler_source_terms_dry.jl"),
                         l2=[
                             1.3992076791281227e-5,
                             1.4486417486907815e-5,
@@ -162,8 +157,8 @@ end
     end
 end
 
-@trixiatmo_testset "elixir_moist_euler_source_terms_moist" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "elixir_moist_euler_source_terms_moist.jl"),
+@trixi_testset "elixir_moist_euler_source_terms_moist" begin
+    @test_trixi_include_base(joinpath(EXAMPLES_DIR, "elixir_moist_euler_source_terms_moist.jl"),
                         l2=[
                             1.8307663991129928e-5,
                             0.04008077097727512,
@@ -193,8 +188,8 @@ end
     end
 end
 
-@trixiatmo_testset "elixir_moist_euler_source_terms_split_moist" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
+@trixi_testset "elixir_moist_euler_source_terms_split_moist" begin
+    @test_trixi_include_base(joinpath(EXAMPLES_DIR,
                                  "elixir_moist_euler_source_terms_split_moist.jl"),
                         l2=[
                             0.0001480393848825987,

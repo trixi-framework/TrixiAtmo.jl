@@ -3,8 +3,6 @@ module TestMPI
 using Test
 using TrixiAtmo
 
-include("test_trixiatmo.jl")
-
 # Start with a clean environment: remove Trixi.jl output directory if it exists
 outdir = "out"
 Trixi.mpi_isroot() && isdir(outdir) && rm(outdir, recursive = true)
@@ -21,7 +19,7 @@ EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
 @testset "MPI tests" begin
 #! format: noindent
 
-@trixiatmo_testset "elixir_moist_euler_moist_bubble" begin
+@trixi_testset "elixir_moist_euler_moist_bubble" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "elixir_moist_euler_dry_bubble.jl"),
                         l2=[
                             9.103834949215729e-7,
