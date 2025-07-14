@@ -33,6 +33,27 @@ function convert_variables(u, solution_variables, mesh::P4estMesh{2},
     return data
 end
 
+# Convert to another set of variables using a solution_variables function
+function convert_variables(u, solution_variables, mesh::DGMultiMesh,
+                           equations::AbstractCovariantEquations, dg, cache)
+    (; aux_values) = cache
+    # Extract the number of solution variables to be output 
+    # (may be different than the number of conservative variables) 
+    n_vars = length(Trixi.varnames(solution_variables, equations))
+
+    # Allocate storage for output, an Np x n_elements array of nvars arrays
+    # data = Array{eltype(u)}(undef, n_vars, (size(aux_node_vars)[2:end])...)
+    data = map(_ -> SVector{n_vars, eltype(u)}(zeros(n_vars)), u)
+    
+    # Loop over all nodes and convert variables, passing in auxiliary variables
+    for i in Trixi.each_dof_global(mesh, dg)
+        u_node = u[:, i]
+        aux_node = aux_values[i]
+        data[i] = solution_variables(u_node, aux_node, equations)
+    end
+    return data
+end
+
 # Calculate the primitive variables and relative vorticity at a given node. The velocity
 # components in the global coordinate system and the bottom topography are returned, such 
 # that the outputs for CovariantShallowWaterEquations2D and ShallowWaterEquations3D are the 

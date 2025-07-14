@@ -77,6 +77,29 @@ function Trixi.analyze(::typeof(Trixi.entropy_timederivative), du, u, t,
     end
 end
 
+# Entropy time derivative for cons2entropy function which depends on auxiliary variables
+function Trixi.analyze(::typeof(Trixi.entropy_timederivative), du, u, t,
+                 mesh::DGMultiMesh, equations::AbstractCovariantEquations, dg::DGMulti, cache)
+    rd = dg.basis
+    md = mesh.md
+    @unpack u_values, aux_quad_values = cache
+
+    # interpolate u, du to quadrature points
+    du_values = similar(u_values) # TODO: DGMulti. Can we move this to the analysis cache somehow?
+    Trixi.apply_to_each_field(Trixi.mul_by!(rd.Vq), du_values, du)
+    Trixi.apply_to_each_field(Trixi.mul_by!(rd.Vq), u_values, u)
+
+    # compute ∫v(u) * du/dt = ∫dS/dt. We can directly compute v(u) instead of computing the entropy
+    # projection here, since the RHS will be projected to polynomials of degree N and testing with
+    # the L2 projection of v(u) would be equivalent to testing with v(u) due to the moment-preserving
+    # property of the L2 projection.
+    dS_dt = zero(eltype(first(du)))
+    for i in Base.OneTo(length(md.wJq))
+        dS_dt += dot(cons2entropy(u_values[i], aux_quad_values[i], equations), du_values[i]) * md.wJq[i]
+    end
+    return dS_dt
+end
+
 # L2 and Linf error calculation for the covariant form
 function Trixi.calc_error_norms(func, u, t, analyzer, mesh::P4estMesh{2},
                                 equations::AbstractCovariantEquations{2},
@@ -123,5 +146,28 @@ function Trixi.calc_error_norms(func, u, t, analyzer, mesh::P4estMesh{2},
     l2_error = @. sqrt(l2_error / total_volume)
 
     return l2_error, linf_error
+end
+
+# L2 and Linf error calculation for the covariant form
+function Trixi.calc_error_norms(func, u, t, analyzer,
+                                mesh::DGMultiMesh{NDIMS}, equations::AbstractCovariantEquations, initial_condition,
+                                dg::DGMulti{NDIMS}, cache, cache_analysis) where {NDIMS}
+    rd = dg.basis
+    md = mesh.md
+    @unpack u_values, aux_quad_values = cache
+
+    # interpolate u to quadrature points
+    Trixi.apply_to_each_field(Trixi.mul_by!(rd.Vq), u_values, u)
+
+    component_l2_errors = zero(eltype(u_values))
+    component_linf_errors = zero(eltype(u_values))
+    for i in Trixi.each_quad_node_global(mesh, dg, cache)
+        u_exact = initial_condition(SVector(getindex.(md.xyzq, i)), t, aux_quad_values[i], equations)
+        error_at_node = func(u_values[i], equations) - func(u_exact, equations)
+        component_l2_errors += md.wJq[i] * error_at_node .^ 2
+        component_linf_errors = max.(component_linf_errors, abs.(error_at_node))
+    end
+    total_volume = sum(md.wJq)
+    return sqrt.(component_l2_errors ./ total_volume), component_linf_errors
 end
 end # @muladd
