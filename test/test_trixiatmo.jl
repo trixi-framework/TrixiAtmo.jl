@@ -6,10 +6,11 @@ using TrixiAtmo
 
 EXAMPLES_DIR = TrixiAtmo.examples_dir()
 
-macro test_trixi_include(expr, additional_ignore_content = [])
+macro test_trixi_include(expr, args...)
+    local add_to_additional_ignore_content = []
+    args = append_to_kwargs(args, :additional_ignore_content,
+                            add_to_additional_ignore_content)
     quote
-        add_to_additional_ignore_content = []
-        append!($additional_ignore_content, add_to_additional_ignore_content)
-        @test_trixi_include_base $(esc(expr)) $additional_ignore_content
+        @test_trixi_include_base($(esc(expr)), $(args...))
     end
 end
