@@ -3,11 +3,9 @@ module TestShallowWaterCartesian
 using Test
 using TrixiAtmo
 
-include("test_trixiatmo.jl")
-
 EXAMPLES_DIR = TrixiAtmo.examples_dir()
 
-@trixiatmo_testset "elixir_shallowwater_cartesian_unsteady_solid_body_rotation_EC_correction" begin
+@trixi_testset "elixir_shallowwater_cartesian_unsteady_solid_body_rotation_EC_correction" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_cartesian_unsteady_solid_body_rotation_EC_correction.jl"),
                         l2=[
@@ -37,7 +35,7 @@ EXAMPLES_DIR = TrixiAtmo.examples_dir()
     end
 end
 
-@trixiatmo_testset "elixir_shallowwater_cartesian_unsteady_solid_body_rotation_EC_projection" begin
+@trixi_testset "elixir_shallowwater_cartesian_unsteady_solid_body_rotation_EC_projection" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_cartesian_unsteady_solid_body_rotation_EC_projection.jl"),
                         l2=[
@@ -67,7 +65,7 @@ end
     end
 end
 
-@trixiatmo_testset "elixir_shallowwater_cartesian_unsteady_solid_body_rotation_EC_projection (ES)" begin
+@trixi_testset "elixir_shallowwater_cartesian_unsteady_solid_body_rotation_EC_projection (ES)" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_cartesian_unsteady_solid_body_rotation_EC_projection.jl"),
                         l2=[
@@ -100,7 +98,7 @@ end
     end
 end
 
-@trixiatmo_testset "elixir_shallowwater_cartesian_well_balanced" begin
+@trixi_testset "elixir_shallowwater_cartesian_well_balanced" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_cartesian_well_balanced.jl"),
                         l2=[0.0, 0.0, 0.0, 0.0, 0.0],
@@ -116,7 +114,7 @@ end
     end
 end
 
-@trixiatmo_testset "elixir_shallowwater_cartesian_geostrophic_balance" begin
+@trixi_testset "elixir_shallowwater_cartesian_geostrophic_balance" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_cartesian_geostrophic_balance.jl"),
                         l2=[
@@ -146,7 +144,7 @@ end
     end
 end
 
-@trixiatmo_testset "elixir_shallowwater_cartesian_isolated_mountain" begin
+@trixi_testset "elixir_shallowwater_cartesian_isolated_mountain" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_cartesian_isolated_mountain.jl"),
                         l2=[

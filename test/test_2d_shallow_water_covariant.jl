@@ -3,11 +3,9 @@ module TestShallowWaterCovariant
 using Test
 using TrixiAtmo
 
-include("test_trixiatmo.jl")
-
 EXAMPLES_DIR = TrixiAtmo.examples_dir()
 
-@trixiatmo_testset "elixir_shallowwater_covariant_geostrophic_balance" begin
+@trixi_testset "elixir_shallowwater_covariant_geostrophic_balance" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_covariant_geostrophic_balance.jl"),
                         l2=[
@@ -33,7 +31,7 @@ EXAMPLES_DIR = TrixiAtmo.examples_dir()
     end
 end
 
-@trixiatmo_testset "elixir_shallowwater_covariant_rossby_haurwitz" begin
+@trixi_testset "elixir_shallowwater_covariant_rossby_haurwitz" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_covariant_rossby_haurwitz.jl"),
                         l2=[265.9818260977567, 0.17644364627357362, 0.2535621726719579],
@@ -52,7 +50,7 @@ end
     end
 end
 
-@trixiatmo_testset "elixir_shallowwater_covariant_isolated_mountain" begin
+@trixi_testset "elixir_shallowwater_covariant_isolated_mountain" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_covariant_isolated_mountain.jl"),
                         l2=[13.18894432799001, 0.005698447961168719, 0.007624217062402512],
@@ -70,7 +68,7 @@ end
     end
 end
 
-@trixiatmo_testset "elixir_shallowwater_covariant_unsteady_solid_body_rotation_EC" begin
+@trixi_testset "elixir_shallowwater_covariant_unsteady_solid_body_rotation_EC" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_covariant_unsteady_solid_body_rotation_EC.jl"),
                         l2=[
@@ -98,7 +96,7 @@ end
     end
 end
 
-@trixiatmo_testset "elixir_shallowwater_covariant_barotropic_instability" begin
+@trixi_testset "elixir_shallowwater_covariant_barotropic_instability" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_covariant_barotropic_instability.jl"),
                         l2=[21.08826693663232, 0.03006187671520436, 0.023421745045307123],
@@ -116,7 +114,7 @@ end
     end
 end
 
-@trixiatmo_testset "elixir_shallowwater_covariant_well_balanced" begin
+@trixi_testset "elixir_shallowwater_covariant_well_balanced" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_covariant_well_balanced.jl"),
                         l2=[0.0, 0.0, 0.0], linf=[0.0, 0.0, 0.0],
