@@ -425,7 +425,8 @@ end
     c_rr = sqrt(max(equations.gravity * h_rr, 0.0f0))
 
     # The normal velocities are already scaled by the norm
-    return max(abs(v_ll) + c_ll, abs(v_rr) + c_rr) * norm(normal_direction)
+    norm_ = norm(normal_direction)
+    return max(abs(v_ll) + c_ll * norm_, abs(v_rr) + c_rr * norm_)
 end
 
 # Specialized `DissipationLocalLaxFriedrichs` to avoid spurious dissipation in the bottom topography
