@@ -13,7 +13,7 @@ links = InterLinks("Trixi" => ("https://trixi-framework.github.io/TrixiDocumenta
                                "https://trixi-framework.github.io/TrixiDocumentation/stable/objects.inv"))
 
 # Search for any unresolvable `@ref` reference in external sources
-fallbacks = ExternalFallbacks(; automatic=true)
+fallbacks = ExternalFallbacks(; automatic = true)
 
 # Define module-wide setups such that the respective modules are available in doctests
 DocMeta.setdocmeta!(TrixiAtmo, :DocTestSetup, :(using TrixiAtmo);
