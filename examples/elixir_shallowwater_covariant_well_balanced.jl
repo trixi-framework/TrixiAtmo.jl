@@ -4,7 +4,7 @@
 # geopotential height remains constant after one day for zero initial velocity)
 ###############################################################################
 
-using OrdinaryDiffEq, Trixi, TrixiAtmo
+using OrdinaryDiffEqLowStorageRK, Trixi, TrixiAtmo
 
 ###############################################################################
 # Parameters
