@@ -11,17 +11,17 @@ EXAMPLES_DIR = TrixiAtmo.examples_dir()
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_cartesian_advection_cubed_sphere.jl"),
                         l2=[
-                            0.0,
-                            0.317829852384286,
-                            0.810001095524816,
-                            0.317829852393054,
+                            0.183524336,
+                            5.64470440,
+                            2.80467667,
+                            5.64470440,
                             0.0
                         ],
                         linf=[
-                            0.872101731709677,
-                            0.6515963524798,
-                            0.1288712006542,
-                            0.65159635247255,
+                            2.79650356,
+                            91.6208734,
+                            24.9330974,
+                            91.6208734,
                             0.0
                         ])
     # and small reference values
@@ -39,17 +39,17 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_cartesian_advection_quad_icosahedron.jl"),
                         l2=[
-                            0.0,
-                            0.807355540175404,
-                            0.311881740745649,
-                            0.807355540181993,
+                            0.0771325788,
+                            2.24899209,
+                            1.45355192,
+                            2.24899209,
                             0.0
                         ],
                         linf=[
-                            0.591965583200476,
-                            0.76418895396273,
-                            0.69731833993228,
-                            0.76418895397,
+                            1.18929523,
+                            34.1427583,
+                            17.9760460,
+                            34.1427583,
                             0.0
                         ])
     # and small reference values
@@ -67,17 +67,17 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_cartesian_advection_cubed_sphere.jl"),
                         l2=[
-                            0.8933429672952714,
-                            0.84887991902509,
-                            0.758850586757735,
-                            0.84887991902542,
+                            0.222179190,
+                            6.74419737,
+                            3.36551000,
+                            6.74419737,
                             0.0
                         ],
                         linf=[
-                            0.289456304624764,
-                            0.6958334067349,
-                            0.59259301602742,
-                            0.69583340674217,
+                            3.60436608,
+                            113.572183,
+                            30.1250336,
+                            113.572183,
                             0.0
                         ], element_local_mapping=true)
     # and small reference values

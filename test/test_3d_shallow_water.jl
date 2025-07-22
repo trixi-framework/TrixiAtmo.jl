@@ -11,17 +11,17 @@ EXAMPLES_DIR = TrixiAtmo.examples_dir()
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_cartesian_unsteady_solid_body_rotation_EC_correction.jl"),
                         l2=[
-                            0.1385840313143962,
-                            0.82837506217066,
-                            0.1401783834081,
-                            0.3170683216476,
+                            0.0274954994,
+                            9.65117289,
+                            8.20257340,
+                            18.5292301,
                             0.0
                         ],
                         linf=[
-                            0.159323444366919,
-                            0.7491913049016,
-                            0.553600463765,
-                            0.0452131916827,
+                            0.157738035,
+                            59.4123680,
+                            51.9233503,
+                            8.36833383,
                             0.0
                         ],
                         polydeg=3,
