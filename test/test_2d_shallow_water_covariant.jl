@@ -1,9 +1,6 @@
 module TestShallowWaterCovariant
 
-using Test
-using TrixiAtmo
-
-EXAMPLES_DIR = TrixiAtmo.examples_dir()
+include("test_trixiatmo.jl")
 
 @trixi_testset "elixir_shallowwater_covariant_geostrophic_balance" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,

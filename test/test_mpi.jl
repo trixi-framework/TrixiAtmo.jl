@@ -1,7 +1,6 @@
 module TestMPI
 
-using Test
-using TrixiAtmo
+include("test_trixiatmo.jl")
 
 # Start with a clean environment: remove Trixi.jl output directory if it exists
 outdir = "out"
@@ -13,8 +12,6 @@ Trixi.MPI.Barrier(Trixi.mpi_comm())
 # in the cloud with Windows as follows, see also
 # https://docs.github.com/en/actions/learn-github-actions/environment-variables
 CI_ON_WINDOWS = (get(ENV, "GITHUB_ACTIONS", false) == "true") && Sys.iswindows()
-
-EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
 
 @testset "MPI tests" begin
 #! format: noindent

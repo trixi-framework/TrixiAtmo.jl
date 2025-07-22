@@ -1,9 +1,6 @@
 module TestSphericalAdvection
 
-using Test
-using TrixiAtmo
-
-EXAMPLES_DIR = TrixiAtmo.examples_dir()
+include("test_trixiatmo.jl")
 
 @trixi_testset "Spherical advection (cubed sphere), Cartesian weak form, LLF surface flux" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,

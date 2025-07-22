@@ -1,9 +1,6 @@
 module TestShallowWaterCartesian
 
-using Test
-using TrixiAtmo
-
-EXAMPLES_DIR = TrixiAtmo.examples_dir()
+include("test_trixiatmo.jl")
 
 @trixi_testset "elixir_shallowwater_cartesian_unsteady_solid_body_rotation_EC_correction" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,

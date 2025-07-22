@@ -8,7 +8,6 @@ isdir(outdir) && rm(outdir, recursive = true)
 
 @trixi_testset "Dry air consistency check" begin
     using Trixi
-    using TrixiAtmo
 
     # Dry air warm bubble test case in Trixi.jl
     maxiters = 100
@@ -39,7 +38,7 @@ isdir(outdir) && rm(outdir, recursive = true)
     end
 
     # Now use the elixir in TrixiAtmo
-    elixir_atmo = joinpath(TrixiAtmo.examples_dir(), "elixir_moist_euler_dry_bubble.jl")
+    elixir_atmo = joinpath(EXAMPLES_DIR, "elixir_moist_euler_dry_bubble.jl")
 
     # Override initial condition, maxiters
     trixi_include(elixir_atmo,

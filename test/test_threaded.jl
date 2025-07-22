@@ -1,9 +1,6 @@
 module TestThreaded
 
-using Test
-using TrixiAtmo
-
-EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
+include("test_trixiatmo.jl")
 
 @testset "Threaded tests" begin
 #! format: noindent

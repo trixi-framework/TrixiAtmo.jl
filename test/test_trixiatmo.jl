@@ -1,10 +1,11 @@
 # Testing uses TrixiTest.jl
 # Collect everything needed here and include from test_*.jl
 
+using Test
 using TrixiTest
-using TrixiAtmo
+using TrixiAtmo: examples_dir
 
-EXAMPLES_DIR = TrixiAtmo.examples_dir()
+EXAMPLES_DIR = examples_dir()
 
 macro test_trixi_include(expr, args...)
     local add_to_additional_ignore_content = []
