@@ -110,9 +110,9 @@ end
 end
 
 # Maximum contravariant wave speed with respect to specific basis vector
-@inline function Trixi.max_abs_speed_naive(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
-                                           orientation::Integer,
-                                           equations::CovariantLinearAdvectionEquation2D)
+@inline function Trixi.max_abs_speed(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
+                                     orientation::Integer,
+                                     equations::CovariantLinearAdvectionEquation2D)
     vcon_ll = velocity_contravariant(u_ll, equations)  # Contravariant components on left side
     vcon_rr = velocity_contravariant(u_rr, equations)  # Contravariant components on right side
     return max(abs(vcon_ll[orientation]), abs(vcon_rr[orientation]))
