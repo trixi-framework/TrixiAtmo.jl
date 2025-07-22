@@ -1,5 +1,7 @@
 module TestMPI
 
+using Trixi: Trixi
+
 include("test_trixiatmo.jl")
 
 # Start with a clean environment: remove Trixi.jl output directory if it exists
