@@ -66,7 +66,7 @@ function Trixi.rhs!(du, u, t,
 end
 
 # Compute coefficients for an initial condition that uses auxiliary variables
-function Trixi.compute_coefficients!(u, func, t, mesh::P4estMesh{2},
+function Trixi.compute_coefficients!(backend::Nothing, u, func, t, mesh::P4estMesh{2},
                                      equations::AbstractCovariantEquations{2}, dg::DG,
                                      cache)
     (; aux_node_vars) = cache.auxiliary_variables
