@@ -1,13 +1,10 @@
 module TestExamples2DRainyEuler
 
-using Test
-using TrixiAtmo
-
 include("test_trixiatmo.jl")
 
-EXAMPLES_DIR = joinpath(TrixiAtmo.examples_dir(), "moist_euler")
+EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "moist_euler")
 
-@trixiatmo_testset "convergence_test_rainy" begin
+@trixi_testset "convergence_test_rainy" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "convergence_test",
                                  "convergence_test_rainy.jl"),
@@ -43,7 +40,7 @@ EXAMPLES_DIR = joinpath(TrixiAtmo.examples_dir(), "moist_euler")
     end
 end
 
-@trixiatmo_testset "elixir_rainy_euler_moist_bubble" begin
+@trixi_testset "elixir_rainy_euler_moist_bubble" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "moist_bubble",
                                  "elixir_rainy_euler_moist_bubble.jl"),
@@ -81,7 +78,7 @@ end
     end
 end
 
-@trixiatmo_testset "elixir_rainy_euler_rainy_bubble" begin
+@trixi_testset "elixir_rainy_euler_rainy_bubble" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "rainy_bubble",
                                  "elixir_rainy_euler_rainy_bubble.jl"),
@@ -119,7 +116,7 @@ end
     end
 end
 
-@trixiatmo_testset "elixir_rainy_euler_rainy_bubble_diffusion" begin
+@trixi_testset "elixir_rainy_euler_rainy_bubble_diffusion" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "rainy_bubble",
                                  "elixir_rainy_euler_rainy_bubble_diffusion.jl"),
