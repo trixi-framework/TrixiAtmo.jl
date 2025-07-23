@@ -116,26 +116,24 @@ end
     end
 end
 
-@trixiatmo_testset "elixir_shallowwater_cartesian_geostrophic_balance" begin
+@trixiatmo_testset "elixir_shallowwater_cartesian_geostrophic_balance (naive)" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_cartesian_geostrophic_balance.jl"),
-                        l2=[
-                            0.27676870881275684,
-                            103.39794108387852,
-                            103.39794108387564,
-                            47.5171515443239,
-                            0.0
-                        ],
-                        linf=[
-                            1.238372542072966,
-                            610.2929744255816,
-                            610.2929744259309,
-                            276.44878503463497,
-                            0.0
-                        ],
+                        l2=[0.27676841776660904,
+                            103.39838614468599,
+                            103.39838614468121,
+                            47.51727318373426, 0.0],
+                        linf=[1.238368114471541,
+                            610.2955303677882,
+                            610.2955303679337,
+                            276.44949261002847,
+                            0.0],
                         polydeg=3,
                         cells_per_dimension=(5, 5),
-                        tspan=(0.0, 1.0 * SECONDS_PER_DAY))
+                        tspan=(0.0, 1.0 * SECONDS_PER_DAY),
+                        surface_flux=(FluxPlusDissipation(flux_wintermeyer_etal,
+                                                          DissipationLocalLaxFriedrichs(max_abs_speed_naive)),
+                                      flux_nonconservative_wintermeyer_etal)) # use "naive" wave speed estimate for coverage
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let
