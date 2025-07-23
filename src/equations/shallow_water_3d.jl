@@ -407,6 +407,28 @@ end
     return max(abs(v_ll), abs(v_rr)) + max(c_ll, c_rr) * norm(normal_direction)
 end
 
+@inline function Trixi.max_abs_speed(u_ll, u_rr, normal_direction::AbstractVector,
+                                     equations::ShallowWaterEquations3D)
+    # Extract and compute the velocities in the normal direction
+    v1_ll, v2_ll, v3_ll = velocity(u_ll, equations)
+    v1_rr, v2_rr, v3_rr = velocity(u_rr, equations)
+    v_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2] +
+           v3_ll * normal_direction[3]
+    v_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2] +
+           v3_rr * normal_direction[3]
+
+    # Compute the wave celerity on the left and right
+    h_ll = waterheight(u_ll, equations)
+    h_rr = waterheight(u_rr, equations)
+
+    c_ll = sqrt(max(equations.gravity * h_ll, 0.0f0))
+    c_rr = sqrt(max(equations.gravity * h_rr, 0.0f0))
+
+    # The normal velocities are already scaled by the norm
+    norm_ = norm(normal_direction)
+    return max(abs(v_ll) + c_ll * norm_, abs(v_rr) + c_rr * norm_)
+end
+
 # Specialized `DissipationLocalLaxFriedrichs` to avoid spurious dissipation in the bottom topography
 @inline function (dissipation::DissipationLocalLaxFriedrichs)(u_ll, u_rr,
                                                               orientation_or_normal_direction,

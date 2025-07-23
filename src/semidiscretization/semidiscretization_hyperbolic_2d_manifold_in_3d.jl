@@ -16,15 +16,18 @@ function Trixi.SemidiscretizationHyperbolic(mesh::P4estMesh{2},
                                             # `RealT` is used as real type for node locations etc.
                                             # while `uEltype` is used as element type of solutions etc.
                                             RealT = real(solver), uEltype = RealT,
-                                            initial_cache = NamedTuple(),
                                             metric_terms = MetricTermsCrossProduct(),
                                             auxiliary_field = nothing)
     cache = (;
              Trixi.create_cache(mesh, equations, solver, RealT, metric_terms,
-                                auxiliary_field, uEltype)..., initial_cache...)
+                                auxiliary_field, uEltype)...)
     _boundary_conditions = Trixi.digest_boundary_conditions(boundary_conditions, mesh,
                                                             solver,
                                                             cache)
+
+    Trixi.check_periodicity_mesh_boundary_conditions(mesh, _boundary_conditions)
+
+    performance_counter = Trixi.PerformanceCounter()
 
     SemidiscretizationHyperbolic{typeof(mesh), typeof(equations),
                                  typeof(initial_condition),
@@ -33,7 +36,8 @@ function Trixi.SemidiscretizationHyperbolic(mesh::P4estMesh{2},
                                                                 initial_condition,
                                                                 _boundary_conditions,
                                                                 source_terms, solver,
-                                                                cache)
+                                                                cache,
+                                                                performance_counter)
 end
 
 # Constructor for SemidiscretizationHyperbolic for the covariant form. Requires 
@@ -49,16 +53,19 @@ function Trixi.SemidiscretizationHyperbolic(mesh::P4estMesh{NDIMS, NDIMS_AMBIENT
                                             # `RealT` is used as real type for node locations etc.
                                             # while `uEltype` is used as element type of solutions etc.
                                             RealT = real(solver), uEltype = RealT,
-                                            initial_cache = NamedTuple(),
                                             metric_terms = MetricTermsCovariantSphere(),
                                             auxiliary_field = nothing) where {NDIMS,
                                                                               NDIMS_AMBIENT}
     cache = (;
              Trixi.create_cache(mesh, equations, solver, RealT, metric_terms,
-                                auxiliary_field, uEltype)..., initial_cache...)
+                                auxiliary_field, uEltype)...)
     _boundary_conditions = Trixi.digest_boundary_conditions(boundary_conditions, mesh,
                                                             solver,
                                                             cache)
+
+    Trixi.check_periodicity_mesh_boundary_conditions(mesh, _boundary_conditions)
+
+    performance_counter = Trixi.PerformanceCounter()
 
     SemidiscretizationHyperbolic{typeof(mesh), typeof(equations),
                                  typeof(initial_condition),
@@ -67,5 +74,6 @@ function Trixi.SemidiscretizationHyperbolic(mesh::P4estMesh{NDIMS, NDIMS_AMBIENT
                                                                 initial_condition,
                                                                 _boundary_conditions,
                                                                 source_terms, solver,
-                                                                cache)
+                                                                cache,
+                                                                performance_counter)
 end
