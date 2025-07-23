@@ -1,7 +1,6 @@
 module TestMPI
 
-using Test
-using TrixiAtmo
+using Trixi: Trixi
 
 include("test_trixiatmo.jl")
 
@@ -16,12 +15,10 @@ Trixi.MPI.Barrier(Trixi.mpi_comm())
 # https://docs.github.com/en/actions/learn-github-actions/environment-variables
 CI_ON_WINDOWS = (get(ENV, "GITHUB_ACTIONS", false) == "true") && Sys.iswindows()
 
-EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
-
 @testset "MPI tests" begin
 #! format: noindent
 
-@trixiatmo_testset "elixir_moist_euler_moist_bubble" begin
+@trixi_testset "elixir_moist_euler_moist_bubble" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "elixir_moist_euler_dry_bubble.jl"),
                         l2=[
                             9.103834949215729e-7,

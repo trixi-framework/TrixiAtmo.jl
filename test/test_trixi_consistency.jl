@@ -2,13 +2,14 @@ module TestTrixiConsistency
 
 include("test_trixiatmo.jl")
 
-EXAMPLES_DIR = TrixiAtmo.examples_dir()
-
 # Start with a clean environment: remove Trixi.jl output directory if it exists
 outdir = "out"
 isdir(outdir) && rm(outdir, recursive = true)
 
-@trixiatmo_testset "Dry air consistency check" begin
+@trixi_testset "Dry air consistency check" begin
+    using Trixi
+    using TrixiAtmo: CompressibleMoistEulerEquations2D
+
     # Dry air warm bubble test case in Trixi.jl
     maxiters = 100
     trixi_elixir = joinpath(Trixi.examples_dir(), "tree_2d_dgsem",
@@ -38,7 +39,7 @@ isdir(outdir) && rm(outdir, recursive = true)
     end
 
     # Now use the elixir in TrixiAtmo
-    elixir_atmo = joinpath(TrixiAtmo.examples_dir(), "elixir_moist_euler_dry_bubble.jl")
+    elixir_atmo = joinpath(EXAMPLES_DIR, "elixir_moist_euler_dry_bubble.jl")
 
     # Override initial condition, maxiters
     trixi_include(elixir_atmo,
