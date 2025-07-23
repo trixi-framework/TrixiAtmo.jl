@@ -1,4 +1,4 @@
-using OrdinaryDiffEq
+using OrdinaryDiffEqLowStorageRK
 using Trixi, TrixiAtmo
 using TrixiAtmo: source_terms_convergence_test_moist,
                  initial_condition_convergence_test_moist

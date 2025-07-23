@@ -4,7 +4,7 @@
 # geopotential height remains constant after one day for zero initial velocity)
 ###############################################################################
 
-using OrdinaryDiffEq, Trixi, TrixiAtmo
+using OrdinaryDiffEqLowStorageRK, Trixi, TrixiAtmo
 
 equations = ShallowWaterEquations3D(gravity = EARTH_GRAVITATIONAL_ACCELERATION,
                                     rotation_rate = EARTH_ROTATION_RATE)
