@@ -8,6 +8,7 @@ isdir(outdir) && rm(outdir, recursive = true)
 
 @trixi_testset "Dry air consistency check" begin
     using Trixi
+    using TrixiAtmo: CompressibleMoistEulerEquations2D
 
     # Dry air warm bubble test case in Trixi.jl
     maxiters = 100

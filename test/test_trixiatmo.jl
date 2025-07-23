@@ -8,7 +8,11 @@ using TrixiAtmo: examples_dir
 EXAMPLES_DIR = examples_dir()
 
 macro test_trixi_include(expr, args...)
-    local add_to_additional_ignore_content = []
+    local add_to_additional_ignore_content = [
+        # This is needed because we overwrite `Trixi.weak_form_kernel!`, e.g., here:
+        # https://github.com/trixi-framework/TrixiAtmo.jl/blob/20e069e818f23ed4033ef65fe087175f07d235fa/examples/elixir_shallowwater_cartesian_advection_cubed_sphere.jl#L50
+        r"WARNING: Method definition .* in module .* at .* overwritten .*.\n"
+    ]
     args = append_to_kwargs(args, :additional_ignore_content,
                             add_to_additional_ignore_content)
     quote
