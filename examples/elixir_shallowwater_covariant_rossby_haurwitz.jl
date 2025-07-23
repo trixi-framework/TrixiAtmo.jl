@@ -3,7 +3,7 @@
 # cubed sphere: Rossby-Haurwitz wave (Case 6, Williamson et al., 1992)
 ###############################################################################
 
-using OrdinaryDiffEq, Trixi, TrixiAtmo
+using OrdinaryDiffEqLowStorageRK, Trixi, TrixiAtmo
 
 ###############################################################################
 # Parameters
