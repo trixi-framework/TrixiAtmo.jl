@@ -21,22 +21,12 @@ macro test_trixi_include(elixir, args...)
     local linf = get_kwarg(args, :linf, nothing)
     local atol = get_kwarg(args, :atol, 500 * eps())
     local rtol = get_kwarg(args, :rtol, sqrt(eps()))
-    local skip_coverage = get_kwarg(args, :skip_coverage, false)
-    local coverage_override = expr_to_named_tuple(get_kwarg(args, :coverage_override, :()))
-    if !(:maxiters in keys(coverage_override))
-        # maxiters in coverage_override defaults to 1
-        coverage_override = (; coverage_override..., maxiters = 1)
-    end
-
     local cmd = string(Base.julia_cmd())
-    local coverage = occursin("--code-coverage", cmd) &&
-                     !occursin("--code-coverage=none", cmd)
 
     local kwargs = Pair{Symbol, Any}[]
     for arg in args
         if (arg.head == :(=) &&
-            !(arg.args[1] in (:l2, :linf, :atol, :rtol, :coverage_override, :skip_coverage))
-            && !(coverage && arg.args[1] in keys(coverage_override)))
+            !(arg.args[1] in (:l2, :linf, :atol, :rtol)))
             push!(kwargs, Pair(arg.args...))
         end
     end
