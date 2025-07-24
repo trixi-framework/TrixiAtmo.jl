@@ -27,6 +27,7 @@ using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
 
 include("auxiliary/auxiliary.jl")
 include("equations/equations.jl")
+include("callbacks_stage/callbacks_stage.jl")
 include("meshes/meshes.jl")
 include("semidiscretization/semidiscretization.jl")
 include("solvers/solvers.jl")
@@ -34,9 +35,13 @@ include("callbacks_step/callbacks_step.jl")
 
 export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
        CovariantLinearAdvectionEquation2D, CovariantShallowWaterEquations2D,
-       SplitCovariantShallowWaterEquations2D
+       SplitCovariantShallowWaterEquations2D, CompressibleRainyEulerEquations2D,
+       CompressibleMoistEulerPotentialTemperatureEquations2D,
+       CompressibleRainyEulerExplicitEquations2D
 
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
+
+export NonlinearSolveDG
 
 export flux_chandrashekar, FluxLMARS
 
