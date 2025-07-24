@@ -1,4 +1,4 @@
-using OrdinaryDiffEq
+using OrdinaryDiffEqLowStorageRK
 using Trixi
 using TrixiAtmo
 using TrixiAtmo: source_terms_rainy, saturation_residual,

@@ -1,4 +1,4 @@
-using OrdinaryDiffEq
+using OrdinaryDiffEqLowStorageRK
 using Trixi
 using TrixiAtmo
 using TrixiAtmo: saturation_vapour_pressure, saturation_vapour_pressure_derivative,

@@ -1,4 +1,4 @@
-using OrdinaryDiffEq
+using OrdinaryDiffEqLowStorageRK
 using Trixi
 using TrixiAtmo
 using TrixiAtmo: source_terms_no_phase_change, saturation_residual,
