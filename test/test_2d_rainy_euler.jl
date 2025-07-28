@@ -4,8 +4,6 @@ include("test_trixiatmo.jl")
 
 EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "moist_euler")
 
-@info CI_ON_MAC
-
 @trixi_testset "convergence_test_rainy" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "convergence_test",
@@ -146,7 +144,7 @@ end
                             7.049541733574276e-6,
                             0.008742438145986853
                         ],
-                        CI_ON_MAC ? rtol=4e-7 : rtol=1e-20,
+                        rtol=4e-7,
                         initial_refinement_level=4,
                         tspan=(0.0, 10.0))
     # Ensure that we do not have excessive memory allocations
