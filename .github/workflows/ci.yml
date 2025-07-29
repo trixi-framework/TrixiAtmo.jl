@@ -35,7 +35,7 @@ jobs:
           - '1.10'
         os:
           - ubuntu-latest
-          - macOS-15
+          - macos-latest
           - windows-latest
     steps:
       - uses: actions/checkout@v4
