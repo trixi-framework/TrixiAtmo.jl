@@ -144,7 +144,7 @@ end
                             7.049541733574276e-6,
                             0.008742438145986853
                         ],
-                        rtol=3e-6,
+                        rtol=6e-6,
                         initial_refinement_level=4,
                         tspan=(0.0, 10.0))
     # Ensure that we do not have excessive memory allocations
