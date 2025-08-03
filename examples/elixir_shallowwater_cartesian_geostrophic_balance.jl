@@ -1,6 +1,6 @@
 ###############################################################################
-# Standard DGSEM for the shallow water equations in covariant form on the cubed 
-# sphere: Steady geostrophic balance (Case 2, Williamson et al., 1992)
+# Entropy-stable DGSEM for the 3D shallow water equations in Cartesian form on 
+# the cubed sphere: Steady geostrophic balance (Case 2, Williamson et al., 1992)
 ###############################################################################
 
 using OrdinaryDiffEqLowStorageRK, Trixi, TrixiAtmo
@@ -20,26 +20,43 @@ tspan = (0.0, 5.0 * SECONDS_PER_DAY)
 mesh = P4estMeshCubedSphere2D(cells_per_dimension[1], EARTH_RADIUS, polydeg = polydeg,
                               element_local_mapping = true)
 
-equations = CovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION,
-                                             EARTH_ROTATION_RATE,
-                                             global_coordinate_system = GlobalSphericalCoordinates())
+equations = ShallowWaterEquations3D(gravity = EARTH_GRAVITATIONAL_ACCELERATION,
+                                    rotation_rate = EARTH_ROTATION_RATE)
 
 # Create DG solver with polynomial degree = polydeg
-solver = DGSEM(polydeg = polydeg, surface_flux = flux_lax_friedrichs,
-               volume_integral = VolumeIntegralWeakForm())
+volume_flux = (flux_wintermeyer_etal, flux_nonconservative_wintermeyer_etal)
+surface_flux = (FluxPlusDissipation(flux_wintermeyer_etal, DissipationLocalLaxFriedrichs()),
+                flux_nonconservative_wintermeyer_etal)
+
+solver = DGSEM(polydeg = polydeg,
+               surface_flux = surface_flux,
+               volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
 
 # Transform the initial condition to the proper set of conservative variables
 initial_condition_transformed = transform_initial_condition(initial_condition, equations)
 
 # A semidiscretization collects data structures and functions for the spatial discretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver,
-                                    source_terms = source_terms_geometric_coriolis)
+                                    source_terms = source_terms_coriolis_lagrange_multiplier)
 
 ###############################################################################
 # ODE solvers, callbacks etc.
 
 # Create ODE problem with time span from 0 to T
 ode = semidiscretize(semi, tspan)
+
+# Clean the initial condition
+for element in eachelement(solver, semi.cache)
+    for j in eachnode(solver), i in eachnode(solver)
+        u0 = Trixi.wrap_array(ode.u0, semi)
+
+        contravariant_normal_vector = Trixi.get_contravariant_vector(3,
+                                                                     semi.cache.elements.contravariant_vectors,
+                                                                     i, j, element)
+        clean_solution_lagrange_multiplier!(u0[:, i, j, element], equations,
+                                            contravariant_normal_vector)
+    end
+end
 
 # At the beginning of the main loop, the SummaryCallback prints a summary of the simulation 
 # setup and resets the timers
