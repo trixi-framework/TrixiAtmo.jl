@@ -6,7 +6,7 @@
                                          dg::DGSEM, cache, alpha = true)
     (; derivative_dhat) = dg.basis
     (; contravariant_vectors) = cache.elements
-    (; aux_node_vars) = cache.auxiliary_variables
+    (; aux_node_vars) = cache.aux_vars
 
     for j in eachnode(dg), i in eachnode(dg)
         u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
@@ -35,7 +35,7 @@
                                              element)
         end
     end
-end
+end 
 
 @inline function Trixi.calc_interface_flux!(surface_flux_values, mesh::P4estMesh{2},
                                             nonconservative_terms::Trixi.False,
@@ -49,7 +49,7 @@ end
                                             secondary_direction_index,
                                             secondary_element_index)
     (; u) = cache.interfaces
-    (; aux_surface_node_vars) = cache.auxiliary_variables
+    (; aux_surface_node_vars) = cache.aux_vars
     (; surface_flux) = surface_integral
 
     u_ll, u_rr = Trixi.get_surface_node_vars(u, equations, dg, primary_node_index,
@@ -83,7 +83,7 @@ end
     (; boundaries) = cache
     (; node_coordinates, contravariant_vectors) = cache.elements
     (; surface_flux) = surface_integral
-    (; aux_node_vars) = cache.auxiliary_variables
+    (; aux_node_vars) = cache.aux_vars
 
     # Extract solution data from boundary container
     u_inner = Trixi.get_node_vars(boundaries.u, equations, dg, node_index, boundary_index)

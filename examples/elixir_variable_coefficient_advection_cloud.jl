@@ -85,7 +85,7 @@ semi = SemidiscretizationHyperbolic(mesh,
                                     solver,
                                     #source_terms = source_term,
                                     boundary_conditions = boundary_conditions_dirichlet,
-                                    auxiliary_field = velocity_schaer_mountain_constant)
+                                    aux_field = velocity_schaer_mountain_constant)
 
 ##############################################################################################
 # ODE solvers, callbacks etc.

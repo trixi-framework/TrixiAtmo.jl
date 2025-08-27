@@ -13,33 +13,30 @@ function Trixi.create_cache(mesh::P4estMesh, equations::AbstractEquations, dg::D
     interfaces = Trixi.init_interfaces(mesh, equations, dg.basis, elements)
     boundaries = Trixi.init_boundaries(mesh, equations, dg.basis, elements)
     mortars = Trixi.init_mortars(mesh, equations, dg.basis, elements)
-
+    
     cache = (; elements, interfaces, boundaries, mortars)
 
     # Add specialized parts of the cache required to compute the volume integral etc.
     cache = (; cache...,
              Trixi.create_cache(mesh, equations, dg.volume_integral, dg, uEltype)...)
-    cache = (; cache..., Trixi.create_cache(mesh, equations, dg.mortar, uEltype)...)
+    cache = (; cache..., Trixi.create_cache(mesh, equations, dg.mortar, uEltype)...) 
 
     # Add specialized parts of the cache for auxiliary node variables
     cache = (; cache...,
              create_cache_aux(mesh, equations,
                                     have_aux_node_vars(equations),
-                                    dg, elements, interfaces, aux_field)...)
+                                    dg, cache, aux_field)...)
     return cache
 end
 
 # If there are auxiliary variables, initialize them
-function create_cache_aux(mesh, equations, have_aux_node_vars::Trixi.True, dg, elements,
-                                interfaces, aux_field)
-    aux_vars = init_aux_node_variables(mesh, equations, dg, elements,
-                                                        interfaces, aux_field)
+function create_cache_aux(mesh, equations, have_aux_node_vars::Trixi.True, dg, cache, aux_field)
+    aux_vars = init_aux_vars(mesh, equations, dg, cache, aux_field)
     return (; aux_vars)
 end
 
 # Do nothing if there are no auxiliary variables
-function create_cache_aux(mesh, equations, have_aux_node_vars::Trixi.False, dg, elements,
-                                interfaces, aux_field)
+function create_cache_aux(mesh, equations, have_aux_node_vars::Trixi.False, dg, cache, aux_field)
     return NamedTuple()
 end
 
