@@ -34,11 +34,13 @@ include("callbacks_step/callbacks_step.jl")
 
 export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
        CovariantLinearAdvectionEquation2D, CovariantShallowWaterEquations2D,
-       SplitCovariantShallowWaterEquations2D
+       SplitCovariantShallowWaterEquations2D, CompressibleEulerEquationsWithGravity2D
 
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
 export flux_chandrashekar, FluxLMARS
+
+export flux_nonconservative_waruszewski
 
 export flux_nonconservative_zeros, flux_nonconservative_ec,
        flux_nonconservative_surface_simplified, source_terms_geometric_coriolis,
