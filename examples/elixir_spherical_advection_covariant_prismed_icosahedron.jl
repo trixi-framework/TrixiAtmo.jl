@@ -1,6 +1,8 @@
 ###############################################################################
 # DGSEM for the linear advection equation on a prismed icosahedral grid
 ###############################################################################
+# To run a convergence test, use
+# convergence_test("../examples/elixir_spherical_advection_covariant_prismed_icosahedron.jl", 4, initial_refinement_level = 1)
 
 using OrdinaryDiffEq, Trixi, TrixiAtmo
 
@@ -24,10 +26,12 @@ dg = DGMulti(element_type = Wedge(),
 ###############################################################################
 # Build mesh.
 
+initial_refinement_level = 3
+
 mesh = DGMultiMeshPrismIcosahedron(dg;
     inner_radius = 0.999 * EARTH_RADIUS,
     outer_radius = EARTH_RADIUS,
-    initial_refinement = 3)
+    initial_refinement = initial_refinement_level)
 
 # Transform the initial condition to the proper set of conservative variables
 initial_condition_transformed = transform_initial_condition(initial_condition, equations)
