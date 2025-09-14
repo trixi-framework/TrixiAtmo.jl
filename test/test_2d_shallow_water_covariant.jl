@@ -20,12 +20,7 @@ include("test_trixiatmo.jl")
                         tspan=(0.0, 1.0 * SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_shallowwater_covariant_rossby_haurwitz" begin
@@ -39,12 +34,7 @@ end
                         metric_terms=MetricTermsCovariantSphere(christoffel_symbols = ChristoffelSymbolsCollocationDerivative()))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_shallowwater_covariant_isolated_mountain" begin
@@ -57,12 +47,7 @@ end
                         tspan=(0.0, 1.0 * SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_shallowwater_covariant_unsteady_solid_body_rotation_EC" begin
@@ -85,12 +70,7 @@ end
                         tspan=(0.0, 1.0 * SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_shallowwater_covariant_barotropic_instability" begin
@@ -103,12 +83,7 @@ end
                         tspan=(0.0, 1.0 * SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_shallowwater_covariant_well_balanced" begin
@@ -120,12 +95,7 @@ end
                         tspan=(0.0, 1.0 * SECONDS_PER_DAY), atol=1e-11)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
 end # module

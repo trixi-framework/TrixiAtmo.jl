@@ -22,12 +22,7 @@ include("test_trixiatmo.jl")
     # and small reference values
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
 @trixi_testset "Spherical advection (quad icosahedron), Cartesian weak form, LLF surface flux" begin
@@ -50,12 +45,7 @@ end
     # and small reference values
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
 @trixi_testset "Spherical advection, Cartesian weak form, element-local mapping" begin
@@ -78,12 +68,7 @@ end
     # and small reference values
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
 @trixi_testset "Spherical advection, covariant weak form, LLF surface flux" begin
@@ -93,12 +78,7 @@ end
                         linf=[14.235905681508598, 0.0, 0.0])
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
 @trixi_testset "Spherical advection, covariant weak form, LLF surface flux, global spherical coords" begin
@@ -109,12 +89,7 @@ end
                         global_coordinate_system=GlobalSphericalCoordinates())
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
 # The covariant flux-differencing form should be equivalent to the weak form when the 
@@ -127,12 +102,7 @@ end
                         volume_integral=VolumeIntegralFluxDifferencing(flux_central))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
 # Version with arithmetic mean used for both the volume and surface fluxes
@@ -145,12 +115,7 @@ end
                         surface_flux=flux_central)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
 @trixi_testset "Spherical advection on icosahedral grid, covariant weak form, LLF surface flux" begin
@@ -160,12 +125,7 @@ end
                         linf=[13.54834739856517, 0.0, 0.0])
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
 end # module
