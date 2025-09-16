@@ -30,7 +30,7 @@ function CompressibleEulerPotentialTemperatureEquations1D(; g = 9.81, RealT = Fl
     a = 340.0
     inv_gamma_minus_one = inv(gamma - 1)
     K = p_0 * (R / p_0)^gamma
-    stolarsky_factor = (gamma - 1.0)/gamma
+    stolarsky_factor = (gamma - 1.0) / gamma
     return CompressibleEulerPotentialTemperatureEquations1D{RealT}(p_0, c_p, c_v, g, R,
                                                                    gamma, a,
                                                                    inv_gamma_minus_one,
@@ -43,7 +43,7 @@ function varnames(::typeof(cons2cons),
 end
 
 varnames(::typeof(cons2prim),
-         ::CompressibleEulerPotentialTemperatureEquations1D) = ("rho", "v1", "p1")
+::CompressibleEulerPotentialTemperatureEquations1D) = ("rho", "v1", "p1")
 
 @inline function flux(u, orientation::Integer,
                       equations::CompressibleEulerPotentialTemperatureEquations1D)
@@ -196,7 +196,7 @@ end
     rho, v1, p = prim
     rho_v1 = rho * v1
     rho_theta = equations.p_0 / equations.R *
-                exp(1/equations.gamma * log(p/equations.p_0))
+                exp(1 / equations.gamma * log(p / equations.p_0))
     return SVector(rho, rho_v1, rho_theta)
 end
 
@@ -220,7 +220,7 @@ end
     w1 = -0.5f0 * rho_v1^2 / (rho)^2
     w2 = rho_v1 / rho
     w3 = equations.gamma * equations.inv_gamma_minus_one *
-         exp((equations.gamma-1)*log(rho_theta))
+         exp((equations.gamma - 1) * log(rho_theta))
 
     return SVector(w1, w2, w3)
 end

@@ -9,7 +9,7 @@ function initial_condition_taylor_green_vortex(x, t,
     v3 = 0.0
     p = 10 +
         1.0 / 16.0 *
-        ((cos(2 * x[1]) + cos(2 * x[2]))*(cos(2 * x[1]) + 2) - 2)
+        ((cos(2 * x[1]) + cos(2 * x[2])) * (cos(2 * x[1]) + 2) - 2)
 
     return TrixiAtmo.prim2cons(SVector(rho, v1, v2, v3, p), equations)
 end

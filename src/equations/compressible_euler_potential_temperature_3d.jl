@@ -39,11 +39,11 @@ function varnames(::typeof(cons2cons),
 end
 
 varnames(::typeof(cons2prim),
-         ::CompressibleEulerPotentialTemperatureEquations3D) = ("rho",
-                                                                "v1",
-                                                                "v2",
-                                                                "v3",
-                                                                "p1")
+::CompressibleEulerPotentialTemperatureEquations3D) = ("rho",
+                                                       "v1",
+                                                       "v2",
+                                                       "v3",
+                                                       "p1")
 
 # Calculate 1D flux for a single point in the normal direction.
 # Note, this directional vector is not normalized.
