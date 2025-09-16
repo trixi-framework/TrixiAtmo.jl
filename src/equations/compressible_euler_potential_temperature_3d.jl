@@ -45,62 +45,6 @@ varnames(::typeof(cons2prim),
                                                                 "v3",
                                                                 "p1")
 
-# Calculate 1D flux for a single point in the normal direction.
-# Note, this directional vector is not normalized.
-@inline function flux(u, normal_direction::AbstractVector,
-                      equations::CompressibleEulerPotentialTemperatureEquations3D)
-    rho, rho_v1, rho_v2, rho_v3, rho_theta = u
-    v1 = rho_v1 / rho
-    v2 = rho_v2 / rho
-    v3 = rho_v3 / rho
-    v_normal = v1 * normal_direction[1] + v2 * normal_direction[2] +
-               v3 * normal_direction[3]
-    rho_v_normal = rho * v_normal
-    f1 = rho_v_normal
-    f2 = rho_v_normal * v1 + p * normal_direction[1]
-    f3 = rho_v_normal * v2 + p * normal_direction[2]
-    f4 = rho_v_normal * v3 + p * normal_direction[3]
-    f5 = rho_theta * v_normal
-    return SVector(f1, f2, f3, f4, f5)
-end
-
-@inline function flux(u, orientation::Integer,
-                      equations::CompressibleEulerPotentialTemperatureEquations3D)
-    rho, rho_v1, rho_v2, rho_v3, rho_theta = u
-    v1 = rho_v1 / rho
-    v2 = rho_v2 / rho
-    v3 = rho_v3 / rho
-    p = equations.K * rho_theta^equations.gamma
-    if orientation == 1
-        f1 = rho_v1
-        f2 = rho_v1 * v1 + p
-        f3 = rho_v1 * v2
-        f4 = rho_v1 * v3
-        f5 = rho_theta * v1
-    elseif orientation == 2
-        f1 = rho_v2
-        f2 = rho_v2 * v1
-        f3 = rho_v2 * v2 + p
-        f4 = rho_v2 * v3
-        f5 = rho_theta * v2
-    else
-        f1 = rho_v3
-        f2 = rho_v3 * v1
-        f3 = rho_v3 * v2
-        f4 = rho_v3 * v3 + p
-        f5 = rho_theta * v3
-    end
-
-    return SVector(f1, f2, f3, f4, f5)
-end
-
-@inline function source_terms_gravity(u, x, t,
-                                      equations::CompressibleEulerPotentialTemperatureEquations3D)
-    rho, _, _, _, _ = u
-    return SVector(zero(eltype(u)), zero(eltype(u)),
-                   zero(eltype(u)), -equations.g * rho, zero(eltype(u)))
-end
-
 # Low Mach number approximate Riemann solver (LMARS) from
 # X. Chen, N. Andronova, B. Van Leer, J. E. Penner, J. P. Boyd, C. Jablonowski, S.
 # Lin, A Control-Volume Model of the Compressible Euler Equations with a Vertical Lagrangian
@@ -283,20 +227,6 @@ end
 @inline function cons2cons(u,
                            equations::CompressibleEulerPotentialTemperatureEquations3D)
     return u
-end
-
-@inline function cons2entropy_rhoe(u,
-                                   equations::CompressibleEulerPotentialTemperatureEquations3D)
-    rho, rho_v1, rho_v2, rho_v3, rho_theta = u
-
-    w1 = -0.5f0 * (rho_v1^2 + rho_v2^2 + rho_v3^2) / rho^2
-    w2 = rho_v1 / rho
-    w3 = rho_v2 / rho
-    w4 = rho_v3 / rho
-    w5 = equations.gamma * equations.inv_gamma_minus_one * equations.K *
-         (rho_theta)^(equations.gamma - 1)
-
-    return SVector(w1, w2, w3, w4, w5)
 end
 
 @inline function cons2entropy(u,

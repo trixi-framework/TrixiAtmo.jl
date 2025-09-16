@@ -203,18 +203,6 @@ end
     return u
 end
 
-@inline function cons2entropy_rhoe(u,
-                                   equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
-    rho, rho_v1, rho_theta = u
-
-    w1 = -0.5f0 * rho_v1^2 / (rho)^2
-    w2 = rho_v1 / rho
-    w3 = equations.gamma * equations.inv_gamma_minus_one *
-         exp((equations.gamma - 1) * log(rho_theta))
-
-    return SVector(w1, w2, w3, zero(eltype(u)))
-end
-
 @inline function cons2entropy(u,
                               equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
     rho, rho_v1, rho_theta = u

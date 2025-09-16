@@ -105,24 +105,6 @@ end
     return flux, noncons_flux
 end
 
-# Calculate 1D flux for a single point in the normal direction.
-# Note, this directional vector is not normalized.
-@inline function flux(u, normal_direction::AbstractVector,
-                      equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
-    rho, rho_v1, rho_v2, rho_theta = u
-    v1 = rho_v1 / rho
-    v2 = rho_v2 / rho
-    v_normal = v1 * normal_direction[1] + v2 * normal_direction[2]
-    rho_v_normal = rho * v_normal
-    f1 = rho_v_normal
-    p = equations.p_0 * (equations.R * rho_theta / equations.p_0)^equations.gamma
-
-    f2 = (rho_v_normal) * v1 + p * normal_direction[1]
-    f3 = (rho_v_normal) * v2 + p * normal_direction[2]
-    f4 = (rho_theta) * v_normal
-    return SVector(f1, f2, f3, f4, zero(eltype(u)))
-end
-
 """
 	flux_nonconservative_waruzewski_etal(u_ll, u_rr,
 													  normal_direction::AbstractVector,
@@ -376,17 +358,16 @@ end
                               equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     rho, rho_v1, rho_v2, rho_theta = u
 
-    k = equations.p_0 * (equations.R / equations.p_0)^equations.gamma
-    w1 = -0.5f0 * rho_v1^2 / (rho)^2 - 0.5f0 * rho_v2^2 / (rho)^2
-    w2 = rho_v1 / rho
-    w3 = rho_v2 / rho
-    w4 = equations.gamma / (equations.gamma - 1) * k * (rho_theta)^(equations.gamma - 1)
+    w1 = log(equations.K * (rho_theta / rho)^equations.gamma) - equations.gamma
+    w2 = 0.0
+    w3 = 0.0
+    w4 = rho / rho_theta * equations.gamma
 
     return SVector(w1, w2, w3, w4, zero(eltype(u)))
 end
 
-@inline function entropy_math(cons,
-                              equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+@inline function entropy_thermodynamic(cons,
+                                       equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     # Mathematical entropy
     p = equations.p_0 * (equations.R * cons[4] / equations.p_0)^equations.gamma
 
@@ -398,7 +379,7 @@ end
 # Default entropy is the mathematical entropy
 @inline function entropy(cons,
                          equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
-    entropy_math(cons, equations)
+    entropy_thermodynamic(cons, equations)
 end
 
 @inline function energy_total(cons,
@@ -417,33 +398,5 @@ end
     c = sqrt(equations.gamma * p / rho)
 
     return abs(v1) + c, abs(v2) + c
-end
-
-@inline function density_pressure(u,
-                                  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
-    rho, rho_v1, rho_v2, rho_theta = u
-    rho_times_p = rho * equations.p_0 *
-                  (equations.R * rho_theta / equations.p_0)^equations.gamma
-    return rho_times_p
-end
-
-@inline function max_abs_speed_naive(u_ll, u_rr, orientation::Integer,
-                                     equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
-    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
-
-    # Get the velocity value in the appropriate direction
-    if orientation == 1
-        v_ll = v1_ll
-        v_rr = v1_rr
-    else # orientation == 2
-        v_ll = v2_ll
-        v_rr = v2_rr
-    end
-    # Calculate sound speeds
-    c_ll = sqrt(equations.gamma * p_ll / rho_ll)
-    c_rr = sqrt(equations.gamma * p_rr / rho_rr)
-
-    λ_max = max(abs(v_ll), abs(v_rr)) + max(c_ll, c_rr)
 end
 end # @muladd

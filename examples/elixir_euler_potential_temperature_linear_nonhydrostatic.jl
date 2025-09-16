@@ -108,7 +108,6 @@ f2(s) = SVector(L / 2, y_b + alfa * (s + 1))
 f3(s) = SVector((s + 1 - 1) * L / 2, peak / (1 + ((s + 1 - 1) * L / 2)^2 / a^2))
 f4(s) = SVector((s + 1 - 1) * L / 2, H)
 cells_per_dimension = (200, 50)
-
 mesh = P4estMesh(cells_per_dimension, polydeg = polydeg,
                  faces = (f1, f2, f3, f4),
                  initial_refinement_level = 0, periodicity = (false, false))
@@ -117,7 +116,6 @@ semi = SemidiscretizationHyperbolic(mesh, equations, linear_hydrostatic_setup, s
                                     source_terms = linear_hydrostatic_setup,
                                     boundary_conditions = boundary_conditions)
 T = 8
-T = 0.1
 ###############################################################################
 # ODE solvers, callbacks etc.
 tspan = (0.0, T * 3600.0)

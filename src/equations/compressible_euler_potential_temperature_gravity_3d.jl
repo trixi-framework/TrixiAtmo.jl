@@ -74,24 +74,6 @@ Trixi.have_nonconservative_terms(::CompressibleEulerPotentialTemperatureEquation
                                                  equations)
     return flux, noncons_flux
 end
-# Calculate 1D flux for a single point in the normal direction.
-# Note, this directional vector is not normalized.
-@inline function flux(u, normal_direction::AbstractVector,
-                      equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
-    rho, rho_v1, rho_v2, rho_v3, rho_theta = u
-    v1 = rho_v1 / rho
-    v2 = rho_v2 / rho
-    v3 = rho_v3 / rho
-    v_normal = v1 * normal_direction[1] + v2 * normal_direction[2] +
-               v3 * normal_direction[3]
-    rho_v_normal = rho * v_normal
-    f1 = rho_v_normal
-    f2 = rho_v_normal * v1 + p * normal_direction[1]
-    f3 = rho_v_normal * v2 + p * normal_direction[2]
-    f4 = rho_v_normal * v3 + p * normal_direction[3]
-    f5 = rho_theta * v_normal
-    return SVector(f1, f2, f3, f4, f5, zero(eltype(u)))
-end
 
 """
 	flux_nonconservative_waruzewski_etal(u_ll, u_rr,
@@ -282,7 +264,7 @@ Entropy conservative two-point flux by
 
     v1_avg = 0.5f0 * (v1_ll + v1_rr)
     v2_avg = 0.5f0 * (v2_ll + v2_rr)
-    v3_avg = 0.5f0 * (V3_ll + v3_rr)
+    v3_avg = 0.5f0 * (v3_ll + v3_rr)
     p_avg = 0.5f0 * (p_ll + p_rr)
 
     # Calculate fluxes depending on normal_direction
@@ -321,7 +303,7 @@ Entropy and total energy conservative two-point flux by
 
     v1_avg = 0.5f0 * (v1_ll + v1_rr)
     v2_avg = 0.5f0 * (v2_ll + v2_rr)
-    v3_avg = 0.5f0 * (V3_ll + v3_rr)
+    v3_avg = 0.5f0 * (v3_ll + v3_rr)
     p_avg = 0.5f0 * (p_ll + p_rr)
 
     # Calculate fluxes depending on normal_direction
@@ -357,20 +339,6 @@ end
 @inline function cons2cons(u,
                            equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     return u
-end
-
-@inline function cons2entropy_rhoe(u,
-                                   equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
-    rho, rho_v1, rho_v2, rho_v3, rho_theta = u
-
-    w1 = -0.5f0 * (rho_v1^2 + rho_v2^2 + rho_v3^2) / rho^2
-    w2 = rho_v1 / rho
-    w3 = rho_v2 / rho
-    w4 = rho_v3 / rho
-    w5 = equations.gamma * equations.inv_gamma_minus_one * equations.K *
-         (rho_theta)^(equations.gamma - 1)
-
-    return SVector(w1, w2, w3, w4, w5, zero(eltype(u)))
 end
 
 @inline function cons2entropy(u,

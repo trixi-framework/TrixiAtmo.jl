@@ -1,7 +1,5 @@
 using OrdinaryDiffEqSSPRK
-using PotentialTemperature.Trixi
-using PotentialTemperature
-using CairoMakie
+using Trixi, TrixiAtmo
 
 struct SchärSetup
     theta_0::Float64 # 
@@ -42,7 +40,7 @@ end
 
 function (setup::SchärSetup)(u, x, t,
                              equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
-    @unpack theta_0, z_B, z_T, Nf, u0, alfa, xr_B, form = setup
+    @unpack theta_0, z_B, z_T, Nf, u0, alfa, xr_B = setup
 
     rho, rho_v1, rho_v2, rho_theta, _ = u
 
@@ -62,8 +60,10 @@ end
 
 function (setup::SchärSetup)(x, t,
                              equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
-    @unpack g, c_p, c_v, p_0, theta_0, u0, Nf = setup
-
+    @unpack theta_0, u0, Nf = setup
+    g = equations.g
+    c_p = equations.c_p
+    c_v = equations.c_v
     # Exner pressure, solves hydrostatic equation for x[2]
     exner = 1 + g^2 / (c_p * theta_0 * Nf^2) * (exp(-Nf^2 / g * x[2]) - 1)
     # pressure
@@ -124,7 +124,6 @@ semi = SemidiscretizationHyperbolic(mesh, equations, schär_setup, solver,
 ###############################################################################
 # ODE solvers, callbacks etc.
 T = 5
-T = 0.1
 tspan = (0.0, T * 3600.0) #1 hour.
 
 ode = semidiscretize(semi, tspan)
@@ -148,10 +147,3 @@ sol = solve(ode,
             maxiters = 1.0e7,
             dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
             save_everystep = false, callback = callbacks)
-
-setup = SchärSetup(alfa, xr_B, form)
-folder = pwd() * "/test_cases/mountain/data/"
-
-surface_flux = (FluxLMARS(340.0), flux_nonconservative_gravity_gamma)
-
-run_schar(3, 5, (100, 50), 0.03, 20000, false)

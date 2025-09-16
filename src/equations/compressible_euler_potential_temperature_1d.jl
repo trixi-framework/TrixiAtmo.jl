@@ -45,59 +45,6 @@ end
 varnames(::typeof(cons2prim),
          ::CompressibleEulerPotentialTemperatureEquations1D) = ("rho", "v1", "p1")
 
-@inline function flux(u, orientation::Integer,
-                      equations::CompressibleEulerPotentialTemperatureEquations1D)
-    rho, rho_v1, rho_theta = u
-    v1 = rho_v1 / rho
-    p = equations.p_0 * (equations.R * rho_theta / equations.p_0)^equations.gamma
-    p = equations.K * exp(log(rho_theta^equations.gamma))
-
-    f1 = rho_v1
-    f2 = rho_v1 * v1 + p
-    f3 = rho_theta * v1
-
-    return SVector(f1, f2, f3)
-end
-
-@inline function initial_condition_density_wave(x, t,
-                                                equations::CompressibleEulerPotentialTemperatureEquations1D)
-    v1 = 0.1
-    rho = 1 + 0.98 * sinpi(2 * (x[1] - t * v1))
-    rho_v1 = rho * v1
-    p = 20
-    rho_theta = (p / equations.p_0)^(1 / equations.gamma) * equations.p_0 / equations.R
-    return SVector(rho, rho_v1, rho_theta)
-end
-
-@inline function source_terms_gravity(u, x, t,
-                                      equations::CompressibleEulerPotentialTemperatureEquations1D)
-    rho, _, _ = u
-    return SVector(zero(eltype(u)), -equations.g * rho,
-                   zero(eltype(u)))
-end
-
-@inline function (flux_lmars::FluxLMARS)(u_ll, u_rr, orientation::Integer,
-                                         equations::CompressibleEulerPotentialTemperatureEquations1D)
-    a = flux_lmars.speed_of_sound
-    rho_ll, v1_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, p_rr = cons2prim(u_rr, equations)
-
-    rho = 0.5f0 * (rho_ll + rho_rr)
-
-    p_interface = 0.5f0 * (p_ll + p_rr) - 0.5f0 * a * rho * (v1_rr - v1_ll)
-    v_interface = 0.5f0 * (v1_ll + v1_rr) - 1 / (2 * a * rho) * (p_rr - p_ll)
-
-    if (v_interface > 0)
-        f1, f2, f3 = u_ll * v_interface
-    else
-        f1, f2, f3 = u_rr * v_interface
-    end
-
-    return SVector(f1,
-                   f2 + p_interface,
-                   f3)
-end
-
 """
 	flux_tec(u_ll, u_rr, orientation_or_normal_direction,
 						equations::CompressibleEulerEquationsPotentialTemperature1D)
@@ -213,18 +160,6 @@ end
     return u
 end
 
-@inline function cons2entropy_rhoe(u,
-                                   equations::CompressibleEulerPotentialTemperatureEquations1D)
-    rho, rho_v1, rho_theta = u
-
-    w1 = -0.5f0 * rho_v1^2 / (rho)^2
-    w2 = rho_v1 / rho
-    w3 = equations.gamma * equations.inv_gamma_minus_one *
-         exp((equations.gamma - 1) * log(rho_theta))
-
-    return SVector(w1, w2, w3)
-end
-
 @inline function cons2entropy(u,
                               equations::CompressibleEulerPotentialTemperatureEquations1D)
     rho, rho_v1, rho_theta = u
@@ -263,28 +198,6 @@ end
 @inline function energy_kinetic(cons,
                                 equations::CompressibleEulerPotentialTemperatureEquations1D)
     return 0.5f0 * (cons[2]^2) / (cons[1])
-end
-
-@inline function max_abs_speeds(u,
-                                equations::CompressibleEulerPotentialTemperatureEquations1D)
-    rho, v1, p = cons2prim(u, equations)
-    c = sqrt(equations.gamma * p / rho)
-
-    return (abs(v1) + c,)
-end
-
-@inline function max_abs_speed_naive(u_ll, u_rr, orientation::Integer,
-                                     equations::CompressibleEulerPotentialTemperatureEquations1D)
-    rho_ll, v1_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, p_rr = cons2prim(u_rr, equations)
-
-    # Calculate primitive variables and speed of sound
-    v_mag_ll = abs(v1_ll)
-    c_ll = sqrt(equations.gamma * p_ll / rho_ll)
-    v_mag_rr = abs(v1_rr)
-    c_rr = sqrt(equations.gamma * p_rr / rho_rr)
-
-    λ_max = max(v_mag_ll, v_mag_rr) + max(c_ll, c_rr)
 end
 
 @inline function pressure(cons,

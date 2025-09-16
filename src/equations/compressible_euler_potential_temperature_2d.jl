@@ -256,17 +256,16 @@ end
                               equations::CompressibleEulerPotentialTemperatureEquations2D)
     rho, rho_v1, rho_v2, rho_theta = u
 
-    k = equations.p_0 * (equations.R / equations.p_0)^equations.gamma
-    w1 = -0.5f0 * rho_v1^2 / (rho)^2 - 0.5f0 * rho_v2^2 / (rho)^2
-    w2 = rho_v1 / rho
-    w3 = rho_v2 / rho
-    w4 = equations.gamma / (equations.gamma - 1) * k * (rho_theta)^(equations.gamma - 1)
+    w1 = log(equations.K * (rho_theta / rho)^equations.gamma) - equations.gamma
+    w2 = 0.0
+    w3 = 0.0
+    w4 = rho / rho_theta * equations.gamma
 
     return SVector(w1, w2, w3, w4)
 end
 
-@inline function entropy_math(cons,
-                              equations::CompressibleEulerPotentialTemperatureEquations2D)
+@inline function entropy_thermodynamic(cons,
+                                       equations::CompressibleEulerPotentialTemperatureEquations2D)
     # Mathematical entropy
     p = equations.p_0 * (equations.R * cons[4] / equations.p_0)^equations.gamma
 
@@ -278,7 +277,7 @@ end
 # Default entropy is the mathematical entropy
 @inline function entropy(cons,
                          equations::CompressibleEulerPotentialTemperatureEquations2D)
-    entropy_math(cons, equations)
+    entropy_thermodynamic(cons, equations)
 end
 
 @inline function energy_total(cons,
@@ -297,14 +296,6 @@ end
     c = sqrt(equations.gamma * p / rho)
 
     return abs(v1) + c, abs(v2) + c
-end
-
-@inline function density_pressure(u,
-                                  equations::CompressibleEulerPotentialTemperatureEquations2D)
-    rho, rho_v1, rho_v2, rho_theta = u
-    rho_times_p = rho * equations.p_0 *
-                  (equations.R * rho_theta / equations.p_0)^equations.gamma
-    return rho_times_p
 end
 
 @inline function max_abs_speed_naive(u_ll, u_rr, orientation::Integer,
