@@ -728,7 +728,7 @@ function calc_node_coordinates_triangle_vertices!(triangle_vertices,
                                                   radius, triangle)
     # Retrieve triangle vertices
     corners_triangle = icosahedron_vertices[:,
-                                            icosahedron_triangle_vertices_idx_map[triangle]]
+    icosahedron_triangle_vertices_idx_map[triangle]]
 
     triangle_vertices[:, 1] = corners_triangle[:, 1]
 

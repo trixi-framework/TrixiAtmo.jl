@@ -90,7 +90,7 @@ end
                             0.04285569464735772,
                             0.3119894564151764
                         ],
-                        tspan=(0.0, 0.01 * SECONDS_PER_DAY))
+                        tspan=(0.0, 0.01*SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)

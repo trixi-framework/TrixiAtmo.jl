@@ -42,11 +42,11 @@ function varnames(::typeof(cons2cons),
 end
 
 varnames(::typeof(cons2prim),
-::CompressibleEulerPotentialTemperatureEquationsWithGravity3D) = ("rho",
-                                                                  "v1",
-                                                                  "v2",
-                                                                  "v3",
-                                                                  "p1", "phi")
+         ::CompressibleEulerPotentialTemperatureEquationsWithGravity3D) = ("rho",
+                                                                           "v1",
+                                                                           "v2",
+                                                                           "v3",
+                                                                           "p1", "phi")
 
 Trixi.have_nonconservative_terms(::CompressibleEulerPotentialTemperatureEquationsWithGravity3D) = Trixi.True()
 

@@ -151,10 +151,8 @@ end
 
 # Add up the total number of auxiliary variables for equations in covariant form
 @inline function n_aux_node_vars(::AbstractCovariantEquations{NDIMS,
-                                                              NDIMS_AMBIENT}) where {
-                                                                                     NDIMS,
-                                                                                     NDIMS_AMBIENT
-                                                                                     }
+                                                              NDIMS_AMBIENT}) where {NDIMS,
+                                                                                     NDIMS_AMBIENT}
     nvars_basis_covariant = NDIMS_AMBIENT * NDIMS
     nvars_basis_contravariant = NDIMS * NDIMS_AMBIENT
     nvars_area_element = 1

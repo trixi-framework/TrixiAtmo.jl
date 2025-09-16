@@ -17,7 +17,7 @@ include("test_trixiatmo.jl")
                         ],
                         polydeg=3,
                         cells_per_dimension=(5, 5),
-                        tspan=(0.0, 1.0 * SECONDS_PER_DAY))
+                        tspan=(0.0, 1.0*SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
@@ -30,7 +30,7 @@ end
                         linf=[574.6725801771354, 0.5155385127558593, 0.5497040481041348],
                         polydeg=3,
                         cells_per_dimension=(5, 5),
-                        tspan=(0.0, 1.0 * SECONDS_PER_DAY),
+                        tspan=(0.0, 1.0*SECONDS_PER_DAY),
                         metric_terms=MetricTermsCovariantSphere(christoffel_symbols = ChristoffelSymbolsCollocationDerivative()))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
@@ -44,7 +44,7 @@ end
                         linf=[116.645494528163, 0.052086295524203324, 0.07855675891709994],
                         polydeg=3,
                         cells_per_dimension=(5, 5),
-                        tspan=(0.0, 1.0 * SECONDS_PER_DAY))
+                        tspan=(0.0, 1.0*SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
@@ -67,7 +67,7 @@ end
                         surface_flux=(flux_lax_friedrichs, flux_nonconservative_ec),
                         polydeg=3,
                         cells_per_dimension=(5, 5),
-                        tspan=(0.0, 1.0 * SECONDS_PER_DAY))
+                        tspan=(0.0, 1.0*SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
@@ -80,7 +80,7 @@ end
                         linf=[122.9994523425994, 0.17997299389835533, 0.16659612583251238],
                         polydeg=3,
                         cells_per_dimension=(5, 5),
-                        tspan=(0.0, 1.0 * SECONDS_PER_DAY))
+                        tspan=(0.0, 1.0*SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
@@ -92,7 +92,7 @@ end
                         l2=[0.0, 0.0, 0.0], linf=[0.0, 0.0, 0.0],
                         polydeg=3,
                         cells_per_dimension=(5, 5),
-                        tspan=(0.0, 1.0 * SECONDS_PER_DAY), atol=1e-11)
+                        tspan=(0.0, 1.0*SECONDS_PER_DAY), atol=1e-11)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
