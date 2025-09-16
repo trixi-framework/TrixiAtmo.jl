@@ -38,6 +38,10 @@ const TRIXI_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
         include("test_2d_moist_euler.jl")
     end
 
+    @time if TRIXI_TEST == "all" || TRIXI_TEST == "moist_euler"
+        include("test_2d_rainy_euler.jl")
+    end
+
     @time if TRIXI_TEST == "all" || TRIXI_TEST == "spherical_advection"
         include("test_spherical_advection.jl")
     end
