@@ -40,7 +40,7 @@ function (setup::NonHydrostaticSetup)(u, x, t, equations::CompressibleEulerPoten
 
 	rho, rho_v1, rho_v2, rho_theta, _ = u
 
-    g = equations.g
+	g = equations.g
 	v1 = rho_v1 / rho
 	theta = rho_theta / rho
 
@@ -58,7 +58,7 @@ end
 
 function (setup::NonHydrostaticSetup)(x, t, equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
 	@unpack theta_0, u0, Nf = setup
-    g = equations.g
+	g = equations.g
 	# Exner pressure, solves hydrostatic equation for x[2]
 	exner = 1 + g^2 / (equations.c_p * theta_0 * Nf^2) * (exp(-Nf^2 / g * x[2]) - 1)
 	# pressure
@@ -75,68 +75,68 @@ function (setup::NonHydrostaticSetup)(x, t, equations::CompressibleEulerPotentia
 	return TrixiAtmo.prim2cons(SVector(rho, v1, v2, p, g * x[2]), equations)
 end
 
-	equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D()
-    alfa = 0.03
-    xr_B = 40000.0
+equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D()
+alfa = 0.03
+xr_B = 40000.0
 
-	linear_hydrostatic_setup = NonHydrostaticSetup(alfa, xr_B)
+linear_hydrostatic_setup = NonHydrostaticSetup(alfa, xr_B)
 
-	boundary = BoundaryConditionDirichlet(linear_hydrostatic_setup)
+boundary = BoundaryConditionDirichlet(linear_hydrostatic_setup)
 
-	boundary_conditions = Dict(:x_neg => boundary,
-		:x_pos => boundary,
-		:y_neg => boundary_condition_slip_wall,
-		:y_pos => boundary)
-	polydeg = 3
-	basis = LobattoLegendreBasis(polydeg)
-	surface_flux = (FluxLMARS(340.0), flux_zero)
-    volume_flux = (flux_etec, flux_nonconservative_artiano_etal)
-	volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
+boundary_conditions = Dict(:x_neg => boundary,
+	:x_pos => boundary,
+	:y_neg => boundary_condition_slip_wall,
+	:y_pos => boundary)
+polydeg = 3
+basis = LobattoLegendreBasis(polydeg)
+surface_flux = (FluxLMARS(340.0), flux_zero)
+volume_flux = (flux_etec, flux_nonconservative_artiano_etal)
+volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
-	solver = DGSEM(basis, surface_flux, volume_integral)
+solver = DGSEM(basis, surface_flux, volume_integral)
 
-	a = 1000.0
-	L = 144000.0
-	H = 30000.0
-	peak = 1.0
-	y_b = peak / (1 + (L / 2 / a)^2)
-	alfa = (H - y_b) * 0.5
+a = 1000.0
+L = 144000.0
+H = 30000.0
+peak = 1.0
+y_b = peak / (1 + (L / 2 / a)^2)
+alfa = (H - y_b) * 0.5
 
-	f1(s) = SVector(-L / 2, y_b + alfa * (s + 1))
-	f2(s) = SVector(L / 2, y_b + alfa * (s + 1))
-	f3(s) = SVector((s + 1 - 1) * L / 2, peak / (1 + ((s + 1 - 1) * L / 2)^2 / a^2))
-	f4(s) = SVector((s + 1 - 1) * L / 2, H)
-	cells_per_dimension = (200, 50)
-	
-	mesh = P4estMesh(cells_per_dimension, polydeg = polydeg,
+f1(s) = SVector(-L / 2, y_b + alfa * (s + 1))
+f2(s) = SVector(L / 2, y_b + alfa * (s + 1))
+f3(s) = SVector((s + 1 - 1) * L / 2, peak / (1 + ((s + 1 - 1) * L / 2)^2 / a^2))
+f4(s) = SVector((s + 1 - 1) * L / 2, H)
+cells_per_dimension = (200, 50)
+
+mesh = P4estMesh(cells_per_dimension, polydeg = polydeg,
 	faces = (f1, f2, f3, f4),
 	initial_refinement_level = 0, periodicity = (false, false))
 
-	semi = SemidiscretizationHyperbolic(mesh, equations, linear_hydrostatic_setup, solver, source_terms = linear_hydrostatic_setup,
-		boundary_conditions = boundary_conditions)
-    T = 8
-    T = 0.1
-	###############################################################################
-	# ODE solvers, callbacks etc.
-	tspan = (0.0, T * 3600.0)
-	ode = semidiscretize(semi, tspan)
+semi = SemidiscretizationHyperbolic(mesh, equations, linear_hydrostatic_setup, solver, source_terms = linear_hydrostatic_setup,
+	boundary_conditions = boundary_conditions)
+T = 8
+T = 0.1
+###############################################################################
+# ODE solvers, callbacks etc.
+tspan = (0.0, T * 3600.0)
+ode = semidiscretize(semi, tspan)
 
-	summary_callback = SummaryCallback()
+summary_callback = SummaryCallback()
 
-	analysis_interval = 1000
+analysis_interval = 1000
 
-	analysis_callback = AnalysisCallback(semi, interval = analysis_interval)
+analysis_callback = AnalysisCallback(semi, interval = analysis_interval)
 
-	alive_callback = AliveCallback(analysis_interval = analysis_interval)
+alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
-	callbacks = CallbackSet(summary_callback,
-		analysis_callback,
-		alive_callback)
+callbacks = CallbackSet(summary_callback,
+	analysis_callback,
+	alive_callback)
 
-	###############################################################################
-	# run the simulation
-	sol = solve(ode,
-		SSPRK43(),
-		maxiters = 1.0e7,
-		dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
-		save_everystep = false, callback = callbacks)
+###############################################################################
+# run the simulation
+sol = solve(ode,
+	SSPRK43(),
+	maxiters = 1.0e7,
+	dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
+	save_everystep = false, callback = callbacks)

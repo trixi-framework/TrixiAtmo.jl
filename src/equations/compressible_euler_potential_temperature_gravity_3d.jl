@@ -88,43 +88,43 @@ end
 @inline function flux_nonconservative_waruzewski_etal(u_ll, u_rr,
 	normal_direction::AbstractVector,
 	equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
-	rho_ll, _, _, _, _ = u_ll
-	rho_rr, _, _, _, _ = u_rr
+	rho_ll, _, _, _, _, phi_ll = u_ll
+	rho_rr, _, _, _, _, phi_rr = u_rr
 	rho_avg = ln_mean(rho_ll, rho_rr)
-	phi_jump = u_rr[5] - u_ll[5]
+	phi_jump = phi_rr - phi_ll
 	return SVector(zero(eltype(u_ll)),
 		normal_direction[1] * rho_avg * phi_jump,
 		normal_direction[2] * rho_avg * phi_jump,
-        normal_direction[3] * rho_avg * phi_jump,
+		normal_direction[3] * rho_avg * phi_jump,
 		zero(eltype(u_ll)), zero(eltype(u_ll)))
 end
 
 @inline function flux_nonconservative_artiano_etal(u_ll, u_rr,
 	normal_direction::AbstractVector,
 	equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
-	rho_ll, _, _, _, _ = u_ll
-	rho_rr, _, _, _, _ = u_rr
+	rho_ll, _, _, _, _, phi_ll = u_ll
+	rho_rr, _, _, _, _, phi_rr = u_rr
 	rho_avg = stolarsky_mean(rho_ll, rho_rr, equations.gamma)
-	phi_jump = u_rr[5] - u_ll[5]
+	phi_jump = phi_rr - phi_ll
 	return SVector(zero(eltype(u_ll)),
 		normal_direction[1] * rho_avg * phi_jump,
 		normal_direction[2] * rho_avg * phi_jump,
-        normal_direction[3] * rho_avg * phi_jump,
-		 zero(eltype(u_ll)), zero(eltype(u_ll)))
+		normal_direction[3] * rho_avg * phi_jump,
+		zero(eltype(u_ll)), zero(eltype(u_ll)))
 end
 
 @inline function flux_nonconservative_souza_etal(u_ll, u_rr,
 	normal_direction::AbstractVector,
 	equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
-	rho_ll, _, _, _, _ = u_ll
-	rho_rr, _, _, _, _ = u_rr
+	rho_ll, _, _, _, _, phi_ll = u_ll
+	rho_rr, _, _, _, _, phi_rr = u_rr
 	rho_avg = 0.5f0 * (rho_ll + rho_rr)
-	phi_jump = u_rr[5] - u_ll[5]
+	phi_jump = phi_rr - phi_ll
 	return SVector(zero(eltype(u_ll)),
 		normal_direction[1] * rho_avg * phi_jump,
 		normal_direction[2] * rho_avg * phi_jump,
-        normal_direction[3] * rho_avg * phi_jump,
-		 zero(eltype(u_ll)), zero(eltype(u_ll)))
+		normal_direction[3] * rho_avg * phi_jump,
+		zero(eltype(u_ll)), zero(eltype(u_ll)))
 end
 
 # Low Mach number approximate Riemann solver (LMARS) from
@@ -163,6 +163,17 @@ end
 		f5, zero(eltype(u_ll)))
 end
 
+"""
+	flux_tec(u_ll, u_rr, orientation_or_normal_direction,
+						equations::CompressibleEulerEquationsPotentialTemperature1D)
+
+Total energy conservative two-point flux by
+-  Artiano et al. (2025), pre-print
+   Structure-Preserving High-Order Methods for the Compressible Euler Equations 
+   in Potential Temperature Formulation for Atmospheric Flows
+   (https://arxiv.org/abs/2509.10311)
+"""
+
 @inline function flux_tec(u_ll, u_rr, normal_direction::AbstractVector,
 	equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
 	# Unpack left and right state
@@ -175,7 +186,7 @@ end
 	# Compute the necessary mean values
 	rho_mean = ln_mean(rho_ll, rho_rr)
 
-    gammamean = stolarsky_mean(rho_theta_ll, rho_theta_rr, equations.gamma)
+	gammamean = stolarsky_mean(rho_theta_ll, rho_theta_rr, equations.gamma)
 
 	v1_avg = 0.5f0 * (v1_ll + v1_rr)
 	v2_avg = 0.5f0 * (v2_ll + v2_rr)
@@ -191,6 +202,16 @@ end
 	return SVector(f1, f2, f3, f4, f5, zero(eltype(u_ll)))
 end
 
+"""
+	flux_ec(u_ll, u_rr, orientation_or_normal_direction,
+						equations::CompressibleEulerEquationsPotentialTemperature1D)
+
+Entropy conservative two-point flux by
+-  Artiano et al. (2025), pre-print
+   Structure-Preserving High-Order Methods for the Compressible Euler Equations 
+   in Potential Temperature Formulation for Atmospheric Flows
+   (https://arxiv.org/abs/2509.10311)
+"""
 
 @inline function flux_ec(u_ll, u_rr, normal_direction::AbstractVector,
 	equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
@@ -209,7 +230,6 @@ end
 	v3_avg = 0.5f0 * (V3_ll + v3_rr)
 	p_avg = 0.5f0 * (p_ll + p_rr)
 
-
 	# Calculate fluxes depending on normal_direction
 	f1 = rho_mean * 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
 	f2 = f1 * v1_avg + p_avg * normal_direction[1]
@@ -219,7 +239,16 @@ end
 	return SVector(f1, f2, f3, f4, f5, zero(eltype(u_ll)))
 end
 
+"""
+	flux_etec(u_ll, u_rr, orientation_or_normal_direction,
+						equations::CompressibleEulerEquationsPotentialTemperature1D)
 
+Entropy and total energy conservative two-point flux by
+-  Artiano et al. (2025), pre-print
+   Structure-Preserving High-Order Methods for the Compressible Euler Equations 
+   in Potential Temperature Formulation for Atmospheric Flows
+   (https://arxiv.org/abs/2509.10311)
+"""
 @inline function flux_etec(u_ll, u_rr, normal_direction::AbstractVector,
 	equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
 	# Unpack left and right state
@@ -231,7 +260,7 @@ end
 	_, _, _, _, rho_theta_rr = u_rr
 	# Compute the necessary mean values
 
-    gammamean = stolarsky_mean(rho_theta_ll, rho_theta_rr, equations.gamma)
+	gammamean = stolarsky_mean(rho_theta_ll, rho_theta_rr, equations.gamma)
 
 	v1_avg = 0.5f0 * (v1_ll + v1_rr)
 	v2_avg = 0.5f0 * (v2_ll + v2_rr)
@@ -250,7 +279,7 @@ end
 
 @inline function prim2cons(prim,
 	equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
-	rho, v1, v2, v3, p, phi= prim
+	rho, v1, v2, v3, p, phi = prim
 	rho_v1 = rho * v1
 	rho_v2 = rho * v2
 	rho_v3 = rho * v3

@@ -40,7 +40,7 @@ boundary_conditions = (x_neg = boundary_condition_periodic,
 
 coordinates_min = (0.0, 0.0)
 coordinates_max = (300_000.0, 10_000.0)
-cells_per_dimension = (30*2, 4*2)
+cells_per_dimension = (60, 8)
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max, periodicity = (true, false))
 source_terms = nothing
 initial_condition = initial_condition_gravity_wave
