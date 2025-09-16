@@ -73,7 +73,7 @@ end
 
 @trixi_testset "elixir_euler_potential_temperature_baroclinic_instability" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_taylor_green_vortex.jl"),
+                                 "elixir_euler_potential_temperature_baroclinic_instability.jl"),
                         l2=[
                             3.6191804848984097e-6,
                             0.0007022602048939841,
