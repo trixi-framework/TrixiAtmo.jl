@@ -382,8 +382,9 @@ and $\delta h = 120 \ \mathrm{m}$. This problem was proposed in the following pa
     vlat = zero(eltype(x))
 
     # numerically integrate (here we use the QuadGK package) to get height
-    galewsky_integral, _ = quadgk(latp -> galewsky_integrand(latp, u_0, lat_0, lat_1, a),
-                                  convert(RealT, π / 2), lat)
+    galewsky_integral,
+    _ = quadgk(latp -> galewsky_integrand(latp, u_0, lat_0, lat_1, a),
+               convert(RealT, π / 2), lat)
     h = 10158.0f0 - a / EARTH_GRAVITATIONAL_ACCELERATION * galewsky_integral
 
     # add perturbation to initiate instability

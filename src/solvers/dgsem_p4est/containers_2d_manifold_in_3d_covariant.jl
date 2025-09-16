@@ -33,11 +33,9 @@ end
 @inline Base.ndims(::P4estElementContainerCovariant{NDIMS}) where {NDIMS} = NDIMS
 @inline function Base.eltype(::P4estElementContainerCovariant{NDIMS,
                                                               RealT,
-                                                              uEltype}) where {
-                                                                               NDIMS,
+                                                              uEltype}) where {NDIMS,
                                                                                RealT,
-                                                                               uEltype
-                                                                               }
+                                                                               uEltype}
     return uEltype
 end
 
@@ -152,19 +150,21 @@ function init_auxiliary_surface_node_variables!(auxiliary_variables::P4estAuxili
         primary_element = interfaces.neighbor_ids[1, interface]
         primary_indices = interfaces.node_indices[1, interface]
 
-        i_primary_start, i_primary_step = Trixi.index_to_start_step_2d(primary_indices[1],
-                                                                       index_range)
-        j_primary_start, j_primary_step = Trixi.index_to_start_step_2d(primary_indices[2],
-                                                                       index_range)
+        i_primary_start,
+        i_primary_step = Trixi.index_to_start_step_2d(primary_indices[1],
+                                                      index_range)
+        j_primary_start,
+        j_primary_step = Trixi.index_to_start_step_2d(primary_indices[2],
+                                                      index_range)
 
         i_primary = i_primary_start
         j_primary = j_primary_start
         for i in eachnode(dg)
             for v in axes(aux_node_vars, 1)
                 aux_surface_node_vars[1, v, i, interface] = aux_node_vars[v,
-                                                                          i_primary,
-                                                                          j_primary,
-                                                                          primary_element]
+                i_primary,
+                j_primary,
+                primary_element]
             end
             i_primary += i_primary_step
             j_primary += j_primary_step
@@ -175,19 +175,21 @@ function init_auxiliary_surface_node_variables!(auxiliary_variables::P4estAuxili
         secondary_element = interfaces.neighbor_ids[2, interface]
         secondary_indices = interfaces.node_indices[2, interface]
 
-        i_secondary_start, i_secondary_step = Trixi.index_to_start_step_2d(secondary_indices[1],
-                                                                           index_range)
-        j_secondary_start, j_secondary_step = Trixi.index_to_start_step_2d(secondary_indices[2],
-                                                                           index_range)
+        i_secondary_start,
+        i_secondary_step = Trixi.index_to_start_step_2d(secondary_indices[1],
+                                                        index_range)
+        j_secondary_start,
+        j_secondary_step = Trixi.index_to_start_step_2d(secondary_indices[2],
+                                                        index_range)
 
         i_secondary = i_secondary_start
         j_secondary = j_secondary_start
         for i in eachnode(dg)
             for v in axes(aux_node_vars, 1)
                 aux_surface_node_vars[2, v, i, interface] = aux_node_vars[v,
-                                                                          i_secondary,
-                                                                          j_secondary,
-                                                                          secondary_element]
+                i_secondary,
+                j_secondary,
+                secondary_element]
             end
             i_secondary += i_secondary_step
             j_secondary += j_secondary_step
@@ -458,10 +460,11 @@ function calc_christoffel_symbols!(aux_node_vars, mesh::P4estMesh{2, 3},
                                    dg, element, v1, v2, v3, v4, radius)
     for j in eachnode(dg), i in eachnode(dg)
         # Differentiate the metric tensor components 
-        dGdxi1, dGdxi2 = calc_metric_derivatives_autodiff(v1, v2, v3, v4,
-                                                          dg.basis.nodes[i],
-                                                          dg.basis.nodes[j],
-                                                          radius, equations)
+        dGdxi1,
+        dGdxi2 = calc_metric_derivatives_autodiff(v1, v2, v3, v4,
+                                                  dg.basis.nodes[i],
+                                                  dg.basis.nodes[j],
+                                                  radius, equations)
         # Compute Christoffel symbols of the first kind
         aux_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
         Gcon = metric_contravariant(aux_node, equations)
@@ -477,9 +480,10 @@ function calc_christoffel_symbols!(aux_node_vars, mesh::P4estMesh{2, 3},
                                    dg, element, v1, v2, v3, v4, radius)
     for j in eachnode(dg), i in eachnode(dg)
         # Differentiate the metric tensor components 
-        dGdxi1, dGdxi2 = calc_metric_derivatives_collocation(aux_node_vars, equations,
-                                                             dg,
-                                                             i, j, element)
+        dGdxi1,
+        dGdxi2 = calc_metric_derivatives_collocation(aux_node_vars, equations,
+                                                     dg,
+                                                     i, j, element)
         # Compute Christoffel symbols of the first kind
         aux_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
         Gcon = metric_contravariant(aux_node, equations)

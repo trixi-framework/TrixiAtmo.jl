@@ -2,28 +2,28 @@ using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
 function initial_condition_gravity_wave(x, t,
-	equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
-	g = equations.g
-	c_p = equations.c_p
-	c_v = equations.c_v
-	# center of perturbation
-	x_c = 100_000.0
-	a = 5_000
-	H = 10_000
-	R = c_p - c_v    # gas constant (dry air)
-	T0 = 250
-	delta = g / (R * T0)
-	DeltaT = 0.001
-	Tb = DeltaT * sinpi(x[2] / H) * exp(-(x[1] - x_c)^2 / a^2)
-	ps = 100_000.0  # reference pressure
-	rhos = ps / (T0 * R)
-	rho_b = rhos * (-Tb / T0)
-	p = ps * exp(-delta * x[2])
-	rho = rhos * exp(-delta * x[2]) + rho_b * exp(-0.5 * delta * x[2])
-	v1 = 20.0
-	v2 = 0.0
+                                        equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+    g = equations.g
+    c_p = equations.c_p
+    c_v = equations.c_v
+    # center of perturbation
+    x_c = 100_000.0
+    a = 5_000
+    H = 10_000
+    R = c_p - c_v    # gas constant (dry air)
+    T0 = 250
+    delta = g / (R * T0)
+    DeltaT = 0.001
+    Tb = DeltaT * sinpi(x[2] / H) * exp(-(x[1] - x_c)^2 / a^2)
+    ps = 100_000.0  # reference pressure
+    rhos = ps / (T0 * R)
+    rho_b = rhos * (-Tb / T0)
+    p = ps * exp(-delta * x[2])
+    rho = rhos * exp(-delta * x[2]) + rho_b * exp(-0.5 * delta * x[2])
+    v1 = 20.0
+    v2 = 0.0
 
-	return TrixiAtmo.prim2cons(SVector(rho, v1, v2, p, g * x[2]), equations)
+    return TrixiAtmo.prim2cons(SVector(rho, v1, v2, p, g * x[2]), equations)
 end
 
 equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D()
@@ -31,21 +31,24 @@ cs = sqrt(1004.0 / 717.0 * 287.0 * 250.0)
 surface_flux = (FluxLMARS(cs), flux_zero)
 volume_flux = (flux_tec, flux_nonconservative_waruzewski_etal)
 polydeg = 3
-solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux, volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
+solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
+               volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
 
 boundary_conditions = (x_neg = boundary_condition_periodic,
-	x_pos = boundary_condition_periodic,
-	y_neg = boundary_condition_slip_wall,
-	y_pos = boundary_condition_slip_wall)
+                       x_pos = boundary_condition_periodic,
+                       y_neg = boundary_condition_slip_wall,
+                       y_pos = boundary_condition_slip_wall)
 
 coordinates_min = (0.0, 0.0)
 coordinates_max = (300_000.0, 10_000.0)
 cells_per_dimension = (60, 8)
-mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max, periodicity = (true, false))
+mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
+                      periodicity = (true, false))
 source_terms = nothing
 initial_condition = initial_condition_gravity_wave
-semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver, source_terms = source_terms,
-	boundary_conditions = boundary_conditions)
+semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
+                                    source_terms = source_terms,
+                                    boundary_conditions = boundary_conditions)
 tspan = (0.0, 1800.0)
 ode = semidiscretize(semi, tspan)
 
@@ -59,12 +62,12 @@ alive_callback = AliveCallback(analysis_interval = analysis_interval)
 stepsize_callback = StepsizeCallback(cfl = 1.0)
 
 callbacks = CallbackSet(summary_callback,
-	analysis_callback,
-	alive_callback,
-	stepsize_callback)
+                        analysis_callback,
+                        alive_callback,
+                        stepsize_callback)
 
 sol = solve(ode,
-	SSPRK43(thread = Trixi.True()),
-	maxiters = 1.0e7,
-	dt = 1e-1, # solve needs some value here but it will be overwritten by the stepsize_callback
-	save_everystep = false, callback = callbacks, adaptive = false)
+            SSPRK43(thread = Trixi.True()),
+            maxiters = 1.0e7,
+            dt = 1e-1, # solve needs some value here but it will be overwritten by the stepsize_callback
+            save_everystep = false, callback = callbacks, adaptive = false)

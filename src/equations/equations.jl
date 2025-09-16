@@ -151,10 +151,8 @@ end
 
 # Add up the total number of auxiliary variables for equations in covariant form
 @inline function n_aux_node_vars(::AbstractCovariantEquations{NDIMS,
-                                                              NDIMS_AMBIENT}) where {
-                                                                                     NDIMS,
-                                                                                     NDIMS_AMBIENT
-                                                                                     }
+                                                              NDIMS_AMBIENT}) where {NDIMS,
+                                                                                     NDIMS_AMBIENT}
     nvars_basis_covariant = NDIMS_AMBIENT * NDIMS
     nvars_basis_contravariant = NDIMS * NDIMS_AMBIENT
     nvars_area_element = 1
@@ -339,11 +337,10 @@ include("covariant_shallow_water_split.jl")
 include("compressible_moist_euler_2d_lucas.jl")
 include("compressible_euler_potential_temperature_1d.jl")
 include("compressible_euler_potential_temperature_2d.jl")
-include("compressible_euler_potentail_temperature_3d.jl")
+include("compressible_euler_potential_temperature_3d.jl")
 include("compressible_euler_potential_temperature_gravity_1d.jl")
 include("compressible_euler_potential_temperature_gravity_2d.jl")
 include("compressible_euler_potential_temperature_gravity_3d.jl")
 include("shallow_water_3d.jl")
 include("reference_data.jl")
-
 end # @muladd

@@ -34,9 +34,12 @@ include("callbacks_step/callbacks_step.jl")
 
 export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
        CovariantLinearAdvectionEquation2D, CovariantShallowWaterEquations2D,
-       SplitCovariantShallowWaterEquations2D, CompressibleEulerPotentialTemperatureEquations1D,
-       CompressibleEulerPotentialTemperatureEquations2D, CompressibleEulerPotentialTemperatureEquations3D,
-       CompressibleEulerPotentialTemperatureEquationsWithGravity1D, CompressibleEulerPotentialTemperatureEquationsWithGravity2D,
+       SplitCovariantShallowWaterEquations2D,
+       CompressibleEulerPotentialTemperatureEquations1D,
+       CompressibleEulerPotentialTemperatureEquations2D,
+       CompressibleEulerPotentialTemperatureEquations3D,
+       CompressibleEulerPotentialTemperatureEquationsWithGravity1D,
+       CompressibleEulerPotentialTemperatureEquationsWithGravity2D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity3D
 
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
@@ -45,8 +48,9 @@ export flux_chandrashekar, FluxLMARS
 
 export flux_nonconservative_zeros, flux_nonconservative_ec,
        flux_nonconservative_surface_simplified, source_terms_geometric_coriolis,
-       source_terms_coriolis, source_terms_coriolis_lagrange_multiplier, 
-       flux_tec, flux_etec, flux_nonconservative_souza_etal, flux_nonconservative_artiano_etal,
+       source_terms_coriolis, source_terms_coriolis_lagrange_multiplier,
+       flux_tec, flux_etec, flux_nonconservative_souza_etal,
+       flux_nonconservative_artiano_etal,
        flux_nonconservative_waruzewski_etal, flux_zero
 
 export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!

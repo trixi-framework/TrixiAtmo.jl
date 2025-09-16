@@ -20,15 +20,17 @@ function Trixi.max_dt(u, t,
             lambda1, lambda2, lambda3 = max_abs_speeds(u_node, equations)
 
             # Local speeds transformed to the reference element
-            Ja11, Ja12, Ja13 = Trixi.get_contravariant_vector(1, contravariant_vectors,
-                                                              i,
-                                                              j,
-                                                              element)
+            Ja11, Ja12,
+            Ja13 = Trixi.get_contravariant_vector(1, contravariant_vectors,
+                                                  i,
+                                                  j,
+                                                  element)
             lambda1_transformed = abs(Ja11 * lambda1 + Ja12 * lambda2 + Ja13 * lambda3)
-            Ja21, Ja22, Ja23 = Trixi.get_contravariant_vector(2, contravariant_vectors,
-                                                              i,
-                                                              j,
-                                                              element)
+            Ja21, Ja22,
+            Ja23 = Trixi.get_contravariant_vector(2, contravariant_vectors,
+                                                  i,
+                                                  j,
+                                                  element)
             lambda2_transformed = abs(Ja21 * lambda1 + Ja22 * lambda2 + Ja23 * lambda3)
 
             inv_jacobian = abs(inverse_jacobian[i, j, element])

@@ -35,11 +35,9 @@ end
 end
 @inline Base.ndims(::P4estElementContainerPtrArray{NDIMS}) where {NDIMS} = NDIMS
 @inline function Base.eltype(::P4estElementContainerPtrArray{NDIMS,
-                                                             RealT, uEltype}) where {
-                                                                                     NDIMS,
+                                                             RealT, uEltype}) where {NDIMS,
                                                                                      RealT,
-                                                                                     uEltype
-                                                                                     }
+                                                                                     uEltype}
     return uEltype
 end
 
@@ -136,7 +134,7 @@ function init_elements_2d_manifold_in_3d!(elements,
                                           basis::LobattoLegendreBasis,
                                           metric_terms)
     (; node_coordinates, jacobian_matrix,
-    contravariant_vectors, inverse_jacobian) = elements
+     contravariant_vectors, inverse_jacobian) = elements
 
     # The standard calc_node_coordinates! can be used, since Trixi.jl now dispatches on
     # P4estMesh{NDIMS, NDIMS_AMBIENT}.

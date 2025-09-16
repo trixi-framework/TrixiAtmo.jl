@@ -105,8 +105,9 @@ end
     u_local = rotate_to_x(u_inner, normal, equations)
 
     # compute the primitive variables
-    rho_local, v_normal, v_tangent, p_local, qv_local, ql_local = cons2prim(u_local,
-                                                                            equations)
+    rho_local, v_normal, v_tangent, p_local, qv_local,
+    ql_local = cons2prim(u_local,
+                         equations)
     qd_local = 1 - qv_local - ql_local
     gamma = (qd_local * c_pd + qv_local * c_pv + ql_local * c_pl) *
             inv(qd_local * c_vd + qv_local * c_vv + ql_local * c_pl)
@@ -310,8 +311,9 @@ end
     # Calculate Error in Sources with exact solution and u
     u_exact = SVector(rho, rho, rho, rho * E, rho * qv, rho * ql)
 
-    du1, du2, du3, du4, du5, du6 = (source_terms_moist_bubble(u, x, t, equations) -
-                                    source_terms_moist_bubble(u_exact, x, t, equations))
+    du1, du2, du3, du4, du5,
+    du6 = (source_terms_moist_bubble(u, x, t, equations) -
+           source_terms_moist_bubble(u_exact, x, t, equations))
 
     # Note that d/dt rho = -d/dx rho = -d/dy rho.
 
@@ -760,8 +762,9 @@ end
 end
 
 # Default entropy is the mathematical entropy.
-@inline entropy(cons, equations::CompressibleMoistEulerEquations2D) = entropy_math(cons,
-                                                                                   equations)
+@inline entropy(cons,
+                equations::CompressibleMoistEulerEquations2D) = entropy_math(cons,
+                                                                             equations)
 
 # Calculate total energy for a conservative state `cons`.
 @inline energy_total(cons, ::CompressibleMoistEulerEquations2D) = cons[4]
@@ -1002,27 +1005,34 @@ end
     return SVector(f1, f2, f3, f4, f_1v, f_1l)
 end
 
-varnames(::typeof(cons2cons), ::CompressibleMoistEulerEquations2D) = ("rho", "rho_v1",
-                                                                      "rho_v2", "rho_E",
-                                                                      "rho_qv",
-                                                                      "rho_ql")
-varnames(::typeof(cons2prim), ::CompressibleMoistEulerEquations2D) = ("rho", "v1", "v2",
-                                                                      "p", "qv", "ql")
-varnames(::typeof(cons2temp), ::CompressibleMoistEulerEquations2D) = ("rho", "v1", "v2",
-                                                                      "T", "qv", "ql")
-varnames(::typeof(cons2drypot), ::CompressibleMoistEulerEquations2D) = ("rho", "v1",
-                                                                        "v2",
-                                                                        "drypottemp",
-                                                                        "qv", "ql")
-varnames(::typeof(cons2moistpot), ::CompressibleMoistEulerEquations2D) = ("rho", "v1",
-                                                                          "v2",
-                                                                          "moistpottemp",
-                                                                          "qv", "ql")
-varnames(::typeof(cons2moist), ::CompressibleMoistEulerEquations2D) = ("qv", "ql", "rt",
-                                                                       "T", "H",
-                                                                       "aeqpottemp")
-varnames(::typeof(cons2aeqpot), ::CompressibleMoistEulerEquations2D) = ("rho", "v1",
-                                                                        "v2",
-                                                                        "aeqpottemp",
-                                                                        "rv", "rt")
+varnames(::typeof(cons2cons),
+         ::CompressibleMoistEulerEquations2D) = ("rho", "rho_v1",
+                                                 "rho_v2", "rho_E",
+                                                 "rho_qv",
+                                                 "rho_ql")
+varnames(::typeof(cons2prim),
+         ::CompressibleMoistEulerEquations2D) = ("rho", "v1", "v2",
+                                                 "p", "qv", "ql")
+varnames(::typeof(cons2temp),
+         ::CompressibleMoistEulerEquations2D) = ("rho", "v1", "v2",
+                                                 "T", "qv", "ql")
+varnames(::typeof(cons2drypot),
+         ::CompressibleMoistEulerEquations2D) = ("rho", "v1",
+                                                 "v2",
+                                                 "drypottemp",
+                                                 "qv", "ql")
+varnames(::typeof(cons2moistpot),
+         ::CompressibleMoistEulerEquations2D) = ("rho", "v1",
+                                                 "v2",
+                                                 "moistpottemp",
+                                                 "qv", "ql")
+varnames(::typeof(cons2moist),
+         ::CompressibleMoistEulerEquations2D) = ("qv", "ql", "rt",
+                                                 "T", "H",
+                                                 "aeqpottemp")
+varnames(::typeof(cons2aeqpot),
+         ::CompressibleMoistEulerEquations2D) = ("rho", "v1",
+                                                 "v2",
+                                                 "aeqpottemp",
+                                                 "rv", "rt")
 end # @muladd

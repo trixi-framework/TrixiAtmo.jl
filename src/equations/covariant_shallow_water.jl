@@ -102,13 +102,13 @@ end
 # Convenience functions to extract physical variables from state vector
 @inline Trixi.waterheight(u, ::AbstractCovariantShallowWaterEquations2D) = u[1]
 @inline velocity_contravariant(u,
-::AbstractCovariantShallowWaterEquations2D) = SVector(u[2] /
-                                                      u[1],
-                                                      u[3] /
-                                                      u[1])
+                               ::AbstractCovariantShallowWaterEquations2D) = SVector(u[2] /
+                                                                                     u[1],
+                                                                                     u[3] /
+                                                                                     u[1])
 @inline momentum_contravariant(u,
-::AbstractCovariantShallowWaterEquations2D) = SVector(u[2],
-                                                      u[3])
+                               ::AbstractCovariantShallowWaterEquations2D) = SVector(u[2],
+                                                                                     u[3])
 
 @inline function Trixi.cons2prim(u, aux_vars,
                                  equations::AbstractCovariantShallowWaterEquations2D)
@@ -139,16 +139,18 @@ end
 # Convert contravariant momentum components to the global coordinate system
 @inline function contravariant2global(u, aux_vars,
                                       equations::AbstractCovariantShallowWaterEquations2D)
-    h_v1, h_v2, h_v3 = basis_covariant(aux_vars, equations) *
-                       momentum_contravariant(u, equations)
+    h_v1, h_v2,
+    h_v3 = basis_covariant(aux_vars, equations) *
+           momentum_contravariant(u, equations)
     return SVector(waterheight(u, equations), h_v1, h_v2, h_v3)
 end
 
 # Convert momentum components in the global coordinate system to contravariant components
 @inline function global2contravariant(u, aux_vars,
                                       equations::AbstractCovariantShallowWaterEquations2D)
-    h_vcon1, h_vcon2 = basis_contravariant(aux_vars, equations) *
-                       SVector(u[2], u[3], u[4])
+    h_vcon1,
+    h_vcon2 = basis_contravariant(aux_vars, equations) *
+              SVector(u[2], u[3], u[4])
     return SVector(u[1], h_vcon1, h_vcon2)
 end
 
