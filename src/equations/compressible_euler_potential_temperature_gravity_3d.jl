@@ -93,6 +93,24 @@ end
     return SVector(f1, f2, f3, f4, f5, zero(eltype(u)))
 end
 
+"""
+	flux_nonconservative_waruzewski_etal(u_ll, u_rr,
+													  normal_direction::AbstractVector,
+													  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+
+   Well-balanced gravity term for isothermal background state
+-  Maciej Waruszewski and Jeremy E. Kozdon and Lucas C. Wilcox and Thomas H. Gibson and Francis X. Giraldo (2022),
+   Entropy stable discontinuous {G}alerkin methods for balance laws 
+   in non-conservative form: Applications to the {E}uler equations with gravity
+   [DOI: 10.1016/j.jcp.2022.111507](https://doi.org/10.1016/j.jcp.2022.111507)
+
+   The well balanced on curvilinear coordinates was proven by
+-  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
+   Structure-Preserving High-Order Methods for the Compressible Euler Equations 
+   in Potential Temperature Formulation for Atmospheric Flows
+   (https://arxiv.org/abs/2509.10311)
+"""
+
 @inline function flux_nonconservative_waruzewski_etal(u_ll, u_rr,
                                                       normal_direction::AbstractVector,
                                                       equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
@@ -107,6 +125,18 @@ end
                    zero(eltype(u_ll)), zero(eltype(u_ll)))
 end
 
+"""
+	flux_nonconservative_artiano_etal(u_ll, u_rr,
+													  normal_direction::AbstractVector,
+													  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+
+   Well-balanced gravity term for constant potential temperature background state by
+-  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
+   Structure-Preserving High-Order Methods for the Compressible Euler Equations 
+   in Potential Temperature Formulation for Atmospheric Flows
+   (https://arxiv.org/abs/2509.10311)
+"""
+
 @inline function flux_nonconservative_artiano_etal(u_ll, u_rr,
                                                    normal_direction::AbstractVector,
                                                    equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
@@ -120,6 +150,17 @@ end
                    normal_direction[3] * rho_avg * phi_jump,
                    zero(eltype(u_ll)), zero(eltype(u_ll)))
 end
+
+"""
+	flux_nonconservative_souza_etal(u_ll, u_rr,
+													  normal_direction::AbstractVector,
+													  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+
+-  Souza et al. 
+   The Flux-Differencing Discontinuous {G}alerkin Method Applied to 
+   an Idealized Fully Compressible Nonhydrostatic Dry Atmosphere
+   [DOI: 10.1029/2022MS003527] (https://doi.org/10.1029/2022MS003527)
+"""
 
 @inline function flux_nonconservative_souza_etal(u_ll, u_rr,
                                                  normal_direction::AbstractVector,
