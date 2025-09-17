@@ -30,7 +30,7 @@ function initial_condition_convergence_test_rainy(x, t,
     rho_moist = rho_vapour + rho_cloud
     rho_dry = rho - rho_moist - rho_rain
 
-    # define matching energydensity with v1 := 1 and v2 := 1 , initially
+    # define matching energy density with v1 := 1 and v2 := 1 , initially
     energy = (c_vd * rho_dry + c_vv * rho_vapour + c_l * (rho_cloud + rho_rain)) *
              temperature
     energy += rho_vapour * ref_L + rho
@@ -65,7 +65,7 @@ function source_terms_convergence_test_rainy(u, x, t,
     rho_x = ω * A * co
     rho_t = -rho_x
 
-    # define variables of rho
+    # define variables which depend on rho
     temperature = rho + 250.0
     sat_vap_p = saturation_vapour_pressure(temperature, equations)
     rho_vapour = sat_vap_p / (R_v * temperature)
@@ -119,11 +119,11 @@ function source_terms_convergence_test_rainy(u, x, t,
     S_rho_moist = rho_moist_t + 2.0 * rho_moist_x
     S_rho_rain = rho_rain_t + 2.0 * rho_rain_x - rhor_vr__x
 
-    # "momentum"
+    # momentum
     S_rho_v1 = rho_x + pressure_x - rhor_vr__x
     S_rho_v2 = rho_x + pressure_x - rhor_vr__x
 
-    # "energy"
+    # energy
     S_energy = energy_t + 2.0 * (energy_x + pressure_x) - (c_l * rho_x * rho_rain * vr)
     S_energy -= (c_l * temperature + 1) * rhor_vr__x
 
