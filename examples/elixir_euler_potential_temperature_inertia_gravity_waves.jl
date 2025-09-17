@@ -1,8 +1,19 @@
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
-function initial_condition_gravity_wave(x, t,
+"""
+	initial_condition_gravity_waves(x, t,
                                         equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+
+   Test cases for linearized analytical solution by
+-  Baldauf, Michael and Brdar, Slavko (2013)
+   An analytic solution for linear gravity waves in a channel as a test 
+   for numerical models using the non-hydrostatic, compressible {E}uler equations
+   [DOI: 10.1002/qj.2105] (https://doi.org/10.1002/qj.2105)
+"""
+
+function initial_condition_gravity_waves(x, t,
+                                         equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     g = equations.g
     c_p = equations.c_p
     c_v = equations.c_v
@@ -45,7 +56,7 @@ cells_per_dimension = (60, 8)
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = (true, false))
 source_terms = nothing
-initial_condition = initial_condition_gravity_wave
+initial_condition = initial_condition_gravity_waves
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_terms,
                                     boundary_conditions = boundary_conditions)

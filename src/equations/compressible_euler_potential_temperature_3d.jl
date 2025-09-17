@@ -273,14 +273,6 @@ end
     return abs(v1) + c, abs(v2) + c, abs(v3) + c
 end
 
-@inline function density_pressure(u,
-                                  equations::CompressibleEulerPotentialTemperatureEquations3D)
-    rho, rho_v1, rho_v2, rho_v3, rho_theta = u
-    rho_times_p = rho * equations.p_0 *
-                  (equations.R * rho_theta / equations.p_0)^equations.gamma
-    return rho_times_p
-end
-
 # Calculate maximum wave speed for local Lax-Friedrichs-type dissipation as the
 # maximum velocity magnitude plus the maximum speed of sound
 @inline function max_abs_speed_naive(u_ll, u_rr, orientation::Integer,
