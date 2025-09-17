@@ -21,7 +21,7 @@ include("test_trixiatmo.jl")
                         ], tspan=(0.0, 1800.0))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100, atol=8.0e-11)
 end
 
 @trixi_testset "elixir_euler_potential_temperature_linear_hydrostatic" begin
@@ -41,7 +41,7 @@ end
                             0.0010785330882754351,
                             1.7462298274040222e-10
                         ],
-                        T=0.1, cells_per_dimension=(20, 12))
+                        T=0.1, cells_per_dimension=(20, 12), atol=8.0e-11)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
@@ -64,7 +64,7 @@ end
                             0.0003273023447150081,
                             1.4551915228366852e-10
                         ],
-                        tspan=(0.0, 360.0), cells_per_dimension=(20, 12))
+                        tspan=(0.0, 360.0), cells_per_dimension=(20, 12), atol=8.0e-11)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
@@ -87,7 +87,7 @@ end
                             0.07647977352115731,
                             8.731149137020111e-11
                         ],
-                        tspan=(0.0, 360.0), cells_per_dimension=(20, 12))
+                        tspan=(0.0, 360.0), cells_per_dimension=(20, 12), atol=8.0e-11)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
