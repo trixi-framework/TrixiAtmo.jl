@@ -225,11 +225,10 @@ boundary_conditions = Dict(:inside => boundary_condition_slip_wall,
 polydeg = 5
 surface_flux = (FluxLMARS(340), flux_zero)
 volume_flux = (flux_tec, flux_nonconservative_souza_etal)
-volume_flux=(flux_ec, flux_nonconservative_waruzewski_etal)
-volume_flux=(flux_etec, flux_nonconservative_artiano_etal)
+
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
-trees_per_cube_face = (2, 2)
+trees_per_cube_face = (8, 4)
 mesh = Trixi.P4estMeshCubedSphere(trees_per_cube_face..., 6.371229e6, 30000.0,
                                   polydeg = polydeg, initial_refinement_level = 0)
 
@@ -240,7 +239,6 @@ semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
 ###############################################################################
 # ODE solvers, callbacks etc.
 T = 10.0 # 10 days
-T = 0.01
 tspan = (0.0, T * SECONDS_PER_DAY) # time in seconds for 10 days
 
 ode = semidiscretize(semi, tspan)

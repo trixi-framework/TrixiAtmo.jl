@@ -157,7 +157,8 @@ end
     phi_jump = phi_rr - phi_ll
     return SVector(zero(eltype(u_ll)),
                    normal_direction[1] * rho_avg * phi_jump,
-                   normal_direction[2] * rho_avg * phi_jump, zero(eltype(u_ll)),
+                   normal_direction[2] * rho_avg * phi_jump,
+                   zero(eltype(u_ll)),
                    zero(eltype(u_ll)))
 end
 
@@ -181,7 +182,8 @@ end
     phi_jump = phi_rr - phi_ll
     return SVector(zero(eltype(u_ll)),
                    normal_direction[1] * rho_avg * phi_jump,
-                   normal_direction[2] * rho_avg * phi_jump, zero(eltype(u_ll)),
+                   normal_direction[2] * rho_avg * phi_jump,
+                   zero(eltype(u_ll)),
                    zero(eltype(u_ll)))
 end
 
@@ -312,17 +314,13 @@ Entropy and total energy conservative two-point flux by
     v_dot_n_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2]
     _, _, _, rho_theta_ll = u_ll
     _, _, _, rho_theta_rr = u_rr
-    # Compute the necessary mean values
-    #rho_mean = ln_mean(rho_ll, rho_rr)
-    #rho_mean = 0.5f0 * (rho_ll + rho_rr)
+
     gammamean = stolarsky_mean(rho_theta_ll, rho_theta_rr, equations.gamma)
 
     v1_avg = 0.5f0 * (v1_ll + v1_rr)
     v2_avg = 0.5f0 * (v2_ll + v2_rr)
     p_avg = 0.5f0 * (p_ll + p_rr)
 
-    # Calculate fluxes depending on normal_direction
-    #f1 = rho_mean * 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
     f4 = gammamean * 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
     f1 = f4 * ln_mean(rho_ll / rho_theta_ll, rho_rr / rho_theta_rr)
     f2 = f1 * v1_avg + p_avg * normal_direction[1]
