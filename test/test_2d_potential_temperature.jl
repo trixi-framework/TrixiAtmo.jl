@@ -42,7 +42,7 @@ end
                             0.0010785335742866664,
                             1.7462298274040222e-10
                         ],
-                        tspan=(0.0, 0.1), cells_per_dimension=(20, 12))
+                        T = 0.1, cells_per_dimension=(20, 12))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
@@ -65,7 +65,7 @@ end
                             0.0003273012893600935,
                             1.4551915228366852e-10
                         ],
-                        tspan=(0.0, 0.1), cells_per_dimension=(20, 12))
+                        T = 0.1, cells_per_dimension=(20, 12))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
@@ -88,7 +88,7 @@ end
                             0.07647979859615361,
                             8.731149137020111e-11
                         ],
-                        tspan=(0.0, 0.1), cells_per_dimension=(20, 12))
+                        T = 0.1, cells_per_dimension=(20, 12))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
