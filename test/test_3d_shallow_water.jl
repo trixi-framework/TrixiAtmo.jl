@@ -21,7 +21,7 @@ include("test_trixiatmo.jl")
                         ],
                         polydeg=3,
                         cells_per_dimension=(5, 5),
-                        tspan=(0.0, 1.0*SECONDS_PER_DAY))
+                        tspan=(0.0, 1.0 * SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
@@ -46,7 +46,7 @@ end
                         ],
                         polydeg=3,
                         cells_per_dimension=(5, 5),
-                        tspan=(0.0, 1.0*SECONDS_PER_DAY))
+                        tspan=(0.0, 1.0 * SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
@@ -74,7 +74,7 @@ end
                                       flux_nonconservative_wintermeyer_etal),
                         polydeg=3,
                         cells_per_dimension=(5, 5),
-                        tspan=(0.0, 1.0*SECONDS_PER_DAY))
+                        tspan=(0.0, 1.0 * SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
@@ -105,7 +105,7 @@ end
                             0.0],
                         polydeg=3,
                         cells_per_dimension=(5, 5),
-                        tspan=(0.0, 1.0*SECONDS_PER_DAY),
+                        tspan=(0.0, 1.0 * SECONDS_PER_DAY),
                         surface_flux=(FluxPlusDissipation(flux_wintermeyer_etal,
                                                           DissipationLocalLaxFriedrichs(max_abs_speed_naive)),
                                       flux_nonconservative_wintermeyer_etal)) # use "naive" wave speed estimate for coverage
@@ -133,7 +133,7 @@ end
                         ],
                         polydeg=3,
                         cells_per_dimension=(5, 5),
-                        tspan=(0.0, 1.0*SECONDS_PER_DAY))
+                        tspan=(0.0, 1.0 * SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)

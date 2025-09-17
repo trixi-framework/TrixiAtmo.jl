@@ -763,8 +763,8 @@ end
 
 # Default entropy is the mathematical entropy.
 @inline entropy(cons,
-                equations::CompressibleMoistEulerEquations2D) = entropy_math(cons,
-                                                                             equations)
+equations::CompressibleMoistEulerEquations2D) = entropy_math(cons,
+                                                             equations)
 
 # Calculate total energy for a conservative state `cons`.
 @inline energy_total(cons, ::CompressibleMoistEulerEquations2D) = cons[4]
@@ -1006,33 +1006,33 @@ end
 end
 
 varnames(::typeof(cons2cons),
-         ::CompressibleMoistEulerEquations2D) = ("rho", "rho_v1",
-                                                 "rho_v2", "rho_E",
-                                                 "rho_qv",
-                                                 "rho_ql")
+::CompressibleMoistEulerEquations2D) = ("rho", "rho_v1",
+                                        "rho_v2", "rho_E",
+                                        "rho_qv",
+                                        "rho_ql")
 varnames(::typeof(cons2prim),
-         ::CompressibleMoistEulerEquations2D) = ("rho", "v1", "v2",
-                                                 "p", "qv", "ql")
+::CompressibleMoistEulerEquations2D) = ("rho", "v1", "v2",
+                                        "p", "qv", "ql")
 varnames(::typeof(cons2temp),
-         ::CompressibleMoistEulerEquations2D) = ("rho", "v1", "v2",
-                                                 "T", "qv", "ql")
+::CompressibleMoistEulerEquations2D) = ("rho", "v1", "v2",
+                                        "T", "qv", "ql")
 varnames(::typeof(cons2drypot),
-         ::CompressibleMoistEulerEquations2D) = ("rho", "v1",
-                                                 "v2",
-                                                 "drypottemp",
-                                                 "qv", "ql")
+::CompressibleMoistEulerEquations2D) = ("rho", "v1",
+                                        "v2",
+                                        "drypottemp",
+                                        "qv", "ql")
 varnames(::typeof(cons2moistpot),
-         ::CompressibleMoistEulerEquations2D) = ("rho", "v1",
-                                                 "v2",
-                                                 "moistpottemp",
-                                                 "qv", "ql")
+::CompressibleMoistEulerEquations2D) = ("rho", "v1",
+                                        "v2",
+                                        "moistpottemp",
+                                        "qv", "ql")
 varnames(::typeof(cons2moist),
-         ::CompressibleMoistEulerEquations2D) = ("qv", "ql", "rt",
-                                                 "T", "H",
-                                                 "aeqpottemp")
+::CompressibleMoistEulerEquations2D) = ("qv", "ql", "rt",
+                                        "T", "H",
+                                        "aeqpottemp")
 varnames(::typeof(cons2aeqpot),
-         ::CompressibleMoistEulerEquations2D) = ("rho", "v1",
-                                                 "v2",
-                                                 "aeqpottemp",
-                                                 "rv", "rt")
+::CompressibleMoistEulerEquations2D) = ("rho", "v1",
+                                        "v2",
+                                        "aeqpottemp",
+                                        "rv", "rt")
 end # @muladd

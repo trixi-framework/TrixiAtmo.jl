@@ -102,13 +102,13 @@ end
 # Convenience functions to extract physical variables from state vector
 @inline Trixi.waterheight(u, ::AbstractCovariantShallowWaterEquations2D) = u[1]
 @inline velocity_contravariant(u,
-                               ::AbstractCovariantShallowWaterEquations2D) = SVector(u[2] /
-                                                                                     u[1],
-                                                                                     u[3] /
-                                                                                     u[1])
+::AbstractCovariantShallowWaterEquations2D) = SVector(u[2] /
+                                                      u[1],
+                                                      u[3] /
+                                                      u[1])
 @inline momentum_contravariant(u,
-                               ::AbstractCovariantShallowWaterEquations2D) = SVector(u[2],
-                                                                                     u[3])
+::AbstractCovariantShallowWaterEquations2D) = SVector(u[2],
+                                                      u[3])
 
 @inline function Trixi.cons2prim(u, aux_vars,
                                  equations::AbstractCovariantShallowWaterEquations2D)

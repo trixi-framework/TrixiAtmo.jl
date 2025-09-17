@@ -39,11 +39,11 @@ function varnames(::typeof(cons2cons),
 end
 
 varnames(::typeof(cons2prim),
-         ::CompressibleEulerPotentialTemperatureEquations3D) = ("rho",
-                                                                "v1",
-                                                                "v2",
-                                                                "v3",
-                                                                "p1")
+::CompressibleEulerPotentialTemperatureEquations3D) = ("rho",
+                                                       "v1",
+                                                       "v2",
+                                                       "v3",
+                                                       "p1")
 
 # Low Mach number approximate Riemann solver (LMARS) from
 # X. Chen, N. Andronova, B. Van Leer, J. E. Penner, J. P. Boyd, C. Jablonowski, S.

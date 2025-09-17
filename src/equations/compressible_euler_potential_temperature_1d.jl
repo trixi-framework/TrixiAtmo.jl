@@ -43,7 +43,7 @@ function varnames(::typeof(cons2cons),
 end
 
 varnames(::typeof(cons2prim),
-         ::CompressibleEulerPotentialTemperatureEquations1D) = ("rho", "v1", "p1")
+::CompressibleEulerPotentialTemperatureEquations1D) = ("rho", "v1", "p1")
 
 """
 	flux_tec(u_ll, u_rr, orientation_or_normal_direction,

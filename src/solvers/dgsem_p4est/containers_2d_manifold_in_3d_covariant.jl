@@ -162,9 +162,9 @@ function init_auxiliary_surface_node_variables!(auxiliary_variables::P4estAuxili
         for i in eachnode(dg)
             for v in axes(aux_node_vars, 1)
                 aux_surface_node_vars[1, v, i, interface] = aux_node_vars[v,
-                i_primary,
-                j_primary,
-                primary_element]
+                                                                          i_primary,
+                                                                          j_primary,
+                                                                          primary_element]
             end
             i_primary += i_primary_step
             j_primary += j_primary_step
@@ -187,9 +187,9 @@ function init_auxiliary_surface_node_variables!(auxiliary_variables::P4estAuxili
         for i in eachnode(dg)
             for v in axes(aux_node_vars, 1)
                 aux_surface_node_vars[2, v, i, interface] = aux_node_vars[v,
-                i_secondary,
-                j_secondary,
-                secondary_element]
+                                                                          i_secondary,
+                                                                          j_secondary,
+                                                                          secondary_element]
             end
             i_secondary += i_secondary_step
             j_secondary += j_secondary_step
