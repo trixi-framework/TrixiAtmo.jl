@@ -89,7 +89,7 @@ end
                             0.012502671674568866
                         ],
                         tspan=(0.0, 0.2), surface_flux=FluxLMARS(340.0),
-                        volume_flux=flux_tec)
+                        volume_flux=flux_tec, atol=1e-10)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
