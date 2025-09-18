@@ -1,12 +1,14 @@
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
-function initial_condition_robert_bubble(x, t, equations::CompressibleEulerPotentialTemperatureEquations2D)
+function initial_condition_robert_bubble(x, t,
+                                         equations::CompressibleEulerPotentialTemperatureEquations2D)
     # center of perturbation
     center_x = 500.0
     center_z = 10.0
+    g = equations.g
     # radius of perturbation
-    radius = .0
+    radius = 0.0
     # distance of current x to center of perturbation
     r = sqrt((x[1] - center_x)^2 + (x[2] - center_z)^2)
 
@@ -37,8 +39,6 @@ function initial_condition_robert_bubble(x, t, equations::CompressibleEulerPoten
     return TrixiAtmo.prim2cons(SVector(rho, v1, v2, p), equations)
 end
 
-
-
 equations = CompressibleEulerPotentialTemperatureEquations2D()
 
 surface_flux = FluxLMARS(340)
@@ -52,15 +52,16 @@ boundary_conditions = (x_neg = boundary_condition_periodic,
                        y_neg = boundary_condition_slip_wall,
                        y_pos = boundary_condition_slip_wall)
 
-coordinates_min = (0.0, 1000.0)
-coordinates_max = (0.0, 1000.0)
+coordinates_min = (0.0, 0.0)
+coordinates_max = (1000.0, 1000.0)
 cells_per_dimension = (32, 16)
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = (true, false))
 
-@inline function source_terms_gravity(u, x, t, equations::CompressibleEulerPotentialTemperatureEquations2D)
+@inline function source_terms_gravity(u, x, t,
+                                      equations::CompressibleEulerPotentialTemperatureEquations2D)
     rho, _, _, _ = u
-    return SVector(zero(eltype(u)), zero(eltype(u)), -equations.g * rho, -zero(eltype(u)))
+    return SVector(zero(eltype(u)), zero(eltype(u)), -equations.g * rho, zero(eltype(u)))
 end
 source_terms = source_terms_gravity
 initial_condition = initial_condition_robert_bubble
@@ -80,8 +81,7 @@ alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,
-                        alive_callback,
-                        stepsize_callback)
+                        alive_callback)
 
 sol = solve(ode,
             SSPRK43(thread = Trixi.True()),
