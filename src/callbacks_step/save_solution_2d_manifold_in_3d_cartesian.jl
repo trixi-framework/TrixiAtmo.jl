@@ -161,10 +161,12 @@ end
     end
 
     # Transform gradients to Cartesian space
-    Ja11, Ja12, Ja13 = Trixi.get_contravariant_vector(1, contravariant_vectors, i, j,
-                                                      element)
-    Ja21, Ja22, Ja23 = Trixi.get_contravariant_vector(2, contravariant_vectors, i, j,
-                                                      element)
+    Ja11, Ja12,
+    Ja13 = Trixi.get_contravariant_vector(1, contravariant_vectors, i, j,
+                                          element)
+    Ja21, Ja22,
+    Ja23 = Trixi.get_contravariant_vector(2, contravariant_vectors, i, j,
+                                          element)
 
     dv1dy = (Ja12 * dv1dxi1 + Ja22 * dv1dxi2) * inverse_jacobian[i, j, element]
     dv1dz = (Ja13 * dv1dxi1 + Ja23 * dv1dxi2) * inverse_jacobian[i, j, element]
