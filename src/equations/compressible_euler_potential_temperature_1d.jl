@@ -1,6 +1,6 @@
 using Trixi
 using Trixi: ln_mean, stolarsky_mean, AbstractCompressibleEulerEquations, inv_ln_mean
-import Trixi: varnames, cons2cons, cons2prim, cons2entropy, entropy, energy_total,
+import Trixi: cons2cons, cons2prim, cons2entropy, entropy, energy_total,
               energy_kinetic, pressure,
               flux_ec, initial_condition_density_wave, max_abs_speeds
 
@@ -37,12 +37,12 @@ function CompressibleEulerPotentialTemperatureEquations1D(; g = 9.81, RealT = Fl
                                                                    K, stolarsky_factor)
 end
 
-function varnames(::typeof(cons2cons),
+function Trixi.varnames(::typeof(cons2cons),
                   ::CompressibleEulerPotentialTemperatureEquations1D)
     ("rho", "rho_v1", "rho_theta")
 end
 
-varnames(::typeof(cons2prim),
+Trixi.varnames(::typeof(cons2prim),
 ::CompressibleEulerPotentialTemperatureEquations1D) = ("rho", "v1", "p1")
 
 """
@@ -147,7 +147,7 @@ end
     return SVector(rho, rho_v1, rho_theta)
 end
 
-@inline function cons2prim(u,
+@inline function Trixi.cons2prim(u,
                            equations::CompressibleEulerPotentialTemperatureEquations1D)
     rho, rho_v1, rho_theta = u
     v1 = rho_v1 / rho
@@ -155,12 +155,12 @@ end
     return SVector(rho, v1, p)
 end
 
-@inline function cons2cons(u,
+@inline function Trixi.cons2cons(u,
                            equations::CompressibleEulerPotentialTemperatureEquations1D)
     return u
 end
 
-@inline function cons2entropy(u,
+@inline function Trixi.cons2entropy(u,
                               equations::CompressibleEulerPotentialTemperatureEquations1D)
     rho, rho_v1, rho_theta = u
 

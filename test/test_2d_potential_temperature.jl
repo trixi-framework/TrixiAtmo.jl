@@ -18,10 +18,10 @@ include("test_trixiatmo.jl")
                             0.00023237719913361634,
                             0.00015331821185782246,
                             4.3655745685100555e-11
-                        ], tspan=(0.0, 1800.0))
+                        ], tspan=(0.0, 1800.0), atol=8.0e-11)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100, atol=8.0e-11)
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_euler_potential_temperature_linear_hydrostatic" begin
