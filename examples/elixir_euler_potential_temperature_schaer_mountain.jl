@@ -1,3 +1,9 @@
+# References:
+# - Christoph Schär, Daniel Leuenberger, Oliver Fuhrer, Daniel Lüthi, Claude Girard (2002)
+#   A New Terrain-Following Vertical Coordinate Formulation for Atmospheric Prediction Models
+#   Monthly Weather Review, 130(10), 2459–2480
+#   https://doi.org/10.1175/1520-0493(2002)130
+
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 

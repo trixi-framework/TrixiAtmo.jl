@@ -1,3 +1,14 @@
+# References:
+# - Dale R. Durran, Joseph B. Klemp (1983)
+#   A Compressible Model for the Simulation of Moist Mountain Waves
+#   Monthly Weather Review, 111(12), 2341–2361
+#   https://doi.org/10.1175/1520-0493(1983)111
+#
+# - F.X. Giraldo, M. Restelli (2008)
+#   A study of spectral element and discontinuous Galerkin methods for the Navier–Stokes equations in nonhydrostatic mesoscale atmospheric modeling: Equation sets and test cases
+#   Journal of Computational Physics, 227(8), 3849–3877
+#   https://doi.org/10.1016/j.jcp.2007.12.009
+
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 

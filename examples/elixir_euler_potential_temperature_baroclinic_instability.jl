@@ -1,3 +1,11 @@
+# An idealized baroclinic instability test case
+# For optimal results consider increasing the resolution to 16x16x8 trees per cube face.
+#
+# References:
+# - Paul A. Ullrich, Thomas Melvin, Christiane Jablonowski, Andrew Staniforth (2013)
+#   A proposed baroclinic wave test case for deep- and shallow-atmosphere dynamical cores
+#   https://doi.org/10.1002/qj.2241
+
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
