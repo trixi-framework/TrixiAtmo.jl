@@ -380,16 +380,6 @@ end
     entropy_thermodynamic(cons, equations)
 end
 
-@inline function energy_total(cons,
-                              equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
-    entropy(cons, equations)
-end
-
-@inline function energy_kinetic(cons,
-                                equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
-    return 0.5f0 * (cons[2]^2 + cons[3]^2) / (cons[1])
-end
-
 @inline function max_abs_speeds(u,
                                 equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     rho, v1, v2, p = cons2prim(u, equations)
