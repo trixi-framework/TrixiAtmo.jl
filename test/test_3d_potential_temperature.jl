@@ -71,6 +71,30 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
+@trixi_testset "elixir_euler_potential_temperature_taylor_green_vortex_3d" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_euler_potential_temperature_taylor_green_vortex.jl"),
+                        l2=[
+                            0.006704842021819753,
+                            0.018574880297682488,
+                            0.018606626958508878,
+                            0.010451109496991842,
+                            0.0032071378388946444
+                        ],
+                        linf=[
+                            0.025690924689206418,
+                            0.047663959124221666,
+                            0.050155417906555394,
+                            0.030904595875059383,
+                            0.012502671674568866
+                        ],
+                        tspan=(0.0, 1.0), surface_flux=FluxLMARS(340.0),
+                        volume_flux=flux_tec)
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+end
+
 @trixi_testset "elixir_euler_potential_temperature_baroclinic_instability" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_euler_potential_temperature_baroclinic_instability.jl"),

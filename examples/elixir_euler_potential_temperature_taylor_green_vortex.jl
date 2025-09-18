@@ -18,7 +18,8 @@ equations = CompressibleEulerPotentialTemperatureEquations3D()
 polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
 surface_flux = flux_etec
-volume_flux = flux_etec
+surface_flux = FluxLMARS(340.0)
+volume_flux = flux_tec
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
 solver = DGSEM(basis, surface_flux, volume_integral)
@@ -33,7 +34,7 @@ semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_taylor_gr
                                     solver)
 ###############################################################################
 # ODE solvers, callbacks etc.
-tspan = (0.0, 1.0)
+tspan = (0.0, 0.2)
 
 ode = semidiscretize(semi, tspan)
 
