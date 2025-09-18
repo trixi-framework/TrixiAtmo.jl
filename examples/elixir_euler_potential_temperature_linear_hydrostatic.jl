@@ -38,8 +38,8 @@ end
     return S_v, S_h1, S_h2
 end
 
-function (setup::HydrostaticSetup)(u, x, t,
-                                   equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+@inline function (setup::HydrostaticSetup)(u, x, t,
+                                           equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     @unpack T_0, z_B, z_T, Nf, u0, alfa, xr_B = setup
     g = equations.g
 
@@ -61,8 +61,8 @@ function (setup::HydrostaticSetup)(u, x, t,
     return SVector(zero(eltype(u)), du2, du3, du4, zero(eltype(u)))
 end
 
-function (setup::HydrostaticSetup)(x, t,
-                                   equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+@inline function (setup::HydrostaticSetup)(x, t,
+                                           equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     @unpack T_0, u0, Nf = setup
     g = equations.g
 

@@ -113,6 +113,7 @@ f2(s) = SVector(L / 2, y_b + alfa * (s + 1))
 f3(s) = SVector(s * L / 2, hc * exp(-(s * L / 2 / a)^2) * cospi(s * L / 2 / lambda_c)^2)
 f4(s) = SVector(s * L / 2, H)
 cells_per_dimension = (100, 50)
+cells_per_dimension = (20, 12)
 mesh = P4estMesh(cells_per_dimension, polydeg = polydeg,
                  faces = (f1, f2, f3, f4),
                  initial_refinement_level = 0, periodicity = (false, false))
@@ -125,6 +126,7 @@ semi = SemidiscretizationHyperbolic(mesh, equations, schär_setup, solver,
 # ODE solvers, callbacks etc.
 T = 5
 tspan = (0.0, T * 3600.0) #1 hour.
+tspan = (0.0, 360)
 
 ode = semidiscretize(semi, tspan)
 

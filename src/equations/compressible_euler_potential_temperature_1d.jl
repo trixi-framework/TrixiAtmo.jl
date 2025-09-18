@@ -38,7 +38,7 @@ function CompressibleEulerPotentialTemperatureEquations1D(; g = 9.81, RealT = Fl
 end
 
 function Trixi.varnames(::typeof(cons2cons),
-                  ::CompressibleEulerPotentialTemperatureEquations1D)
+                        ::CompressibleEulerPotentialTemperatureEquations1D)
     ("rho", "rho_v1", "rho_theta")
 end
 
@@ -148,7 +148,7 @@ end
 end
 
 @inline function Trixi.cons2prim(u,
-                           equations::CompressibleEulerPotentialTemperatureEquations1D)
+                                 equations::CompressibleEulerPotentialTemperatureEquations1D)
     rho, rho_v1, rho_theta = u
     v1 = rho_v1 / rho
     p = equations.K * exp(equations.gamma * log(rho_theta))
@@ -156,12 +156,12 @@ end
 end
 
 @inline function Trixi.cons2cons(u,
-                           equations::CompressibleEulerPotentialTemperatureEquations1D)
+                                 equations::CompressibleEulerPotentialTemperatureEquations1D)
     return u
 end
 
 @inline function Trixi.cons2entropy(u,
-                              equations::CompressibleEulerPotentialTemperatureEquations1D)
+                                    equations::CompressibleEulerPotentialTemperatureEquations1D)
     rho, rho_v1, rho_theta = u
 
     w1 = log(equations.K * (rho_theta / rho)^equations.gamma) - equations.gamma

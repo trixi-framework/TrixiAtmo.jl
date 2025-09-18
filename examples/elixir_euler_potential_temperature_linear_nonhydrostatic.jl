@@ -37,8 +37,8 @@ end
     return S_v, S_h1, S_h2
 end
 
-function (setup::NonHydrostaticSetup)(u, x, t,
-                                      equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+@inline function (setup::NonHydrostaticSetup)(u, x, t,
+                                              equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     @unpack theta_0, z_B, z_T, Nf, u0, alfa, xr_B = setup
 
     rho, rho_v1, rho_v2, rho_theta, _ = u
@@ -57,8 +57,8 @@ function (setup::NonHydrostaticSetup)(u, x, t,
     return SVector(zero(eltype(u)), du2, du3, du4, zero(eltype(u)))
 end
 
-function (setup::NonHydrostaticSetup)(x, t,
-                                      equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+@inline function (setup::NonHydrostaticSetup)(x, t,
+                                              equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     @unpack theta_0, u0, Nf = setup
     g = equations.g
     # Exner pressure, solves hydrostatic equation for x[2]
@@ -109,6 +109,7 @@ f2(s) = SVector(L / 2, y_b + alfa * (s + 1))
 f3(s) = SVector((s + 1 - 1) * L / 2, peak / (1 + ((s + 1 - 1) * L / 2)^2 / a^2))
 f4(s) = SVector((s + 1 - 1) * L / 2, H)
 cells_per_dimension = (200, 50)
+cells_per_dimension = (20, 12)
 mesh = P4estMesh(cells_per_dimension, polydeg = polydeg,
                  faces = (f1, f2, f3, f4),
                  initial_refinement_level = 0, periodicity = (false, false))
