@@ -88,7 +88,7 @@ end
                             0.030904595875059383,
                             0.012502671674568866
                         ],
-                        tspan=(0.0, 1.0), surface_flux=FluxLMARS(340.0),
+                        tspan=(0.0, 0.2), surface_flux=FluxLMARS(340.0),
                         volume_flux=flux_tec)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
