@@ -95,4 +95,50 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
+@trixi_testset "elixir_euler_potential_temperature_well_balanced_curvilinear" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_euler_potential_temperature_well_balanced_curvilinear.jl"),
+                        l2=[
+                            1.9638272579852512e-8,
+                            9.794074039239054e-13,
+                            9.90302138162671e-13,
+                            5.891481774330958e-6,
+                            6.256813355477567e-13
+                        ],
+                        linf=[
+                            5.575406336610911e-8,
+                            1.5959531831834447e-11,
+                            1.575602141459924e-11,
+                            1.6726218973417417e-5,
+                            3.637978807091713e-12
+                        ])
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+end
+
+@trixi_testset "elixir_euler_potential_temperature_well_balanced_curvilinear" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_euler_potential_temperature_well_balanced_curvilinear.jl"),
+                        l2=[
+                            1.9676517857526736e-8,
+                            1.5583712851610544e-7,
+                            1.9956396607024943e-7,
+                            5.902955362653274e-6,
+                            6.256813355477567e-13
+                        ],
+                        linf=[
+                            5.695755511681e-8,
+                            9.548396023850076e-7,
+                            1.3602645625916122e-6,
+                            1.708726631477475e-5,
+                            3.637978807091713e-12
+                        ], surface_flux=(flux_ec, flux_nonconservative_waruzewski_etal),
+                        volume_flux=(flux_etec, flux_nonconservative_souza_etal))
+
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+end
+
 end

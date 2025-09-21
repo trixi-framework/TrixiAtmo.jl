@@ -256,8 +256,7 @@ Entropy and total energy conservative two-point flux by
     _, _, rho_theta_ll = u_ll
     _, _, rho_theta_rr = u_rr
     # Compute the necessary mean values
-    gammamean = stolarsky_mean_opt(rho_theta_ll, rho_theta_rr, equations.gamma, p_ll,
-                                   p_rr)
+    gammamean = stolarsky_mean(rho_theta_ll, rho_theta_rr, equations.gamma)
 
     v1_avg = 0.5f0 * (v1_ll + v1_rr)
     p_avg = 0.5f0 * (p_ll + p_rr)
