@@ -1,3 +1,9 @@
+# References:
+# - André Robert (1993)
+#   Bubble Convection Experiments with a Semi-implicit Formulation of the Euler Equations
+#   Journal of the Atmospheric Sciences, Volume 50: Issue 13
+#   https://doi.org/10.1175/1520-0469(1993)050%3C1865:BCEWAS%3E2.0.CO;2
+
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 

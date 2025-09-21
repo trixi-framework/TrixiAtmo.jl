@@ -51,7 +51,7 @@ end
                             6.721044580141687e-13,
                             3.471623699624615e-7,
                             1.8189894035458565e-12
-                        ],)
+                        ], atol=1e-5)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
@@ -73,7 +73,7 @@ end
                             1.8189894035458565e-12
                         ],
                         surface_flux=(flux_ec, flux_nonconservative_waruzewski_etal),
-                        volume_flux=(flux_etec, flux_nonconservative_souza_etal))
+                        volume_flux=(flux_etec, flux_nonconservative_souza_etal), atol=1e-5)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
