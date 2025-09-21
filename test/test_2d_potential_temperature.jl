@@ -141,4 +141,49 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
+@trixi_testset "elixir_euler_potential_temperature_robert_bubble" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_euler_potential_temperature_robert_bubble.jl"),
+                        l2=[
+                            4.340659638082502e-5,
+                            0.0016927558353071863,
+                            0.002273676520878568,
+                            0.0025218411451605857
+                        ],
+                        linf=[
+                            0.00026254784654899943,
+                            0.0076440360791920625,
+                            0.011129358200524516,
+                            0.013220347873414084
+                        ],
+                        tspan=(0.0, 1.0), cells_per_dimension=(8, 8))
+
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+end
+
+@trixi_testset "elixir_euler_potential_temperature_robert_bubble" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_euler_potential_temperature_robert_bubble.jl"),
+                        l2=[
+                            4.3424161406943336e-5,
+                            0.0016949296250855636,
+                            0.0022757165505890714,
+                            0.002518826082920989
+                        ],
+                        linf=[
+                            0.0002637871218635901,
+                            0.007819268642005994,
+                            0.011488099410140847,
+                            0.012657754100359853
+                        ],
+                        tspan=(0.0, 1.0), cells_per_dimension=(8, 8), surface_flux=flux_ec,
+                        volume_flux=flux_etec)
+
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+end
+
 end
