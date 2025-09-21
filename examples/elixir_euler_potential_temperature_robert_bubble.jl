@@ -5,18 +5,17 @@ function initial_condition_robert_bubble(x, t,
                                          equations::CompressibleEulerPotentialTemperatureEquations2D)
     # center of perturbation
     center_x = 500.0
-    center_z = 10.0
+    center_z = 260.0
     g = equations.g
     # radius of perturbation
-    radius = 0.0
+    radius = 250.0
     # distance of current x to center of perturbation
     r = sqrt((x[1] - center_x)^2 + (x[2] - center_z)^2)
-
     # perturbation in potential temperature
     potential_temperature_ref = 300.0
     potential_temperature_perturbation = 0.0
     if r <= radius
-        potential_temperature_perturbation = 5.0
+        potential_temperature_perturbation = 0.5 * 0.5 * (1 + cospi(r / radius))
     end
     potential_temperature = potential_temperature_ref + potential_temperature_perturbation
 
@@ -39,6 +38,12 @@ function initial_condition_robert_bubble(x, t,
     return TrixiAtmo.prim2cons(SVector(rho, v1, v2, p), equations)
 end
 
+@inline function source_terms_gravity(u, x, t,
+                                      equations::CompressibleEulerPotentialTemperatureEquations2D)
+    rho, _, _, _ = u
+    return SVector(zero(eltype(u)), zero(eltype(u)), -equations.g * rho, zero(eltype(u)))
+end
+
 equations = CompressibleEulerPotentialTemperatureEquations2D()
 
 surface_flux = FluxLMARS(340)
@@ -53,22 +58,17 @@ boundary_conditions = (x_neg = boundary_condition_periodic,
                        y_pos = boundary_condition_slip_wall)
 
 coordinates_min = (0.0, 0.0)
-coordinates_max = (1000.0, 1000.0)
-cells_per_dimension = (32, 16)
+coordinates_max = (1000.0, 1500.0)
+cells_per_dimension = (64, 64)
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = (true, false))
 
-@inline function source_terms_gravity(u, x, t,
-                                      equations::CompressibleEulerPotentialTemperatureEquations2D)
-    rho, _, _, _ = u
-    return SVector(zero(eltype(u)), zero(eltype(u)), -equations.g * rho, zero(eltype(u)))
-end
 source_terms = source_terms_gravity
 initial_condition = initial_condition_robert_bubble
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_terms,
                                     boundary_conditions = boundary_conditions)
-tspan = (0.0, 1800.0)
+tspan = (0.0, 1000.0)
 ode = semidiscretize(semi, tspan)
 
 summary_callback = SummaryCallback()

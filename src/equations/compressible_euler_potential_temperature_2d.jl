@@ -1,6 +1,7 @@
 using Trixi
 using Trixi: ln_mean, stolarsky_mean, AbstractCompressibleEulerEquations
-import Trixi: varnames, cons2cons, cons2prim, cons2entropy, entropy, FluxLMARS, flux_ec
+import Trixi: varnames, cons2cons, cons2prim, cons2entropy, entropy, FluxLMARS, flux_ec,
+              boundary_condition_slip_wall
 
 @muladd begin
 #! format: noindent
@@ -43,44 +44,25 @@ varnames(::typeof(cons2prim),
                                                        "v2",
                                                        "p1")
 
-# Calculate 1D flux for a single point in the normal direction.
-# Note, this directional vector is not normalized.
-@inline function flux(u, normal_direction::AbstractVector,
-                      equations::CompressibleEulerPotentialTemperatureEquations2D)
-    rho, rho_v1, rho_v2, rho_theta = u
-    v1 = rho_v1 / rho
-    v2 = rho_v2 / rho
-    v_normal = v1 * normal_direction[1] + v2 * normal_direction[2]
-    rho_v_normal = rho * v_normal
-    f1 = rho_v_normal
-    p = equations.p_0 * (equations.R * rho_theta / equations.p_0)^equations.gamma
+@inline function boundary_condition_slip_wall(u_inner, orientation,
+                                              direction, x, t,
+                                              surface_flux_function,
+                                              equations::CompressibleEulerPotentialTemperatureEquations2D)
 
-    f2 = (rho_v_normal) * v1 + p * normal_direction[1]
-    f3 = (rho_v_normal) * v2 + p * normal_direction[2]
-    f4 = (rho_theta) * v_normal
-    return SVector(f1, f2, f3, f4)
-end
-
-@inline function flux(u, orientation::Integer,
-                      equations::CompressibleEulerPotentialTemperatureEquations2D)
-    rho, rho_v1, rho_v2, rho_theta = u
-    v1 = rho_v1 / rho
-    v2 = rho_v2 / rho
-    p = equations.p_0 * (equations.R * rho_theta / equations.p_0)^equations.gamma
-
+    ## get the appropriate normal vector from the orientation
     if orientation == 1
-        f1 = rho_v1
-        f2 = rho_v1 * v1 + p
-        f3 = rho_v1 * v2
-        f4 = rho_theta * v1
-    else
-        f1 = rho_v2
-        f2 = rho_v2 * v1
-        f3 = rho_v2 * v2 + p
-        f4 = rho_theta * v2
+        u_boundary = SVector(u_inner[1], -u_inner[2], u_inner[3], u_inner[4])
+    else # orientation == 2
+        u_boundary = SVector(u_inner[1], u_inner[2], -u_inner[3], u_inner[4])
+    end
+    # Calculate boundary flux
+    if iseven(direction) # u_inner is "left" of boundary, u_boundary is "right" of boundary
+        flux = surface_flux_function(u_inner, u_boundary, orientation, equations)
+    else # u_boundary is "left" of boundary, u_inner is "right" of boundary
+        flux = surface_flux_function(u_boundary, u_inner, orientation, equations)
     end
 
-    return SVector(f1, f2, f3, f4)
+    return flux
 end
 
 # Low Mach number approximate Riemann solver (LMARS) from
