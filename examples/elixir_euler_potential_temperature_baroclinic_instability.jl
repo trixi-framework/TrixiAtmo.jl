@@ -164,7 +164,7 @@ function initial_condition_baroclinic_instability(x, t,
     else
         r = -(2 * radius_earth^3) / (x[1]^2 + x[2]^2 + x[3]^2)
     end
-    r = -Trixi.norm(x)
+    r = -norm(x)
     phi = radius_earth^2 * gravitational_acceleration / r
 
     return prim2cons(SVector(rho, v1, v2, v3, p, phi), equations)
