@@ -156,7 +156,7 @@ function initial_condition_baroclinic_instability(x, t,
     radius_earth = 6.371229e6  # a
     gravitational_acceleration = 9.81    # g
 
-    r = Trixi.norm(x)
+    r = norm(x)
     # Make sure that r is not smaller than radius_earth
     z = max(r - radius_earth, 0.0)
     if z > 0
