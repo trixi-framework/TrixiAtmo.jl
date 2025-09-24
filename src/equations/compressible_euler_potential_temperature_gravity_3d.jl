@@ -1,7 +1,7 @@
 using Trixi
 using Trixi: ln_mean, stolarsky_mean, AbstractCompressibleEulerEquations
 import Trixi: varnames, cons2cons, cons2prim, cons2entropy, entropy, FluxLMARS,
-              boundary_condition_slip_wall, pressure, energy_total, energy_kinetic
+              boundary_condition_slip_wall, energy_total
 
 @muladd begin
 #! format: noindent
@@ -316,8 +316,8 @@ Entropy and total energy conservative two-point flux by
     return SVector(f1, f2, f3, f4, f5, zero(eltype(u_ll)))
 end
 
-@inline function prim2cons(prim,
-                           equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+@inline function Trixi.prim2cons(prim,
+                                 equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     rho, v1, v2, v3, p, phi = prim
     rho_v1 = rho * v1
     rho_v2 = rho * v2

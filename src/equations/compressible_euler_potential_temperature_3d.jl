@@ -1,7 +1,7 @@
 using Trixi
 using Trixi: ln_mean, stolarsky_mean, AbstractCompressibleEulerEquations
 import Trixi: varnames, cons2cons, cons2prim, cons2entropy, entropy, FluxLMARS,
-              boundary_condition_slip_wall, pressure, energy_total, energy_kinetic
+              boundary_condition_slip_wall, energy_total
 
 @muladd begin
 #! format: noindent

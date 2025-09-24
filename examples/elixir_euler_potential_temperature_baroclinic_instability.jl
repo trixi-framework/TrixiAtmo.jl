@@ -160,39 +160,6 @@ function initial_condition_baroclinic_instability(x, t,
     # Make sure that r is not smaller than radius_earth
     z = max(r - radius_earth, 0.0)
     if z > 0
-        r = Trixi.norm(x)
-    else
-        r = -(2 * radius_earth^3) / (x[1]^2 + x[2]^2 + x[3]^2)
-    end
-    r = -norm(x)
-    phi = radius_earth^2 * gravitational_acceleration / r
-
-    return prim2cons(SVector(rho, v1, v2, v3, p, phi), equations)
-end
-
-# Steady state for RHS correction below
-function steady_state_baroclinic_instability(x, t,
-                                             equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
-    lon, lat, r = cartesian_to_sphere(x)
-    radius_earth = 6.371229e6
-    # Make sure that the r is not smaller than radius_earth
-    z = max(r - radius_earth, 0.0)
-
-    # Unperturbed basic state
-    rho, u, p = basic_state_baroclinic_instability_longitudinal_velocity(lon, lat, z)
-
-    # Convert spherical velocity to Cartesian
-    v1 = -sin(lon) * u
-    v2 = cos(lon) * u
-    v3 = 0.0
-    radius_earth = 6.371229e6  # a
-    gravitational_acceleration = 9.81     # g
-
-    r = norm(x)
-    # Make sure that r is not smaller than radius_earth
-    z = max(r - radius_earth, 0.0)
-
-    if z > 0
         r = norm(x)
     else
         r = -(2 * radius_earth^3) / (x[1]^2 + x[2]^2 + x[3]^2)
@@ -266,7 +233,6 @@ callbacks = CallbackSet(summary_callback,
                         analysis_callback,
                         alive_callback,
                         save_solution)
-
 
 ###############################################################################
 # Use a Runge-Kutta method with automatic (error based) time step size control

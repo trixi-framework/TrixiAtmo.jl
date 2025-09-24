@@ -1,7 +1,6 @@
 using Trixi
 using Trixi: ln_mean, stolarsky_mean, AbstractCompressibleEulerEquations, inv_ln_mean
 import Trixi: cons2cons, cons2prim, cons2entropy, entropy, energy_total,
-              energy_kinetic, pressure,
               flux_ec, initial_condition_density_wave, max_abs_speeds
 
 @muladd begin
@@ -195,13 +194,13 @@ end
     return S
 end
 
-@inline function energy_kinetic(cons,
-                                equations::CompressibleEulerPotentialTemperatureEquations1D)
+@inline function Trixi.energy_kinetic(cons,
+                                      equations::CompressibleEulerPotentialTemperatureEquations1D)
     return 0.5f0 * (cons[2]^2) / (cons[1])
 end
 
-@inline function pressure(cons,
-                          equations::CompressibleEulerPotentialTemperatureEquations1D)
+@inline function Trixi.pressure(cons,
+                                equations::CompressibleEulerPotentialTemperatureEquations1D)
     _, _, p = cons2prim(cons, equations)
     return p
 end
