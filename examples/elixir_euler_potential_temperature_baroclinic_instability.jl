@@ -266,13 +266,12 @@ callbacks = CallbackSet(summary_callback,
                         alive_callback,
                         save_solution)
 
-tol = 1e-6
+
 ###############################################################################
 # Use a Runge-Kutta method with automatic (error based) time step size control
 # Enable threading of the RK method for better performance on multiple threads
-
+tol = 1e-6
 sol = solve(ode,
             SSPRK43(thread = Trixi.True());
-            abstol = tol,
-            reltol = tol, ode_default_options()...,
+            abstol = tol, reltol = tol, ode_default_options()...,
             callback = callbacks)
