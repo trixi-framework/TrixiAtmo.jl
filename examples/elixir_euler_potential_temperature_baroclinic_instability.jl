@@ -167,7 +167,7 @@ function initial_condition_baroclinic_instability(x, t,
     r = -Trixi.norm(x)
     phi = radius_earth^2 * gravitational_acceleration / r
 
-    return TrixiAtmo.prim2cons(SVector(rho, v1, v2, v3, p, phi), equations)
+    return prim2cons(SVector(rho, v1, v2, v3, p, phi), equations)
 end
 
 # Steady state for RHS correction below
