@@ -8,6 +8,7 @@
 
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
+using LinearAlgebra: norm
 
 # Unperturbed balanced steady-state.
 # Returns primitive variables with only the velocity in longitudinal direction (rho, u, p).
