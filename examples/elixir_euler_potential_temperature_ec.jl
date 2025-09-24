@@ -37,9 +37,9 @@ summary_callback = SummaryCallback()
 analysis_interval = 1000
 
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
-                                     extra_analysis_integrals = (TrixiAtmo.energy_kinetic,
+                                     extra_analysis_integrals = (Trixi.energy_kinetic,
                                                                  energy_total, entropy,
-                                                                 TrixiAtmo.pressure))
+                                                                 Trixi.pressure))
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 

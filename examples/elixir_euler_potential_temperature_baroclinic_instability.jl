@@ -1,5 +1,7 @@
 # An idealized baroclinic instability test case
 # For optimal results consider increasing the resolution to 16x16x8 trees per cube face.
+# 
+# This elixir takes about 8 hours, using 16 threads of an AMD Ryzen 7 7800X3D.
 #
 # References:
 # - Paul A. Ullrich, Thomas Melvin, Christiane Jablonowski, Andrew Staniforth (2013)
@@ -8,8 +10,7 @@
 
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
-using LinearAlgebra: norm
-
+import TrixiAtmo: norm
 # Unperturbed balanced steady-state.
 # Returns primitive variables with only the velocity in longitudinal direction (rho, u, p).
 # The other velocity components are zero.
