@@ -121,7 +121,7 @@ function perturbation_stream_function(lon, lat, z)
 end
 
 function cartesian_to_sphere(x)
-    r = Trixi.norm(x)
+    r = norm(x)
     lambda = atan(x[2], x[1])
     if lambda < 0
         lambda += 2 * pi
