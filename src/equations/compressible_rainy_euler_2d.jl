@@ -307,7 +307,6 @@ varnames(::typeof(cons2eq_pot_temp), ::CompressibleRainyEulerEquations2D) = ("rh
 ###  physics variables  ###
 
 @inline function densities(u, equations::CompressibleRainyEulerEquations2D)
-    # densities
     rho_dry = u[1]
     rho_moist = u[2]
     rho_rain = u[3]
