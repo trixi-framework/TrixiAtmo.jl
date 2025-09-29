@@ -12,6 +12,9 @@ end
 links = InterLinks("Trixi" => ("https://trixi-framework.github.io/TrixiDocumentation/stable/",
                                "https://trixi-framework.github.io/TrixiDocumentation/stable/objects.inv"))
 
+# Search for any unresolvable `@ref` reference in external sources
+fallbacks = ExternalFallbacks(; automatic = true)
+
 # Define module-wide setups such that the respective modules are available in doctests
 DocMeta.setdocmeta!(TrixiAtmo, :DocTestSetup, :(using TrixiAtmo);
                     recursive = true)
@@ -95,7 +98,7 @@ makedocs(;
              "Contributing" => "contributing.md",
              "Code of Conduct" => "code_of_conduct.md",
              "License" => "license.md"],
-         plugins = [links],)
+         plugins = [links, fallbacks],)
 
 deploydocs(;
            repo = "github.com/trixi-framework/TrixiAtmo.jl",

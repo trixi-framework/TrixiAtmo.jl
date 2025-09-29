@@ -1,16 +1,11 @@
 module TestThreaded
 
-using Test
-using TrixiAtmo
-
-include("test_trixiatmo.jl") # TODO - This is a repetition from Trixi.jl
-
-EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
+include("test_trixiatmo.jl")
 
 @testset "Threaded tests" begin
 #! format: noindent
 
-@trixiatmo_testset "elixir_moist_euler_moist_bubble" begin
+@trixi_testset "elixir_moist_euler_moist_bubble" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "elixir_moist_euler_moist_bubble.jl"),
                         l2=[
                             7.351043427240923e-6,
@@ -33,12 +28,7 @@ EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
                         tspan=(0.0, 0.1))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 2000
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 2000)
 end
 end
 end # module

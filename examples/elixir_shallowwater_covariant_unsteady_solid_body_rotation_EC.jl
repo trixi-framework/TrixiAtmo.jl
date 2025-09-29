@@ -4,7 +4,7 @@
 # 2005)
 ###############################################################################
 
-using OrdinaryDiffEq, Trixi, TrixiAtmo
+using OrdinaryDiffEqLowStorageRK, Trixi, TrixiAtmo
 
 ###############################################################################
 # Parameters

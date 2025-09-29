@@ -3,7 +3,7 @@
 # on the cubed sphere: Barotropic instability (Galewsky et al., 2005)
 ###############################################################################
 
-using OrdinaryDiffEq, Trixi, TrixiAtmo
+using OrdinaryDiffEqLowStorageRK, Trixi, TrixiAtmo
 
 ###############################################################################
 # Parameters

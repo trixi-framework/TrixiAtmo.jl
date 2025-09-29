@@ -4,7 +4,7 @@
 # To run a convergence test, use
 # convergence_test("../examples/elixir_spherical_advection_covariant_quad_icosahedron.jl", 4, cells_per_dimension = (1,1))
 
-using OrdinaryDiffEq, Trixi, TrixiAtmo
+using OrdinaryDiffEqLowStorageRK, Trixi, TrixiAtmo
 
 ###############################################################################
 # Spatial discretization

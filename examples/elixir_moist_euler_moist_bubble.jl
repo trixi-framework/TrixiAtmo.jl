@@ -1,4 +1,4 @@
-using OrdinaryDiffEq
+using OrdinaryDiffEqLowStorageRK
 using Trixi, TrixiAtmo
 using TrixiAtmo: cons2aeqpot, saturation_pressure, source_terms_moist_bubble
 using NLsolve: nlsolve

@@ -1,5 +1,4 @@
-
-using OrdinaryDiffEq
+using OrdinaryDiffEqLowStorageRK
 using Trixi, TrixiAtmo
 using TrixiAtmo: cons2aeqpot, source_terms_geopotential
 using NLsolve: nlsolve

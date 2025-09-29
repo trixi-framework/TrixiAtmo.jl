@@ -217,9 +217,9 @@ end
 end
 
 # Maximum wave speed along the normal direction in reference space
-@inline function Trixi.max_abs_speed_naive(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
-                                           orientation,
-                                           equations::AbstractCovariantShallowWaterEquations2D)
+@inline function Trixi.max_abs_speed(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
+                                     orientation,
+                                     equations::AbstractCovariantShallowWaterEquations2D)
     # Geometric variables
     Gcon_ll = metric_contravariant(aux_vars_ll, equations)
     Gcon_rr = metric_contravariant(aux_vars_rr, equations)

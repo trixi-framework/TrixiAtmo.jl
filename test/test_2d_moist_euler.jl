@@ -1,44 +1,33 @@
 module TestExamples2DMoistEuler
 
-using Test
-using TrixiAtmo
-
 include("test_trixiatmo.jl")
 
-EXAMPLES_DIR = TrixiAtmo.examples_dir()
-
-@trixiatmo_testset "elixir_moist_euler_dry_bubble" begin
+@trixi_testset "elixir_moist_euler_dry_bubble" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_moist_euler_dry_bubble.jl"),
                         l2=[
-                            1.300428671901329e-6,
-                            2.601090012108739e-5,
-                            0.0006660124630171347,
-                            0.008969786054960861,
+                            9.103834949215729e-7,
+                            1.8209333828866736e-5,
+                            0.0004709417153612775,
+                            0.006342004383628925,
                             0.0,
                             0.0
                         ],
                         linf=[
-                            1.0312042909910168e-5,
-                            0.00020625488871672815,
-                            0.006392107590872236,
-                            0.07612038028310053,
+                            1.0258282803210506e-5,
+                            0.0002051932980897675,
+                            0.006394867661494521,
+                            0.076401537633501,
                             0.0,
                             0.0
                         ],
-                        polydeg=3,
                         tspan=(0.0, 0.1))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixiatmo_testset "elixir_moist_euler_EC_bubble" begin
+@trixi_testset "elixir_moist_euler_EC_bubble" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "elixir_moist_euler_EC_bubble.jl"),
                         l2=[
                             0.01345154393018332,
@@ -61,15 +50,10 @@ end
                         tspan=(0.0, 0.1))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixiatmo_testset "elixir_moist_euler_moist_bubble" begin
+@trixi_testset "elixir_moist_euler_moist_bubble" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "elixir_moist_euler_moist_bubble.jl"),
                         l2=[
                             7.351043427240923e-6,
@@ -92,15 +76,10 @@ end
                         tspan=(0.0, 0.1))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixiatmo_testset "elixir_moist_euler_nonhydrostatic_gravity_waves" begin
+@trixi_testset "elixir_moist_euler_nonhydrostatic_gravity_waves" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_moist_euler_nonhydrostatic_gravity_waves.jl"),
                         l2=[
@@ -124,15 +103,10 @@ end
                         tspan=(0.0, 0.1))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixiatmo_testset "elixir_moist_euler_source_terms_dry" begin
+@trixi_testset "elixir_moist_euler_source_terms_dry" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "elixir_moist_euler_source_terms_dry.jl"),
                         l2=[
                             1.3992076791281227e-5,
@@ -155,15 +129,10 @@ end
                         tspan=(0.0, 0.1))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixiatmo_testset "elixir_moist_euler_source_terms_moist" begin
+@trixi_testset "elixir_moist_euler_source_terms_moist" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "elixir_moist_euler_source_terms_moist.jl"),
                         l2=[
                             1.8307663991129928e-5,
@@ -186,15 +155,10 @@ end
                         tspan=(0.0, 0.1))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixiatmo_testset "elixir_moist_euler_source_terms_split_moist" begin
+@trixi_testset "elixir_moist_euler_source_terms_split_moist" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_moist_euler_source_terms_split_moist.jl"),
                         l2=[
@@ -218,12 +182,7 @@ end
                         tspan=(0.0, 0.1))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
 end # module

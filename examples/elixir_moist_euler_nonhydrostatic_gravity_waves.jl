@@ -1,4 +1,4 @@
-using OrdinaryDiffEq
+using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 using TrixiAtmo: CompressibleMoistEulerEquations2D, source_terms_geopotential,
                  source_terms_phase_change,
