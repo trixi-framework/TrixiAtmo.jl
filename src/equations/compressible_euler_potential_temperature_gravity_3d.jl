@@ -113,7 +113,6 @@ Well-balanced gravity term for constant potential temperature background state b
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)
 """
-
 @inline function flux_nonconservative_artiano_etal(u_ll, u_rr,
                                                    normal_direction::AbstractVector,
                                                    equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
