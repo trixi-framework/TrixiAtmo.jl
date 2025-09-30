@@ -87,7 +87,6 @@ The well balanced on curvilinear coordinates was proven by
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)
 """
-
 @inline function flux_nonconservative_waruzewski_etal(u_ll, u_rr,
                                                       normal_direction::AbstractVector,
                                                       equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
