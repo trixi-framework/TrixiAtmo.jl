@@ -12,7 +12,7 @@ function initial_condition_robert_bubble(x, t,
     # center of perturbation
     center_x = 500.0
     center_z = 260.0
-    g = equations.g
+    g = 9.81
     # radius of perturbation
     radius = 250.0
     # distance of current x to center of perturbation
@@ -47,7 +47,8 @@ end
 @inline function source_terms_gravity(u, x, t,
                                       equations::CompressibleEulerPotentialTemperatureEquations2D)
     rho, _, _, _ = u
-    return SVector(zero(eltype(u)), zero(eltype(u)), -equations.g * rho, zero(eltype(u)))
+    g = 9.81
+    return SVector(zero(eltype(u)), zero(eltype(u)), -g * rho, zero(eltype(u)))
 end
 
 equations = CompressibleEulerPotentialTemperatureEquations2D()
@@ -90,5 +91,5 @@ callbacks = CallbackSet(summary_callback,
                         alive_callback)
 
 sol = solve(ode,
-            SSPRK43(thread = Trixi.True()),
+            SSPRK43(thread = Trixi.True());
             maxiters = 1.0e7, ode_default_options()..., callback = callbacks)

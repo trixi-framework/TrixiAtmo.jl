@@ -26,18 +26,18 @@ end
     xr_T = 25000
 
     if x[2] <= z_B
-        S_v = 0
+        S_v = 0.0
     else
         S_v = -alpha * sinpi(0.5f0 * (x[2] - z_B) / (z_T - z_B))^2
     end
     if x[1] < xr_B
-        S_h1 = 0
+        S_h1 = 0.0
     else
         S_h1 = -alpha * sinpi(0.5f0 * (x[1] - xr_B) / (xr_T - xr_B))^2
     end
 
     if x[1] > -xr_B
-        S_h2 = 0
+        S_h2 = 0.0
     else
         S_h2 = -alpha * sinpi(0.5f0 * (x[1] + xr_B) / (-xr_T + xr_B))^2
     end
@@ -153,5 +153,5 @@ callbacks = CallbackSet(summary_callback,
 ###############################################################################
 # run the simulation
 sol = solve(ode,
-            SSPRK43(thread = Trixi.True()),
+            SSPRK43(thread = Trixi.True());
             maxiters = 1.0e7, ode_default_options()..., callback = callbacks)

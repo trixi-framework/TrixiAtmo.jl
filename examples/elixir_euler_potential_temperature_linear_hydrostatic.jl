@@ -110,7 +110,7 @@ boundary_conditions = Dict(:x_neg => boundary,
 # We have an isothermal background state with T0 = 250 K. 
 # The reference speed of sound can be computed as:
 # cs = sqrt(gamma * R * T0)
-cs = sqrt(equations.gamma * equations.R * linear_hydrostatic_setup.T0)
+cs = sqrt(equations.gamma * equations.R * linear_hydrostatic_setup.T_0)
 polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
 
@@ -161,5 +161,6 @@ callbacks = CallbackSet(summary_callback,
 ###############################################################################
 # run the simulation
 sol = solve(ode,
-            SSPRK43(thread = Trixi.True()),
-            maxiters = 1.0e7, ode_default_options()..., callback = callbacks)
+            SSPRK43(thread = Trixi.True());
+            maxiters = 1.0e7,
+            ode_default_options()..., callback = callbacks)
