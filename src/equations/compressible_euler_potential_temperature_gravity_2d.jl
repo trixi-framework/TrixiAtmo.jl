@@ -13,7 +13,7 @@ struct CompressibleEulerPotentialTemperatureEquationsWithGravity2D{RealT <: Real
     stolarsky_factor::RealT # = (gamma - 1) / gamma; used in the stolarsky mean
 end
 
-function CompressibleEulerPotentialTemperatureEquationsWithGravity2D(; g = 9.81f0,
+function CompressibleEulerPotentialTemperatureEquationsWithGravity2D(; g = 9.81,
                                                                      RealT = Float64)
     p_0 = 100_000
     c_p = 1004
