@@ -176,7 +176,7 @@ end
     radius_earth = 6.371229f6  # a
     angular_velocity = 7.29212f-5  # Ω
 
-    r = Trixi.norm(x)
+    r = norm(x)
     # Make sure that r is not smaller than radius_earth
     z = max(r - radius_earth, 0)
     r = z + radius_earth
