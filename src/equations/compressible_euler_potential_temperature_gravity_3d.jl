@@ -51,7 +51,7 @@ have_nonconservative_terms(::CompressibleEulerPotentialTemperatureEquationsWithG
                                               surface_flux_functions,
                                               equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     # normalize the outward pointing direction
-    normal = normal_direction / Trixi.norm(normal_direction)
+    normal = normal_direction / norm(normal_direction)
     surface_flux_function, nonconservative_flux_function = surface_flux_functions
     # compute the normal velocity
     u_normal = normal[1] * u_inner[2] + normal[2] * u_inner[3] + normal[3] * u_inner[4]
