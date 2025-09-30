@@ -3,15 +3,15 @@
 
 struct CompressibleEulerPotentialTemperatureEquationsWithGravity1D{RealT <: Real} <:
        AbstractCompressibleEulerEquations{1, 4}
-    p_0::RealT
-    c_p::RealT
-    c_v::RealT
-    g::RealT
-    R::RealT
-    gamma::RealT
-    inv_gamma_minus_one::RealT
-    K::RealT
-    stolarsky_factor::RealT
+    p_0::RealT # reference pressure in Pa
+    c_p::RealT # specific heat at constant pressure in J/(kg K)
+    c_v::RealT # specific heat at constant volume in J/(kg K)
+    g::RealT # gravitational acceleration in m/s²
+    R::RealT # gas constant in J/(kg K)
+    gamma::RealT # ratio of specific heats 
+    inv_gamma_minus_one::RealT # = inv(gamma - 1); can be used to write slow divisions as fast multiplications
+    K::RealT # = p_0 * (R / p_0)^gamma; scaling factor between pressure and weighted potential temperature
+    stolarsky_factor::RealT # = (gamma - 1) / gamma; used in the stolarsky mean
 end
 
 function CompressibleEulerPotentialTemperatureEquationsWithGravity1D(; g = 9.81f0,
