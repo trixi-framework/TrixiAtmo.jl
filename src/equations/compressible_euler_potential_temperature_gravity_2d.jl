@@ -104,13 +104,13 @@ end
 """
 	flux_nonconservative_waruzewski_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
 
-   Well-balanced gravity term for isothermal background state
+Well-balanced gravity term for isothermal background state
 -  Maciej Waruszewski and Jeremy E. Kozdon and Lucas C. Wilcox and Thomas H. Gibson and Francis X. Giraldo (2022),
    Entropy stable discontinuous {G}alerkin methods for balance laws 
    in non-conservative form: Applications to the {E}uler equations with gravity
    [DOI: 10.1016/j.jcp.2022.111507](https://doi.org/10.1016/j.jcp.2022.111507)
 
-   The well balanced on curvilinear coordinates was proven by
+The well balanced on curvilinear coordinates was proven by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
    Structure-Preserving High-Order Methods for the Compressible Euler Equations 
    in Potential Temperature Formulation for Atmospheric Flows
@@ -133,7 +133,7 @@ end
 """
 	flux_nonconservative_artiano_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
 
-   Well-balanced gravity term for constant potential temperature background state by
+Well-balanced gravity term for constant potential temperature background state by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
    Structure-Preserving High-Order Methods for the Compressible Euler Equations 
    in Potential Temperature Formulation for Atmospheric Flows

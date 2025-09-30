@@ -37,7 +37,11 @@ function initial_condition_gravity_waves(x, t,
 end
 
 equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D()
-cs = sqrt(1004 / 717 * 287 * 250)
+
+# We have an isothermal background state with T0 = 250 K. 
+# The reference speed of sound can be computed as:
+# cs = sqrt(gamma * R * T0)
+cs = sqrt(equations.gamma * equations.R * 250)
 surface_flux = (FluxLMARS(cs), flux_zero)
 volume_flux = (flux_tec, flux_nonconservative_waruzewski_etal)
 polydeg = 3

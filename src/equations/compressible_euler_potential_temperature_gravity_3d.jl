@@ -75,13 +75,13 @@ end
 													  normal_direction::AbstractVector,
 													  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
 
-   Well-balanced gravity term for isothermal background state
+Well-balanced gravity term for isothermal background state
 -  Maciej Waruszewski and Jeremy E. Kozdon and Lucas C. Wilcox and Thomas H. Gibson and Francis X. Giraldo (2022),
    Entropy stable discontinuous {G}alerkin methods for balance laws 
    in non-conservative form: Applications to the {E}uler equations with gravity
    [DOI: 10.1016/j.jcp.2022.111507](https://doi.org/10.1016/j.jcp.2022.111507)
 
-   The well balanced on curvilinear coordinates was proven by
+The well balanced on curvilinear coordinates was proven by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
    Structure-Preserving High-Order Methods for the Compressible Euler Equations 
    in Potential Temperature Formulation for Atmospheric Flows
@@ -107,7 +107,7 @@ end
 													  normal_direction::AbstractVector,
 													  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
 
-   Well-balanced gravity term for constant potential temperature background state by
+Well-balanced gravity term for constant potential temperature background state by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
    Structure-Preserving High-Order Methods for the Compressible Euler Equations 
    in Potential Temperature Formulation for Atmospheric Flows
@@ -189,10 +189,10 @@ end
 end
 
 """
-	flux_tec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperature1D)
+	flux_tec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperatureWithGravity3D)
 
 Total energy conservative two-point flux by
--  Artiano et al. (2025), pre-print
+-  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
    Structure-Preserving High-Order Methods for the Compressible Euler Equations 
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)

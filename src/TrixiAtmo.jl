@@ -24,10 +24,10 @@ using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
 
 @reexport using StaticArrays: SVector, SMatrix
 @reexport import Trixi: waterheight, varnames, cons2cons, cons2prim, prim2cons,
-                        cons2entropy, boundary_condition_slip_wall
-@reexport import Trixi: flux, flux_ec, flux_chandrashekar, FluxLMARS, energy_total,
+                        cons2entropy, boundary_condition_slip_wall, flux, flux_ec,
+                        flux_chandrashekar, FluxLMARS, energy_total,
                         max_abs_speeds, max_abs_speed_naive, max_abs_speed, energy_kinetic,
-                        energy_total, entropy, pressure
+                        energy_total, entropy, pressure, have_nonconservative_terms
 using Trixi: ln_mean, stolarsky_mean, inv_ln_mean
 
 include("auxiliary/auxiliary.jl")

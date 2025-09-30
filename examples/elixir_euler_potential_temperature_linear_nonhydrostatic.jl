@@ -13,44 +13,46 @@ using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
 struct NonHydrostaticSetup
-    theta_0::Float64 # 
-    u0::Float64      #
-    Nf::Float64      # 
-    z_B::Float64     # start damping layer
-    z_T::Float64     # end damping layer
-    alfa::Float64
-    xr_B::Float64
-    function NonHydrostaticSetup(alfa, xr_B; Nf = 0.01, theta_0 = 280.0, u0 = 10.0,
-                                 z_B = 15000.0, z_T = 30000.0)
-        new(theta_0, u0, Nf, z_B, z_T, alfa, xr_B)
+    theta_0::Float64  # background potential temperature in K
+    u0::Float64       # background horizontal velocity in m/s
+    Nf::Float64       # Brunt–väisälä frequency in 1/s
+    z_B::Float64      # start of vertical damping layer in m
+    z_T::Float64      # end of vertical damping layer in m
+    alpha::Float64    # Rayleigh damping coefficient
+    xr_B::Float64     # horizontal extent where damping starts in m (symmetric with respect to y-axis)
+    function NonHydrostaticSetup(alpha, xr_B; Nf = 0.01, theta_0 = 280, u0 = 10,
+                                 z_B = 15000, z_T = 30000)
+        new(theta_0, u0, Nf, z_B, z_T, alpha, xr_B)
     end
 end
 
-@inline function rayleigh_damping(x, z_B, z_T, alfa, xr_B)
-    xr_T = 72000.0
+@inline function rayleigh_damping(x, z_B, z_T, alpha, xr_B)
+    xr_T = 72000
 
     if x[2] <= z_B
-        S_v = 0.0
+        S_v = 0
     else
-        S_v = -alfa * sinpi(0.5 * (x[2] - z_B) / (z_T - z_B))^2
+        S_v = -alpha * sinpi(0.5 * (x[2] - z_B) / (z_T - z_B))^2
     end
     if x[1] < xr_B
-        S_h1 = 0.0
+        S_h1 = 0
     else
-        S_h1 = -alfa * sinpi(0.5 * (x[1] - xr_B) / (xr_T - xr_B))^2
+        S_h1 = -alpha * sinpi(0.5 * (x[1] - xr_B) / (xr_T - xr_B))^2
     end
 
     if x[1] > -xr_B
-        S_h2 = 0.0
+        S_h2 = 0
     else
-        S_h2 = -alfa * sinpi(0.5 * (x[1] + xr_B) / (-xr_T + xr_B))^2
+        S_h2 = -alpha * sinpi(0.5 * (x[1] + xr_B) / (-xr_T + xr_B))^2
     end
     return S_v, S_h1, S_h2
 end
 
+# This signature is used for source terms, adding Rayleigh damping
+# to avoid reflections at the boundaries.
 @inline function (setup::NonHydrostaticSetup)(u, x, t,
                                               equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
-    @unpack theta_0, z_B, z_T, Nf, u0, alfa, xr_B = setup
+    @unpack theta_0, z_B, z_T, Nf, u0, alpha, xr_B = setup
 
     rho, rho_v1, rho_v2, rho_theta, _ = u
 
@@ -58,7 +60,7 @@ end
     v1 = rho_v1 / rho
     theta = rho_theta / rho
 
-    S_v, S_h1, S_h2 = rayleigh_damping(x, z_B, z_T, alfa, xr_B)
+    S_v, S_h1, S_h2 = rayleigh_damping(x, z_B, z_T, alpha, xr_B)
 
     theta_b = theta_0 * exp(Nf^2 / g * x[2])
     du2 = rho * (v1 - u0) * (S_v + S_h1 + S_h2)
@@ -68,6 +70,7 @@ end
     return SVector(zero(eltype(u)), du2, du3, du4, zero(eltype(u)))
 end
 
+# This signature is used for the initial condition.
 @inline function (setup::NonHydrostaticSetup)(x, t,
                                               equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     @unpack theta_0, u0, Nf = setup
@@ -89,10 +92,10 @@ end
 end
 
 equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D()
-alfa = 0.03
+alpha = 0.03
 xr_B = 40000.0
 
-linear_hydrostatic_setup = NonHydrostaticSetup(alfa, xr_B)
+linear_hydrostatic_setup = NonHydrostaticSetup(alpha, xr_B)
 
 boundary = BoundaryConditionDirichlet(linear_hydrostatic_setup)
 
@@ -113,10 +116,10 @@ L = 144000.0
 H = 30000.0
 peak = 1.0
 y_b = peak / (1 + (L / 2 / a)^2)
-alfa = (H - y_b) * 0.5
+alpha = (H - y_b) * 0.5
 
-f1(s) = SVector(-L / 2, y_b + alfa * (s + 1))
-f2(s) = SVector(L / 2, y_b + alfa * (s + 1))
+f1(s) = SVector(-L / 2, y_b + alpha * (s + 1))
+f2(s) = SVector(L / 2, y_b + alpha * (s + 1))
 f3(s) = SVector((s + 1 - 1) * L / 2, peak / (1 + ((s + 1 - 1) * L / 2)^2 / a^2))
 f4(s) = SVector((s + 1 - 1) * L / 2, H)
 cells_per_dimension = (200, 50)

@@ -13,45 +13,47 @@ using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
 struct HydrostaticSetup
-    T_0::Float64     # 
-    u0::Float64      #
-    Nf::Float64      # 
-    z_B::Float64     #
-    z_T::Float64     #
-    alfa::Float64    #
-    xr_B::Float64
-    function HydrostaticSetup(alfa, xr_B, equations; T_0 = 250.0, u0 = 20.0, z_B = 15000.0,
+    T_0::Float64     # background temperature in K
+    u0::Float64      # background horizontal velocity in m/s
+    Nf::Float64      # Brunt–Väisälä frequency in 1/s
+    z_B::Float64     # bottom boundary of damping layer in m
+    z_T::Float64     # top boundary of damping layer in m
+    alpha::Float64   # Rayleigh damping coefficient
+    xr_B::Float64    # horizontal extent where damping starts in m (symmetric with respect to y-axis)
+    function HydrostaticSetup(alpha, xr_B, equations; T_0 = 250.0, u0 = 20.0, z_B = 15000.0,
                               z_T = 30000.0)
         Nf = equations.g / sqrt(equations.c_p * T_0)
-        new(T_0, u0, Nf, z_B, z_T, alfa, xr_B)
+        new(T_0, u0, Nf, z_B, z_T, alpha, xr_B)
     end
 end
 
-@inline function rayleigh_damping(x, z_B, z_T, alfa, xr_B)
+@inline function rayleigh_damping(x, z_B, z_T, alpha, xr_B)
     xr_T = 120000.0
 
     if x[2] <= z_B
         S_v = 0.0
     else
-        S_v = -alfa * sinpi(0.5 * (x[2] - z_B) / (z_T - z_B))^2
+        S_v = -alpha * sinpi(0.5 * (x[2] - z_B) / (z_T - z_B))^2
     end
     if x[1] < xr_B
         S_h1 = 0.0
     else
-        S_h1 = -alfa * sinpi(0.5 * (x[1] - xr_B) / (xr_T - xr_B))^2
+        S_h1 = -alpha * sinpi(0.5 * (x[1] - xr_B) / (xr_T - xr_B))^2
     end
 
     if x[1] > -xr_B
         S_h2 = 0.0
     else
-        S_h2 = -alfa * sinpi(0.5 * (x[1] + xr_B) / (-xr_T + xr_B))^2
+        S_h2 = -alpha * sinpi(0.5 * (x[1] + xr_B) / (-xr_T + xr_B))^2
     end
     return S_v, S_h1, S_h2
 end
 
+# This signature is used for source terms, adding Rayleigh damping
+# to avoid reflections at the boundaries.
 @inline function (setup::HydrostaticSetup)(u, x, t,
                                            equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
-    @unpack T_0, z_B, z_T, Nf, u0, alfa, xr_B = setup
+    @unpack T_0, z_B, z_T, Nf, u0, alpha, xr_B = setup
     g = equations.g
 
     rho, rho_v1, rho_v2, rho_theta, _ = u
@@ -59,7 +61,7 @@ end
     v1 = rho_v1 / rho
     theta = rho_theta / rho
 
-    S_v, S_h1, S_h2 = rayleigh_damping(x, z_B, z_T, alfa, xr_B)
+    S_v, S_h1, S_h2 = rayleigh_damping(x, z_B, z_T, alpha, xr_B)
 
     exner = exp(-Nf^2 / g * x[2])
 
@@ -72,6 +74,7 @@ end
     return SVector(zero(eltype(u)), du2, du3, du4, zero(eltype(u)))
 end
 
+# This signature is used for the initial condition.
 @inline function (setup::HydrostaticSetup)(x, t,
                                            equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     @unpack T_0, u0, Nf = setup
@@ -93,9 +96,9 @@ end
 end
 
 equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D()
-alfa = 0.035
+alpha = 0.035
 xr_B = 60000.0
-linear_hydrostatic_setup = HydrostaticSetup(alfa, xr_B, equations)
+linear_hydrostatic_setup = HydrostaticSetup(alpha, xr_B, equations)
 
 boundary = BoundaryConditionDirichlet(linear_hydrostatic_setup)
 
@@ -103,7 +106,11 @@ boundary_conditions = Dict(:x_neg => boundary,
                            :x_pos => boundary,
                            :y_neg => boundary_condition_slip_wall,
                            :y_pos => boundary)
-cs = sqrt(1004.0 / 717.0 * 287.0 * 250.0)
+
+# We have an isothermal background state with T0 = 250 K. 
+# The reference speed of sound can be computed as:
+# cs = sqrt(gamma * R * T0)
+cs = sqrt(equations.gamma * equations.R * linear_hydrostatic_setup.T0)
 polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
 
@@ -118,10 +125,10 @@ L = 240000.0
 H = 30000.0
 peak = 1.0
 y_b = peak / (1 + (L / 2 / a)^2)
-alfa_b = (H - y_b) * 0.5
+alpha_b = (H - y_b) * 0.5
 
-f1(s) = SVector(-L / 2, y_b + alfa_b * (s + 1))
-f2(s) = SVector(L / 2, y_b + alfa_b * (s + 1))
+f1(s) = SVector(-L / 2, y_b + alpha_b * (s + 1))
+f2(s) = SVector(L / 2, y_b + alpha_b * (s + 1))
 f3(s) = SVector((s + 1 - 1) * L / 2, peak / (1 + ((s + 1 - 1) * L / 2)^2 / a^2))
 f4(s) = SVector((s + 1 - 1) * L / 2, H)
 cells_per_dimension = (100, 60)
@@ -136,7 +143,7 @@ semi = SemidiscretizationHyperbolic(mesh, equations, linear_hydrostatic_setup, s
 ###############################################################################
 # ODE solvers, callbacks etc.
 T = 12.5
-tspan = (0.0, T * 3600.0)  # 1000 seconds final time
+tspan = (0.0, T * 3600.0)  # 12.5 hours final time
 ode = semidiscretize(semi, tspan)
 
 summary_callback = SummaryCallback()
