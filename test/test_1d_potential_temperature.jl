@@ -29,7 +29,7 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_euler_potential_temperature_ec.jl"),
                         l2=[1.5370166265639917, 1.5370166276315467, 4.6312969205197763e-7],
-                        linf=[22.2832797537013914, 2.283274979103027, 2.547940256003578e-6],
+                        linf=[2.2832797537013914, 2.283274979103027, 2.547940256003578e-6],
                         tspan=(0.0, 0.4), surface_flux=flux_etec, volume_flux=flux_etec,
                         atol=1.5e-5)
     # Ensure that we do not have excessive memory allocations
