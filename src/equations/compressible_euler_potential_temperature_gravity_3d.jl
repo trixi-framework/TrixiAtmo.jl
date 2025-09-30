@@ -72,8 +72,8 @@ end
 
 """
 	flux_nonconservative_waruzewski_etal(u_ll, u_rr,
-													  normal_direction::AbstractVector,
-													  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+										 normal_direction::AbstractVector,
+										 	equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
 
 Well-balanced gravity term for isothermal background state
 -  Maciej Waruszewski and Jeremy E. Kozdon and Lucas C. Wilcox and Thomas H. Gibson and Francis X. Giraldo (2022),
