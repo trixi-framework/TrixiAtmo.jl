@@ -36,11 +36,9 @@ end
 equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D()
 polydeg = 2
 basis = LobattoLegendreBasis(polydeg)
-cs = 340.0
+cs = 340
 surface_flux = (FluxLMARS(cs), flux_zero)
 volume_flux = (flux_tec, flux_nonconservative_artiano_etal)
-# surface_flux = (flux_ec, flux_nonconservative_waruzewski_etal)
-# volume_flux = (flux_etec, flux_nonconservative_souza_etal)
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 solver = DGSEM(basis, surface_flux, volume_integral)
 
