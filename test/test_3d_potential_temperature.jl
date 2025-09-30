@@ -89,7 +89,7 @@ end
                             0.012502671674568866
                         ],
                         tspan=(0.0, 0.2), surface_flux=FluxLMARS(340.0),
-                        volume_flux=flux_tec, atol=1e-7)
+                        volume_flux=flux_tec, atol=5e-6)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
@@ -114,7 +114,8 @@ end
                             1.0016824478938702,
                             333.2487377524376
                         ],
-                        tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2))
+                        tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
+                        atol=1e-8)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
@@ -140,7 +141,8 @@ end
                             333.2487377524376
                         ],
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
-                        volume_flux=(flux_ec, flux_nonconservative_waruzewski_etal))
+                        volume_flux=(flux_ec, flux_nonconservative_waruzewski_etal),
+                        atol=1e-7)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)

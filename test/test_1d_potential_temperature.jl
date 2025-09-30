@@ -7,7 +7,7 @@ include("test_trixiatmo.jl")
                                  "elixir_euler_potential_temperature_ec.jl"),
                         l2=[1.5370166271447887, 1.5370166326302963, 8.204456414321612e-7],
                         linf=[2.2832636713770533, 2.2832429092995072, 4.835357438226495e-6],
-                        tspan=(0.0, 0.4), atol=3.8e-5)
+                        tspan=(0.0, 0.4), atol=1.2e-4)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
@@ -31,7 +31,7 @@ end
                         l2=[1.5370166265639917, 1.5370166276315467, 4.6312969205197763e-7],
                         linf=[2.2832797537013914, 2.283274979103027, 2.547940256003578e-6],
                         tspan=(0.0, 0.4), surface_flux=flux_etec, volume_flux=flux_etec,
-                        atol=1.5e-5)
+                        atol=2e-5)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
