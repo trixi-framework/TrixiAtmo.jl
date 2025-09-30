@@ -104,8 +104,8 @@ end
 
 """
 	flux_nonconservative_artiano_etal(u_ll, u_rr,
-													  normal_direction::AbstractVector,
-													  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+									  normal_direction::AbstractVector,
+									  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
 
 Well-balanced gravity term for constant potential temperature background state by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
