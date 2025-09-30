@@ -135,7 +135,6 @@ semi = SemidiscretizationHyperbolic(mesh, equations, schär_setup, solver,
 # ODE solvers, callbacks etc.
 T = 5
 tspan = (0.0, T * 3600.0) #1 hour.
-tspan = (0.0, 360)
 
 ode = semidiscretize(semi, tspan)
 
