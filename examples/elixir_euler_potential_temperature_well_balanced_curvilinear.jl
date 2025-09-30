@@ -1,5 +1,5 @@
 # References:
-# - Artiano Marco, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
+# - Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
 #   Structure-Preserving High-Order Methods for the Compressible Euler Equations 
 #   in Potential Temperature Formulation for Atmospheric Flows
 #   https://arxiv.org/abs/2509.10311 (pre-print)
@@ -30,7 +30,7 @@ function initial_condition_adiabatic(x, t,
     rho = p / (R * T)
     v1 = 0
     v2 = 0
-    return TrixiAtmo.prim2cons(SVector(rho, v1, v2, p, g * x[2]), equations)
+    return prim2cons(SVector(rho, v1, v2, p, g * x[2]), equations)
 end
 
 equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D()

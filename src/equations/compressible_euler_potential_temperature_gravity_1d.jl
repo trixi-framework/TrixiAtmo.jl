@@ -1,11 +1,6 @@
-using Trixi
-using Trixi: ln_mean, stolarsky_mean, AbstractCompressibleEulerEquations, inv_ln_mean
-import Trixi: varnames, cons2cons, cons2prim, cons2entropy, entropy, energy_total,
-              flux_ec, initial_condition_density_wave, max_abs_speeds
-
 @muladd begin
-
 #! format: noindent
+
 struct CompressibleEulerPotentialTemperatureEquationsWithGravity1D{RealT <: Real} <:
        AbstractCompressibleEulerEquations{1, 4}
     p_0::RealT
@@ -14,26 +9,24 @@ struct CompressibleEulerPotentialTemperatureEquationsWithGravity1D{RealT <: Real
     g::RealT
     R::RealT
     gamma::RealT
-    a::RealT
     inv_gamma_minus_one::RealT
     K::RealT
     stolarsky_factor::RealT
 end
 
-function CompressibleEulerPotentialTemperatureEquationsWithGravity1D(; g = 9.81,
+function CompressibleEulerPotentialTemperatureEquationsWithGravity1D(; g = 9.81f0,
                                                                      RealT = Float64)
-    p_0 = 100_000.0
-    c_p = 1004.0
-    c_v = 717.0
+    p_0 = 100_000
+    c_p = 1004
+    c_v = 717
     R = c_p - c_v
     gamma = c_p / c_v
-    a = 340.0
     inv_gamma_minus_one = inv(gamma - 1)
     K = p_0 * (R / p_0)^gamma
-    stolarsky_factor = (gamma - 1.0) / gamma
+    stolarsky_factor = (gamma - 1) / gamma
     return CompressibleEulerPotentialTemperatureEquationsWithGravity1D{RealT}(p_0, c_p,
                                                                               c_v, g, R,
-                                                                              gamma, a,
+                                                                              gamma,
                                                                               inv_gamma_minus_one,
                                                                               K,
                                                                               stolarsky_factor)
@@ -48,7 +41,7 @@ varnames(::typeof(cons2prim),
 ::CompressibleEulerPotentialTemperatureEquationsWithGravity1D) = ("rho", "v1",
                                                                   "p1", "phi")
 
-Trixi.have_nonconservative_terms(::CompressibleEulerPotentialTemperatureEquationsWithGravity1D) = Trixi.True()
+have_nonconservative_terms(::CompressibleEulerPotentialTemperatureEquationsWithGravity1D) = Trixi.True()
 
 @inline function boundary_condition_slip_wall(u_inner, orientation,
                                               direction, x, t,
@@ -73,23 +66,20 @@ Trixi.have_nonconservative_terms(::CompressibleEulerPotentialTemperatureEquation
 end
 
 """
-	flux_nonconservative_waruzewski_etal(u_ll, u_rr,
-													  orientation::Integer,
-													  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
+   flux_nonconservative_waruzewski_etal(u_ll, u_rr, orientation::Integer, equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
 
-   Well-balanced gravity term for isothermal background state
+Well-balanced gravity term for isothermal background state
 -  Maciej Waruszewski and Jeremy E. Kozdon and Lucas C. Wilcox and Thomas H. Gibson and Francis X. Giraldo (2022),
    Entropy stable discontinuous {G}alerkin methods for balance laws 
    in non-conservative form: Applications to the {E}uler equations with gravity
    [DOI: 10.1016/j.jcp.2022.111507](https://doi.org/10.1016/j.jcp.2022.111507)
 
-   The well balanced on curvilinear coordinates was proven by
+The well balanced on curvilinear coordinates was proven by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
    Structure-Preserving High-Order Methods for the Compressible Euler Equations 
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)
 """
-
 @inline function flux_nonconservative_waruzewski_etal(u_ll, u_rr,
                                                       orientation::Integer,
                                                       equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
@@ -104,17 +94,14 @@ end
 end
 
 """
-	flux_nonconservative_artiano_etal(u_ll, u_rr,
-													  orientation::Integer,
-													  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
+   flux_nonconservative_artiano_etal(u_ll, u_rr, orientation::Integer, equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
 
-   Well-balanced gravity term for constant potential temperature background state by
+Well-balanced gravity term for constant potential temperature background state by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
    Structure-Preserving High-Order Methods for the Compressible Euler Equations 
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)
 """
-
 @inline function flux_nonconservative_artiano_etal(u_ll, u_rr,
                                                    orientation::Integer,
                                                    equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
@@ -129,16 +116,13 @@ end
 end
 
 """
-	flux_nonconservative_souza_etal(u_ll, u_rr,
-													  orientation::Integer,
-													  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
+   flux_nonconservative_souza_etal(u_ll, u_rr, orientation::Integer, equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
 
 -  Souza et al. 
    The Flux-Differencing Discontinuous {G}alerkin Method Applied to 
    an Idealized Fully Compressible Nonhydrostatic Dry Atmosphere
    [DOI: 10.1029/2022MS003527] (https://doi.org/10.1029/2022MS003527)
 """
-
 @inline function flux_nonconservative_souza_etal(u_ll, u_rr,
                                                  orientation::Integer,
                                                  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
@@ -175,11 +159,10 @@ end
 end
 
 """
-	flux_tec(u_ll, u_rr, orientation_or_normal_direction,
-						equations::CompressibleEulerEquationsPotentialTemperature1D)
+	flux_tec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperature1D)
 
-	Total energy conservative two-point flux by
--  Artiano et al. (2025), pre-print
+Total energy conservative two-point flux by
+-  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
    Structure-Preserving High-Order Methods for the Compressible Euler Equations 
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)
@@ -194,9 +177,7 @@ end
 
     # Compute the necessary mean values
     rho_mean = ln_mean(rho_ll, rho_rr)
-
     gammamean = stolarsky_mean(rho_theta_ll, rho_theta_rr, equations.gamma)
-
     v1_avg = 0.5f0 * (v1_ll + v1_rr)
     p_avg = 0.5f0 * (p_ll + p_rr)
 
@@ -208,11 +189,10 @@ end
 end
 
 """
-	flux_ec(u_ll, u_rr, orientation_or_normal_direction,
-						equations::CompressibleEulerEquationsPotentialTemperature1D)
+	flux_ec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperatureWithGravity1D)
 
 Entropy conservative two-point flux by
--  Artiano et al. (2025), pre-print
+-  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
    Structure-Preserving High-Order Methods for the Compressible Euler Equations 
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)
@@ -224,9 +204,9 @@ Entropy conservative two-point flux by
     rho_rr, v1_rr, p_rr = cons2prim(u_rr, equations)
     _, _, rho_theta_ll = u_ll
     _, _, rho_theta_rr = u_rr
+
     # Compute the necessary mean values
     rho_mean = ln_mean(rho_ll, rho_rr)
-
     v1_avg = 0.5f0 * (v1_ll + v1_rr)
     p_avg = 0.5f0 * (p_ll + p_rr)
 
@@ -238,11 +218,10 @@ Entropy conservative two-point flux by
 end
 
 """
-	flux_etec(u_ll, u_rr, orientation_or_normal_direction,
-						equations::CompressibleEulerEquationsPotentialTemperature1D)
+	flux_etec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperatureWithGravity1D)
 
 Entropy and total energy conservative two-point flux by
--  Artiano et al. (2025), pre-print
+-  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
    Structure-Preserving High-Order Methods for the Compressible Euler Equations 
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)
@@ -252,11 +231,12 @@ Entropy and total energy conservative two-point flux by
     # Unpack left and right state
     rho_ll, v1_ll, p_ll = cons2prim(u_ll, equations)
     rho_rr, v1_rr, p_rr = cons2prim(u_rr, equations)
+
     _, _, rho_theta_ll = u_ll
     _, _, rho_theta_rr = u_rr
+
     # Compute the necessary mean values
     gammamean = stolarsky_mean(rho_theta_ll, rho_theta_rr, equations.gamma)
-
     v1_avg = 0.5f0 * (v1_ll + v1_rr)
     p_avg = 0.5f0 * (p_ll + p_rr)
 
@@ -294,10 +274,9 @@ end
     rho, rho_v1, rho_theta = u
 
     w1 = log(equations.K * (rho_theta / rho)^equations.gamma) - equations.gamma
-    w2 = 0.0
     w3 = rho / rho_theta * equations.gamma
 
-    return SVector(w1, w2, w3, zero(eltype(u)))
+    return SVector(w1, zero(eltype(u)), w3, zero(eltype(u)))
 end
 
 @inline function energy_total(cons,
@@ -320,7 +299,7 @@ end
                               equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
     p = equations.K * (cons[3])^equations.gamma
     s = log(p) - equations.gamma * log(cons[1])
-    S = -s * cons[1] / (equations.gamma - 1.0)
+    S = -s * cons[1] / (equations.gamma - 1)
     return S
 end
 

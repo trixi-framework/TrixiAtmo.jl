@@ -247,12 +247,10 @@ function Trixi.calc_interface_flux!(surface_flux_values,
 
         # Create the local i,j indexing on the primary element used to pull normal 
         # direction information
-        i_primary_start,
-        i_primary_step = Trixi.index_to_start_step_2d(primary_indices[1],
-                                                      index_range)
-        j_primary_start,
-        j_primary_step = Trixi.index_to_start_step_2d(primary_indices[2],
-                                                      index_range)
+        i_primary_start, i_primary_step = Trixi.index_to_start_step_2d(primary_indices[1],
+                                                                       index_range)
+        j_primary_start, j_primary_step = Trixi.index_to_start_step_2d(primary_indices[2],
+                                                                       index_range)
 
         i_primary = i_primary_start
         j_primary = j_primary_start
@@ -309,14 +307,12 @@ end
     (; surface_flux) = surface_integral
 
     # Get surface values for solution and auxiliary variables
-    u_ll,
-    u_rr = Trixi.get_surface_node_vars(u, equations, dg, primary_node_index,
-                                       interface_index)
-    aux_vars_ll,
-    aux_vars_rr = get_surface_node_aux_vars(aux_surface_node_vars,
-                                            equations,
-                                            dg, primary_node_index,
-                                            interface_index)
+    u_ll, u_rr = Trixi.get_surface_node_vars(u, equations, dg, primary_node_index,
+                                             interface_index)
+    aux_vars_ll, aux_vars_rr = get_surface_node_aux_vars(aux_surface_node_vars,
+                                                         equations,
+                                                         dg, primary_node_index,
+                                                         interface_index)
 
     # Compute flux in the primary element's coordinate system
     u_rr_global = contravariant2global(u_rr, aux_vars_rr, equations)
@@ -372,14 +368,12 @@ end
     surface_flux, nonconservative_flux = surface_integral.surface_flux
 
     # Get surface values for solution and auxiliary variables
-    u_ll,
-    u_rr = Trixi.get_surface_node_vars(u, equations, dg, primary_node_index,
-                                       interface_index)
-    aux_vars_ll,
-    aux_vars_rr = get_surface_node_aux_vars(aux_surface_node_vars,
-                                            equations,
-                                            dg, primary_node_index,
-                                            interface_index)
+    u_ll, u_rr = Trixi.get_surface_node_vars(u, equations, dg, primary_node_index,
+                                             interface_index)
+    aux_vars_ll, aux_vars_rr = get_surface_node_aux_vars(aux_surface_node_vars,
+                                                         equations,
+                                                         dg, primary_node_index,
+                                                         interface_index)
 
     # Compute flux in the primary element's coordinate system
     u_rr_global = contravariant2global(u_rr, aux_vars_rr, equations)

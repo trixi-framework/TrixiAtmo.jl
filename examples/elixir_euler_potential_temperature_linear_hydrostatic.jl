@@ -89,7 +89,7 @@ end
     v1 = u0
     v2 = 0.0
 
-    return TrixiAtmo.prim2cons(SVector(rho, v1, v2, p, g * x[2]), equations)
+    return prim2cons(SVector(rho, v1, v2, p, g * x[2]), equations)
 end
 
 equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D()

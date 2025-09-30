@@ -1,7 +1,3 @@
-using Trixi
-using Trixi: ln_mean, stolarsky_mean, AbstractCompressibleEulerEquations
-import Trixi: varnames, cons2cons, cons2prim, cons2entropy, entropy, FluxLMARS, flux_ec
-
 @muladd begin
 #! format: noindent
 struct CompressibleEulerPotentialTemperatureEquationsWithGravity2D{RealT <: Real} <:
@@ -17,16 +13,16 @@ struct CompressibleEulerPotentialTemperatureEquationsWithGravity2D{RealT <: Real
     stolarsky_factor::RealT
 end
 
-function CompressibleEulerPotentialTemperatureEquationsWithGravity2D(; g = 9.81,
+function CompressibleEulerPotentialTemperatureEquationsWithGravity2D(; g = 9.81f0,
                                                                      RealT = Float64)
-    p_0 = 100_000.0
-    c_p = 1004.0
-    c_v = 717.0
+    p_0 = 100_000
+    c_p = 1004
+    c_v = 717
     R = c_p - c_v
     gamma = c_p / c_v
-    inv_gamma_minus_one = inv(gamma - 1.0)
+    inv_gamma_minus_one = inv(gamma - 1)
     K = p_0 * (R / p_0)^gamma
-    stolarsky_factor = (gamma - 1.0) / gamma
+    stolarsky_factor = (gamma - 1) / gamma
     return CompressibleEulerPotentialTemperatureEquationsWithGravity2D{RealT}(p_0, c_p,
                                                                               c_v, g, R,
                                                                               gamma,
@@ -46,16 +42,16 @@ varnames(::typeof(cons2prim),
                                                                   "v2",
                                                                   "p1", "phi")
 
-Trixi.have_nonconservative_terms(::CompressibleEulerPotentialTemperatureEquationsWithGravity2D) = Trixi.True()
+have_nonconservative_terms(::CompressibleEulerPotentialTemperatureEquationsWithGravity2D) = Trixi.True()
 
 # Slip-wall boundary condition
 # Determine the boundary numerical surface flux for a slip wall condition.
 # Imposes a zero normal velocity at the wall.
-@inline function Trixi.boundary_condition_slip_wall(u_inner,
-                                                    normal_direction::AbstractVector,
-                                                    x, t,
-                                                    surface_flux_functions,
-                                                    equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+@inline function boundary_condition_slip_wall(u_inner,
+                                              normal_direction::AbstractVector,
+                                              x, t,
+                                              surface_flux_functions,
+                                              equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     # normalize the outward pointing direction
     normal = normal_direction / norm(normal_direction)
     surface_flux_function, nonconservative_flux_function = surface_flux_functions
@@ -76,10 +72,10 @@ Trixi.have_nonconservative_terms(::CompressibleEulerPotentialTemperatureEquation
     return flux, noncons_flux
 end
 
-@inline function Trixi.boundary_condition_slip_wall(u_inner, orientation,
-                                                    direction, x, t,
-                                                    surface_flux_functions,
-                                                    equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+@inline function boundary_condition_slip_wall(u_inner, orientation,
+                                              direction, x, t,
+                                              surface_flux_functions,
+                                              equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     surface_flux_function, nonconservative_flux_function = surface_flux_functions
 
     ## get the appropriate normal vector from the orientation
@@ -106,9 +102,7 @@ end
 end
 
 """
-	flux_nonconservative_waruzewski_etal(u_ll, u_rr,
-													  normal_direction::AbstractVector,
-													  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+	flux_nonconservative_waruzewski_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
 
    Well-balanced gravity term for isothermal background state
 -  Maciej Waruszewski and Jeremy E. Kozdon and Lucas C. Wilcox and Thomas H. Gibson and Francis X. Giraldo (2022),
@@ -137,9 +131,7 @@ end
 end
 
 """
-	flux_nonconservative_artiano_etal(u_ll, u_rr,
-													  normal_direction::AbstractVector,
-													  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+	flux_nonconservative_artiano_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
 
    Well-balanced gravity term for constant potential temperature background state by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
@@ -163,16 +155,13 @@ end
 end
 
 """
-	flux_nonconservative_souza_etal(u_ll, u_rr,
-													  normal_direction::AbstractVector,
-													  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+	flux_nonconservative_souza_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
 
 -  Souza et al. 
    The Flux-Differencing Discontinuous {G}alerkin Method Applied to 
    an Idealized Fully Compressible Nonhydrostatic Dry Atmosphere
    [DOI: 10.1029/2022MS003527] (https://doi.org/10.1029/2022MS003527)
 """
-
 @inline function flux_nonconservative_souza_etal(u_ll, u_rr,
                                                  normal_direction::AbstractVector,
                                                  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
@@ -223,16 +212,14 @@ end
 end
 
 """
-	flux_ec(u_ll, u_rr, orientation_or_normal_direction,
-						equations::CompressibleEulerEquationsPotentialTemperature1D)
+	flux_ec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperatureWithGravity2D)
 
 Entropy conservative two-point flux by
--  Artiano et al. (2025), pre-print
+-  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
    Structure-Preserving High-Order Methods for the Compressible Euler Equations 
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)
 """
-
 @inline function flux_ec(u_ll, u_rr, normal_direction::AbstractVector,
                          equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     # Unpack left and right state
@@ -258,16 +245,14 @@ Entropy conservative two-point flux by
 end
 
 """
-	flux_tec(u_ll, u_rr, orientation_or_normal_direction,
-						equations::CompressibleEulerEquationsPotentialTemperature1D)
+	flux_tec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperatureWithGravity2D)
 
 Total energy conservative two-point flux by
--  Artiano et al. (2025), pre-print
+-  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
    Structure-Preserving High-Order Methods for the Compressible Euler Equations 
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)
 """
-
 @inline function flux_tec(u_ll, u_rr, normal_direction::AbstractVector,
                           equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
@@ -295,16 +280,14 @@ Total energy conservative two-point flux by
 end
 
 """
-	flux_etec(u_ll, u_rr, orientation_or_normal_direction,
-						equations::CompressibleEulerEquationsPotentialTemperature1D)
+	flux_etec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperatureWithGravity2D)
 
 Entropy and total energy conservative two-point flux by
--  Artiano et al. (2025), pre-print
+-  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
    Structure-Preserving High-Order Methods for the Compressible Euler Equations 
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)
 """
-
 @inline function flux_etec(u_ll, u_rr, normal_direction::AbstractVector,
                            equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     # Unpack left and right state

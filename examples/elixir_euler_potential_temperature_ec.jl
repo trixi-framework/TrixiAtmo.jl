@@ -6,7 +6,7 @@ function initial_condition_density_wave(x, t,
     v1 = 1
     rho = 1 + exp(sinpi(2 * x[1]))
     p = 1
-    return TrixiAtmo.prim2cons(SVector(rho, v1, p), equations)
+    return prim2cons(SVector(rho, v1, p), equations)
 end
 
 equations = CompressibleEulerPotentialTemperatureEquations1D()
@@ -37,9 +37,9 @@ summary_callback = SummaryCallback()
 analysis_interval = 1000
 
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
-                                     extra_analysis_integrals = (Trixi.energy_kinetic,
+                                     extra_analysis_integrals = (energy_kinetic,
                                                                  energy_total, entropy,
-                                                                 Trixi.pressure))
+                                                                 pressure))
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 

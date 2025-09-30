@@ -17,16 +17,16 @@ import TrixiAtmo: norm
 function basic_state_baroclinic_instability_longitudinal_velocity(lon, lat, z)
     # Parameters from Table 1 in the paper
     # Corresponding names in the paper are commented
-    radius_earth = 6.371229e6  # a
+    radius_earth = 6.371229f6  # a
     half_width_parameter = 2           # b
-    gravitational_acceleration = 9.81     # g
+    gravitational_acceleration = 9.81f0     # g
     k = 3           # k
-    surface_pressure = 1e5         # p₀
+    surface_pressure = 1f5         # p₀
     gas_constant = 287         # R
-    surface_equatorial_temperature = 310.0       # T₀ᴱ
-    surface_polar_temperature = 240.0       # T₀ᴾ
-    lapse_rate = 0.005       # Γ
-    angular_velocity = 7.29212e-5  # Ω
+    surface_equatorial_temperature = 310       # T₀ᴱ
+    surface_polar_temperature = 240       # T₀ᴾ
+    lapse_rate = 0.005f0       # Γ
+    angular_velocity = 7.29212f-5  # Ω
 
     # Distance to the center of the Earth
     r = z + radius_earth
@@ -85,7 +85,7 @@ function perturbation_stream_function(lon, lat, z)
     # Parameters from Table 1 in the paper
     # Corresponding names in the paper are commented
     perturbation_radius = 1 / 6      # d₀ / a
-    perturbed_wind_amplitude = 1.0      # Vₚ
+    perturbed_wind_amplitude = 1      # Vₚ
     perturbation_lon = pi / 9     # Longitude of perturbation location
     perturbation_lat = 2 * pi / 9 # Latitude of perturbation location
     pertz = 15000    # Perturbation height cap
@@ -99,14 +99,14 @@ function perturbation_stream_function(lon, lat, z)
     # In the first case, the vertical taper function is per definition zero.
     # In the second case, the stream function is per definition zero.
     if z > pertz || great_circle_distance_by_a > perturbation_radius
-        return 0.0, 0.0
+        return 0, 0
     end
 
     # Vertical tapering of stream function
-    perttaper = 1.0 - 3 * z^2 / pertz^2 + 2 * z^3 / pertz^3
+    perttaper = 1 - 3 * z^2 / pertz^2 + 2 * z^3 / pertz^3
 
     # sin/cos(pi * d / (2 * d_0)) in the paper
-    sin_, cos_ = sincos(0.5 * pi * great_circle_distance_by_a / perturbation_radius)
+    sin_, cos_ = sincos(0.5f0 * pi * great_circle_distance_by_a / perturbation_radius)
 
     # Common factor for both u and v
     factor = 16 / (3 * sqrt(3)) * perturbed_wind_amplitude * perttaper * cos_^3 * sin_
@@ -137,7 +137,7 @@ end
 function initial_condition_baroclinic_instability(x, t,
                                                   equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     lon, lat, r = cartesian_to_sphere(x)
-    radius_earth = 6.371229e6
+    radius_earth = 6.371229f6
     # Make sure that the r is not smaller than radius_earth
     z = max(r - radius_earth, 0.0)
 
@@ -154,12 +154,12 @@ function initial_condition_baroclinic_instability(x, t,
     v1 = -sin(lon) * u - sin(lat) * cos(lon) * v
     v2 = cos(lon) * u - sin(lat) * sin(lon) * v
     v3 = cos(lat) * v
-    radius_earth = 6.371229e6  # a
-    gravitational_acceleration = 9.81    # g
+    radius_earth = 6.371229f6  # a
+    gravitational_acceleration = 9.81f0    # g
 
     r = norm(x)
     # Make sure that r is not smaller than radius_earth
-    z = max(r - radius_earth, 0.0)
+    z = max(r - radius_earth, 0)
     if z > 0
         r = norm(x)
     else
@@ -173,12 +173,12 @@ end
 
 @inline function source_terms_baroclinic_instability(u, x, t,
                                                      equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
-    radius_earth = 6.371229e6  # a
-    angular_velocity = 7.29212e-5  # Ω
+    radius_earth = 6.371229f6  # a
+    angular_velocity = 7.29212f-5  # Ω
 
     r = Trixi.norm(x)
     # Make sure that r is not smaller than radius_earth
-    z = max(r - radius_earth, 0.0)
+    z = max(r - radius_earth, 0)
     r = z + radius_earth
 
     du1 = zero(eltype(u))
@@ -206,8 +206,8 @@ volume_flux = (flux_tec, flux_nonconservative_souza_etal)
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
 trees_per_cube_face = (8, 4)
-mesh = Trixi.P4estMeshCubedSphere(trees_per_cube_face..., 6.371229e6, 30000.0,
-                                  polydeg = polydeg, initial_refinement_level = 0)
+mesh = P4estMeshCubedSphere(trees_per_cube_face..., 6.371229f6, 30000,
+                            polydeg = polydeg, initial_refinement_level = 0)
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_terms_baroclinic_instability,
@@ -215,7 +215,7 @@ semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
 
 ###############################################################################
 # ODE solvers, callbacks etc.
-T = 10.0 # 10 days
+T = 10 # 10 days
 tspan = (0.0, T * SECONDS_PER_DAY) # time in seconds for 10 days
 
 ode = semidiscretize(semi, tspan)
@@ -227,7 +227,7 @@ analysis_callback = AnalysisCallback(semi, interval = analysis_interval)
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
-save_solution = SaveSolutionCallback(interval = 30000, save_initial_solution = true,
+save_solution = SaveSolutionCallback(dt = 100, save_initial_solution = true,
                                      save_final_solution = true)
 
 callbacks = CallbackSet(summary_callback,

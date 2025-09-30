@@ -39,9 +39,9 @@ function initial_condition_robert_bubble(x, t,
     # density
     rho = p / (R * T)
 
-    v1 = 20.0
-    v2 = 0.0
-    return TrixiAtmo.prim2cons(SVector(rho, v1, v2, p), equations)
+    v1 = 20
+    v2 = 0
+    return prim2cons(SVector(rho, v1, v2, p), equations)
 end
 
 @inline function source_terms_gravity(u, x, t,

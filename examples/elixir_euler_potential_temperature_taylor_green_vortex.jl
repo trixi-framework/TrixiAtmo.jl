@@ -11,7 +11,7 @@ function initial_condition_taylor_green_vortex(x, t,
         1.0 / 16.0 *
         ((cos(2 * x[1]) + cos(2 * x[2])) * (cos(2 * x[1]) + 2) - 2)
 
-    return TrixiAtmo.prim2cons(SVector(rho, v1, v2, v3, p), equations)
+    return prim2cons(SVector(rho, v1, v2, v3, p), equations)
 end
 
 equations = CompressibleEulerPotentialTemperatureEquations3D()

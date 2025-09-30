@@ -5,13 +5,12 @@ using Trixi, TrixiAtmo
 	initial_condition_gravity_waves(x, t,
                                         equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
 
-   Test cases for linearized analytical solution by
+Test cases for linearized analytical solution by
 -  Baldauf, Michael and Brdar, Slavko (2013)
    An analytic solution for linear gravity waves in a channel as a test 
    for numerical models using the non-hydrostatic, compressible {E}uler equations
    [DOI: 10.1002/qj.2105] (https://doi.org/10.1002/qj.2105)
 """
-
 function initial_condition_gravity_waves(x, t,
                                          equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     g = equations.g
@@ -26,19 +25,19 @@ function initial_condition_gravity_waves(x, t,
     delta = g / (R * T0)
     DeltaT = 0.001
     Tb = DeltaT * sinpi(x[2] / H) * exp(-(x[1] - x_c)^2 / a^2)
-    ps = 100_000.0  # reference pressure
+    ps = 100_000  # reference pressure
     rhos = ps / (T0 * R)
     rho_b = rhos * (-Tb / T0)
     p = ps * exp(-delta * x[2])
     rho = rhos * exp(-delta * x[2]) + rho_b * exp(-0.5 * delta * x[2])
-    v1 = 20.0
-    v2 = 0.0
+    v1 = 20
+    v2 = 0
 
-    return TrixiAtmo.prim2cons(SVector(rho, v1, v2, p, g * x[2]), equations)
+    return prim2cons(SVector(rho, v1, v2, p, g * x[2]), equations)
 end
 
 equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D()
-cs = sqrt(1004.0 / 717.0 * 287.0 * 250.0)
+cs = sqrt(1004 / 717 * 287 * 250)
 surface_flux = (FluxLMARS(cs), flux_zero)
 volume_flux = (flux_tec, flux_nonconservative_waruzewski_etal)
 polydeg = 3

@@ -60,9 +60,8 @@ end
 # Convert contravariant velocity components to the global coordinate system
 @inline function contravariant2global(u, aux_vars,
                                       equations::CovariantLinearAdvectionEquation2D)
-    v1, v2,
-    v3 = basis_covariant(aux_vars, equations) *
-         velocity_contravariant(u, equations)
+    v1, v2, v3 = basis_covariant(aux_vars, equations) *
+                 velocity_contravariant(u, equations)
     return SVector(u[1], v1, v2, v3)
 end
 
