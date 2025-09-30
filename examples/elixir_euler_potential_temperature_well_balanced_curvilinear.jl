@@ -44,13 +44,12 @@ volume_flux = (flux_tec, flux_nonconservative_artiano_etal)
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 solver = DGSEM(basis, surface_flux, volume_integral)
 
-trees_per_dimension = (16, 16)
-
 function mapping(xi, eta)
     x = xi + 0.1 * sinpi(xi) * sinpi(eta)
     y = eta + 0.1 * sinpi(xi) * sinpi(eta)
     return SVector(1000 * 0.5 * (1 + x), 1000 * 0.5 * (1 + y))
 end
+trees_per_dimension = (16, 16)
 
 mesh = P4estMesh(trees_per_dimension, polydeg = polydeg,
                  mapping = mapping, periodicity = (false, false),

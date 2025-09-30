@@ -21,7 +21,7 @@ function basic_state_baroclinic_instability_longitudinal_velocity(lon, lat, z)
     half_width_parameter = 2           # b
     gravitational_acceleration = 9.81f0     # g
     k = 3           # k
-    surface_pressure = 1f5         # p₀
+    surface_pressure = 1.0f5         # p₀
     gas_constant = 287         # R
     surface_equatorial_temperature = 310       # T₀ᴱ
     surface_polar_temperature = 240       # T₀ᴾ
