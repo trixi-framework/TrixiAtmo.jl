@@ -99,23 +99,22 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_euler_potential_temperature_baroclinic_instability.jl"),
                         l2=[
-                            0.0005404245426113421,
-                            0.015509371143869317,
-                            0.013816905746609232,
-                            0.012939518719716249,
-                            0.14000486340656704,
-                            99.03487440350898
+                            0.000540424089786219,
+                            0.015509349290483546,
+                            0.013816889458104184,
+                            0.012939501902053414,
+                            0.1400048323583557,
+                            99.03486863938933
                         ],
                         linf=[
-                            0.004654698681065383,
-                            1.1039458955708916,
-                            0.6663688379974648,
-                            1.1276250456883474,
-                            1.0016824478938702,
-                            333.2487377524376
+                            0.004654672800263215,
+                            1.1039457129713743,
+                            0.6663687877166378,
+                            1.1276246706650594,
+                            1.0016884572416416,
+                            333.2487183585763
                         ],
-                        tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
-                        atol=1e-8)
+                        tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
@@ -125,24 +124,23 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_euler_potential_temperature_baroclinic_instability.jl"),
                         l2=[
-                            0.000519741455690746,
-                            0.014184189929540828,
-                            0.012316379980902624,
-                            0.012923970023660705,
-                            0.1399502141128447,
-                            99.03487440350898
+                            0.0005197412073779303,
+                            0.014184223075386094,
+                            0.01231640074505267,
+                            0.012923945625897474,
+                            0.1399501917281505,
+                            99.03486863938933
                         ],
                         linf=[
-                            0.004231419846612905,
-                            1.121970222294438,
-                            0.6394647685042995,
-                            1.1308561535855681,
-                            1.0018884733360096,
-                            333.2487377524376
+                            0.004231445262675715,
+                            1.12197009874999,
+                            0.639464719150829,
+                            1.1308556842535742,
+                            1.0018956805357107,
+                            333.2487183585763
                         ],
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
-                        volume_flux=(flux_ec, flux_nonconservative_waruzewski_etal),
-                        atol=1e-7)
+                        volume_flux=(flux_ec, flux_nonconservative_waruzewski_etal))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
@@ -152,26 +150,24 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_euler_potential_temperature_baroclinic_instability.jl"),
                         l2=[
-                            0.0005238486571836824,
-                            0.01465876275773499,
-                            0.01285805057874861,
-                            0.012928210201295576,
-                            0.13996697181095472,
-                            99.03487440350898
+                            0.0005238483791325817,
+                            0.014658767813775264,
+                            0.012858058446996147,
+                            0.012928211199993971,
+                            0.13996695188603392,
+                            99.03486863938933
                         ],
                         linf=[
-                            0.004242569835307464,
-                            1.1140992841185355,
-                            0.6517475741773895,
-                            1.1292859886073936,
-                            1.0019846469907634,
-                            333.2487377524376
+                            0.004242592531761069,
+                            1.1140991059698901,
+                            0.6517475169161369,
+                            1.129285594724997,
+                            1.0019910798637852,
+                            333.2487183585763
                         ],
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
                         volume_flux=(flux_etec, flux_nonconservative_artiano_etal))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
-end
-
 end
