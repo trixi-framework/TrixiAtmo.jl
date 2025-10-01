@@ -71,7 +71,6 @@ Trixi.varnames(::typeof(cons2cons), ::ShallowWaterEquations3D) = ("h", "h_v1", "
 # visualization and setting initial conditions
 Trixi.varnames(::typeof(cons2prim), ::ShallowWaterEquations3D) = ("H", "v1", "v2", "v3",
                                                                   "b")
-
 # Calculate 1D flux for a single point
 # Note, the bottom topography has no flux
 @inline function Trixi.flux(u, orientation::Integer, equations::ShallowWaterEquations3D)

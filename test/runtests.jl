@@ -50,6 +50,18 @@ const TRIXI_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
         include("test_2d_shallow_water_covariant.jl")
     end
 
+    @time if TRIXI_TEST == "all" || TRIXI_TEST == "euler_potential_temperature_1d"
+        include("test_1d_potential_temperature.jl")
+    end
+
+    @time if TRIXI_TEST == "all" || TRIXI_TEST == "euler_potential_temperature_2d"
+        include("test_2d_potential_temperature.jl")
+    end
+
+    @time if TRIXI_TEST == "all" || TRIXI_TEST == "euler_potential_temperature_3d"
+        include("test_3d_potential_temperature.jl")
+    end
+
     @time if TRIXI_TEST == "upstream"
         include("test_trixi_consistency.jl")
     end

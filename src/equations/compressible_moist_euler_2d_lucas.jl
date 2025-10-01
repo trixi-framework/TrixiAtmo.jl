@@ -1,12 +1,5 @@
 # Implemented by Lucas Gemein
 # https://github.com/NichtLucas/Trixi.jl/tree/thesis_gemein_2022
-
-using Trixi
-using Trixi: ln_mean, inv_ln_mean
-import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
-              cons2prim, cons2entropy, max_abs_speed_naive, max_abs_speeds,
-              entropy, energy_total, flux, FluxLMARS
-
 @muladd begin
 #! format: noindent
 struct CompressibleMoistEulerEquations2D{RealT <: Real} <:
@@ -107,6 +100,7 @@ end
     # compute the primitive variables
     rho_local, v_normal, v_tangent, p_local, qv_local, ql_local = cons2prim(u_local,
                                                                             equations)
+
     qd_local = 1 - qv_local - ql_local
     gamma = (qd_local * c_pd + qv_local * c_pv + ql_local * c_pl) *
             inv(qd_local * c_vd + qv_local * c_vv + ql_local * c_pl)
