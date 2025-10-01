@@ -49,7 +49,7 @@ References:
   [DOI: 10.1002/1097-0363(20010430)35:8<869::AID-FLD116>3.0.CO;2-S](https://doi.org/10.1002/1097-0363(20010430)35:8%3C869::AID-FLD116%3E3.0.CO;2-S)
 """
 struct ShallowWaterEquations3D{RealT <: Real} <:
-       Trixi.AbstractShallowWaterEquations{3, 5}
+       AbstractShallowWaterEquations{3, 5}
     gravity::RealT # gravitational acceleration
     rotation_rate::RealT  # rotation rate around z axis for Coriolis term 
     H0::RealT      # constant "lake-at-rest" total water height
@@ -64,16 +64,16 @@ function ShallowWaterEquations3D(; gravity, rotation_rate = zero(gravity),
     ShallowWaterEquations3D(gravity, rotation_rate, H0)
 end
 
-Trixi.have_nonconservative_terms(::ShallowWaterEquations3D) = True()
-Trixi.varnames(::typeof(cons2cons), ::ShallowWaterEquations3D) = ("h", "h_v1", "h_v2",
-                                                                  "h_v3", "b")
+have_nonconservative_terms(::ShallowWaterEquations3D) = True()
+varnames(::typeof(cons2cons), ::ShallowWaterEquations3D) = ("h", "h_v1", "h_v2",
+                                                            "h_v3", "b")
 # Note, we use the total water height, H = h + b, as the first primitive variable for easier
 # visualization and setting initial conditions
-Trixi.varnames(::typeof(cons2prim), ::ShallowWaterEquations3D) = ("H", "v1", "v2", "v3",
-                                                                  "b")
+varnames(::typeof(cons2prim), ::ShallowWaterEquations3D) = ("H", "v1", "v2", "v3",
+                                                            "b")
 # Calculate 1D flux for a single point
 # Note, the bottom topography has no flux
-@inline function Trixi.flux(u, orientation::Integer, equations::ShallowWaterEquations3D)
+@inline function flux(u, orientation::Integer, equations::ShallowWaterEquations3D)
     h, h_v1, h_v2, h_v3, _ = u
     v1, v2, v3 = velocity(u, equations)
 
@@ -99,8 +99,8 @@ end
 
 # Calculate 1D flux for a single point in the normal direction
 # Note, this directional vector is not normalized and the bottom topography has no flux
-@inline function Trixi.flux(u, normal_direction::AbstractVector,
-                            equations::ShallowWaterEquations3D)
+@inline function flux(u, normal_direction::AbstractVector,
+                      equations::ShallowWaterEquations3D)
     h = waterheight(u, equations)
     v1, v2, v3 = velocity(u, equations)
 
@@ -132,9 +132,9 @@ Further details are available in Theorem 1 of the paper:
   shallow water equations on unstructured curvilinear meshes with discontinuous bathymetry
   [DOI: 10.1016/j.jcp.2017.03.036](https://doi.org/10.1016/j.jcp.2017.03.036)
 """
-@inline function Trixi.flux_wintermeyer_etal(u_ll, u_rr,
-                                             normal_direction::AbstractVector,
-                                             equations::ShallowWaterEquations3D)
+@inline function flux_wintermeyer_etal(u_ll, u_rr,
+                                       normal_direction::AbstractVector,
+                                       equations::ShallowWaterEquations3D)
     # Unpack left and right state
     h_ll, h_v1_ll, h_v2_ll, h_v3_ll, _ = u_ll
     h_rr, h_v1_rr, h_v2_rr, h_v3_rr, _ = u_rr
@@ -176,8 +176,8 @@ Details are available in Eq. (4.1) in the paper:
   Well-balanced and energy stable schemes for the shallow water equations with discontinuous topography
   [DOI: 10.1016/j.jcp.2011.03.042](https://doi.org/10.1016/j.jcp.2011.03.042)
 """
-@inline function Trixi.flux_fjordholm_etal(u_ll, u_rr, normal_direction::AbstractVector,
-                                           equations::ShallowWaterEquations3D)
+@inline function flux_fjordholm_etal(u_ll, u_rr, normal_direction::AbstractVector,
+                                     equations::ShallowWaterEquations3D)
     # Unpack left and right state
     h_ll = waterheight(u_ll, equations)
     v1_ll, v2_ll, v3_ll = velocity(u_ll, equations)
@@ -230,9 +230,9 @@ Further details are available in the papers:
   curvilinear meshes
   [DOI: 10.48550/arXiv.2306.12699](https://doi.org/10.48550/arXiv.2306.12699)
 """
-@inline function Trixi.flux_nonconservative_wintermeyer_etal(u_ll, u_rr,
-                                                             normal_direction::AbstractVector,
-                                                             equations::ShallowWaterEquations3D)
+@inline function flux_nonconservative_wintermeyer_etal(u_ll, u_rr,
+                                                       normal_direction::AbstractVector,
+                                                       equations::ShallowWaterEquations3D)
     # Pull the necessary left and right state information
     h_ll = waterheight(u_ll, equations)
     b_jump = u_rr[5] - u_ll[5]
@@ -268,9 +268,9 @@ and for curvilinear 2D case in the paper:
   shallow water equations on unstructured curvilinear meshes with discontinuous bathymetry
   [DOI: 10.1016/j.jcp.2017.03.036](https://doi.org/10.1016/j.jcp.2017.03.036)
 """
-@inline function Trixi.flux_nonconservative_fjordholm_etal(u_ll, u_rr,
-                                                           normal_direction::AbstractVector,
-                                                           equations::ShallowWaterEquations3D)
+@inline function flux_nonconservative_fjordholm_etal(u_ll, u_rr,
+                                                     normal_direction::AbstractVector,
+                                                     equations::ShallowWaterEquations3D)
     # Pull the necessary left and right state information
     h_ll, _, _, _, b_ll = u_ll
     h_rr, _, _, _, b_rr = u_rr
@@ -385,8 +385,8 @@ function clean_solution_lagrange_multiplier!(u, equations::ShallowWaterEquations
     u[4] -= normal_direction[3] * x_dot_div_f
 end
 
-@inline function Trixi.max_abs_speed_naive(u_ll, u_rr, normal_direction::AbstractVector,
-                                           equations::ShallowWaterEquations3D)
+@inline function max_abs_speed_naive(u_ll, u_rr, normal_direction::AbstractVector,
+                                     equations::ShallowWaterEquations3D)
     # Extract and compute the velocities in the normal direction
     v1_ll, v2_ll, v3_ll = velocity(u_ll, equations)
     v1_rr, v2_rr, v3_rr = velocity(u_rr, equations)
@@ -406,8 +406,8 @@ end
     return max(abs(v_ll), abs(v_rr)) + max(c_ll, c_rr) * norm(normal_direction)
 end
 
-@inline function Trixi.max_abs_speed(u_ll, u_rr, normal_direction::AbstractVector,
-                                     equations::ShallowWaterEquations3D)
+@inline function max_abs_speed(u_ll, u_rr, normal_direction::AbstractVector,
+                               equations::ShallowWaterEquations3D)
     # Extract and compute the velocities in the normal direction
     v1_ll, v2_ll, v3_ll = velocity(u_ll, equations)
     v1_rr, v2_rr, v3_rr = velocity(u_rr, equations)
@@ -465,7 +465,7 @@ end
     return SVector(diss1, diss2, diss3, diss4, zero(eltype(u_ll)))
 end
 
-@inline function Trixi.max_abs_speeds(u, equations::ShallowWaterEquations3D)
+@inline function max_abs_speeds(u, equations::ShallowWaterEquations3D)
     h = waterheight(u, equations)
     v1, v2, v3 = velocity(u, equations)
 
@@ -474,7 +474,7 @@ end
 end
 
 # Helper function to extract the velocity vector from the conservative variables
-@inline function Trixi.velocity(u, equations::ShallowWaterEquations3D)
+@inline function velocity(u, equations::ShallowWaterEquations3D)
     h, h_v1, h_v2, h_v3, _ = u
 
     v1 = h_v1 / h
@@ -484,7 +484,7 @@ end
 end
 
 # Convert conservative variables to primitive
-@inline function Trixi.cons2prim(u, equations::ShallowWaterEquations3D)
+@inline function cons2prim(u, equations::ShallowWaterEquations3D)
     h, _, _, _, b = u
 
     H = h + b
@@ -495,7 +495,7 @@ end
 # Convert conservative variables to entropy
 # Note, only the first three are the entropy variables, the fourth entry still
 # just carries the bottom topography values for convenience
-@inline function Trixi.cons2entropy(u, equations::ShallowWaterEquations3D)
+@inline function cons2entropy(u, equations::ShallowWaterEquations3D)
     h, h_v1, h_v2, h_v3, b = u
 
     v1, v2, v3 = velocity(u, equations)
@@ -509,7 +509,7 @@ end
 end
 
 # Convert entropy variables to conservative
-@inline function Trixi.entropy2cons(w, equations::ShallowWaterEquations3D)
+@inline function entropy2cons(w, equations::ShallowWaterEquations3D)
     w1, w2, w3, w4, b = w
 
     h = (w1 + 0.5f0 * (w2^2 + w3^2 + w4^2)) / equations.gravity - b
@@ -520,7 +520,7 @@ end
 end
 
 # Convert primitive to conservative variables
-@inline function Trixi.prim2cons(prim, equations::ShallowWaterEquations3D)
+@inline function prim2cons(prim, equations::ShallowWaterEquations3D)
     H, v1, v2, v3, b = prim
 
     h = H - b
@@ -530,23 +530,23 @@ end
     return SVector(h, h_v1, h_v2, h_v3, b)
 end
 
-@inline function Trixi.waterheight(u, equations::ShallowWaterEquations3D)
+@inline function waterheight(u, equations::ShallowWaterEquations3D)
     return u[1]
 end
 
-@inline function Trixi.pressure(u, equations::ShallowWaterEquations3D)
+@inline function pressure(u, equations::ShallowWaterEquations3D)
     h = waterheight(u, equations)
     p = 0.5f0 * equations.gravity * h^2
     return p
 end
 
 # Entropy function for the shallow water equations is the total energy
-@inline function Trixi.entropy(cons, equations::ShallowWaterEquations3D)
+@inline function entropy(cons, equations::ShallowWaterEquations3D)
     energy_total(cons, equations)
 end
 
 # Calculate total energy for a conservative state `cons`
-@inline function Trixi.energy_total(cons, equations::ShallowWaterEquations3D)
+@inline function energy_total(cons, equations::ShallowWaterEquations3D)
     h, h_v1, h_v2, h_v3, b = cons
 
     e = (h_v1^2 + h_v2^2 + h_v3^2) / (2 * h) + 0.5f0 * equations.gravity * h^2 +
@@ -555,13 +555,13 @@ end
 end
 
 # Calculate kinetic energy for a conservative state `cons`
-@inline function Trixi.energy_kinetic(u, equations::ShallowWaterEquations3D)
+@inline function energy_kinetic(u, equations::ShallowWaterEquations3D)
     h, h_v1, h_v2, h_v3, _ = u
     return (h_v1^2 + h_v2^2 + h_v3^2) / (2 * h)
 end
 
 # Calculate potential energy for a conservative state `cons`
-@inline function Trixi.energy_internal(cons, equations::ShallowWaterEquations3D)
+@inline function energy_internal(cons, equations::ShallowWaterEquations3D)
     return energy_total(cons, equations) - energy_kinetic(cons, equations)
 end
 
