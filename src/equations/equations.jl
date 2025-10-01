@@ -1,7 +1,8 @@
 @muladd begin
 #! format: noindent
 
-using Trixi: AbstractEquations, AbstractCompressibleEulerEquations
+using Trixi: AbstractEquations, AbstractCompressibleEulerEquations,
+             AbstractShallowWaterEquations
 
 @doc raw"""
     AbstractCovariantEquations{NDIMS, 
