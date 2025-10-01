@@ -171,3 +171,5 @@ end
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
+
+end
