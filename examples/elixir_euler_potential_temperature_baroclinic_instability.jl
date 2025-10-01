@@ -18,16 +18,16 @@ using LinearAlgebra: norm
 function basic_state_baroclinic_instability_longitudinal_velocity(lon, lat, z)
     # Parameters from Table 1 in the paper
     # Corresponding names in the paper are commented
-    radius_earth = 6.371229f6  # a
+    radius_earth = 6.371229e6  # a
     half_width_parameter = 2           # b
-    gravitational_acceleration = 9.81f0     # g
+    gravitational_acceleration = 9.81     # g
     k = 3           # k
     surface_pressure = 1.0f5         # p₀
     gas_constant = 287         # R
     surface_equatorial_temperature = 310       # T₀ᴱ
     surface_polar_temperature = 240       # T₀ᴾ
-    lapse_rate = 0.005f0       # Γ
-    angular_velocity = 7.29212f-5  # Ω
+    lapse_rate = 0.005       # Γ
+    angular_velocity = 7.29212e-5  # Ω
 
     # Distance to the center of the Earth
     r = z + radius_earth
@@ -138,7 +138,7 @@ end
 function initial_condition_baroclinic_instability(x, t,
                                                   equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     lon, lat, r = cartesian_to_sphere(x)
-    radius_earth = 6.371229f6
+    radius_earth = 6.371229e6
     # Make sure that the r is not smaller than radius_earth
     z = max(r - radius_earth, 0.0)
 
@@ -155,8 +155,8 @@ function initial_condition_baroclinic_instability(x, t,
     v1 = -sin(lon) * u - sin(lat) * cos(lon) * v
     v2 = cos(lon) * u - sin(lat) * sin(lon) * v
     v3 = cos(lat) * v
-    radius_earth = 6.371229f6  # a
-    gravitational_acceleration = 9.81f0    # g
+    radius_earth = 6.371229e6  # a
+    gravitational_acceleration = 9.81    # g
 
     r = norm(x)
     # Make sure that r is not smaller than radius_earth
@@ -174,8 +174,8 @@ end
 
 @inline function source_terms_baroclinic_instability(u, x, t,
                                                      equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
-    radius_earth = 6.371229f6  # a
-    angular_velocity = 7.29212f-5  # Ω
+    radius_earth = 6.371229e6  # a
+    angular_velocity = 7.29212e-5  # Ω
 
     r = norm(x)
     # Make sure that r is not smaller than radius_earth
@@ -207,7 +207,7 @@ volume_flux = (flux_tec, flux_nonconservative_souza_etal)
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
 trees_per_cube_face = (8, 4)
-mesh = P4estMeshCubedSphere(trees_per_cube_face..., 6.371229f6, 30000,
+mesh = P4estMeshCubedSphere(trees_per_cube_face..., 6.371229e6, 30000,
                             polydeg = polydeg, initial_refinement_level = 0)
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
