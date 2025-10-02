@@ -264,7 +264,7 @@ end
 
 @inline function pressure(cons,
                           equations::CompressibleEulerPotentialTemperatureEquations3D)
-    p = equations.K * cons[5]^equations.gamma
+    p = equations.K * exp(equations.gamma * log(cons[5]))
     return p
 end
 end # @muladd
