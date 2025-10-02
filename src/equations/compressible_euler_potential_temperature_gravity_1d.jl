@@ -65,6 +65,19 @@ have_nonconservative_terms(::CompressibleEulerPotentialTemperatureEquationsWithG
     return flux, noncons_flux
 end
 
+@inline function flux(u, orientation::Integer,
+                      equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
+    rho, rho_v1, rho_theta = u
+    v1 = rho_v1 / rho
+    p = equations.K * exp(log(rho_theta^equations.gamma))
+    p = pressure(u, equations)
+    f1 = rho_v1
+    f2 = rho_v1 * v1 + p
+    f3 = rho_theta * v1
+
+    return SVector(f1, f2, f3, 0)
+end
+
 """
    flux_nonconservative_waruzewski_etal(u_ll, u_rr, orientation::Integer, equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
 
@@ -330,9 +343,9 @@ end
     λ_max = max(v_mag_ll, v_mag_rr) + max(c_ll, c_rr)
 end
 
-@inline function Trixi.pressure(cons,
-                                equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
-    _, _, p = cons2prim(cons, equations)
+@inline function pressure(cons,
+                          equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
+    p = equations.K * exp(equations.gamma * log(cons[3]))
     return p
 end
 end # @muladd

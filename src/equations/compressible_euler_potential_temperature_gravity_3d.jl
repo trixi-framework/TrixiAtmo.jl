@@ -70,6 +70,25 @@ have_nonconservative_terms(::CompressibleEulerPotentialTemperatureEquationsWithG
     return flux, noncons_flux
 end
 
+@inline function flux(u, normal_direction::AbstractVector,
+                      equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+    rho, rho_v1, rho_v2, rho_v3, rho_theta = u
+    v1 = rho_v1 / rho
+    v2 = rho_v2 / rho
+    v3 = rho_v3 / rho
+    v_normal = v1 * normal_direction[1] + v2 * normal_direction[2] +
+               v3 * normal_direction[3]
+    rho_v_normal = rho * v_normal
+    p = pressure(u, equations)
+
+    f1 = rho_v_normal
+    f2 = rho_v_normal * v1 + p * normal_direction[1]
+    f3 = rho_v_normal * v2 + p * normal_direction[2]
+    f4 = rho_v_normal * v3 + p * normal_direction[3]
+    f5 = rho_theta * v_normal
+    return SVector(f1, f2, f3, f4, f5, zero(eltype(u)))
+end
+
 """
 	flux_nonconservative_waruzewski_etal(u_ll, u_rr,
 										 normal_direction::AbstractVector,
@@ -345,5 +364,11 @@ end
     s = log(p) - equations.gamma * log(cons[1])
     S = -s * cons[1] / (equations.gamma - 1)
     return S
+end
+
+@inline function pressure(cons,
+                          equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+    p = equations.K * cons[5]^equations.gamma
+    return p
 end
 end # @muladd

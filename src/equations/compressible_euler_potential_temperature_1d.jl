@@ -49,6 +49,34 @@ varnames(::typeof(cons2prim),
     return SVector(f1, f2, f3)
 end
 
+# Low Mach number approximate Riemann solver (LMARS) from
+# X. Chen, N. Andronova, B. Van Leer, J. E. Penner, J. P. Boyd, C. Jablonowski, S.
+# Lin, A Control-Volume Model of the Compressible Euler Equations with a Vertical Lagrangian
+# Coordinate Monthly Weather Review Vol. 141.7, pages 2526–2544, 2013,
+# https://journals.ametsoc.org/view/journals/mwre/141/7/mwr-d-12-00129.1.xml.
+
+@inline function (flux_lmars::FluxLMARS)(u_ll, u_rr, orientation::Integer,
+                                         equations::CompressibleEulerPotentialTemperatureEquations1D)
+    a = flux_lmars.speed_of_sound
+    rho_ll, v1_ll, p_ll = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, p_rr = cons2prim(u_rr, equations)
+
+    rho = 0.5f0 * (rho_ll + rho_rr)
+
+    p_interface = 0.5f0 * (p_ll + p_rr) - 0.5f0 * a * rho * (v1_rr - v1_ll)
+    v_interface = 0.5f0 * (v1_ll + v1_rr) - 1 / (2 * a * rho) * (p_rr - p_ll)
+
+    if (v_interface > 0)
+        f1, f2, f3 = u_ll * v_interface
+    else
+        f1, f2, f3 = u_rr * v_interface
+    end
+
+    return SVector(f1,
+                   f2 + p_interface,
+                   f3)
+end
+
 """
 	flux_tec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperature1D)
 
