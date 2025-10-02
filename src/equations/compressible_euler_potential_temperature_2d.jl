@@ -37,6 +37,7 @@ varnames(::typeof(cons2prim),
                                                        "v1",
                                                        "v2",
                                                        "p1")
+
 # Calculate 1D flux for a single point in the normal direction
 # Note, this directional vector is not normalized
 @inline function flux(u, normal_direction::AbstractVector,
