@@ -227,7 +227,8 @@ end
     end
 
     # check consistency between 1D and 3D EC fluxes
-    u_3d = SVector(u[1], u[2], 0.0, 0.0, u[5])
+    u_3d = SVector(u[1], -u[2], 0.0, 0.0, u[5])
+    u_1d = SVector(u[1], -u[2], u[5])
     normal_3d = SVector(normal_1d[1], 0.0, 0.0)
     equations_3d = equations
     flux_3d = flux_lmars(u_3d, u_3d, normal_3d, equations_3d)
