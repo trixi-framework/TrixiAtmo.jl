@@ -38,7 +38,8 @@ varnames(::typeof(cons2prim),
                                                        "v2",
                                                        "v3",
                                                        "p1")
-
+# Calculate 1D flux for a single point in the normal direction
+# Note, this directional vector is not normalized
 @inline function flux(u, normal_direction::AbstractVector,
                       equations::CompressibleEulerPotentialTemperatureEquations3D)
     rho, rho_v1, rho_v2, rho_v3, rho_theta = u

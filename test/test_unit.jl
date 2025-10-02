@@ -1,6 +1,7 @@
 module TestUnit
 
 using TrixiAtmo
+using Trixi
 
 include("test_trixiatmo.jl")
 
@@ -234,7 +235,7 @@ end
     @test flux_1d ≈ flux_3d[[1, 2, 5]]
 end
 
-@timed_testset "Consistency check for EC flux with Potential Temperature with gravity: CEPTE" begin
+@timed_testset "Consistency check for EC flux with Potential Temperature with gravity: CEPTEWG" begin
     # Set up equations and dummy conservative variables state
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D()
     u = SVector(1.1, -0.5, 2.34, 330.0, 1500)
@@ -292,7 +293,7 @@ end
     @test flux_1d ≈ flux_3d[[1, 2, 5, 6]]
 end
 
-@timed_testset "Consistency check for TEC flux with Potential Temperature with gravity: CEPTE" begin
+@timed_testset "Consistency check for TEC flux with Potential Temperature with gravity: CEPTEWG" begin
     # Set up equations and dummy conservative variables state
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D()
     u = SVector(1.1, -0.5, 2.34, 330.0, 1500)
@@ -350,7 +351,7 @@ end
     @test flux_1d ≈ flux_3d[[1, 2, 5, 6]]
 end
 
-@timed_testset "Consistency check for ETEC flux with Potential Temperature with gravity: CEPTE" begin
+@timed_testset "Consistency check for ETEC flux with Potential Temperature with gravity: CEPTEWG" begin
     # Set up equations and dummy conservative variables state
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D()
     u = SVector(1.1, -0.5, 2.34, 330.0, 1500)
@@ -408,7 +409,7 @@ end
     @test flux_1d ≈ flux_3d[[1, 2, 5, 6]]
 end
 
-@timed_testset "Consistency check for LMARS flux with Potential Temperature with gravity: CEPTE" begin
+@timed_testset "Consistency check for LMARS flux with Potential Temperature with gravity: CEPTEWG" begin
     # Set up equations and dummy conservative variables state
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D()
     flux_lmars = FluxLMARS(340)
@@ -459,4 +460,37 @@ end
     flux_1d = normal_1d[1] * flux_lmars(u_1d, u_1d, 1, equations_1d)
     @test flux_1d ≈ flux_3d[[1, 2, 5, 6]]
 end
+
+@timed_testset "Consistency check for 3D shallow water fluxes: SWE" begin
+    # Set up equations and dummy conservative variables state
+    equations = ShallowWaterEquations3D(gravity = 1.0)
+    u = SVector(1.1, -0.5, 2.34, -3.5, 120.0)
+
+    normal_directions = [SVector(1.0, 0.0, 0.0),
+        SVector(0.0, 1.0, 0.0),
+        SVector(0.0, 0.0, 1.0),
+        SVector(0.5, -0.5, 0.2),
+        SVector(-1.2, 0.3, 1.4)]
+
+    for normal_direction in normal_directions
+        @test flux_wintermeyer_etal(u, u, normal_direction, equations) ≈
+              flux(u, normal_direction, equations)
+    end
+
+    for normal_direction in normal_directions
+        @test flux_fjordholm_etal(u, u, normal_direction, equations) ≈
+              flux(u, normal_direction, equations)
+    end
+end
+
+@timed_testset "Consistency check for split covariant shallow water fluxes: SWE" begin
+    # Set up equations and dummy conservative variables state
+    equations = SplitCovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION, EARTH_ROTATION_RATE)
+    u = SVector(1.1, -0.5, 2.34)
+    aux_vars = SVector{26}(ones(26))
+    orientation = 1
+        @test flux_ec(u, u, aux_vars, aux_vars, orientation, equations) ≈
+              flux(u, aux_vars, orientation, equations)
+end
+
 end

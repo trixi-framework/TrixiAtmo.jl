@@ -36,6 +36,7 @@ end
 varnames(::typeof(cons2prim),
 ::CompressibleEulerPotentialTemperatureEquations1D) = ("rho", "v1", "p1")
 
+# Calculate 1D flux for a single point
 @inline function flux(u, orientation::Integer,
                       equations::CompressibleEulerPotentialTemperatureEquations1D)
     rho, rho_v1, rho_theta = u

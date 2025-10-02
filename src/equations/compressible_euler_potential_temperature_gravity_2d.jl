@@ -101,6 +101,8 @@ end
     return flux, noncons_flux
 end
 
+# Calculate 1D flux for a single point in the normal direction
+# Note, this directional vector is not normalized
 @inline function flux(u, normal_direction::AbstractVector,
                       equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     rho, rho_v1, rho_v2, rho_theta = u

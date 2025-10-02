@@ -65,11 +65,11 @@ have_nonconservative_terms(::CompressibleEulerPotentialTemperatureEquationsWithG
     return flux, noncons_flux
 end
 
+# Calculate 1D flux for a single point
 @inline function flux(u, orientation::Integer,
                       equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
     rho, rho_v1, rho_theta = u
     v1 = rho_v1 / rho
-    p = equations.K * exp(log(rho_theta^equations.gamma))
     p = pressure(u, equations)
     f1 = rho_v1
     f2 = rho_v1 * v1 + p
