@@ -39,6 +39,25 @@ varnames(::typeof(cons2prim),
                                                        "v3",
                                                        "p1")
 
+@inline function flux(u, normal_direction::AbstractVector,
+                      equations::CompressibleEulerPotentialTemperatureEquations3D)
+    rho, rho_v1, rho_v2, rho_v3, rho_theta = u
+    v1 = rho_v1 / rho
+    v2 = rho_v2 / rho
+    v3 = rho_v3 / rho
+    v_normal = v1 * normal_direction[1] + v2 * normal_direction[2] +
+               v3 * normal_direction[3]
+    rho_v_normal = rho * v_normal
+    p = pressure(u, equations)
+
+    f1 = rho_v_normal
+    f2 = rho_v_normal * v1 + p * normal_direction[1]
+    f3 = rho_v_normal * v2 + p * normal_direction[2]
+    f4 = rho_v_normal * v3 + p * normal_direction[3]
+    f5 = rho_theta * v_normal
+    return SVector(f1, f2, f3, f4, f5)
+end
+
 # Low Mach number approximate Riemann solver (LMARS) from
 # X. Chen, N. Andronova, B. Van Leer, J. E. Penner, J. P. Boyd, C. Jablonowski, S.
 # Lin, A Control-Volume Model of the Compressible Euler Equations with a Vertical Lagrangian
@@ -239,5 +258,11 @@ end
     s = log(p) - equations.gamma * log(cons[1])
     S = -s * cons[1] / (equations.gamma - 1)
     return S
+end
+
+@inline function pressure(cons,
+                          equations::CompressibleEulerPotentialTemperatureEquations3D)
+    p = equations.K * cons[5]^equations.gamma
+    return p
 end
 end # @muladd

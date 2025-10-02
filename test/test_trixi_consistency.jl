@@ -56,4 +56,5 @@ isdir(outdir) && rm(outdir, recursive = true)
         @test isapprox(error_trixi, error_atmo, rtol = 1.1e-10)
     end
 end
+
 end

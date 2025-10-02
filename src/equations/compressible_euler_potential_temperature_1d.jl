@@ -36,6 +36,19 @@ end
 varnames(::typeof(cons2prim),
 ::CompressibleEulerPotentialTemperatureEquations1D) = ("rho", "v1", "p1")
 
+@inline function flux(u, orientation::Integer,
+                      equations::CompressibleEulerPotentialTemperatureEquations1D)
+    rho, rho_v1, rho_theta = u
+    v1 = rho_v1 / rho
+    p = equations.K * exp(log(rho_theta^equations.gamma))
+    p = pressure(u, equations)
+    f1 = rho_v1
+    f2 = rho_v1 * v1 + p
+    f3 = rho_theta * v1
+
+    return SVector(f1, f2, f3)
+end
+
 """
 	flux_tec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperature1D)
 
@@ -192,7 +205,7 @@ end
 
 @inline function pressure(cons,
                           equations::CompressibleEulerPotentialTemperatureEquations1D)
-    _, _, p = cons2prim(cons, equations)
+    p = equations.K * exp(equations.gamma * log(cons[3]))
     return p
 end
 end # @muladd
