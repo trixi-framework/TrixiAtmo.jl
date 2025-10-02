@@ -65,12 +65,10 @@ function ShallowWaterEquations3D(; gravity, rotation_rate = zero(gravity),
 end
 
 have_nonconservative_terms(::ShallowWaterEquations3D) = True()
-varnames(::typeof(cons2cons), ::ShallowWaterEquations3D) = ("h", "h_v1", "h_v2",
-                                                            "h_v3", "b")
+varnames(::typeof(cons2cons), ::ShallowWaterEquations3D) = ("h", "h_v1", "h_v2", "h_v3", "b")
 # Note, we use the total water height, H = h + b, as the first primitive variable for easier
 # visualization and setting initial conditions
-varnames(::typeof(cons2prim), ::ShallowWaterEquations3D) = ("H", "v1", "v2", "v3",
-                                                            "b")
+varnames(::typeof(cons2prim), ::ShallowWaterEquations3D) = ("H", "v1", "v2", "v3", "b")
 # Calculate 1D flux for a single point
 # Note, the bottom topography has no flux
 @inline function flux(u, orientation::Integer, equations::ShallowWaterEquations3D)
