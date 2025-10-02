@@ -486,12 +486,13 @@ end
 
 @timed_testset "Consistency check for split covariant shallow water fluxes: SWE" begin
     # Set up equations and dummy conservative variables state
-    equations = SplitCovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION, EARTH_ROTATION_RATE)
+    equations = SplitCovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION,
+                                                      EARTH_ROTATION_RATE)
     u = SVector(1.1, -0.5, 2.34)
     aux_vars = SVector{26}(ones(26))
     orientation = 1
-        @test flux_ec(u, u, aux_vars, aux_vars, orientation, equations) ≈
-              flux(u, aux_vars, orientation, equations)
+    @test flux_ec(u, u, aux_vars, aux_vars, orientation, equations) ≈
+          flux(u, aux_vars, orientation, equations)
 end
 
 end
