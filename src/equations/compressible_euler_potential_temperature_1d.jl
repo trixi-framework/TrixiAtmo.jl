@@ -13,10 +13,10 @@ struct CompressibleEulerPotentialTemperatureEquations1D{RealT <: Real} <:
     stolarsky_factor::RealT # = (gamma - 1) / gamma; used in the stolarsky mean
 end
 
-function CompressibleEulerPotentialTemperatureEquations1D(; RealT = Float64)
-    p_0 = 100_000
-    c_p = 1004
-    c_v = 717
+function CompressibleEulerPotentialTemperatureEquations1D(RealT = Float64)
+    p_0 = RealT(100_000)
+    c_p = RealT(1004)
+    c_v = RealT(717)
     R = c_p - c_v
     gamma = c_p / c_v
     inv_gamma_minus_one = inv(gamma - 1)
