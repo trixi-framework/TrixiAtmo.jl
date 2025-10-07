@@ -11,21 +11,19 @@ struct CompressibleEulerPotentialTemperatureEquations1D{RealT <: Real} <:
     inv_gamma_minus_one::RealT # = inv(gamma - 1); can be used to write slow divisions as fast multiplications
     K::RealT # = p_0 * (R / p_0)^gamma; scaling factor between pressure and weighted potential temperature
     stolarsky_factor::RealT # = (gamma - 1) / gamma; used in the stolarsky mean
-end
-
-function CompressibleEulerPotentialTemperatureEquations1D(RealT = Float64)
-    p_0 = RealT(100_000)
-    c_p = RealT(1004)
-    c_v = RealT(717)
-    R = c_p - c_v
-    gamma = c_p / c_v
-    inv_gamma_minus_one = inv(gamma - 1)
-    K = p_0 * (R / p_0)^gamma
-    stolarsky_factor = (gamma - 1) / gamma
-    return CompressibleEulerPotentialTemperatureEquations1D{RealT}(p_0, c_p, c_v, R,
-                                                                   gamma,
-                                                                   inv_gamma_minus_one,
-                                                                   K, stolarsky_factor)
+    function CompressibleEulerPotentialTemperatureEquations1D(c_p, c_v)
+        c_p, c_v = promote(c_p, c_v)
+        p_0 = 100_000
+        R = c_p - c_v
+        gamma = c_p / c_v
+        inv_gamma_minus_one = inv(gamma - 1)
+        K = p_0 * (R / p_0)^gamma
+        stolarsky_factor = (gamma - 1) / gamma
+        return new{typeof(c_p)}(p_0, c_p, c_v, R,
+                                gamma,
+                                inv_gamma_minus_one,
+                                K, stolarsky_factor)
+    end
 end
 
 function varnames(::typeof(cons2cons),
@@ -208,7 +206,7 @@ end
     # Mathematical entropy
     p = equations.p_0 * (equations.R * cons[3] / equations.p_0)^equations.gamma
 
-    U = (p / (equations.gamma - 1) + 1 / 2 * (cons[2]^2) / (cons[1]))
+    U = (p / (equations.gamma - 1) + 0.5f0 * (cons[2]^2) / (cons[1]))
 
     return U
 end

@@ -32,7 +32,7 @@ function initial_condition_adiabatic(x, t,
     return prim2cons(SVector(rho, v1, p, g * x[1]), equations)
 end
 
-equations = CompressibleEulerPotentialTemperatureEquationsWithGravity1D()
+equations = CompressibleEulerPotentialTemperatureEquationsWithGravity1D(1004, 717, 9.81)
 polydeg = 2
 basis = LobattoLegendreBasis(polydeg)
 cs = 340.0

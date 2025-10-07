@@ -51,7 +51,7 @@ end
     return SVector(zero(eltype(u)), zero(eltype(u)), -g * rho, zero(eltype(u)))
 end
 
-equations = CompressibleEulerPotentialTemperatureEquations2D()
+equations = CompressibleEulerPotentialTemperatureEquations2D(1004, 717)
 
 surface_flux = FluxLMARS(340)
 volume_flux = flux_tec

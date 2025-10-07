@@ -9,7 +9,7 @@ function initial_condition_density_wave(x, t,
     return prim2cons(SVector(rho, v1, p), equations)
 end
 
-equations = CompressibleEulerPotentialTemperatureEquations1D()
+equations = CompressibleEulerPotentialTemperatureEquations1D(1004, 717)
 
 polydeg = 3
 basis = LobattoLegendreBasis(polydeg)

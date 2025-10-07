@@ -193,7 +193,7 @@ end
 
     return SVector(du1, du2, du3, du4, du5, zero(eltype(u)))
 end
-equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D()
+equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(1004, 717, 9.81)
 
 initial_condition = initial_condition_baroclinic_instability
 

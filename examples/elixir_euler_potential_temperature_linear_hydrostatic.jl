@@ -95,7 +95,7 @@ end
     return prim2cons(SVector(rho, v1, v2, p, g * x[2]), equations)
 end
 
-equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D()
+equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(1004, 717, 9.81)
 alpha = 0.035
 xr_B = 60000.0
 linear_hydrostatic_setup = HydrostaticSetup(alpha, xr_B, equations)

@@ -14,7 +14,7 @@ function initial_condition_taylor_green_vortex(x, t,
     return prim2cons(SVector(rho, v1, v2, v3, p), equations)
 end
 
-equations = CompressibleEulerPotentialTemperatureEquations3D()
+equations = CompressibleEulerPotentialTemperatureEquations3D(1004, 717)
 polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
 surface_flux = flux_etec
