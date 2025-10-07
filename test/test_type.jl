@@ -143,6 +143,7 @@ isdir(outdir) && rm(outdir, recursive = true)
                                                        equations)) == RealT
         end
     end
+
     @timed_testset "Compressible Euler Potential Temperature With Gravity 2D" begin
         for RealT in (Float32, Float64)
             equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity2D(RealT(1004),
@@ -257,6 +258,64 @@ isdir(outdir) && rm(outdir, recursive = true)
             @test eltype(@inferred cons2entropy(u, equations)) == RealT
             @test typeof(@inferred pressure(u, equations)) == RealT
             @test typeof(@inferred entropy(cons, equations)) == RealT
+            @test typeof(@inferred energy_kinetic(cons, equations)) == RealT
+            @test typeof(@inferred energy_total(cons, equations)) == RealT
+            @test eltype(@inferred Trixi.max_abs_speeds(u, equations)) == RealT
+            @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, normal_direction,
+                                                       equations)) == RealT
+        end
+    end
+
+    @timed_testset "Compressible Euler Moist Euler 2D" begin
+        for RealT in (Float32, Float64)
+            equations = @inferred CompressibleMoistEulerEquations2D(RealT(2.1), RealT(2),
+                                                                    RealT(2.1), RealT(2),
+                                                                    RealT(1))
+
+            x = SVector(zero(RealT))
+            t = zero(RealT)
+            u = u_ll = u_rr = u_inner = cons = SVector(one(RealT), one(RealT), one(RealT),
+                                                       one(RealT), one(RealT), one(RealT))
+
+            normal_direction = SVector(one(RealT), one(RealT))
+            surface_flux_function = FluxLMARS(RealT(340))
+            directions = [1, 2]
+
+            for direction in directions
+                @test eltype(@inferred boundary_condition_slip_wall(u_inner,
+                                                                    normal_direction,
+                                                                    direction,
+                                                                    x, t,
+                                                                    surface_flux_function,
+                                                                    equations)) ==
+                      RealT
+            end
+            @test eltype(@inferred flux(u, normal_direction, equations)) == RealT
+            @test eltype(@inferred flux_chandrashekar(u_ll, u_rr, normal_direction,
+                                                      equations)) ==
+                  RealT
+
+            @test eltype(@inferred TrixiAtmo.cons2temp(u, equations)) == RealT
+            @test eltype(@inferred TrixiAtmo.cons2drypot(u, equations)) == RealT
+            @test eltype(@inferred TrixiAtmo.cons2moistpot(u, equations)) == RealT
+            @test eltype(@inferred cons2prim(u, equations)) == RealT
+            @test eltype(@inferred TrixiAtmo.moist_pottemp_thermodynamic(u, equations)) ==
+                  RealT
+            @test eltype(@inferred TrixiAtmo.dry_pottemp_thermodynamic(u, equations)) ==
+                  RealT
+            @test eltype(@inferred prim2cons(u, equations)) == RealT
+            #@test eltype(@inferred cons2entropy(u, equations)) == RealT
+            @test eltype(@inferred TrixiAtmo.density(u, equations)) == RealT
+            @test eltype(@inferred TrixiAtmo.density_dry(u, equations)) == RealT
+            @test eltype(@inferred TrixiAtmo.density_vapor(u, equations)) == RealT
+            @test eltype(@inferred TrixiAtmo.temperature(u, equations)) == RealT
+            @test eltype(@inferred TrixiAtmo.density_liquid(u, equations)) == RealT
+            @test eltype(@inferred TrixiAtmo.ratio_liquid(u, equations)) == RealT
+            @test eltype(@inferred TrixiAtmo.ratio_vapor(u, equations)) == RealT
+            @test eltype(@inferred TrixiAtmo.density_pressure(u, equations)) == RealT
+            @test typeof(@inferred pressure(u, equations)) == RealT
+            #@test typeof(@inferred entropy(cons, equations)) == RealT
+            @test eltype(@inferred energy_internal(u, equations)) == RealT
             @test typeof(@inferred energy_kinetic(cons, equations)) == RealT
             @test typeof(@inferred energy_total(cons, equations)) == RealT
             @test eltype(@inferred Trixi.max_abs_speeds(u, equations)) == RealT

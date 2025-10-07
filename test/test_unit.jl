@@ -11,7 +11,7 @@ isdir(outdir) && rm(outdir, recursive = true)
 
 @timed_testset "Consistency check for EC flux with Potential Temperature: CEPTE" begin
     # Set up equations and dummy conservative variables state
-    equations = CompressibleEulerPotentialTemperatureEquations2D()
+    equations = CompressibleEulerPotentialTemperatureEquations2D(1004.0, 717.0)
     u = SVector(1.1, -0.5, 2.34, 330.0)
 
     normal_directions = [SVector(1.0, 0.0),
@@ -29,7 +29,7 @@ isdir(outdir) && rm(outdir, recursive = true)
     u_2d = SVector(u[1], u[2], 0, u[4])
     normal_1d = SVector(-0.3)
     normal_2d = SVector(normal_1d[1], 0.0)
-    equations_1d = CompressibleEulerPotentialTemperatureEquations1D()
+    equations_1d = CompressibleEulerPotentialTemperatureEquations1D(1004.0, 717.0)
     equations_2d = equations
     flux_1d = normal_1d[1] * flux_ec(u_1d, u_1d, 1, equations_1d)
     flux_2d = flux_ec(u_2d, u_2d, normal_2d, equations_2d)
@@ -44,7 +44,7 @@ isdir(outdir) && rm(outdir, recursive = true)
     @test flux_1d ≈ flux_2d[[1, 2, 4]]
 
     # check consistency for 3D EC flux
-    equations = CompressibleEulerPotentialTemperatureEquations3D()
+    equations = CompressibleEulerPotentialTemperatureEquations3D(1004.0, 717.0)
     u = SVector(1.1, -0.5, 2.34, 2.4, 330.0)
 
     normal_directions = [SVector(1.0, 0.0, 0.0),
@@ -69,7 +69,7 @@ end
 
 @timed_testset "Consistency check for TEC flux with Potential Temperature: CEPTE" begin
     # Set up equations and dummy conservative variables state
-    equations = CompressibleEulerPotentialTemperatureEquations2D()
+    equations = CompressibleEulerPotentialTemperatureEquations2D(1004.0, 717.0)
     u = SVector(1.1, -0.5, 2.34, 330.0)
 
     normal_directions = [SVector(1.0, 0.0),
@@ -87,7 +87,7 @@ end
     u_2d = SVector(u[1], u[2], 0, u[4])
     normal_1d = SVector(-0.3)
     normal_2d = SVector(normal_1d[1], 0.0)
-    equations_1d = CompressibleEulerPotentialTemperatureEquations1D()
+    equations_1d = CompressibleEulerPotentialTemperatureEquations1D(1004.0, 717.0)
     equations_2d = equations
     flux_1d = normal_1d[1] * flux_tec(u_1d, u_1d, 1, equations_1d)
     flux_2d = flux_tec(u_2d, u_2d, normal_2d, equations_2d)
@@ -102,7 +102,7 @@ end
     @test flux_1d ≈ flux_2d[[1, 2, 4]]
 
     # check consistency for 3D EC flux
-    equations = CompressibleEulerPotentialTemperatureEquations3D()
+    equations = CompressibleEulerPotentialTemperatureEquations3D(1004.0, 717.0)
     u = SVector(1.1, -0.5, 2.34, 2.4, 330.0)
 
     normal_directions = [SVector(1.0, 0.0, 0.0),
@@ -127,7 +127,7 @@ end
 
 @timed_testset "Consistency check for ETEC flux with Potential Temperature: CEPTE" begin
     # Set up equations and dummy conservative variables state
-    equations = CompressibleEulerPotentialTemperatureEquations2D()
+    equations = CompressibleEulerPotentialTemperatureEquations2D(1004.0, 717.0)
     u = SVector(1.1, -0.5, 2.34, 330.0)
 
     normal_directions = [SVector(1.0, 0.0),
@@ -145,7 +145,7 @@ end
     u_2d = SVector(u[1], u[2], 0, u[4])
     normal_1d = SVector(-0.3)
     normal_2d = SVector(normal_1d[1], 0.0)
-    equations_1d = CompressibleEulerPotentialTemperatureEquations1D()
+    equations_1d = CompressibleEulerPotentialTemperatureEquations1D(1004.0, 717.0)
     equations_2d = equations
     flux_1d = normal_1d[1] * flux_etec(u_1d, u_1d, 1, equations_1d)
     flux_2d = flux_etec(u_2d, u_2d, normal_2d, equations_2d)
@@ -160,7 +160,7 @@ end
     @test flux_1d ≈ flux_2d[[1, 2, 4]]
 
     # check consistency for 3D EC flux
-    equations = CompressibleEulerPotentialTemperatureEquations3D()
+    equations = CompressibleEulerPotentialTemperatureEquations3D(1004.0, 717.0)
     u = SVector(1.1, -0.5, 2.34, 2.4, 330.0)
 
     normal_directions = [SVector(1.0, 0.0, 0.0),
@@ -185,7 +185,7 @@ end
 
 @timed_testset "Consistency check for LMARS flux with Potential Temperature: CEPTE" begin
     # Set up equations and dummy conservative variables state
-    equations = CompressibleEulerPotentialTemperatureEquations2D()
+    equations = CompressibleEulerPotentialTemperatureEquations2D(1004.0, 717.0)
     flux_lmars = FluxLMARS(340)
     u = SVector(1.1, -0.5, 2.34, 330.0)
 
@@ -204,7 +204,7 @@ end
     u_2d = SVector(u[1], u[2], 0, u[4])
     normal_1d = SVector(-0.3)
     normal_2d = SVector(normal_1d[1], 0.0)
-    equations_1d = CompressibleEulerPotentialTemperatureEquations1D()
+    equations_1d = CompressibleEulerPotentialTemperatureEquations1D(1004.0, 717.0)
     equations_2d = equations
     flux_1d = normal_1d[1] * flux_lmars(u_1d, u_1d, 1, equations_1d)
     flux_2d = flux_lmars(u_2d, u_2d, normal_2d, equations_2d)
@@ -212,7 +212,7 @@ end
     @test flux_1d ≈ flux_2d[[1, 2, 4]]
 
     # check consistency for 3D EC flux
-    equations = CompressibleEulerPotentialTemperatureEquations3D()
+    equations = CompressibleEulerPotentialTemperatureEquations3D(1004.0, 717.0)
     u = SVector(1.1, -0.5, 2.34, 2.4, 330.0)
 
     normal_directions = [SVector(1.0, 0.0, 0.0),
@@ -238,7 +238,7 @@ end
 
 @timed_testset "Consistency check for EC flux with Potential Temperature with gravity: CEPTEWG" begin
     # Set up equations and dummy conservative variables state
-    equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D()
+    equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(1004, 717, 9.81)
     u = SVector(1.1, -0.5, 2.34, 330.0, 1500)
 
     normal_directions = [SVector(1.0, 0.0),
@@ -256,7 +256,8 @@ end
     u_2d = SVector(u[1], u[2], 0, u[4], u[5])
     normal_1d = SVector(-0.3)
     normal_2d = SVector(normal_1d[1], 0.0)
-    equations_1d = CompressibleEulerPotentialTemperatureEquationsWithGravity1D()
+    equations_1d = CompressibleEulerPotentialTemperatureEquationsWithGravity1D(1004, 717,
+                                                                               9.81)
     equations_2d = equations
     flux_1d = normal_1d[1] * flux_ec(u_1d, u_1d, 1, equations_1d)
     flux_2d = flux_ec(u_2d, u_2d, normal_2d, equations_2d)
@@ -271,7 +272,7 @@ end
     @test flux_1d ≈ flux_2d[[1, 2, 4, 5]]
 
     # check consistency for 3D EC flux
-    equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D()
+    equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(1004, 717, 9.81)
     u = SVector(1.1, -0.5, 2.34, 2.4, 330.0, 1500)
 
     normal_directions = [SVector(1.0, 0.0, 0.0),
@@ -296,7 +297,7 @@ end
 
 @timed_testset "Consistency check for TEC flux with Potential Temperature with gravity: CEPTEWG" begin
     # Set up equations and dummy conservative variables state
-    equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D()
+    equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(1004, 717, 9.81)
     u = SVector(1.1, -0.5, 2.34, 330.0, 1500)
 
     normal_directions = [SVector(1.0, 0.0),
@@ -314,7 +315,8 @@ end
     u_2d = SVector(u[1], u[2], 0, u[4], u[5])
     normal_1d = SVector(-0.3)
     normal_2d = SVector(normal_1d[1], 0.0)
-    equations_1d = CompressibleEulerPotentialTemperatureEquationsWithGravity1D()
+    equations_1d = CompressibleEulerPotentialTemperatureEquationsWithGravity1D(1004, 717,
+                                                                               9.81)
     equations_2d = equations
     flux_1d = normal_1d[1] * flux_tec(u_1d, u_1d, 1, equations_1d)
     flux_2d = flux_tec(u_2d, u_2d, normal_2d, equations_2d)
@@ -329,7 +331,7 @@ end
     @test flux_1d ≈ flux_2d[[1, 2, 4, 5]]
 
     # check consistency for 3D EC flux
-    equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D()
+    equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(1004, 717, 9.81)
     u = SVector(1.1, -0.5, 2.34, 2.4, 330.0, 1500)
 
     normal_directions = [SVector(1.0, 0.0, 0.0),
@@ -354,7 +356,7 @@ end
 
 @timed_testset "Consistency check for ETEC flux with Potential Temperature with gravity: CEPTEWG" begin
     # Set up equations and dummy conservative variables state
-    equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D()
+    equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(1004, 717, 9.81)
     u = SVector(1.1, -0.5, 2.34, 330.0, 1500)
 
     normal_directions = [SVector(1.0, 0.0),
@@ -372,7 +374,8 @@ end
     u_2d = SVector(u[1], u[2], 0, u[4], u[5])
     normal_1d = SVector(-0.3)
     normal_2d = SVector(normal_1d[1], 0.0)
-    equations_1d = CompressibleEulerPotentialTemperatureEquationsWithGravity1D()
+    equations_1d = CompressibleEulerPotentialTemperatureEquationsWithGravity1D(1004, 717,
+                                                                               9.81)
     equations_2d = equations
     flux_1d = normal_1d[1] * flux_etec(u_1d, u_1d, 1, equations_1d)
     flux_2d = flux_etec(u_2d, u_2d, normal_2d, equations_2d)
@@ -387,7 +390,7 @@ end
     @test flux_1d ≈ flux_2d[[1, 2, 4, 5]]
 
     # check consistency for 3D EC flux
-    equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D()
+    equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(1004, 717, 9.81)
     u = SVector(1.1, -0.5, 2.34, 2.4, 330.0, 1500)
 
     normal_directions = [SVector(1.0, 0.0, 0.0),
@@ -412,7 +415,7 @@ end
 
 @timed_testset "Consistency check for LMARS flux with Potential Temperature with gravity: CEPTEWG" begin
     # Set up equations and dummy conservative variables state
-    equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D()
+    equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(1004, 717, 9.81)
     flux_lmars = FluxLMARS(340)
     u = SVector(1.1, -0.5, 2.34, 330.0, 1700)
 
@@ -431,7 +434,8 @@ end
     u_2d = SVector(u[1], u[2], 0, u[4], u[5])
     normal_1d = SVector(-0.3)
     normal_2d = SVector(normal_1d[1], 0.0)
-    equations_1d = CompressibleEulerPotentialTemperatureEquationsWithGravity1D()
+    equations_1d = CompressibleEulerPotentialTemperatureEquationsWithGravity1D(1004, 717,
+                                                                               9.81)
     equations_2d = equations
     flux_1d = normal_1d[1] * flux_lmars(u_1d, u_1d, 1, equations_1d)
     flux_2d = flux_lmars(u_2d, u_2d, normal_2d, equations_2d)
@@ -439,7 +443,7 @@ end
     @test flux_1d ≈ flux_2d[[1, 2, 4, 5]]
 
     # check consistency for 3D EC flux
-    equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D()
+    equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(1004, 717, 9.81)
     u = SVector(1.1, -0.5, 2.34, 2.4, 330.0, 1700)
 
     normal_directions = [SVector(1.0, 0.0, 0.0),

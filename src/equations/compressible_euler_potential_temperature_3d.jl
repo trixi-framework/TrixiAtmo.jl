@@ -18,10 +18,10 @@ struct CompressibleEulerPotentialTemperatureEquations3D{RealT <: Real} <:
         inv_gamma_minus_one = inv(gamma - 1)
         K = p_0 * (R / p_0)^gamma
         stolarsky_factor = (gamma - 1) / gamma
-        return new{typeof(c_p)}(p_0, c_p, c_v, R,
-                                gamma,
-                                inv_gamma_minus_one,
-                                K, stolarsky_factor)
+        return new{typeof(gamma)}(p_0, c_p, c_v, R,
+                                  gamma,
+                                  inv_gamma_minus_one,
+                                  K, stolarsky_factor)
     end
 end
 
