@@ -112,17 +112,19 @@ isdir(outdir) && rm(outdir, recursive = true)
 
             normal_direction = SVector(one(RealT), one(RealT))
             surface_flux_function = flux_lax_friedrichs
-            orientation = 1
+            orientations = [1, 2]
             directions = [1, 2]
 
-            for direction in directions
+            for direction in directions, orientation in orientations
                 @test eltype(@inferred boundary_condition_slip_wall(u_inner, orientation,
                                                                     direction,
                                                                     x, t,
                                                                     surface_flux_function,
-                                                                    equations)) ==
-                      RealT
+                                                                    equations)) == RealT
+                @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, orientation,
+                                                           equations)) == RealT
             end
+
             @test eltype(@inferred flux(u, normal_direction, equations)) == RealT
             @test eltype(@inferred flux_ec(u_ll, u_rr, normal_direction, equations)) ==
                   RealT
@@ -141,6 +143,8 @@ isdir(outdir) && rm(outdir, recursive = true)
             @test eltype(@inferred Trixi.max_abs_speeds(u, equations)) == RealT
             @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, normal_direction,
                                                        equations)) == RealT
+            @test typeof(@inferred max_abs_speed(u_ll, u_rr, normal_direction,
+                                                 equations)) == RealT
         end
     end
 
@@ -157,16 +161,20 @@ isdir(outdir) && rm(outdir, recursive = true)
 
             normal_direction = SVector(one(RealT), one(RealT))
             surface_flux_function = (flux_lax_friedrichs, flux_zero)
-            orientation = 1
+            orientations = [1, 2]
             directions = [1, 2]
 
-            for direction in directions
+            for direction in directions, orientation in orientations
                 @test eltype(@inferred boundary_condition_slip_wall(u_inner, orientation,
                                                                     direction,
                                                                     x, t,
                                                                     surface_flux_function,
                                                                     equations)) ==
                       SVector{5, RealT}
+                @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, orientation,
+                                                           equations)) == RealT
+                @test typeof(@inferred max_abs_speed(u_ll, u_rr, orientation,
+                                                     equations)) == RealT
             end
             @test eltype(@inferred flux(u, normal_direction, equations)) == RealT
             @test eltype(@inferred flux_ec(u_ll, u_rr, normal_direction, equations)) ==
@@ -186,6 +194,8 @@ isdir(outdir) && rm(outdir, recursive = true)
             @test eltype(@inferred Trixi.max_abs_speeds(u, equations)) == RealT
             @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, normal_direction,
                                                        equations)) == RealT
+            @test typeof(@inferred max_abs_speed(u_ll, u_rr, normal_direction,
+                                                 equations)) == RealT
         end
     end
 
@@ -200,16 +210,13 @@ isdir(outdir) && rm(outdir, recursive = true)
                                                        one(RealT), one(RealT))
 
             surface_flux_function = flux_lax_friedrichs
-            orientation = 1
-            directions = [1, 2]
+            orientations = [1, 2, 3]
 
-            for direction in directions
-                @test eltype(@inferred boundary_condition_slip_wall(u_inner, orientation,
-                                                                    direction,
-                                                                    x, t,
-                                                                    surface_flux_function,
-                                                                    equations)) ==
-                      RealT
+            for orientation in orientations
+                @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, orientation,
+                                                           equations)) == RealT
+                @test typeof(@inferred max_abs_speed(u_ll, u_rr, orientation,
+                                                     equations)) == RealT
             end
             normal_direction = SVector(one(RealT), one(RealT), one(RealT))
             @test eltype(@inferred flux(u, normal_direction, equations)) == RealT
@@ -230,6 +237,8 @@ isdir(outdir) && rm(outdir, recursive = true)
             @test eltype(@inferred Trixi.max_abs_speeds(u, equations)) == RealT
             @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, normal_direction,
                                                        equations)) == RealT
+            @test typeof(@inferred max_abs_speed(u_ll, u_rr, normal_direction,
+                                                 equations)) == RealT
         end
     end
     @timed_testset "Compressible Euler Potential Temperature With Gravity 3D" begin
@@ -245,6 +254,14 @@ isdir(outdir) && rm(outdir, recursive = true)
 
             normal_direction = SVector(one(RealT), one(RealT), one(RealT))
 
+            orientations = [1, 2, 3]
+
+            for orientation in orientations
+                @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, orientation,
+                                                           equations)) == RealT
+                @test typeof(@inferred max_abs_speed(u_ll, u_rr, orientation,
+                                                     equations)) == RealT
+            end
             @test eltype(@inferred flux(u, normal_direction, equations)) == RealT
             @test eltype(@inferred flux_ec(u_ll, u_rr, normal_direction, equations)) ==
                   RealT
@@ -262,6 +279,8 @@ isdir(outdir) && rm(outdir, recursive = true)
             @test eltype(@inferred Trixi.max_abs_speeds(u, equations)) == RealT
             @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, normal_direction,
                                                        equations)) == RealT
+            @test typeof(@inferred max_abs_speed(u_ll, u_rr, normal_direction,
+                                                 equations)) == RealT
         end
     end
 

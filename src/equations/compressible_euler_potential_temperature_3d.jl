@@ -37,32 +37,6 @@ varnames(::typeof(cons2prim),
                                                        "v3",
                                                        "p1")
 
-@inline function boundary_condition_slip_wall(u_inner, orientation,
-                                              direction, x, t,
-                                              surface_flux_function,
-                                              equations::CompressibleEulerPotentialTemperatureEquations3D)
-
-    ## get the appropriate normal vector from the orientation
-    if orientation == 1
-        u_boundary = SVector(u_inner[1], -u_inner[2], u_inner[3], u_inner[4],
-                             u_inner[5])
-    elseif orientation == 2
-        u_boundary = SVector(u_inner[1], u_inner[2], -u_inner[3], u_inner[4],
-                             u_inner[5])
-    else
-        u_boundary = SVector(u_inner[1], u_inner[2], u_inner[3], -u_inner[4],
-                             u_inner[5])
-    end
-    # Calculate boundary flux
-    if iseven(direction) # u_inner is "left" of boundary, u_boundary is "right" of boundary
-        flux = surface_flux_function(u_inner, u_boundary, orientation, equations)
-    else # u_boundary is "left" of boundary, u_inner is "right" of boundary
-        flux = surface_flux_function(u_boundary, u_inner, orientation, equations)
-    end
-
-    return flux
-end
-
 # Calculate 1D flux for a single point in the normal direction
 # Note, this directional vector is not normalized
 @inline function flux(u, normal_direction::AbstractVector,
@@ -81,36 +55,6 @@ end
     f3 = rho_v_normal * v2 + p * normal_direction[2]
     f4 = rho_v_normal * v3 + p * normal_direction[3]
     f5 = rho_theta * v_normal
-    return SVector(f1, f2, f3, f4, f5)
-end
-
-# Calculate 1D flux for a single point
-@inline function flux(u, orientation::Integer,
-                      equations::CompressibleEulerPotentialTemperatureEquations3D)
-    rho, rho_v1, rho_v2, rho_v3, rho_theta = u
-    v1 = rho_v1 / rho
-    v2 = rho_v2 / rho
-    v3 = rho_v3 / rho
-    p = pressure(u, equations)
-    if orientation == 1
-        f1 = rho_v1
-        f2 = rho_v1 * v1 + p
-        f3 = rho_v1 * v2
-        f4 = rho_v1 * v3
-        f5 = rho_theta * v1
-    elseif orientation == 2
-        f1 = rho_v2
-        f2 = rho_v2 * v1
-        f3 = rho_v2 * v2 + p
-        f4 = rho_v2 * v3
-        f5 = rho_theta * v2
-    else
-        f1 = rho_v3
-        f2 = rho_v3 * v1
-        f3 = rho_v3 * v2
-        f4 = rho_v3 * v3 + p
-        f5 = rho_theta * v3
-    end
     return SVector(f1, f2, f3, f4, f5)
 end
 
