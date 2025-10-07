@@ -315,6 +315,7 @@ end
                                 equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
     return 0.5f0 * (cons[2]^2) / (cons[1])
 end
+
 @inline function max_abs_speed(u_ll, u_rr, orientation::Integer,
                                equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
     rho_ll, v1_ll, p_ll = cons2prim(u_ll, equations)
@@ -328,6 +329,7 @@ end
 
     return max(v_mag_ll + c_ll, v_mag_rr + c_rr)
 end
+
 @inline function max_abs_speeds(u,
                                 equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
     rho, v1, p = cons2prim(u, equations)
