@@ -528,7 +528,6 @@ end
         s_d = c_pd * log(T) - R_d * log(rho_qd * R_d * T)
     end
     if (rho_qv > 0)
-        @show T, rho_qv, R_v, T
         s_v = c_pv * log(T) - R_v * log(rho_qv * R_v * T)
     end
     if (rho_ql > 0)
