@@ -66,15 +66,15 @@ const TRIXI_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
         include("test_3d_potential_temperature.jl")
     end
 
-    @time if trixi_test == "upstream"
+    @time if TRIXI_TEST == "upstream"
         include("test_trixi_consistency.jl")
     end
 
-    @time if trixi_test == "unit tests"
+    @time if TRIXI_TEST == "unit tests"
         include("test_unit.jl")
     end
 
-    @time if trixi_test == "type stable tests"
+    @time if TRIXI_TEST == "type stable tests"
         include("test_type.jl")
     end
 end

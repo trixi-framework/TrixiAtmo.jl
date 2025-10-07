@@ -252,7 +252,6 @@ isdir(outdir) && rm(outdir, recursive = true)
                   RealT
             @test eltype(@inferred flux_etec(u_ll, u_rr, normal_direction, equations)) ==
                   RealT
-
             @test eltype(@inferred cons2prim(u, equations)) == RealT
             @test eltype(@inferred prim2cons(u, equations)) == RealT
             @test eltype(@inferred cons2entropy(u, equations)) == RealT
@@ -287,22 +286,18 @@ isdir(outdir) && rm(outdir, recursive = true)
                                                                     direction,
                                                                     x, t,
                                                                     surface_flux_function,
-                                                                    equations)) ==
-                      RealT
+                                                                    equations)) == RealT
             end
             @test eltype(@inferred flux(u, normal_direction, equations)) == RealT
             @test eltype(@inferred flux_chandrashekar(u_ll, u_rr, normal_direction,
-                                                      equations)) ==
-                  RealT
+                                                      equations)) == RealT
 
             @test eltype(@inferred TrixiAtmo.cons2temp(u, equations)) == RealT
             @test eltype(@inferred TrixiAtmo.cons2drypot(u, equations)) == RealT
             @test eltype(@inferred TrixiAtmo.cons2moistpot(u, equations)) == RealT
             @test eltype(@inferred cons2prim(u, equations)) == RealT
-            @test eltype(@inferred TrixiAtmo.moist_pottemp_thermodynamic(u, equations)) ==
-                  RealT
-            @test eltype(@inferred TrixiAtmo.dry_pottemp_thermodynamic(u, equations)) ==
-                  RealT
+            @test eltype(@inferred TrixiAtmo.moist_pottemp_thermodynamic(u, equations)) == RealT
+            @test eltype(@inferred TrixiAtmo.dry_pottemp_thermodynamic(u, equations)) == RealT
             @test eltype(@inferred prim2cons(u, equations)) == RealT
             #@test eltype(@inferred cons2entropy(u, equations)) == RealT
             @test eltype(@inferred TrixiAtmo.density(u, equations)) == RealT
@@ -322,6 +317,28 @@ isdir(outdir) && rm(outdir, recursive = true)
             @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, normal_direction,
                                                        equations)) == RealT
         end
+    end
+
+    @timed_testset "Compressible Euler Moist Euler 2D" begin
+        for RealT in (Float32, Float64)
+            equations = @inferred ShallowWaterEquations3D(gravity = RealT(1), rotation_rate = RealT(1), H0 = RealT(1))
+
+            x = SVector(zero(RealT))
+            t = zero(RealT)
+            u = u_ll = u_rr = u_inner = cons = SVector(one(RealT), one(RealT), one(RealT),
+                                                       one(RealT), one(RealT), one(RealT))
+
+	   
+            normal_direction = SVector(one(RealT), one(RealT))
+            surface_flux_function = FluxLMARS(RealT(340))
+            directions = [1, 2]
+            @test eltype(@inferred flux(u, normal_direction, equations)) == RealT
+            @test eltype(@inferred flux_wintermeyer_etal(u, normal_direction, equations)) == RealT
+            @test eltype(@inferred flux_fjordholm_etal(u, normal_direction, equations)) == RealT
+            @test eltype(@inferred flux_nonconservative_wintermeyer_etal(u, normal_direction, equations)) == RealT
+            @test eltype(@inferred flux_nonconservative_fjordholm_etal(u, normal_direction, equations)) == RealT
+
+	end
     end
 end
 
