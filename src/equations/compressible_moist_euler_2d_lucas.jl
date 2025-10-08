@@ -16,8 +16,8 @@ struct CompressibleMoistEulerEquations2D{RealT <: Real} <:
     kappa::RealT # ratio of the gas constant R_d
     gamma::RealT # = inv(kappa- 1); can be used to write slow divisions as fast multiplications
     L_00::RealT # latent heat of evaporation  at 0 K
-    function CompressibleMoistEulerEquations2D(c_pd, c_vd, c_pv, c_vv, g)
-        c_pd, c_vd, c_pv, c_vv, g = promote(c_pd, c_vd, c_pv, c_vv, g)
+    function CompressibleMoistEulerEquations2D(; c_pd, c_vd, c_pv, c_vv, gravity)
+        c_pd, c_vd, c_pv, c_vv, g = promote(c_pd, c_vd, c_pv, c_vv, gravity)
         p_0 = 100_000
         R_d = c_pd - c_vd
         R_v = c_pv - c_vv

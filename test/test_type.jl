@@ -13,8 +13,8 @@ isdir(outdir) && rm(outdir, recursive = true)
 @testset "Test Type Stability" begin
     @timed_testset "Compressible Euler Potential Temperature 1D" begin
         for RealT in (Float32, Float64)
-            equations = @inferred CompressibleEulerPotentialTemperatureEquations1D(RealT(1004),
-                                                                                   RealT(717))
+            equations = @inferred CompressibleEulerPotentialTemperatureEquations1D(c_p = RealT(1004),
+                                                                                   c_v = RealT(717))
 
             x = SVector(zero(RealT))
             t = zero(RealT)
@@ -43,9 +43,9 @@ isdir(outdir) && rm(outdir, recursive = true)
 
     @timed_testset "Compressible Euler Potential Temperature With Gravity 1D" begin
         for RealT in (Float32, Float64)
-            equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity1D(RealT(1004),
-                                                                                              RealT(717),
-                                                                                              RealT(9.81))
+            equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity1D(c_p = RealT(1004),
+                                                                                              c_v = RealT(717),
+                                                                                              gravity = RealT(9.81))
 
             x = SVector(zero(RealT))
             t = zero(RealT)
@@ -102,8 +102,8 @@ isdir(outdir) && rm(outdir, recursive = true)
 
     @timed_testset "Compressible Euler Potential Temperature 2D" begin
         for RealT in (Float32, Float64)
-            equations = @inferred CompressibleEulerPotentialTemperatureEquations2D(RealT(1004),
-                                                                                   RealT(717))
+            equations = @inferred CompressibleEulerPotentialTemperatureEquations2D(c_p = RealT(1004),
+                                                                                   c_v = RealT(717))
 
             x = SVector(zero(RealT))
             t = zero(RealT)
@@ -150,9 +150,9 @@ isdir(outdir) && rm(outdir, recursive = true)
 
     @timed_testset "Compressible Euler Potential Temperature With Gravity 2D" begin
         for RealT in (Float32, Float64)
-            equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity2D(RealT(1004),
-                                                                                              RealT(717),
-                                                                                              RealT(9.81))
+            equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = RealT(1004),
+                                                                                              c_v = RealT(717),
+                                                                                              gravity = RealT(9.81))
 
             x = SVector(zero(RealT))
             t = zero(RealT)
@@ -201,8 +201,8 @@ isdir(outdir) && rm(outdir, recursive = true)
 
     @timed_testset "Compressible Euler Potential Temperature 3D" begin
         for RealT in (Float32, Float64)
-            equations = @inferred CompressibleEulerPotentialTemperatureEquations3D(RealT(1004),
-                                                                                   RealT(717))
+            equations = @inferred CompressibleEulerPotentialTemperatureEquations3D(c_p = RealT(1004),
+                                                                                   c_v = RealT(717))
 
             x = SVector(zero(RealT))
             t = zero(RealT)
@@ -243,9 +243,9 @@ isdir(outdir) && rm(outdir, recursive = true)
     end
     @timed_testset "Compressible Euler Potential Temperature With Gravity 3D" begin
         for RealT in (Float32, Float64)
-            equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity3D(RealT(1004),
-                                                                                              RealT(717),
-                                                                                              RealT(9.81))
+            equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = RealT(1004),
+                                                                                              c_v = RealT(717),
+                                                                                              gravity = RealT(9.81))
 
             x = SVector(zero(RealT))
             t = zero(RealT)
@@ -286,9 +286,11 @@ isdir(outdir) && rm(outdir, recursive = true)
 
     @timed_testset "Compressible Euler Moist Euler 2D" begin
         for RealT in (Float32, Float64)
-            equations = @inferred CompressibleMoistEulerEquations2D(RealT(2.1), RealT(2),
-                                                                    RealT(2.1), RealT(2),
-                                                                    RealT(1))
+            equations = @inferred CompressibleMoistEulerEquations2D(c_pd = RealT(2.1),
+                                                                    c_vd = RealT(2),
+                                                                    c_pv = RealT(2.1),
+                                                                    c_vv = RealT(2),
+                                                                    gravity = RealT(1))
 
             x = SVector(zero(RealT))
             t = zero(RealT)
@@ -320,7 +322,6 @@ isdir(outdir) && rm(outdir, recursive = true)
             @test eltype(@inferred TrixiAtmo.dry_pottemp_thermodynamic(u, equations)) ==
                   RealT
             @test eltype(@inferred prim2cons(u, equations)) == RealT
-            #@test eltype(@inferred cons2entropy(u, equations)) == RealT
             @test eltype(@inferred TrixiAtmo.density(u, equations)) == RealT
             @test eltype(@inferred TrixiAtmo.density_dry(u, equations)) == RealT
             @test eltype(@inferred TrixiAtmo.density_vapor(u, equations)) == RealT
@@ -330,7 +331,6 @@ isdir(outdir) && rm(outdir, recursive = true)
             @test eltype(@inferred TrixiAtmo.ratio_vapor(u, equations)) == RealT
             @test eltype(@inferred TrixiAtmo.density_pressure(u, equations)) == RealT
             @test typeof(@inferred pressure(u, equations)) == RealT
-            #@test typeof(@inferred entropy(cons, equations)) == RealT
             @test eltype(@inferred energy_internal(u, equations)) == RealT
             @test typeof(@inferred energy_kinetic(cons, equations)) == RealT
             @test typeof(@inferred energy_total(cons, equations)) == RealT

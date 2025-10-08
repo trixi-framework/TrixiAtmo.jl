@@ -11,8 +11,9 @@ struct CompressibleEulerPotentialTemperatureEquationsWithGravity2D{RealT <: Real
     inv_gamma_minus_one::RealT # = inv(gamma - 1); can be used to write slow divisions as fast multiplications
     K::RealT # = p_0 * (R / p_0)^gamma; scaling factor between pressure and weighted potential temperature
     stolarsky_factor::RealT # = (gamma - 1) / gamma; used in the stolarsky mean
-    function CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p, c_v, g)
-        c_p, c_v, g = promote(c_p, c_v, g)
+    function CompressibleEulerPotentialTemperatureEquationsWithGravity2D(; c_p, c_v,
+                                                                         gravity)
+        c_p, c_v, g = promote(c_p, c_v, gravity)
         p_0 = 100_000
         R = c_p - c_v
         gamma = c_p / c_v
