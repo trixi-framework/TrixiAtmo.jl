@@ -23,9 +23,6 @@ using ForwardDiff: derivative
 using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
 
 @reexport using StaticArrays: SVector, SMatrix
-<<<<<<< HEAD
-@reexport using Trixi: waterheight
-=======
 @reexport import Trixi: waterheight, varnames, cons2cons, cons2prim,
                         prim2cons, cons2entropy, entropy2cons, velocity,
                         max_abs_speeds, max_abs_speed_naive, max_abs_speed,
@@ -36,7 +33,6 @@ using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
                         flux_nonconservative_fjordholm_etal, FluxLMARS
 
 using Trixi: ln_mean, stolarsky_mean, inv_ln_mean
->>>>>>> main
 
 include("auxiliary/auxiliary.jl")
 include("equations/equations.jl")
@@ -49,9 +45,6 @@ include("callbacks_stage/callbacks_stage.jl")
 export CompressibleMoistEulerEquations2D,
        CompressibleRainyEulerEquations2D,
        CovariantLinearAdvectionEquation2D, CovariantShallowWaterEquations2D,
-<<<<<<< HEAD
-       ShallowWaterEquations3D, SplitCovariantShallowWaterEquations2D
-=======
        SplitCovariantShallowWaterEquations2D,
        CompressibleEulerPotentialTemperatureEquations1D,
        CompressibleEulerPotentialTemperatureEquations2D,
@@ -59,7 +52,6 @@ export CompressibleMoistEulerEquations2D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity1D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity2D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity3D
->>>>>>> main
 
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 

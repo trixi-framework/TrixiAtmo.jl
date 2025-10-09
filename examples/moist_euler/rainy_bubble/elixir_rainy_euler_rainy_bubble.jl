@@ -16,7 +16,8 @@ coordinates_max = (2400.0, 2400.0)
 equations = CompressibleRainyEulerEquations2D()
 layers = AtmosphereLayersRainyBubble(equations; total_height = coordinates_max[2] + 1)
 
-function initial_condition_bubble_rainy(x, t, equations::CompressibleRainyEulerEquations2D{RealT};
+function initial_condition_bubble_rainy(x, t,
+                                        equations::CompressibleRainyEulerEquations2D{RealT};
                                         atmosphere_layers = layers) where {RealT}
     # equations constants
     c_vd = equations.c_dry_air_const_volume

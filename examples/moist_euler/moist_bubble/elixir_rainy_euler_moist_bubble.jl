@@ -79,7 +79,8 @@ function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
                 T_loc = θ_loc * (p_loc / p_0)^kappa
                 T_C = T_loc - convert(RealT, 273.15)
                 # SaturVapor
-                pvs = convert(RealT, 611.2) * exp(convert(RealT, 17.62) * T_C / (convert(RealT, 243.12) + T_C))
+                pvs = convert(RealT, 611.2) *
+                      exp(convert(RealT, 17.62) * T_C / (convert(RealT, 243.12) + T_C))
                 rho_d_new = (p_loc - pvs) / (R_d * T_loc)
                 rvs = pvs / (R_v * rho_d_new * T_loc)
                 θ_new = θ_dens_new * (1 + rt) / (1 + (R_v / R_d) * rvs)

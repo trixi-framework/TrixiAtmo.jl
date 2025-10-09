@@ -92,7 +92,7 @@ function CompressibleRainyEulerEquations2D(; RealT = Float64)
     ref_pressure = 100000
 
     # Other:
-    gravity = EARTH_GRAVITATIONAL_ACCELERATION
+    gravity = convert(RealT, EARTH_GRAVITATIONAL_ACCELERATION)
     rain_water_distr = 8000000
     v_mean_rain = 130
 
@@ -170,7 +170,8 @@ end
 end
 
 # adapted from compressible_moist_euler_2d.jl
-@inline function cons2eq_pot_temp(u, equations::CompressibleRainyEulerEquations2D{RealT}) where {RealT}
+@inline function cons2eq_pot_temp(u,
+                                  equations::CompressibleRainyEulerEquations2D{RealT}) where {RealT}
     # constants
     c_l = equations.c_liquid_water
     c_pd = equations.c_dry_air_const_pressure
@@ -199,7 +200,8 @@ end
     p_v = rho_vapour * R_v * temperature
     p_d = p - p_v
     T_C = temperature - ref_temp
-    p_vs = convert(RealT, 611.2) * exp(convert(RealT, 17.62) * T_C / (convert(RealT, 243.12) + T_C))
+    p_vs = convert(RealT, 611.2) *
+           exp(convert(RealT, 17.62) * T_C / (convert(RealT, 243.12) + T_C))
     H = p_v / p_vs
     r_v = rho_vapour / rho_dry
     r_c = rho_cloud / rho_dry
@@ -218,7 +220,6 @@ end
                                          equations::CompressibleRainyEulerEquations2D)
     # constants
     c_vd = equations.c_dry_air_const_volume
-    #ref_temp = equations.ref_temperature
 
     # densities
     rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
@@ -563,7 +564,8 @@ end
     rho_vs = saturation_vapour_pressure(temperature, equations) / (R_v * temperature)
 
     # source terms phase change
-    S_evaporation = (convert(RealT, 3.86e-3) - convert(RealT, 9.41e-5) * (temperature - ref_temp)) *
+    S_evaporation = (convert(RealT, 3.86e-3) -
+                     convert(RealT, 9.41e-5) * (temperature - ref_temp)) *
                     (1 + convert(RealT, 9.1) * rho_rain^(0.1875f0))
     S_evaporation *= (rho_vs - rho_vapour) * rho_rain^(0.5f0)
     S_auto_conversion = convert(RealT, 0.001) * rho_cloud
@@ -841,7 +843,8 @@ end
     # interface flux components
     rho = 0.5f0 * (rho_ll + rho_rr)
     p_interface = 0.5f0 * (p_ll + p_rr) - beta * 0.5f0 * a * rho * (v_rr - v_ll) / norm_
-    v_interface = 0.5f0 * (v_ll + v_rr) - beta * 1 / (2 * a * rho) * (p_rr - p_ll) * norm_
+    v_interface = 0.5f0 * (v_ll + v_rr) -
+                  beta * 1 / (2 * a * rho) * (p_rr - p_ll) * norm_
 
     if (v_interface > 0)
         f1, f2, _, f4, f5, f6, _, _, _ = u_ll * v_interface
@@ -1005,7 +1008,8 @@ function generate_hydrostatic_residual(pressure_lower, humidity_rel0, z, dz,
         # variables
         pressure, rho_dry, rho_vapour, temperature = guess
 
-        rho_vs = saturation_vapour_pressure(temperature, equations) / (R_v * temperature)
+        rho_vs = saturation_vapour_pressure(temperature, equations) /
+                 (R_v * temperature)
 
         # pressure derivative residual approximation
         residual[1] = (pressure - pressure_lower) / dz + (rho_dry + rho_vapour) * g
@@ -1039,7 +1043,8 @@ function generate_perturbation_residual(pressure_hydrostatic, H_init, z,
         # variables
         rho_dry, rho_vapour, temperature = guess
 
-        rho_vs = saturation_vapour_pressure(temperature, equations) / (R_v * temperature)
+        rho_vs = saturation_vapour_pressure(temperature, equations) /
+                 (R_v * temperature)
         pressure = (rho_dry * R_d + rho_vapour * R_v) * temperature
 
         # humidity residual
@@ -1101,7 +1106,8 @@ function AtmosphereLayersRainyBubble(equations::CompressibleRainyEulerEquations2
     # solve (slightly above) surface layer
     dz = convert(RealT, 0.01)
     z = convert(RealT, 0.01)
-    residual_function! = generate_hydrostatic_residual(surface_pressure, humidity_rel0, z,
+    residual_function! = generate_hydrostatic_residual(surface_pressure, humidity_rel0,
+                                                       z,
                                                        dz, equations)
     layer_data[1, :] .= nlsolve(residual_function!, surface_layer).zero
 
@@ -1111,7 +1117,8 @@ function AtmosphereLayersRainyBubble(equations::CompressibleRainyEulerEquations2
     # iterate up the atmosphere
     for i in (1:n)
         z += dz
-        residual_function! = generate_hydrostatic_residual(layer_data[i, 1], humidity_rel0,
+        residual_function! = generate_hydrostatic_residual(layer_data[i, 1],
+                                                           humidity_rel0,
                                                            z, dz, equations)
         guess = deepcopy(layer_data[i, :])
         layer_data[i + 1, :] .= nlsolve(residual_function!, guess, ftol = 1e-10,
@@ -1121,7 +1128,8 @@ function AtmosphereLayersRainyBubble(equations::CompressibleRainyEulerEquations2
     return AtmosphereLayersRainyBubble{RealT}(layer_data, total_height, precision)
 end
 
-function initial_condition_bubble_rainy(x, t, equations::CompressibleRainyEulerEquations2D;
+function initial_condition_bubble_rainy(x, t,
+                                        equations::CompressibleRainyEulerEquations2D;
                                         atmosphere_layers = layers)
     # equations constants
     c_vd = equations.c_dry_air_const_volume
@@ -1182,12 +1190,14 @@ function initial_condition_bubble_rainy(x, t, equations::CompressibleRainyEulerE
                             pressure_hydrostatic_lower * (z_upper - z)) / dz
 
     # solve perturbation
-    residual_function! = generate_perturbation_residual(pressure_hydrostatic, humidity, z,
+    residual_function! = generate_perturbation_residual(pressure_hydrostatic, humidity,
+                                                        z,
                                                         equations)
     rho_dry, rho_vapour, temperature = nlsolve(residual_function!, layer_data[n, 2:4],
                                                ftol = 1e-9, iterations = 20).zero
 
-    energy_density = (c_vd * rho_dry + c_vv * rho_vapour) * temperature + rho_vapour * ref_L
+    energy_density = (c_vd * rho_dry + c_vv * rho_vapour) * temperature +
+                     rho_vapour * ref_L
 
     return SVector(rho_dry, rho_vapour, 0, 0, 0, energy_density, rho_vapour, 0,
                    temperature)

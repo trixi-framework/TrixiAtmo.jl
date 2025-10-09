@@ -24,7 +24,10 @@ struct NonlinearSolveDG{RealT <: Real, ResidualFunctionT, JacobianFunctionT}
 
     function NonlinearSolveDG(residual, jacobian, variables_index_vector;
                               tolerance = 1e-9, max_iterations = 20)
-        new{typeof(tolerance), typeof(residual), typeof(jacobian)}(residual, jacobian, variables_index_vector, tolerance, max_iterations)
+        new{typeof(tolerance), typeof(residual), typeof(jacobian)}(residual, jacobian,
+                                                                   variables_index_vector,
+                                                                   tolerance,
+                                                                   max_iterations)
     end
 end
 
