@@ -1,7 +1,8 @@
 @muladd begin
 #! format: noindent
 
-using Trixi: AbstractEquations
+using Trixi: AbstractEquations, AbstractCompressibleEulerEquations,
+             AbstractShallowWaterEquations
 
 @doc raw"""
     AbstractCovariantEquations{NDIMS, 
@@ -332,11 +333,21 @@ abstract type AbstractCovariantShallowWaterEquations2D{GlobalCoordinateSystem} <
 abstract type AbstractCompressibleRainyEulerEquations{NDIMS, NVARS} <:
               AbstractEquations{NDIMS, NVARS} end
 
-include("compressible_moist_euler_2d_lucas.jl")
-include("compressible_rainy_euler_2d.jl")
+@inline function flux_zero(u_ll, u_rr, normal_direction, equations)
+    return zero(u_ll)
+end
+
 include("covariant_advection.jl")
 include("covariant_shallow_water.jl")
 include("covariant_shallow_water_split.jl")
+include("compressible_moist_euler_2d_lucas.jl")
+include("compressible_rainy_euler_2d.jl")
+include("compressible_euler_potential_temperature_1d.jl")
+include("compressible_euler_potential_temperature_2d.jl")
+include("compressible_euler_potential_temperature_3d.jl")
+include("compressible_euler_potential_temperature_gravity_1d.jl")
+include("compressible_euler_potential_temperature_gravity_2d.jl")
+include("compressible_euler_potential_temperature_gravity_3d.jl")
 include("shallow_water_3d.jl")
 include("reference_data.jl")
 end # @muladd

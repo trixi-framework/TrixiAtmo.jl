@@ -23,7 +23,20 @@ using ForwardDiff: derivative
 using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
 
 @reexport using StaticArrays: SVector, SMatrix
+<<<<<<< HEAD
 @reexport using Trixi: waterheight
+=======
+@reexport import Trixi: waterheight, varnames, cons2cons, cons2prim,
+                        prim2cons, cons2entropy, entropy2cons, velocity,
+                        max_abs_speeds, max_abs_speed_naive, max_abs_speed,
+                        have_nonconservative_terms, boundary_condition_slip_wall,
+                        energy_kinetic, energy_internal, energy_total, entropy, pressure,
+                        flux, flux_ec, flux_chandrashekar, flux_wintermeyer_etal,
+                        flux_fjordholm_etal, flux_nonconservative_wintermeyer_etal,
+                        flux_nonconservative_fjordholm_etal, FluxLMARS
+
+using Trixi: ln_mean, stolarsky_mean, inv_ln_mean
+>>>>>>> main
 
 include("auxiliary/auxiliary.jl")
 include("equations/equations.jl")
@@ -36,7 +49,17 @@ include("callbacks_stage/callbacks_stage.jl")
 export CompressibleMoistEulerEquations2D,
        CompressibleRainyEulerEquations2D,
        CovariantLinearAdvectionEquation2D, CovariantShallowWaterEquations2D,
+<<<<<<< HEAD
        ShallowWaterEquations3D, SplitCovariantShallowWaterEquations2D
+=======
+       SplitCovariantShallowWaterEquations2D,
+       CompressibleEulerPotentialTemperatureEquations1D,
+       CompressibleEulerPotentialTemperatureEquations2D,
+       CompressibleEulerPotentialTemperatureEquations3D,
+       CompressibleEulerPotentialTemperatureEquationsWithGravity1D,
+       CompressibleEulerPotentialTemperatureEquationsWithGravity2D,
+       CompressibleEulerPotentialTemperatureEquationsWithGravity3D
+>>>>>>> main
 
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
@@ -46,7 +69,10 @@ export flux_chandrashekar, FluxLMARS
 
 export flux_nonconservative_zeros, flux_nonconservative_ec,
        flux_nonconservative_surface_simplified, source_terms_geometric_coriolis,
-       source_terms_coriolis, source_terms_coriolis_lagrange_multiplier
+       source_terms_coriolis, source_terms_coriolis_lagrange_multiplier,
+       flux_tec, flux_etec, flux_nonconservative_souza_etal,
+       flux_nonconservative_artiano_etal,
+       flux_nonconservative_waruzewski_etal, flux_zero
 
 export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!
 
@@ -71,4 +97,5 @@ export bottom_topography_isolated_mountain, bottom_topography_unsteady_solid_bod
 export AtmosphereLayers, AtmosphereLayersRainyBubble
 
 export examples_dir
+
 end # module TrixiAtmo

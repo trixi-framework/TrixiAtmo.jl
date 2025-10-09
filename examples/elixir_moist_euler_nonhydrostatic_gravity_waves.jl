@@ -35,7 +35,12 @@ function initial_condition_nonhydrostatic_gravity_wave(x, t,
     return SVector(rho, rho_v1, rho_v2, rho_E, rho_qv, rho_ql)
 end
 
-equations = CompressibleMoistEulerEquations2D()
+c_pd = 1004 # specific heat at constant pressure for dry air
+c_vd = 717  # specific heat at constant volume for dry air
+c_pv = 1885 # specific heat at constant pressure for moist air
+c_vv = 1424 # specific heat at constant volume for moist air
+equations = CompressibleMoistEulerEquations2D(c_pd = c_pd, c_vd = c_vd, c_pv = c_pv,
+                                              c_vv = c_vv, gravity = 9.81)
 
 initial_condition = initial_condition_nonhydrostatic_gravity_wave
 

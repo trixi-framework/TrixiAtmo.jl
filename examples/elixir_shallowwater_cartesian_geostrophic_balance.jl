@@ -66,7 +66,9 @@ summary_callback = SummaryCallback()
 # results
 analysis_callback = AnalysisCallback(semi, interval = 200,
                                      save_analysis = true,
-                                     extra_analysis_errors = (:conservation_error,))
+                                     extra_analysis_errors = (:conservation_error,),
+                                     extra_analysis_integrals = (energy_internal,
+                                                                 energy_kinetic, pressure))
 
 # The SaveSolutionCallback allows to save the solution to a file in regular intervals
 save_solution = SaveSolutionCallback(dt = (tspan[2] - tspan[1]) / n_saves,
