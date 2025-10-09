@@ -6,7 +6,7 @@ using TrixiAtmo: saturation_vapour_pressure, saturation_vapour_pressure_derivati
                  terminal_velocity_rain
 
 function initial_condition_convergence_test_rainy(x, t,
-                                                  equations::CompressibleRainyEulerEquations2D)
+                                                  equations::CompressibleRainyEulerEquations2D{RealT}) where {RealT}
     # constants
     c_l = equations.c_liquid_water
     c_vd = equations.c_dry_air_const_volume
@@ -15,10 +15,10 @@ function initial_condition_convergence_test_rainy(x, t,
     ref_L = equations.ref_latent_heat_vap_temp
 
     # define rho like in dry convergence test
-    c = 2.0
-    A = 0.1
-    L = 2.0
-    f = 1.0 / L
+    c = 2
+    A = convert(RealT, 0.1)
+    L = 2
+    f = 1 / L
     ω = 2 * pi * f
     rho = c + A * sin(ω * (x[1] + x[2] - t))
 
@@ -40,7 +40,7 @@ function initial_condition_convergence_test_rainy(x, t,
 end
 
 function source_terms_convergence_test_rainy(u, x, t,
-                                             equations::CompressibleRainyEulerEquations2D)
+                                             equations::CompressibleRainyEulerEquations2D{RealT}) where {RealT}
     # constants
     c_l = equations.c_liquid_water
     c_vd = equations.c_dry_air_const_volume
@@ -52,13 +52,13 @@ function source_terms_convergence_test_rainy(u, x, t,
     v_0 = equations.v_mean_rain
 
     # help constant for terminal rain velocity derivative ( \Gamma(4.5) / 6 ~= 1.9386213994279082 )
-    c_help = v_0 * 1.9386213994279082 * (pi * N_0)^(-0.125)
+    c_help = v_0 * convert(RealT, 1.9386213994279082) * (pi * N_0)^(-0.125f0)
 
     # define rho like initial condition
-    c = 2.0
-    A = 0.1
-    L = 2.0
-    f = 1.0 / L
+    c = 2
+    A = convert(RealT, 0.1)
+    L = 2
+    f = 1 / L
     ω = 2 * pi * f
     si, co = sincos(ω * (x[1] + x[2] - t))
     rho = c + A * si
@@ -107,28 +107,28 @@ function source_terms_convergence_test_rainy(u, x, t,
     pressure_x = (rho_dry_x * R_d + rho_vapour_x * R_v) * temperature
     pressure_x += (rho_dry * R_d + rho_vapour * R_v) * rho_x         # temperature_x = rho_x
 
-    vr_x = c_help * 0.125 *
+    vr_x = c_help * 0.125f0 *
            ((rho_rain_x * rho_moist - rho_rain * rho_moist_x) / (rho_moist + rho_rain)^2)
-    vr_x *= (rho_rain / (rho_moist + rho_rain))^(-0.875)
+    vr_x *= (rho_rain / (rho_moist + rho_rain))^(-0.875f0)
 
     rhor_vr__x = rho_rain_x * vr + rho_rain * vr_x
 
     # calculate source terms for manufactured solution
     # density
-    S_rho_dry = rho_dry_t + 2.0 * rho_dry_x
-    S_rho_moist = rho_moist_t + 2.0 * rho_moist_x
-    S_rho_rain = rho_rain_t + 2.0 * rho_rain_x - rhor_vr__x
+    S_rho_dry = rho_dry_t + 2 * rho_dry_x
+    S_rho_moist = rho_moist_t + 2 * rho_moist_x
+    S_rho_rain = rho_rain_t + 2 * rho_rain_x - rhor_vr__x
 
     # momentum
     S_rho_v1 = rho_x + pressure_x - rhor_vr__x
     S_rho_v2 = rho_x + pressure_x - rhor_vr__x
 
     # energy
-    S_energy = energy_t + 2.0 * (energy_x + pressure_x) - (c_l * rho_x * rho_rain * vr)
+    S_energy = energy_t + 2 * (energy_x + pressure_x) - (c_l * rho_x * rho_rain * vr)
     S_energy -= (c_l * temperature + 1) * rhor_vr__x
 
-    return SVector(S_rho_dry, S_rho_moist, S_rho_rain, S_rho_v1, S_rho_v2, S_energy, 0.0,
-                   0.0, 0.0)
+    return SVector(S_rho_dry, S_rho_moist, S_rho_rain, S_rho_v1, S_rho_v2, S_energy, 0,
+                   0, 0)
 end
 
 ###############################################################################

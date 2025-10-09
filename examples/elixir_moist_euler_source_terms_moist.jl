@@ -11,11 +11,10 @@ equations = CompressibleMoistEulerEquations2D()
 initial_condition = initial_condition_convergence_test_moist
 
 polydeg = 3
-basis = LobattoLegendreBasis(polydeg)
 
 surface_flux = flux_lax_friedrichs
 
-solver = DGSEM(basis, surface_flux)
+solver = DGSEM(polydeg, surface_flux)
 
 coordinates_min = (0.0, 0.0)
 coordinates_max = (2.0, 2.0)

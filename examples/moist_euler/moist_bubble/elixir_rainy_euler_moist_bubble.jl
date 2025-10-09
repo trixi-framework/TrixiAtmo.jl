@@ -7,104 +7,6 @@ using TrixiAtmo: source_terms_no_phase_change, saturation_residual,
                  flux_ec_rain, boundary_condition_simple_slip_wall
 using NLsolve: nlsolve
 
-# Initial condition from elixir_moist_euler_bubble.jl
-function moist_state(y, dz, y0, r_t0, theta_e0,
-                     equations::CompressibleMoistEulerEquations2D)
-    @unpack p_0, g, c_pd, c_pv, c_vd, c_vv, R_d, R_v, c_pl, L_00 = equations
-
-    (p, rho, T, r_t, r_v, rho_qv, theta_e) = y
-    p0 = y0[1]
-
-    F = zeros(7, 1)
-    rho_d = rho / (1 + r_t)
-    p_d = R_d * rho_d * T
-    T_C = T - 273.15
-    p_vs = 611.2 * exp(17.62 * T_C / (243.12 + T_C))
-    L = L_00 - (c_pl - c_pv) * T
-
-    F[1] = (p - p0) / dz + g * rho
-    F[2] = p - (R_d * rho_d + R_v * rho_qv) * T
-    # H = 1 is assumed
-    F[3] = (theta_e -
-            T * (p_d / p_0)^(-R_d / (c_pd + c_pl * r_t)) *
-            exp(L * r_v / ((c_pd + c_pl * r_t) * T)))
-    F[4] = r_t - r_t0
-    F[5] = rho_qv - rho_d * r_v
-    F[6] = theta_e - theta_e0
-    a = p_vs / (R_v * T) - rho_qv
-    b = rho - rho_qv - rho_d
-    # H=1 => phi=0
-    F[7] = a + b - sqrt(a * a + b * b)
-
-    return F
-end
-
-function generate_function_of_y(dz, y0, r_t0, theta_e0,
-                                equations::CompressibleMoistEulerEquations2D)
-    function function_of_y(y)
-        return moist_state(y, dz, y0, r_t0, theta_e0, equations)
-    end
-end
-
-struct AtmosphereLayers{RealT <: Real}
-    equations::CompressibleMoistEulerEquations2D
-    # structure:  1--> i-layer (z = total_height/precision *(i-1)),  2--> rho, rho_theta, rho_qv, rho_ql
-    layer_data::Matrix{RealT}
-    total_height::RealT
-    preciseness::Int
-    layers::Int
-    ground_state::NTuple{2, RealT}
-    equivalent_potential_temperature::RealT
-    mixing_ratios::NTuple{2, RealT}
-end
-
-function AtmosphereLayers(equations; total_height = 10010.0, preciseness = 10,
-                          ground_state = (1.4, 100000.0),
-                          equivalent_potential_temperature = 320,
-                          mixing_ratios = (0.02, 0.02), RealT = Float64)
-    @unpack kappa, p_0, c_pd, c_vd, c_pv, c_vv, R_d, R_v, c_pl = equations
-    rho0, p0 = ground_state
-    r_t0, r_v0 = mixing_ratios
-    theta_e0 = equivalent_potential_temperature
-
-    rho_qv0 = rho0 * r_v0
-    T0 = theta_e0
-    y0 = [p0, rho0, T0, r_t0, r_v0, rho_qv0, theta_e0]
-
-    n = convert(Int, total_height / preciseness)
-    dz = 0.01
-    layer_data = zeros(RealT, n + 1, 4)
-
-    F = generate_function_of_y(dz, y0, r_t0, theta_e0, equations)
-    sol = nlsolve(F, y0)
-    p, rho, T, r_t, r_v, rho_qv, theta_e = sol.zero
-
-    rho_d = rho / (1 + r_t)
-    rho_ql = rho - rho_d - rho_qv
-    kappa_M = (R_d * rho_d + R_v * rho_qv) / (c_pd * rho_d + c_pv * rho_qv + c_pl * rho_ql)
-    rho_theta = rho * (p0 / p)^kappa_M * T * (1 + (R_v / R_d) * r_v) / (1 + r_t)
-
-    layer_data[1, :] = [rho, rho_theta, rho_qv, rho_ql]
-    for i in (1:n)
-        y0 = deepcopy(sol.zero)
-        dz = preciseness
-        F = generate_function_of_y(dz, y0, r_t0, theta_e0, equations)
-        sol = nlsolve(F, y0)
-        p, rho, T, r_t, r_v, rho_qv, theta_e = sol.zero
-
-        rho_d = rho / (1 + r_t)
-        rho_ql = rho - rho_d - rho_qv
-        kappa_M = (R_d * rho_d + R_v * rho_qv) /
-                  (c_pd * rho_d + c_pv * rho_qv + c_pl * rho_ql)
-        rho_theta = rho * (p0 / p)^kappa_M * T * (1 + (R_v / R_d) * r_v) / (1 + r_t)
-
-        layer_data[i + 1, :] = [rho, rho_theta, rho_qv, rho_ql]
-    end
-
-    return AtmosphereLayers{RealT}(equations, layer_data, total_height, dz, n, ground_state,
-                                   theta_e0, mixing_ratios)
-end
-
 # Moist bubble test case from paper:
 # G.H. Bryan, J.M. Fritsch, A Benchmark Simulation for Moist Nonhydrostatic Numerical
 # Models, MonthlyWeather Review Vol.130, 2917–2928, 2002,
@@ -136,23 +38,23 @@ function initial_condition_moist_bubble(x, t, equations::CompressibleMoistEulerE
                                                                rho_ql,
                                                                equations::CompressibleMoistEulerEquations2D)
 
-    v1 = 0.0
-    v2 = 0.0
+    v1 = 0
+    v2 = 0
     rho_v1 = rho * v1
     rho_v2 = rho * v2
     rho_E = rho_e + 1 / 2 * rho * (v1^2 + v2^2)
 
-    return SVector(rho - rho_qv - rho_ql, rho_qv + rho_ql, 0.0, rho_v1, rho_v2, rho_E,
+    return SVector(rho - rho_qv - rho_ql, rho_qv + rho_ql, 0, rho_v1, rho_v2, rho_E,
                    rho_qv, rho_ql, T_loc)
 end
 
 function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
-                                equations::CompressibleMoistEulerEquations2D)
+                                equations::CompressibleMoistEulerEquations2D{RealT}) where {RealT}
     @unpack kappa, p_0, c_pd, c_vd, c_pv, c_vv, R_d, R_v, c_pl, L_00 = equations
-    xc = 10000.0
-    zc = 2000.0
-    rc = 2000.0
-    Δθ = 2.0
+    xc = 10000
+    zc = 2000
+    rc = 2000
+    Δθ = 2
 
     r = sqrt((x[1] - xc)^2 + (x[2] - zc)^2)
     rho_d = rho - rho_qv - rho_ql
@@ -166,7 +68,7 @@ function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
         # Calculate background density potential temperature
         θ_dens = rho_theta / rho * (p_loc / p_0)^(kappa_M - kappa)
         # Calculate perturbed density potential temperature
-        θ_dens_new = θ_dens * (1 + Δθ * cospi(0.5 * r / rc)^2 / 300)
+        θ_dens_new = θ_dens * (1 + Δθ * cospi(0.5f0 * r / rc)^2 / 300)
         rt = (rho_qv + rho_ql) / rho_d
         rv = rho_qv / rho_d
         # Calculate moist potential temperature
@@ -175,9 +77,9 @@ function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
         if rt > 0
             while true
                 T_loc = θ_loc * (p_loc / p_0)^kappa
-                T_C = T_loc - 273.15
+                T_C = T_loc - convert(RealT, 273.15)
                 # SaturVapor
-                pvs = 611.2 * exp(17.62 * T_C / (243.12 + T_C))
+                pvs = convert(RealT, 611.2) * exp(convert(RealT, 17.62) * T_C / (convert(RealT, 243.12) + T_C))
                 rho_d_new = (p_loc - pvs) / (R_d * T_loc)
                 rvs = pvs / (R_v * rho_d_new * T_loc)
                 θ_new = θ_dens_new * (1 + rt) / (1 + (R_v / R_d) * rvs)
@@ -225,14 +127,13 @@ boundary_conditions = (x_neg = boundary_condition_periodic,
                        y_pos = boundary_condition_slip_wall)
 
 polydeg = 3
-basis = LobattoLegendreBasis(polydeg)
 
 surface_flux = flux_LMARS
 volume_flux = flux_ec_rain
 
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
-solver = DGSEM(basis, surface_flux, volume_integral)
+solver = DGSEM(polydeg, surface_flux, volume_integral)
 
 coordinates_min = (0.0, 0.0)
 coordinates_max = (20_000.0, 10_000.0)

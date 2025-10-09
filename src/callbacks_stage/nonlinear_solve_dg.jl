@@ -15,17 +15,16 @@ Newton method, which can be called in every stage via callbacks.
 - `tolerance::Real`: tolerance for termination of the Newton method
 - `max_iterations::Int64`: maximal number of iterations of the Newton method
 """
-struct NonlinearSolveDG{RealT <: Real}
-    residual               :: Function
-    jacobian               :: Function
+struct NonlinearSolveDG{RealT <: Real, ResidualFunctionT, JacobianFunctionT}
+    residual               :: ResidualFunctionT
+    jacobian               :: JacobianFunctionT
     variables_index_vector :: Vector{Int64}
     tolerance              :: RealT
     max_iterations         :: Int64
 
     function NonlinearSolveDG(residual, jacobian, variables_index_vector;
                               tolerance = 1e-9, max_iterations = 20)
-        new{typeof(tolerance)}(residual, jacobian, variables_index_vector,
-                               tolerance, max_iterations)
+        new{typeof(tolerance), typeof(residual), typeof(jacobian)}(residual, jacobian, variables_index_vector, tolerance, max_iterations)
     end
 end
 

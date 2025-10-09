@@ -8,103 +8,6 @@ using NLsolve: nlsolve
 
 equations = CompressibleMoistEulerEquations2D()
 
-function moist_state(y, dz, y0, r_t0, theta_e0,
-                     equations::CompressibleMoistEulerEquations2D)
-    @unpack p_0, g, c_pd, c_pv, c_vd, c_vv, R_d, R_v, c_pl, L_00 = equations
-    (p, rho, T, r_t, r_v, rho_qv, theta_e) = y
-    p0 = y0[1]
-
-    F = zeros(7, 1)
-    rho_d = rho / (1 + r_t)
-    p_d = R_d * rho_d * T
-    T_C = T - 273.15
-    p_vs = 611.2 * exp(17.62 * T_C / (243.12 + T_C))
-    L = L_00 - (c_pl - c_pv) * T
-
-    F[1] = (p - p0) / dz + g * rho
-    F[2] = p - (R_d * rho_d + R_v * rho_qv) * T
-    # H = 1 is assumed
-    F[3] = (theta_e -
-            T * (p_d / p_0)^(-R_d / (c_pd + c_pl * r_t)) *
-            exp(L * r_v / ((c_pd + c_pl * r_t) * T)))
-    F[4] = r_t - r_t0
-    F[5] = rho_qv - rho_d * r_v
-    F[6] = theta_e - theta_e0
-    a = p_vs / (R_v * T) - rho_qv
-    b = rho - rho_qv - rho_d
-    # H=1 => phi=0
-    F[7] = a + b - sqrt(a * a + b * b)
-
-    return F
-end
-
-function generate_function_of_y(dz, y0, r_t0, theta_e0,
-                                equations::CompressibleMoistEulerEquations2D)
-    function function_of_y(y)
-        return moist_state(y, dz, y0, r_t0, theta_e0, equations)
-    end
-end
-
-#Create Initial atmosphere by generating a layer data set
-struct AtmosphereLayers{RealT <: Real}
-    equations::CompressibleMoistEulerEquations2D
-    # structure:  1--> i-layer (z = total_height/precision *(i-1)),  2--> rho, rho_theta, rho_qv, rho_ql
-    layer_data::Matrix{RealT} # Contains the layer data for each height
-    total_height::RealT # Total height of the atmosphere
-    preciseness::Int # Space between each layer data (dz)
-    layers::Int # Amount of layers (total height / dz)
-    ground_state::NTuple{2, RealT} # (rho_0, p_tilde_0) to define the initial values at height z=0
-    equivalent_potential_temperature::RealT  # Value for theta_e since we have a constant temperature theta_e0=theta_e.
-    mixing_ratios::NTuple{2, RealT} # Constant mixing ratio. Also defines initial guess for rho_qv0 = r_v0 * rho_0.
-end
-
-function AtmosphereLayers(equations; total_height = 10010.0, preciseness = 10,
-                          ground_state = (1.4, 100000.0),
-                          equivalent_potential_temperature = 320,
-                          mixing_ratios = (0.02, 0.02), RealT = Float64)
-    @unpack kappa, p_0, c_pd, c_vd, c_pv, c_vv, R_d, R_v, c_pl = equations
-    rho0, p0 = ground_state
-    r_t0, r_v0 = mixing_ratios
-    theta_e0 = equivalent_potential_temperature
-
-    rho_qv0 = rho0 * r_v0
-    T0 = theta_e0
-    y0 = [p0, rho0, T0, r_t0, r_v0, rho_qv0, theta_e0]
-
-    n = convert(Int, total_height / preciseness)
-    dz = 0.01
-    layer_data = zeros(RealT, n + 1, 4)
-
-    F = generate_function_of_y(dz, y0, r_t0, theta_e0, equations)
-    sol = nlsolve(F, y0)
-    p, rho, T, r_t, r_v, rho_qv, theta_e = sol.zero
-
-    rho_d = rho / (1 + r_t)
-    rho_ql = rho - rho_d - rho_qv
-    kappa_M = (R_d * rho_d + R_v * rho_qv) / (c_pd * rho_d + c_pv * rho_qv + c_pl * rho_ql)
-    rho_theta = rho * (p0 / p)^kappa_M * T * (1 + (R_v / R_d) * r_v) / (1 + r_t)
-
-    layer_data[1, :] = [rho, rho_theta, rho_qv, rho_ql]
-    for i in (1:n)
-        y0 = deepcopy(sol.zero)
-        dz = preciseness
-        F = generate_function_of_y(dz, y0, r_t0, theta_e0, equations)
-        sol = nlsolve(F, y0)
-        p, rho, T, r_t, r_v, rho_qv, theta_e = sol.zero
-
-        rho_d = rho / (1 + r_t)
-        rho_ql = rho - rho_d - rho_qv
-        kappa_M = (R_d * rho_d + R_v * rho_qv) /
-                  (c_pd * rho_d + c_pv * rho_qv + c_pl * rho_ql)
-        rho_theta = rho * (p0 / p)^kappa_M * T * (1 + (R_v / R_d) * r_v) / (1 + r_t)
-
-        layer_data[i + 1, :] = [rho, rho_theta, rho_qv, rho_ql]
-    end
-
-    return AtmosphereLayers{RealT}(equations, layer_data, total_height, dz, n, ground_state,
-                                   theta_e0, mixing_ratios)
-end
-
 # Generate background state from the Layer data set by linearely interpolating the layers
 function initial_condition_moist_bubble(x, t, equations::CompressibleMoistEulerEquations2D,
                                         atmosphere_layers::AtmosphereLayers)
@@ -132,8 +35,8 @@ function initial_condition_moist_bubble(x, t, equations::CompressibleMoistEulerE
     rho, rho_e, rho_qv, rho_ql = perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
                                                         equations::CompressibleMoistEulerEquations2D)
 
-    v1 = 60.0
-    v2 = 60.0
+    v1 = 60
+    v2 = 60
     rho_v1 = rho * v1
     rho_v2 = rho * v2
     rho_E = rho_e + 1 / 2 * rho * (v1^2 + v2^2)
@@ -143,7 +46,7 @@ end
 
 # Add perturbation to the profile
 function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
-                                equations::CompressibleMoistEulerEquations2D)
+                                equations::CompressibleMoistEulerEquations2D{RealT}) where {RealT}
     @unpack kappa, p_0, c_pd, c_vd, c_pv, c_vv, R_d, R_v, c_pl, L_00 = equations
     xc = 2000
     zc = 2000
@@ -161,16 +64,17 @@ function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
     # Assume pressure stays constant
     if (r < rc && Δθ > 0)
         θ_dens = rho_theta / rho * (p_loc / p_0)^(kappa_M - kappa)
-        θ_dens_new = θ_dens * (1 + Δθ * cospi(0.5 * r / rc)^2 / 300)
+        θ_dens_new = θ_dens * (1 + Δθ * cospi(0.5f0 * r / rc)^2 / 300)
         rt = (rho_qv + rho_ql) / rho_d
         rv = rho_qv / rho_d
         θ_loc = θ_dens_new * (1 + rt) / (1 + (R_v / R_d) * rv)
         if rt > 0
             while true
                 T_loc = θ_loc * (p_loc / p_0)^kappa
-                T_C = T_loc - 273.15
+                T_C = T_loc - convert(RealT, 273.15)
                 # SaturVapor
-                pvs = 611.2 * exp(17.62 * T_C / (243.12 + T_C))
+                pvs = convert(RealT, 611.2) *
+                      exp(convert(RealT, 17.62) * T_C / (convert(RealT, 243.12) + T_C))
                 rho_d_new = (p_loc - pvs) / (R_d * T_loc)
                 rvs = pvs / (R_v * rho_d_new * T_loc)
                 θ_new = θ_dens_new * (1 + rt) / (1 + (R_v / R_d) * rvs)
@@ -218,14 +122,13 @@ source_term = source_terms_geopotential
 # Get the DG approximation space
 
 polydeg = 4
-basis = LobattoLegendreBasis(polydeg)
 
 surface_flux = flux_chandrashekar
 volume_flux = flux_chandrashekar
 
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
-solver = DGSEM(basis, surface_flux, volume_integral)
+solver = DGSEM(polydeg, surface_flux, volume_integral)
 
 coordinates_min = (0.0, 0.0)
 coordinates_max = (4000.0, 4000.0)

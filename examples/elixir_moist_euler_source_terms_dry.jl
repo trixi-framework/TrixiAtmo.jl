@@ -5,7 +5,7 @@ using TrixiAtmo: source_terms_convergence_test_dry, initial_condition_convergenc
 ###############################################################################
 # semidiscretization of the compressible Euler equations
 
-equations = CompressibleMoistEulerEquations2D(; g = 0.0)
+equations = CompressibleMoistEulerEquations2D(; g = 0)
 
 initial_condition = initial_condition_convergence_test_dry
 

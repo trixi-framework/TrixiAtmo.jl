@@ -11,14 +11,13 @@ equations = CompressibleMoistEulerEquations2D()
 initial_condition = initial_condition_convergence_test_moist
 
 polydeg = 4
-basis = LobattoLegendreBasis(polydeg)
 
 surface_flux = flux_chandrashekar
 volume_flux = flux_chandrashekar
 
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
-solver = DGSEM(basis, surface_flux, volume_integral)
+solver = DGSEM(polydeg, surface_flux, volume_integral)
 
 coordinates_min = (0.0, 0.0)
 coordinates_max = (2.0, 2.0)

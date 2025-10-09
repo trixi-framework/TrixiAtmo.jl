@@ -16,7 +16,7 @@ function nonlinear_solve_dg_2d!(u, residual, jacobian, variables_index_vector,
 
             # keep rain positive
             if (u_node[3] < 0.0)
-                u[3, i, j, element] = 0.0
+                u[3, i, j, element] = 0
             end
 
             # newton method

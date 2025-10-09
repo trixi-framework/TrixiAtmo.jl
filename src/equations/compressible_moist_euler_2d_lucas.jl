@@ -26,19 +26,19 @@ struct CompressibleMoistEulerEquations2D{RealT <: Real} <:
 end
 
 function CompressibleMoistEulerEquations2D(; g = 9.81, RealT = Float64)
-    p_0 = 100000.0
-    c_pd = 1004.0
-    c_vd = 717.0
+    p_0 = 100000
+    c_pd = 1004
+    c_vd = 717
     R_d = c_pd - c_vd
-    c_pv = 1885.0
-    c_vv = 1424.0
+    c_pv = 1885
+    c_vv = 1424
     R_v = c_pv - c_vv
-    c_pl = 4186.0
+    c_pl = 4186
     gamma = c_pd / c_vd # = 1/(1 - kappa)
     kappa = 1 - inv(gamma)
     L_00 = 3147620
     return CompressibleMoistEulerEquations2D{RealT}(p_0, c_pd, c_vd, R_d, c_pv, c_vv,
-                                                    R_v, c_pl, g, kappa, gamma, L_00)
+                                                    R_v, c_pl, convert(RealT, g), kappa, gamma, L_00)
 end
 
 # Calculate 1D flux for a single point.
@@ -360,7 +360,7 @@ end
     z = x[2]
 
     # relaxed background velocity
-    vr1, vr2 = (10.0, 0.0)
+    vr1, vr2 = (10, 0)
     # damping threshold
     z_s = 9000.0
     # boundary top
@@ -411,7 +411,7 @@ end
 
 # Calculate Q_ph for a state u.
 # This source term models the phase chance between could water and vapor.
-@inline function phase_change_term(u, equations::CompressibleMoistEulerEquations2D)
+@inline function phase_change_term(u, equations::CompressibleMoistEulerEquations2D{RealT}) where {RealT}
     @unpack R_v = equations
     rho, _, _, _, rho_qv, rho_ql = u
     _, T = get_current_condition(u, equations)
@@ -419,7 +419,7 @@ end
 
     T_C = T - 273.15
     # saturation vapor pressure
-    p_vs = 611.2 * exp(17.62 * T_C / (243.12 + T_C))
+    p_vs = convert(RealT, 611.2) * exp(convert(RealT, 17.62) * T_C / (convert(RealT, 243.12) + T_C))
 
     # saturation density of vapor
     rho_star_qv = p_vs / (R_v * T)
@@ -610,7 +610,7 @@ end
 end
 
 # Convert conservative variables to moisture related variables.
-@inline function cons2moist(u, equations::CompressibleMoistEulerEquations2D)
+@inline function cons2moist(u, equations::CompressibleMoistEulerEquations2D{RealT}) where {RealT}
     @unpack R_d, R_v, c_pd, c_pv, c_pl, p_0 = equations
     rho, rho_v1, rho_v2, rho_E, rho_qv, rho_ql = u
 
@@ -622,7 +622,7 @@ end
 
     p_v = rho_qv * R_v * T
     T_C = T - 273.15
-    p_vs = 611.2 * exp(17.62 * T_C / (243.12 + T_C))
+    p_vs = convert(RealT, 611.2) * exp(convert(RealT, 17.62) * T_C / (convert(RealT, 243.12) + T_C))
     H = p_v * inv(p_vs)
 
     rho_d = rho - (rho_qv + rho_ql)
@@ -676,13 +676,14 @@ end
     return T
 end
 
-@inline function saturation_pressure(u, equations::CompressibleMoistEulerEquations2D)
+@inline function saturation_pressure(u,
+    equations::CompressibleMoistEulerEquations2D{RealT}) where {RealT}
     @unpack R_v = equations
     rho, rho_v1, rho_v2, rho_E, rho_qv, rho_ql = u
     T = get_current_condition(u, equations)[2]
     p_v = rho_qv * R_v * T
     T_C = T - 273.15
-    p_vs = 611.2 * exp(17.62 * T_C / (243.12 + T_C))
+    p_vs = convert(RealT, 611.2) * exp(convert(RealT, 17.62) * T_C / (convert(RealT, 243.12) + T_C))
     H = p_v / p_vs
     return H
 end
@@ -809,15 +810,15 @@ end
 
 # Calculate the equivalent potential temperature for a conservative state `cons`.
 @inline function equivalent_pottemp_thermodynamic(cons,
-                                                  equations::CompressibleMoistEulerEquations2D)
+                                                  equations::CompressibleMoistEulerEquations2D{RealT}) where {RealT}
     @unpack c_pd, c_pv, c_pl, R_d, R_v, p_0, kappa, L_00 = equations
     rho, rho_v1, rho_v2, rho_E, rho_qv, rho_ql = cons
     rho_d = rho - rho_qv - rho_ql
     p, T = get_current_condition(cons, equations)
     p_v = rho_qv * R_v * T
     p_d = p - p_v
-    T_C = T - 273.15
-    p_vs = 611.2 * exp(17.62 * T_C / (243.12 + T_C))
+    T_C = T - convert(RealT, 273.15)
+    p_vs = convert(RealT, 611.2) * exp(convert(RealT, 17.62) * T_C / (convert(RealT, 243.12) + T_C))
     H = p_v / p_vs
     r_v = rho_qv / rho_d
     r_l = rho_ql / rho_d
@@ -835,15 +836,15 @@ end
 # Convert conservative variables to primitive varuables with
 # equivalent potential temperature instead of pressure
 # and mixing ratios innstead of specific contend.
-@inline function cons2aeqpot(cons, equations::CompressibleMoistEulerEquations2D)
+@inline function cons2aeqpot(cons, equations::CompressibleMoistEulerEquations2D{RealT}) where {RealT}
     @unpack c_pd, c_pv, c_pl, R_d, R_v, p_0, L_00 = equations
     rho, rho_v1, rho_v2, rho_E, rho_qv, rho_ql = cons
     rho_d = rho - rho_qv - rho_ql
     p, T = get_current_condition(cons, equations)
     p_v = rho_qv * R_v * T
     p_d = p - p_v
-    T_C = T - 273.15
-    p_vs = 611.2 * exp(17.62 * T_C / (243.12 + T_C))
+    T_C = T - convert(RealT, 273.15)
+    p_vs = convert(RealT, 611.2) * exp(convert(RealT, 17.62) * T_C / (convert(RealT, 243.12) + T_C))
     H = p_v / p_vs
     r_v = rho_qv / rho_d
     r_l = rho_ql / rho_d
@@ -1000,6 +1001,103 @@ end
           (c_pl * inv_T_mean - K_avg) * f_1l + v1_avg * f2 + v2_avg * f3)
 
     return SVector(f1, f2, f3, f4, f_1v, f_1l)
+end
+
+function moist_state(y, dz, y0, r_t0, theta_e0,
+                     equations::CompressibleMoistEulerEquations2D{RealT}) where {RealT}
+    @unpack p_0, g, c_pd, c_pv, c_vd, c_vv, R_d, R_v, c_pl, L_00 = equations
+    (p, rho, T, r_t, r_v, rho_qv, theta_e) = y
+    p0 = y0[1]
+
+    F = zeros(7, 1)
+    rho_d = rho / (1 + r_t)
+    p_d = R_d * rho_d * T
+    T_C = T - convert(RealT, 273.15)
+    p_vs = convert(RealT, 611.2) * exp(convert(RealT, 17.62 ) * T_C / (convert(RealT, 243.12) + T_C))
+    L = L_00 - (c_pl - c_pv) * T
+
+    F[1] = (p - p0) / dz + g * rho
+    F[2] = p - (R_d * rho_d + R_v * rho_qv) * T
+    # H = 1 is assumed
+    F[3] = (theta_e -
+            T * (p_d / p_0)^(-R_d / (c_pd + c_pl * r_t)) *
+            exp(L * r_v / ((c_pd + c_pl * r_t) * T)))
+    F[4] = r_t - r_t0
+    F[5] = rho_qv - rho_d * r_v
+    F[6] = theta_e - theta_e0
+    a = p_vs / (R_v * T) - rho_qv
+    b = rho - rho_qv - rho_d
+    # H=1 => phi=0
+    F[7] = a + b - sqrt(a * a + b * b)
+
+    return F
+end
+
+function generate_function_of_y(dz, y0, r_t0, theta_e0,
+                                equations::CompressibleMoistEulerEquations2D)
+    function function_of_y(y)
+        return moist_state(y, dz, y0, r_t0, theta_e0, equations)
+    end
+end
+
+#Create Initial atmosphere by generating a layer data set
+struct AtmosphereLayers{RealT <: Real}
+    equations::CompressibleMoistEulerEquations2D
+    # structure:  1--> i-layer (z = total_height/precision *(i-1)),  2--> rho, rho_theta, rho_qv, rho_ql
+    layer_data::Matrix{RealT} # Contains the layer data for each height
+    total_height::RealT # Total height of the atmosphere
+    preciseness::Int # Space between each layer data (dz)
+    layers::Int # Amount of layers (total height / dz)
+    ground_state::NTuple{2, RealT} # (rho_0, p_tilde_0) to define the initial values at height z=0
+    equivalent_potential_temperature::RealT  # Value for theta_e since we have a constant temperature theta_e0=theta_e.
+    mixing_ratios::NTuple{2, RealT} # Constant mixing ratio. Also defines initial guess for rho_qv0 = r_v0 * rho_0.
+end
+
+function AtmosphereLayers(equations; total_height = 10010, preciseness = 10,
+                          ground_state = (1.4, 100000),
+                          equivalent_potential_temperature = 320,
+                          mixing_ratios = (0.02, 0.02), RealT = Float64)
+    @unpack kappa, p_0, c_pd, c_vd, c_pv, c_vv, R_d, R_v, c_pl = equations
+    rho0, p0 = convert.(RealT, ground_state)
+    r_t0, r_v0 = convert.(RealT, mixing_ratios)
+    theta_e0 = equivalent_potential_temperature
+
+    rho_qv0 = rho0 * r_v0
+    T0 = theta_e0
+    y0 = [p0, rho0, T0, r_t0, r_v0, rho_qv0, theta_e0]
+
+    n = convert(Int, total_height / preciseness)
+    dz = convert(RealT, 0.01)
+    layer_data = zeros(RealT, n + 1, 4)
+
+    F = generate_function_of_y(dz, y0, r_t0, theta_e0, equations)
+    sol = nlsolve(F, y0)
+    p, rho, T, r_t, r_v, rho_qv, theta_e = sol.zero
+
+    rho_d = rho / (1 + r_t)
+    rho_ql = rho - rho_d - rho_qv
+    kappa_M = (R_d * rho_d + R_v * rho_qv) / (c_pd * rho_d + c_pv * rho_qv + c_pl * rho_ql)
+    rho_theta = rho * (p0 / p)^kappa_M * T * (1 + (R_v / R_d) * r_v) / (1 + r_t)
+
+    layer_data[1, :] = [rho, rho_theta, rho_qv, rho_ql]
+    for i in (1:n)
+        y0 = deepcopy(sol.zero)
+        dz = preciseness
+        F = generate_function_of_y(dz, y0, r_t0, theta_e0, equations)
+        sol = nlsolve(F, y0)
+        p, rho, T, r_t, r_v, rho_qv, theta_e = sol.zero
+
+        rho_d = rho / (1 + r_t)
+        rho_ql = rho - rho_d - rho_qv
+        kappa_M = (R_d * rho_d + R_v * rho_qv) /
+                  (c_pd * rho_d + c_pv * rho_qv + c_pl * rho_ql)
+        rho_theta = rho * (p0 / p)^kappa_M * T * (1 + (R_v / R_d) * r_v) / (1 + r_t)
+
+        layer_data[i + 1, :] = [rho, rho_theta, rho_qv, rho_ql]
+    end
+
+    return AtmosphereLayers{RealT}(equations, layer_data, total_height, dz, n, ground_state,
+                                   theta_e0, mixing_ratios)
 end
 
 varnames(::typeof(cons2cons), ::CompressibleMoistEulerEquations2D) = ("rho", "rho_v1",

@@ -20,7 +20,7 @@ cells_per_dimension = (2, 2)
 
 # We use the ShallowWaterEquations3D equations structure but modify the rhs! function to
 # convert it to a variable-coefficient advection equation
-equations = ShallowWaterEquations3D(gravity = 0.0)
+equations = ShallowWaterEquations3D(gravity = 0)
 
 # Create DG solver with polynomial degree = 3 and (local) Lax-Friedrichs/Rusanov flux as surface flux
 solver = DGSEM(polydeg = polydeg,
@@ -38,7 +38,7 @@ function source_terms_convert_to_linear_advection(u, du, x, t,
     s3 = du[1] * v2 - du[3]
     s4 = du[1] * v3 - du[4]
 
-    return SVector(0.0, s2, s3, s4, 0.0)
+    return SVector(0, s2, s3, s4, 0)
 end
 
 # Hack to use the weak form kernel with ShallowWaterEquations3D (a non-conservative equation).
