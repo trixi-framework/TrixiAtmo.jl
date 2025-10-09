@@ -118,6 +118,40 @@ function Trixi.save_solution_file(u, time, dt, timestep,
     return filename
 end
 
+function Trixi.save_solution_file(u, time, dt, timestep,
+                                  mesh::DGMultiMesh,
+                                  equations::AbstractCovariantEquations,
+                                  dg::DG, cache,
+                                  solution_callback,
+                                  element_variables = Dict{Symbol, Any}(),
+                                  node_variables = Dict{Symbol, Any}();
+                                  system = "")
+    @unpack output_directory, solution_variables = solution_callback
+
+    # Filename based on current time step.
+    if isempty(system)
+        filename = joinpath(output_directory, @sprintf("solution_%09d.vtu", timestep))
+    else
+        filename = joinpath(output_directory,
+                            @sprintf("solution_%s_%09d.vtu", system, timestep))
+    end
+
+    # Convert to different set of variables if requested.
+    if solution_variables === cons2cons
+        data = u
+        n_vars = nvariables(equations)
+    else
+        data = convert_variables(u, solution_variables, mesh, equations, dg, cache)
+        # Find out variable count by looking at output from `solution_variables` function.
+        n_vars = length(data[1])
+    end
+    # Create a dictionary with variable names and data
+    var_names = Trixi.varnames(solution_variables, equations)
+    var_dict = Dict(var_names[i] => getindex.(data, i) for i in 1:n_vars)
+    StartUpDG.export_to_vtk(dg.basis, mesh.md, var_dict, filename;
+                            equi_dist_nodes = false)
+end
+
 # Calculate the primitive variables and the relative vorticity at a given node
 @inline function cons2prim_and_vorticity(u, normal_vector,
                                          mesh::P4estMesh{2},
