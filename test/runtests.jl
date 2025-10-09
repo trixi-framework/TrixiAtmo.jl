@@ -34,6 +34,14 @@ const TRIXI_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
         include("test_trixi_consistency.jl")
     end
 
+    @time if TRIXI_TEST == "all" || TRIXI_TEST == "unit_fluxes"
+        include("test_unit.jl")
+    end
+
+    @time if TRIXI_TEST == "all" || TRIXI_TEST == "type_stable_tests"
+        include("test_type.jl")
+    end
+
     @time if TRIXI_TEST == "all" || TRIXI_TEST == "moist_euler"
         include("test_2d_moist_euler.jl")
     end

@@ -10,21 +10,19 @@ struct CompressibleEulerPotentialTemperatureEquations3D{RealT <: Real} <:
     inv_gamma_minus_one::RealT # = inv(gamma - 1); can be used to write slow divisions as fast multiplications
     K::RealT # = p_0 * (R / p_0)^gamma; scaling factor between pressure and weighted potential temperature
     stolarsky_factor::RealT # = (gamma - 1) / gamma; used in the stolarsky mean
-end
-
-function CompressibleEulerPotentialTemperatureEquations3D(; RealT = Float64)
-    p_0 = 100_000
-    c_p = 1004
-    c_v = 717
-    R = c_p - c_v
-    gamma = c_p / c_v
-    inv_gamma_minus_one = inv(gamma - 1)
-    K = p_0 * (R / p_0)^gamma
-    stolarsky_factor = (gamma - 1) / gamma
-    return CompressibleEulerPotentialTemperatureEquations3D{RealT}(p_0, c_p, c_v, R,
-                                                                   gamma,
-                                                                   inv_gamma_minus_one,
-                                                                   K, stolarsky_factor)
+    function CompressibleEulerPotentialTemperatureEquations3D(; c_p, c_v)
+        c_p, c_v = promote(c_p, c_v)
+        p_0 = 100_000
+        R = c_p - c_v
+        gamma = c_p / c_v
+        inv_gamma_minus_one = inv(gamma - 1)
+        K = p_0 * (R / p_0)^gamma
+        stolarsky_factor = (gamma - 1) / gamma
+        return new{typeof(gamma)}(p_0, c_p, c_v, R,
+                                  gamma,
+                                  inv_gamma_minus_one,
+                                  K, stolarsky_factor)
+    end
 end
 
 function varnames(::typeof(cons2cons),
@@ -38,6 +36,27 @@ varnames(::typeof(cons2prim),
                                                        "v2",
                                                        "v3",
                                                        "p1")
+
+# Calculate 1D flux for a single point in the normal direction
+# Note, this directional vector is not normalized
+@inline function flux(u, normal_direction::AbstractVector,
+                      equations::CompressibleEulerPotentialTemperatureEquations3D)
+    rho, rho_v1, rho_v2, rho_v3, rho_theta = u
+    v1 = rho_v1 / rho
+    v2 = rho_v2 / rho
+    v3 = rho_v3 / rho
+    v_normal = v1 * normal_direction[1] + v2 * normal_direction[2] +
+               v3 * normal_direction[3]
+    rho_v_normal = rho * v_normal
+    p = pressure(u, equations)
+
+    f1 = rho_v_normal
+    f2 = rho_v_normal * v1 + p * normal_direction[1]
+    f3 = rho_v_normal * v2 + p * normal_direction[2]
+    f4 = rho_v_normal * v3 + p * normal_direction[3]
+    f5 = rho_theta * v_normal
+    return SVector(f1, f2, f3, f4, f5)
+end
 
 # Low Mach number approximate Riemann solver (LMARS) from
 # X. Chen, N. Andronova, B. Van Leer, J. E. Penner, J. P. Boyd, C. Jablonowski, S.
@@ -239,5 +258,128 @@ end
     s = log(p) - equations.gamma * log(cons[1])
     S = -s * cons[1] / (equations.gamma - 1)
     return S
+end
+
+@inline function pressure(cons,
+                          equations::CompressibleEulerPotentialTemperatureEquations3D)
+    p = equations.K * exp(equations.gamma * log(cons[5]))
+    return p
+end
+
+# Calculate kinetic energy for a conservative state `cons`
+@inline function energy_kinetic(u,
+                                equations::CompressibleEulerPotentialTemperatureEquations3D)
+    rho, rho_v1, rho_v2, rho_v3, _ = u
+    return 0.5f0 * (rho_v1^2 + rho_v2^2 + rho_v3^2) / rho
+end
+
+@inline function energy_total(cons,
+                              equations::CompressibleEulerPotentialTemperatureEquations3D)
+    # Mathematical entropy
+    p = equations.p_0 * (equations.R * cons[5] / equations.p_0)^equations.gamma
+
+    U = (p / (equations.gamma - 1) +
+         0.5f0 * (cons[2]^2 + cons[3]^2 + cons[4]^2) / (cons[1]))
+
+    return U
+end
+
+# Calculate maximum wave speed for local Lax-Friedrichs-type dissipation as the
+# maximum velocity magnitude plus the maximum speed of sound
+@inline function max_abs_speed_naive(u_ll, u_rr, orientation::Integer,
+                                     equations::CompressibleEulerPotentialTemperatureEquations3D)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+
+    # Get the velocity value in the appropriate direction
+    if orientation == 1
+        v_ll = v1_ll
+        v_rr = v1_rr
+    elseif orientation == 2
+        v_ll = v2_ll
+        v_rr = v2_rr
+    else # orientation == 3
+        v_ll = v3_ll
+        v_rr = v3_rr
+    end
+    # Calculate sound speeds
+    c_ll = sqrt(equations.gamma * p_ll / rho_ll)
+    c_rr = sqrt(equations.gamma * p_rr / rho_rr)
+
+    return max(abs(v_ll), abs(v_rr)) + max(c_ll, c_rr)
+end
+
+@inline function max_abs_speed_naive(u_ll, u_rr, normal_direction::AbstractVector,
+                                     equations::CompressibleEulerPotentialTemperatureEquations3D)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+
+    # Calculate normal velocities and sound speed
+    # left
+    v_ll = (v1_ll * normal_direction[1]
+            + v2_ll * normal_direction[2]
+            + v3_ll * normal_direction[3])
+    c_ll = sqrt(equations.gamma * p_ll / rho_ll)
+    # right
+    v_rr = (v1_rr * normal_direction[1]
+            + v2_rr * normal_direction[2]
+            + v3_rr * normal_direction[3])
+    c_rr = sqrt(equations.gamma * p_rr / rho_rr)
+
+    return max(abs(v_ll), abs(v_rr)) + max(c_ll, c_rr) * norm(normal_direction)
+end
+
+# Less "cautious", i.e., less overestimating `λ_max` compared to `max_abs_speed_naive`
+@inline function max_abs_speed(u_ll, u_rr, orientation::Integer,
+                               equations::CompressibleEulerPotentialTemperatureEquations3D)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+
+    # Get the velocity value in the appropriate direction
+    if orientation == 1
+        v_ll = v1_ll
+        v_rr = v1_rr
+    elseif orientation == 2
+        v_ll = v2_ll
+        v_rr = v2_rr
+    else # orientation == 3
+        v_ll = v3_ll
+        v_rr = v3_rr
+    end
+    # Calculate sound speeds
+    c_ll = sqrt(equations.gamma * p_ll / rho_ll)
+    c_rr = sqrt(equations.gamma * p_rr / rho_rr)
+
+    return max(abs(v_ll) + c_ll, abs(v_rr) + c_rr)
+end
+
+# Less "cautious", i.e., less overestimating `λ_max` compared to `max_abs_speed_naive`
+@inline function max_abs_speed(u_ll, u_rr, normal_direction::AbstractVector,
+                               equations::CompressibleEulerPotentialTemperatureEquations3D)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+
+    # Calculate normal velocities and sound speeds
+    # left
+    v_ll = (v1_ll * normal_direction[1]
+            + v2_ll * normal_direction[2]
+            + v3_ll * normal_direction[3])
+    c_ll = sqrt(equations.gamma * p_ll / rho_ll)
+    # right
+    v_rr = (v1_rr * normal_direction[1]
+            + v2_rr * normal_direction[2]
+            + v3_rr * normal_direction[3])
+    c_rr = sqrt(equations.gamma * p_rr / rho_rr)
+
+    norm_ = norm(normal_direction)
+    return max(abs(v_ll) + c_ll * norm_, abs(v_rr) + c_rr * norm_)
+end
+
+@inline function max_abs_speeds(u,
+                                equations::CompressibleEulerPotentialTemperatureEquations3D)
+    rho, v1, v2, v3, p = cons2prim(u, equations)
+    c = sqrt(equations.gamma * p / rho)
+
+    return abs(v1) + c, abs(v2) + c, abs(v3) + c
 end
 end # @muladd

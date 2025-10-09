@@ -11,21 +11,19 @@ struct CompressibleEulerPotentialTemperatureEquations1D{RealT <: Real} <:
     inv_gamma_minus_one::RealT # = inv(gamma - 1); can be used to write slow divisions as fast multiplications
     K::RealT # = p_0 * (R / p_0)^gamma; scaling factor between pressure and weighted potential temperature
     stolarsky_factor::RealT # = (gamma - 1) / gamma; used in the stolarsky mean
-end
-
-function CompressibleEulerPotentialTemperatureEquations1D(; RealT = Float64)
-    p_0 = 100_000
-    c_p = 1004
-    c_v = 717
-    R = c_p - c_v
-    gamma = c_p / c_v
-    inv_gamma_minus_one = inv(gamma - 1)
-    K = p_0 * (R / p_0)^gamma
-    stolarsky_factor = (gamma - 1) / gamma
-    return CompressibleEulerPotentialTemperatureEquations1D{RealT}(p_0, c_p, c_v, R,
-                                                                   gamma,
-                                                                   inv_gamma_minus_one,
-                                                                   K, stolarsky_factor)
+    function CompressibleEulerPotentialTemperatureEquations1D(; c_p, c_v)
+        c_p, c_v = promote(c_p, c_v)
+        p_0 = 100_000
+        R = c_p - c_v
+        gamma = c_p / c_v
+        inv_gamma_minus_one = inv(gamma - 1)
+        K = p_0 * (R / p_0)^gamma
+        stolarsky_factor = (gamma - 1) / gamma
+        return new{typeof(gamma)}(p_0, c_p, c_v, R,
+                                  gamma,
+                                  inv_gamma_minus_one,
+                                  K, stolarsky_factor)
+    end
 end
 
 function varnames(::typeof(cons2cons),
@@ -35,6 +33,47 @@ end
 
 varnames(::typeof(cons2prim),
 ::CompressibleEulerPotentialTemperatureEquations1D) = ("rho", "v1", "p1")
+
+# Calculate 1D flux for a single point
+@inline function flux(u, orientation::Integer,
+                      equations::CompressibleEulerPotentialTemperatureEquations1D)
+    rho, rho_v1, rho_theta = u
+    v1 = rho_v1 / rho
+    p = pressure(u, equations)
+    f1 = rho_v1
+    f2 = rho_v1 * v1 + p
+    f3 = rho_theta * v1
+
+    return SVector(f1, f2, f3)
+end
+
+# Low Mach number approximate Riemann solver (LMARS) from
+# X. Chen, N. Andronova, B. Van Leer, J. E. Penner, J. P. Boyd, C. Jablonowski, S.
+# Lin, A Control-Volume Model of the Compressible Euler Equations with a Vertical Lagrangian
+# Coordinate Monthly Weather Review Vol. 141.7, pages 2526–2544, 2013,
+# https://journals.ametsoc.org/view/journals/mwre/141/7/mwr-d-12-00129.1.xml.
+
+@inline function (flux_lmars::FluxLMARS)(u_ll, u_rr, orientation::Integer,
+                                         equations::CompressibleEulerPotentialTemperatureEquations1D)
+    a = flux_lmars.speed_of_sound
+    rho_ll, v1_ll, p_ll = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, p_rr = cons2prim(u_rr, equations)
+
+    rho = 0.5f0 * (rho_ll + rho_rr)
+
+    p_interface = 0.5f0 * (p_ll + p_rr) - 0.5f0 * a * rho * (v1_rr - v1_ll)
+    v_interface = 0.5f0 * (v1_ll + v1_rr) - 1 / (2 * a * rho) * (p_rr - p_ll)
+
+    if (v_interface > 0)
+        f1, f2, f3 = u_ll * v_interface
+    else
+        f1, f2, f3 = u_rr * v_interface
+    end
+
+    return SVector(f1,
+                   f2 + p_interface,
+                   f3)
+end
 
 """
 	flux_tec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperature1D)
@@ -166,7 +205,7 @@ end
     # Mathematical entropy
     p = equations.p_0 * (equations.R * cons[3] / equations.p_0)^equations.gamma
 
-    U = (p / (equations.gamma - 1) + 1 / 2 * (cons[2]^2) / (cons[1]))
+    U = (p / (equations.gamma - 1) + 0.5f0 * (cons[2]^2) / (cons[1]))
 
     return U
 end
@@ -192,7 +231,7 @@ end
 
 @inline function pressure(cons,
                           equations::CompressibleEulerPotentialTemperatureEquations1D)
-    _, _, p = cons2prim(cons, equations)
+    p = equations.K * exp(equations.gamma * log(cons[3]))
     return p
 end
 end # @muladd

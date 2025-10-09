@@ -12,24 +12,20 @@ struct CompressibleEulerPotentialTemperatureEquationsWithGravity1D{RealT <: Real
     inv_gamma_minus_one::RealT # = inv(gamma - 1); can be used to write slow divisions as fast multiplications
     K::RealT # = p_0 * (R / p_0)^gamma; scaling factor between pressure and weighted potential temperature
     stolarsky_factor::RealT # = (gamma - 1) / gamma; used in the stolarsky mean
-end
-
-function CompressibleEulerPotentialTemperatureEquationsWithGravity1D(; g = 9.81,
-                                                                     RealT = Float64)
-    p_0 = 100_000
-    c_p = 1004
-    c_v = 717
-    R = c_p - c_v
-    gamma = c_p / c_v
-    inv_gamma_minus_one = inv(gamma - 1)
-    K = p_0 * (R / p_0)^gamma
-    stolarsky_factor = (gamma - 1) / gamma
-    return CompressibleEulerPotentialTemperatureEquationsWithGravity1D{RealT}(p_0, c_p,
-                                                                              c_v, g, R,
-                                                                              gamma,
-                                                                              inv_gamma_minus_one,
-                                                                              K,
-                                                                              stolarsky_factor)
+    function CompressibleEulerPotentialTemperatureEquationsWithGravity1D(; c_p, c_v,
+                                                                         gravity)
+        c_p, c_v, g = promote(c_p, c_v, gravity)
+        p_0 = 100_000
+        R = c_p - c_v
+        gamma = c_p / c_v
+        inv_gamma_minus_one = inv(gamma - 1)
+        K = p_0 * (R / p_0)^gamma
+        stolarsky_factor = (gamma - 1) / gamma
+        return new{typeof(c_p)}(p_0, c_p, c_v, g, R,
+                                gamma,
+                                inv_gamma_minus_one,
+                                K, stolarsky_factor)
+    end
 end
 
 function varnames(::typeof(cons2cons),
@@ -63,6 +59,19 @@ have_nonconservative_terms(::CompressibleEulerPotentialTemperatureEquationsWithG
     end
 
     return flux, noncons_flux
+end
+
+# Calculate 1D flux for a single point
+@inline function flux(u, orientation::Integer,
+                      equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
+    rho, rho_v1, rho_theta = u
+    v1 = rho_v1 / rho
+    p = pressure(u, equations)
+    f1 = rho_v1
+    f2 = rho_v1 * v1 + p
+    f3 = rho_theta * v1
+
+    return SVector(f1, f2, f3, 0)
 end
 
 """
@@ -284,7 +293,7 @@ end
     # Mathematical entropy
     p = equations.p_0 * (equations.R * cons[3] / equations.p_0)^equations.gamma
 
-    U = p / (equations.gamma - 1) + 1 / 2 * (cons[2]^2) / (cons[1]) + cons[1] * cons[4]
+    U = p / (equations.gamma - 1) + 0.5f0 * (cons[2]^2) / (cons[1]) + cons[1] * cons[4]
 
     return U
 end
@@ -303,9 +312,23 @@ end
     return S
 end
 
-@inline function Trixi.energy_kinetic(cons,
-                                      equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
+@inline function energy_kinetic(cons,
+                                equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
     return 0.5f0 * (cons[2]^2) / (cons[1])
+end
+
+@inline function max_abs_speed(u_ll, u_rr, orientation::Integer,
+                               equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
+    rho_ll, v1_ll, p_ll = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, p_rr = cons2prim(u_rr, equations)
+
+    # Calculate primitive variables and speed of sound
+    v_mag_ll = abs(v1_ll)
+    c_ll = sqrt(equations.gamma * p_ll / rho_ll)
+    v_mag_rr = abs(v1_rr)
+    c_rr = sqrt(equations.gamma * p_rr / rho_rr)
+
+    return max(v_mag_ll + c_ll, v_mag_rr + c_rr)
 end
 
 @inline function max_abs_speeds(u,
@@ -330,9 +353,9 @@ end
     λ_max = max(v_mag_ll, v_mag_rr) + max(c_ll, c_rr)
 end
 
-@inline function Trixi.pressure(cons,
-                                equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
-    _, _, p = cons2prim(cons, equations)
+@inline function pressure(cons,
+                          equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
+    p = equations.K * exp(equations.gamma * log(cons[3]))
     return p
 end
 end # @muladd

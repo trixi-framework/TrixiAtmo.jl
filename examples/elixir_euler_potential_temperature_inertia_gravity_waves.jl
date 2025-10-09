@@ -36,7 +36,9 @@ function initial_condition_gravity_waves(x, t,
     return prim2cons(SVector(rho, v1, v2, p, g * x[2]), equations)
 end
 
-equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D()
+equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004,
+                                                                        c_v = 717,
+                                                                        gravity = 9.81)
 
 # We have an isothermal background state with T0 = 250 K. 
 # The reference speed of sound can be computed as:
