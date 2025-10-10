@@ -97,7 +97,7 @@ end
 
 equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004,
                                                                         c_v = 717,
-                                                                        gravity = 9.81)
+                                                                        gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 alpha = 0.035
 xr_B = 60000.0
 linear_hydrostatic_setup = HydrostaticSetup(alpha, xr_B, equations)

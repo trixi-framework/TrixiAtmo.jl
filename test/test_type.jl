@@ -45,7 +45,7 @@ isdir(outdir) && rm(outdir, recursive = true)
         for RealT in (Float32, Float64)
             equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity1D(c_p = RealT(1004),
                                                                                               c_v = RealT(717),
-                                                                                              gravity = RealT(9.81))
+                                                                                              gravity = RealT(EARTH_GRAVITATIONAL_ACCELERATION))
 
             x = SVector(zero(RealT))
             t = zero(RealT)
@@ -152,7 +152,7 @@ isdir(outdir) && rm(outdir, recursive = true)
         for RealT in (Float32, Float64)
             equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = RealT(1004),
                                                                                               c_v = RealT(717),
-                                                                                              gravity = RealT(9.81))
+                                                                                              gravity = RealT(EARTH_GRAVITATIONAL_ACCELERATION))
 
             x = SVector(zero(RealT))
             t = zero(RealT)
@@ -245,7 +245,7 @@ isdir(outdir) && rm(outdir, recursive = true)
         for RealT in (Float32, Float64)
             equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = RealT(1004),
                                                                                               c_v = RealT(717),
-                                                                                              gravity = RealT(9.81))
+                                                                                              gravity = RealT(EARTH_GRAVITATIONAL_ACCELERATION))
 
             x = SVector(zero(RealT))
             t = zero(RealT)

@@ -34,7 +34,7 @@ end
 
 equations = CompressibleEulerPotentialTemperatureEquationsWithGravity1D(c_p = 1004,
                                                                         c_v = 717,
-                                                                        gravity = 9.81)
+                                                                        gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 polydeg = 2
 basis = LobattoLegendreBasis(polydeg)
 cs = 340.0

@@ -11,7 +11,8 @@ c_vd = 717  # specific heat at constant volume for dry air
 c_pv = 1885 # specific heat at constant pressure for moist air
 c_vv = 1424 # specific heat at constant volume for moist air
 equations = CompressibleMoistEulerEquations2D(c_pd = c_pd, c_vd = c_vd, c_pv = c_pv,
-                                              c_vv = c_vv, gravity = 9.81)
+                                              c_vv = c_vv,
+                                              gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 
 initial_condition = initial_condition_convergence_test_moist
 

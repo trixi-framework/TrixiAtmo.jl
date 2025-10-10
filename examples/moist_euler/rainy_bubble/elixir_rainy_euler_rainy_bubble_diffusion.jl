@@ -1,8 +1,8 @@
 using OrdinaryDiffEqSSPRK
 using Trixi
 using TrixiAtmo
-using TrixiAtmo: source_terms_rainy, saturation_residual,
-                 saturation_residual_jacobian, NonlinearSolveDG,
+using TrixiAtmo: source_terms_rainy, initial_condition_bubble_rainy,
+                 saturation_residual, saturation_residual_jacobian,
                  cons2eq_pot_temp, saturation_vapour_pressure,
                  flux_chandrashekar, flux_LMARS,
                  source_terms_no_phase_change,

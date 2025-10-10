@@ -108,13 +108,16 @@ function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
     return SVector(rho, rho_e, rho_qv, rho_ql, T_loc)
 end
 
+equations_moist = CompressibleMoistEulerEquations2D(c_pd = 1004, c_vd = 717, c_pv = 1885,
+                                                    c_vv = 1424,
+                                                    gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+
 # Create background atmosphere data set
-atmosphere_data = AtmosphereLayers(CompressibleMoistEulerEquations2D())
+atmosphere_data = AtmosphereLayers(equations_moist)
 
 # Create the initial condition with the initial data set
 function initial_condition_moist(x, t, equations::CompressibleRainyEulerEquations2D)
-    return initial_condition_moist_bubble(x, t, CompressibleMoistEulerEquations2D(),
-                                          atmosphere_data)
+    return initial_condition_moist_bubble(x, t, equations_moist, atmosphere_data)
 end
 
 ###############################################################################
