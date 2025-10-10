@@ -40,10 +40,12 @@ include("meshes/meshes.jl")
 include("semidiscretization/semidiscretization.jl")
 include("solvers/solvers.jl")
 include("callbacks_step/callbacks_step.jl")
+include("callbacks_stage/callbacks_stage.jl")
 
-export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
+export CompressibleMoistEulerEquations2D,
+       CompressibleRainyEulerEquations2D,
        CovariantLinearAdvectionEquation2D, CovariantShallowWaterEquations2D,
-       SplitCovariantShallowWaterEquations2D,
+       ShallowWaterEquations3D, SplitCovariantShallowWaterEquations2D,
        CompressibleEulerPotentialTemperatureEquations1D,
        CompressibleEulerPotentialTemperatureEquations2D,
        CompressibleEulerPotentialTemperatureEquations3D,
@@ -52,6 +54,8 @@ export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity3D
 
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
+
+export NonlinearSolveDG
 
 export flux_chandrashekar, FluxLMARS
 
@@ -81,6 +85,8 @@ export initial_condition_gaussian, initial_condition_geostrophic_balance,
        initial_condition_barotropic_instability
 
 export bottom_topography_isolated_mountain, bottom_topography_unsteady_solid_body_rotation
+
+export AtmosphereLayers, AtmosphereLayersRainyBubble
 
 export examples_dir
 
