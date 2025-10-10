@@ -9,7 +9,7 @@ outdir = "out"
 Trixi.mpi_isroot() && isdir(outdir) && rm(outdir, recursive = true)
 Trixi.MPI.Barrier(Trixi.mpi_comm())
 
-@testset "MPI tests" begin
+@testset verbose=true showtiming=true "MPI tests" begin
 #! format: noindent
 
 @trixi_testset "elixir_moist_euler_moist_bubble" begin
