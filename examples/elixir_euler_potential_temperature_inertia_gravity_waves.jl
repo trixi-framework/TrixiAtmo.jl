@@ -13,7 +13,7 @@ Test cases for linearized analytical solution by
 """
 function initial_condition_gravity_waves(x, t,
                                          equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
-    g = equations.g
+    g = equations.gravity
     c_p = equations.c_p
     c_v = equations.c_v
     # center of perturbation

@@ -52,7 +52,7 @@ function (setup::SchärSetup)(u, x, t,
 
     rho, rho_v1, rho_v2, rho_theta, _ = u
 
-    g = equations.g
+    g = equations.gravity
     v1 = rho_v1 / rho
     theta = rho_theta / rho
 

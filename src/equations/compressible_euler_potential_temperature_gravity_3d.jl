@@ -5,7 +5,7 @@ struct CompressibleEulerPotentialTemperatureEquationsWithGravity3D{RealT <: Real
     p_0::RealT # reference pressure in Pa
     c_p::RealT # specific heat at constant pressure in J/(kg K)
     c_v::RealT # specific heat at constant volume in J/(kg K)
-    g::RealT # gravitational acceleration in m/s²
+    gravity::RealT # gravitational acceleration in m/s²
     R::RealT # gas constant in J/(kg K)
     gamma::RealT # ratio of specific heats 
     inv_gamma_minus_one::RealT # = inv(gamma - 1); can be used to write slow divisions as fast multiplications
@@ -13,14 +13,14 @@ struct CompressibleEulerPotentialTemperatureEquationsWithGravity3D{RealT <: Real
     stolarsky_factor::RealT # = (gamma - 1) / gamma; used in the stolarsky mean
     function CompressibleEulerPotentialTemperatureEquationsWithGravity3D(; c_p, c_v,
                                                                          gravity)
-        c_p, c_v, g = promote(c_p, c_v, gravity)
+        c_p, c_v, gravity = promote(c_p, c_v, gravity)
         p_0 = 100_000
         R = c_p - c_v
         gamma = c_p / c_v
         inv_gamma_minus_one = inv(gamma - 1)
         K = p_0 * (R / p_0)^gamma
         stolarsky_factor = (gamma - 1) / gamma
-        return new{typeof(c_p)}(p_0, c_p, c_v, g, R,
+        return new{typeof(c_p)}(p_0, c_p, c_v, gravity, R,
                                 gamma,
                                 inv_gamma_minus_one,
                                 K, stolarsky_factor)

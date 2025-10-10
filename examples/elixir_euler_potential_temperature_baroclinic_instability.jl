@@ -156,7 +156,7 @@ function initial_condition_baroclinic_instability(x, t,
     v2 = cos(lon) * u - sin(lat) * sin(lon) * v
     v3 = cos(lat) * v
     radius_earth = 6.371229e6  # a
-    gravitational_acceleration = 9.81    # g
+    gravitational_acceleration = equations.gravity    # g
 
     r = norm(x)
     # Make sure that r is not smaller than radius_earth

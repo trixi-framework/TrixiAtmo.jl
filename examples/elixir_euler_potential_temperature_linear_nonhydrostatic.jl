@@ -74,9 +74,9 @@ end
 @inline function (setup::NonHydrostaticSetup)(x, t,
                                               equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     @unpack theta_0, u0, Nf = setup
-    g = equations.g
+    g = equations.gravity
     # Exner pressure, solves hydrostatic equation for x[2]
-    exner = 1 + g^2 / (equations.c_p * theta_0 * Nf^2) * (exp(-Nf^2 / g * x[2]) - 1)
+    exner = 1 + gravity^2 / (equations.c_p * theta_0 * Nf^2) * (exp(-Nf^2 / g * x[2]) - 1)
     # pressure
     p_0 = 100_000.0  # reference pressure
     R = equations.c_p - equations.c_v    # gas constant (dry air)

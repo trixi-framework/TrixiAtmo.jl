@@ -54,7 +54,7 @@ end
 @inline function (setup::HydrostaticSetup)(u, x, t,
                                            equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     @unpack T_0, z_B, z_T, Nf, u0, alpha, xr_B = setup
-    g = equations.g
+    g = equations.gravity
 
     rho, rho_v1, rho_v2, rho_theta, _ = u
 

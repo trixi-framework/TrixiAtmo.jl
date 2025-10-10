@@ -8,7 +8,7 @@ using Trixi, TrixiAtmo
 
 function initial_condition_adiabatic(x, t,
                                      equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
-    g = equations.g
+    g = equations.gravity
     c_p = equations.c_p
     c_v = equations.c_v
     # center of perturbation
