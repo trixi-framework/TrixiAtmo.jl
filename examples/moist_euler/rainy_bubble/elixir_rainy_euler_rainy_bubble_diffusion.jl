@@ -21,7 +21,8 @@ atmosphere_data = AtmosphereLayersRainyBubble(equations; total_height = coordina
 
 # Create the initial condition with the initial data set
 function initial_condition_rainy(x, t, equations::CompressibleRainyEulerEquations2D)
-    return initial_condition_bubble_rainy(x, t, equations; atmosphere_data)
+    return initial_condition_bubble_rainy(x, t, equations;
+                                          atmosphere_layers = atmosphere_data)
 end
 
 ###############################################################################
