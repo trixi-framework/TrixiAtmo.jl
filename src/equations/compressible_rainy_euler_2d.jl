@@ -1129,8 +1129,8 @@ function AtmosphereLayersRainyBubble(equations::CompressibleRainyEulerEquations2
 end
 
 function initial_condition_bubble_rainy(x, t,
-                                        equations::CompressibleRainyEulerEquations2D;
-                                        atmosphere_layers)
+                                        equations::CompressibleRainyEulerEquations2D{RealT};
+                                        atmosphere_layers) where {RealT}
     # equations constants
     c_vd = equations.c_dry_air_const_volume
     c_vv = equations.c_vapour_const_volume
