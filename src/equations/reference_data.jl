@@ -4,7 +4,7 @@
 # Physical constants in SI units (reference values from the Williamson et al. test suite)
 const EARTH_RADIUS = 6.371229 # 6.37122e6  # m
 const EARTH_GRAVITATIONAL_ACCELERATION = 9.81 # 9.80616  # m/s²
-const EARTH_ROTATION_RATE = 7.29212 # 7.292e-5  # rad/s
+const EARTH_ROTATION_RATE = 7.29212e-5 # 7.292e-5  # rad/s
 const SECONDS_PER_DAY = 8.64e4
 
 @doc raw"""
