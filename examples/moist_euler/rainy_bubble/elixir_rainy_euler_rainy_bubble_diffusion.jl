@@ -17,7 +17,12 @@ coordinates_max = (2400.0, 2400.0)
 
 # create layers for initial condition
 equations = CompressibleRainyEulerEquations2D()
-layers = AtmosphereLayersRainyBubble(equations; total_height = coordinates_max[2] + 1)
+atmosphere_data = AtmosphereLayersRainyBubble(equations; total_height = coordinates_max[2] + 1)
+
+# Create the initial condition with the initial data set
+function initial_condition_rainy(x, t, equations::CompressibleRainyEulerEquations2D)
+    return initial_condition_bubble_rainy(x, t, equations; atmosphere_data)
+end
 
 ###############################################################################
 # semidiscretization of the compressible rainy Euler equations
@@ -42,16 +47,14 @@ volume_integral = VolumeIntegralFluxDifferencing(flux_ec_rain)
 
 solver = DGSEM(polydeg, surface_flux, volume_integral)
 
-initial_condition = initial_condition_bubble_rainy
-source_terms = source_terms_rainy
-
 initial_refinement_level = 6
 mesh = TreeMesh(coordinates_min, coordinates_max,
                 initial_refinement_level = initial_refinement_level,
                 periodicity = (true, false), n_cells_max = 1_000_000)
 
 semi = SemidiscretizationHyperbolicParabolic(mesh, (equations, equations_parabolic),
-                                             initial_condition, solver; source_terms,
+                                             initial_condition_rainy, solver;
+                                             source_terms_rainy,
                                              boundary_conditions = (boundary_conditions,
                                                                     boundary_conditions_parabolic))
 

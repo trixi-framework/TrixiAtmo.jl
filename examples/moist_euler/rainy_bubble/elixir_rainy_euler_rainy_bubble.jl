@@ -14,7 +14,12 @@ coordinates_max = (2400.0, 2400.0)
 
 # create layers for initial condition
 equations = CompressibleRainyEulerEquations2D()
-layers = AtmosphereLayersRainyBubble(equations; total_height = coordinates_max[2] + 1)
+atmosphere_data = AtmosphereLayersRainyBubble(equations; total_height = coordinates_max[2] + 1)
+
+# Create the initial condition with the initial data set
+function initial_condition_rainy(x, t, equations::CompressibleRainyEulerEquations2D)
+    return initial_condition_bubble_rainy(x, t, equations; atmosphere_data)
+end
 
 ###############################################################################
 # semidiscretization of the compressible rainy Euler equations
@@ -35,7 +40,7 @@ cells_per_dimension = (64, 64)
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = (true, false))
 
-semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_bubble_rainy, solver,
+semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_rainy, solver,
                                     source_terms = source_terms_rainy,
                                     boundary_conditions = boundary_conditions)
 
