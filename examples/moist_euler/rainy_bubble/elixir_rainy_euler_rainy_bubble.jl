@@ -4,7 +4,7 @@ using TrixiAtmo
 using TrixiAtmo: source_terms_rainy, initial_condition_bubble_rainy,
                  saturation_residual, saturation_residual_jacobian,
                  cons2eq_pot_temp, saturation_vapour_pressure,
-                 flux_ec_rain, boundary_condition_simple_slip_wall,
+                 boundary_condition_simple_slip_wall,
                  generate_hydrostatic_residual, generate_perturbation_residual
 using NLsolve: nlsolve
 

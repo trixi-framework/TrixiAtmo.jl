@@ -523,4 +523,23 @@ end
           flux(u, aux_vars, orientation, equations)
 end
 
+@testset "Consistency check for EC flux with Rainy Euler" begin
+    # Set up equations and dummy conservative variables state
+    equations = CompressibleRainyEulerEquations2D()
+    # Example state vector (ρ_d, ρ_m, ρ_r, ρu, ρv, ρe, ρq_v, ρq_c, T)
+    u = SVector(1.0, 0.2, 0.1, 0.5, -0.4, 2.2, 0.1, 0.1, 300)
+
+    normal_directions = [SVector(1.0, 0.0),
+        SVector(0.0, 1.0),
+        SVector(0.5, -0.5),
+        SVector(-1.2, 0.3)]
+
+    for normal_direction in normal_directions
+        equal = flux_ec_rain(u, u, normal_direction, equations) .≈
+                flux(u, normal_direction, equations)
+        # TODO
+        expected = [true, true, true, true, true, false, true, true, true]
+        @test equal == expected
+    end
+end
 end

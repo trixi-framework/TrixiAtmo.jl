@@ -4,11 +4,9 @@ using TrixiAtmo
 using TrixiAtmo: source_terms_rainy, initial_condition_bubble_rainy,
                  saturation_residual, saturation_residual_jacobian,
                  cons2eq_pot_temp, saturation_vapour_pressure,
-                 flux_chandrashekar, flux_LMARS,
                  source_terms_no_phase_change,
                  boundary_condition_laplace,
-                 boundary_condition_simple_slip_wall,
-                 flux_ec_rain
+                 boundary_condition_simple_slip_wall
 using NLsolve: nlsolve
 
 # domain
@@ -55,7 +53,7 @@ mesh = TreeMesh(coordinates_min, coordinates_max,
 
 semi = SemidiscretizationHyperbolicParabolic(mesh, (equations, equations_parabolic),
                                              initial_condition_rainy, solver;
-                                             source_terms_rainy,
+                                             source_terms = source_terms_rainy,
                                              boundary_conditions = (boundary_conditions,
                                                                     boundary_conditions_parabolic))
 

@@ -3,8 +3,8 @@ using Trixi
 using TrixiAtmo
 using TrixiAtmo: source_terms_no_phase_change, saturation_residual,
                  saturation_residual_jacobian, NonlinearSolveDG,
-                 cons2eq_pot_temp, flux_LMARS, flux_chandrashekar,
-                 flux_ec_rain, boundary_condition_simple_slip_wall
+                 cons2eq_pot_temp, flux_chandrashekar,
+                 boundary_condition_simple_slip_wall
 using NLsolve: nlsolve
 
 # Moist bubble test case from paper:
