@@ -10,7 +10,7 @@ include("test_trixiatmo.jl")
 outdir = "out"
 isdir(outdir) && rm(outdir, recursive = true)
 
-@testset "Test Type Stability" begin
+@testset verbose=true showtiming=true "Test Type Stability" begin
     @timed_testset "Compressible Euler Potential Temperature 1D" begin
         for RealT in (Float32, Float64)
             equations = @inferred CompressibleEulerPotentialTemperatureEquations1D(c_p = RealT(1004),

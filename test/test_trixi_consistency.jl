@@ -6,7 +6,7 @@ include("test_trixiatmo.jl")
 outdir = "out"
 isdir(outdir) && rm(outdir, recursive = true)
 
-@trixi_testset verbose=true showtiming=true "Dry air consistency check" begin
+@trixi_testset "Dry air consistency check" begin
     using Trixi
     using TrixiAtmo: CompressibleMoistEulerEquations2D
 
