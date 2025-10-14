@@ -2,7 +2,7 @@ module TestThreaded
 
 include("test_trixiatmo.jl")
 
-@testset "Threaded tests" begin
+@testset verbose=true showtiming=true "Threaded tests" begin
 #! format: noindent
 
 @trixi_testset "elixir_moist_euler_moist_bubble" begin

@@ -93,7 +93,7 @@ end
 # semidiscretization of the compressible Euler equations
 equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004,
                                                                         c_v = 717,
-                                                                        gravity = 9.81)
+                                                                        gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 alpha = 0.03
 xr_B = 20000
 schär_setup = SchärSetup(alpha, xr_B)
