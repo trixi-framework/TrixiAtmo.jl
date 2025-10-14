@@ -65,7 +65,7 @@ export flux_nonconservative_zeros, flux_nonconservative_ec,
        flux_tec, flux_etec, flux_nonconservative_souza_etal,
        flux_nonconservative_artiano_etal,
        flux_nonconservative_waruzewski_etal, flux_zero,
-       flux_ec_rain
+       flux_ec_rain, flux_LMARS
 
 export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!
 

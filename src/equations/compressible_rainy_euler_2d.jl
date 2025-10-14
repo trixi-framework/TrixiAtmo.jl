@@ -72,7 +72,7 @@ struct CompressibleRainyEulerEquations2D{RealT <: Real} <:
     v_mean_rain      :: RealT
 end
 
-function CompressibleRainyEulerEquations2D(; RealT = Float64)
+function CompressibleRainyEulerEquations2D(RealT = Float64)
     # Specific heat capacities:
     c_liquid_water = 4186
     c_dry_air_const_pressure = 1004
@@ -83,7 +83,7 @@ function CompressibleRainyEulerEquations2D(; RealT = Float64)
     # Gas constants:
     R_dry_air = c_dry_air_const_pressure - c_dry_air_const_volume
     R_vapour = c_vapour_const_pressure - c_vapour_const_volume
-    eps = R_dry_air / R_vapour
+    eps = convert(RealT, R_dry_air / R_vapour)
 
     # Reference values:
     ref_saturation_pressure = convert(RealT, 610.7)    # This needs to be adjusted if ref_temperature is changed!
@@ -388,7 +388,7 @@ end
         v_terminal_rain = v_0 * convert(RealT, 1.9386213994279082) *
                           (rho_rain / (pi * (rho_moist + rho_rain) * N_0))^(0.125f0)
     else
-        v_terminal_rain = 0
+        v_terminal_rain = RealT(0)
     end
 
     return v_terminal_rain
@@ -762,11 +762,11 @@ end
     residual2 = min(saturation_vapour_pressure(guess[3], equations) / (R_v * guess[3]),
                     rho_moist)
     residual2 -= guess[1]
-    residual2 *= 1e7
+    residual2 *= 1.0f7
 
     residual3 = rho_moist
     residual3 -= guess[1] + guess[2]
-    residual3 *= 1e7
+    residual3 *= 1.0f7
 
     return SVector(residual1, residual2, residual3)
 end
@@ -796,7 +796,7 @@ end
     J_22 = 0
 
     if (svp / (R_v * guess[3]) < rho_moist)
-        J_23 = (svp_t * guess[3] - svp) / (R_v * guess[3]^2) * 1e7
+        J_23 = (svp_t * guess[3] - svp) / (R_v * guess[3]^2) * 1.0f7
     else
         J_23 = 0
     end

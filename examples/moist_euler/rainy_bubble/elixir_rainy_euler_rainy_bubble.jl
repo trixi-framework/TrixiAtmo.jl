@@ -14,7 +14,8 @@ coordinates_max = (2400.0, 2400.0)
 
 # create layers for initial condition
 equations = CompressibleRainyEulerEquations2D()
-atmosphere_data = AtmosphereLayersRainyBubble(equations; total_height = coordinates_max[2] + 1)
+atmosphere_data = AtmosphereLayersRainyBubble(equations;
+                                              total_height = coordinates_max[2] + 1)
 
 # Create the initial condition with the initial data set
 function initial_condition_rainy(x, t, equations::CompressibleRainyEulerEquations2D)
