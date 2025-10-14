@@ -100,7 +100,7 @@ function mapping(xi_, eta_)
     return SVector(x, y)
 end
 
-cells_per_dimension = (32,75) 
+cells_per_dimension = (16,38) 
 # in the paper are 3 different resolutions:
 # H1: (128, 300), dx = 3200 m,  dz = 100 m
 # H2: (64, 150),  dx = 64000 m, dz = 200 m 
@@ -162,7 +162,7 @@ save_solution = SaveSolutionCallback(interval = analysis_interval,
                                      output_directory = "out",
                                      solution_variables = solution_variables)
 
-#stepsize_callback = StepsizeCallback(cfl = 1.0)
+stepsize_callback = StepsizeCallback(cfl = 1.0)
 
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,

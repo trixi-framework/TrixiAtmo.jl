@@ -12,7 +12,7 @@ function Trixi.max_dt(u, t,
     max_scaled_speed = nextfloat(zero(t))
 
     (; contravariant_vectors, inverse_jacobian) = cache.elements
-    (; aux_node_vars) = cache.auxiliary_variables
+    (; aux_node_vars) = cache.aux_vars
 
     Trixi.@batch reduction = (max, max_scaled_speed) for element in eachelement(dg, cache)
         max_lambda1 = max_lambda2 = zero(max_scaled_speed)

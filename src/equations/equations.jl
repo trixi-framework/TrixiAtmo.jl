@@ -337,6 +337,10 @@ end
 
 @inline have_aux_node_vars(::AbstractVariableCoefficientEquations) = True()
 
+function cons2aux(u, aux, equations::AbstractEquations)
+    return aux
+end
+
 @inline function Trixi.flux_central(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
     orientation_or_normal_direction,
     equations::AbstractVariableCoefficientEquations)
