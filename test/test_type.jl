@@ -409,10 +409,12 @@ isdir(outdir) && rm(outdir, recursive = true)
             @test eltype(@inferred cons2prim(u, equations)) == RealT
             @test eltype(@inferred prim2cons(u, equations)) == RealT
             @test eltype(@inferred cons2entropy(u, equations)) == RealT
+            @test eltype(@inferred entropy2cons(u, equations)) == RealT
             @test typeof(@inferred pressure(u, equations)) == RealT
             @test typeof(@inferred entropy(cons, equations)) == RealT
             @test typeof(@inferred energy_kinetic(cons, equations)) == RealT
             @test typeof(@inferred energy_total(cons, equations)) == RealT
+            @test typeof(@inferred energy_internal(cons, equations))
             @test eltype(@inferred Trixi.max_abs_speeds(u, equations)) == RealT
             @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, normal_direction,
                                                        equations)) == RealT

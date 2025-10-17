@@ -276,37 +276,6 @@ The modification is in the energy flux to guarantee pressure equilibrium and was
   compressible flows
   [DOI: 10.1016/j.jcp.2020.110060](https://doi.org/10.1016/j.jcp.2020.110060)
 """
-@inline function flux_shima_etal(u_ll, u_rr, orientation::Integer,
-                                 equations::CompressibleEulerInternalKineticEnergyEquationsWithGravity2D)
-    # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
-
-    # Average each factor of products in flux
-    rho_avg = 0.5f0 * (rho_ll + rho_rr)
-    v1_avg = 0.5f0 * (v1_ll + v1_rr)
-    v2_avg = 0.5f0 * (v2_ll + v2_rr)
-    p_avg = 0.5f0 * (p_ll + p_rr)
-    kin_avg = 0.5f0 * (v1_ll * v1_rr + v2_ll * v2_rr)
-
-    # Calculate fluxes depending on orientation
-    if orientation == 1
-        pv1_avg = 0.5f0 * (p_ll * v1_rr + p_rr * v1_ll)
-        f1 = rho_avg * v1_avg
-        f2 = f1 * v1_avg + p_avg
-        f3 = f1 * v2_avg
-        f4 = p_avg * v1_avg * equations.inv_gamma_minus_one + f1 * kin_avg + pv1_avg
-    else
-        pv2_avg = 0.5f0 * (p_ll * v2_rr + p_rr * v2_ll)
-        f1 = rho_avg * v2_avg
-        f2 = f1 * v1_avg
-        f3 = f1 * v2_avg + p_avg
-        f4 = p_avg * v2_avg * equations.inv_gamma_minus_one + f1 * kin_avg + pv2_avg
-    end
-
-    return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
-end
-
 @inline function flux_shima_etal(u_ll, u_rr, normal_direction::AbstractVector,
                                  equations::CompressibleEulerInternalKineticEnergyEquationsWithGravity2D)
     # Unpack left and right state
@@ -344,37 +313,6 @@ Kinetic energy preserving two-point flux by
   Navier-Stokes equations for a compressible fluid
   [DOI: 10.1016/j.jcp.2007.09.020](https://doi.org/10.1016/j.jcp.2007.09.020)
 """
-@inline function flux_kennedy_gruber(u_ll, u_rr, orientation::Integer,
-                                     equations::CompressibleEulerInternalKineticEnergyEquationsWithGravity2D)
-    # Unpack left and right state
-    rho_e_ll = last(u_ll)
-    rho_e_rr = last(u_rr)
-    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
-
-    # Average each factor of products in flux
-    rho_avg = 0.5f0 * (rho_ll + rho_rr)
-    v1_avg = 0.5f0 * (v1_ll + v1_rr)
-    v2_avg = 0.5f0 * (v2_ll + v2_rr)
-    p_avg = 0.5f0 * (p_ll + p_rr)
-    e_avg = 0.5f0 * (rho_e_ll / rho_ll + rho_e_rr / rho_rr)
-
-    # Calculate fluxes depending on orientation
-    if orientation == 1
-        f1 = rho_avg * v1_avg
-        f2 = rho_avg * v1_avg * v1_avg + p_avg
-        f3 = rho_avg * v1_avg * v2_avg
-        f4 = (rho_avg * e_avg + p_avg) * v1_avg
-    else
-        f1 = rho_avg * v2_avg
-        f2 = rho_avg * v2_avg * v1_avg
-        f3 = rho_avg * v2_avg * v2_avg + p_avg
-        f4 = (rho_avg * e_avg + p_avg) * v2_avg
-    end
-
-    return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
-end
-
 @inline function flux_kennedy_gruber(u_ll, u_rr, normal_direction::AbstractVector,
                                      equations::CompressibleEulerInternalKineticEnergyEquationsWithGravity2D)
     # Unpack left and right state
@@ -415,44 +353,6 @@ See also
   the Euler Equations Using Summation-by-Parts Operators
   [Proceedings of ICOSAHOM 2018](https://doi.org/10.1007/978-3-030-39647-3_42)
 """
-@inline function flux_ranocha(u_ll, u_rr, orientation::Integer,
-                              equations::CompressibleEulerInternalKineticEnergyEquationsWithGravity2D)
-    # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
-
-    # Compute the necessary mean values
-    rho_mean = ln_mean(rho_ll, rho_rr)
-    # Algebraically equivalent to `inv_ln_mean(rho_ll / p_ll, rho_rr / p_rr)`
-    # in exact arithmetic since
-    #     log((ϱₗ/pₗ) / (ϱᵣ/pᵣ)) / (ϱₗ/pₗ - ϱᵣ/pᵣ)
-    #   = pₗ pᵣ log((ϱₗ pᵣ) / (ϱᵣ pₗ)) / (ϱₗ pᵣ - ϱᵣ pₗ)
-    inv_rho_p_mean = p_ll * p_rr * inv_ln_mean(rho_ll * p_rr, rho_rr * p_ll)
-    v1_avg = 0.5f0 * (v1_ll + v1_rr)
-    v2_avg = 0.5f0 * (v2_ll + v2_rr)
-    p_avg = 0.5f0 * (p_ll + p_rr)
-    velocity_square_avg = 0.5f0 * (v1_ll * v1_rr + v2_ll * v2_rr)
-
-    # Calculate fluxes depending on orientation
-    if orientation == 1
-        f1 = rho_mean * v1_avg
-        f2 = f1 * v1_avg + p_avg
-        f3 = f1 * v2_avg
-        f4 = f1 *
-             (velocity_square_avg + inv_rho_p_mean * equations.inv_gamma_minus_one) +
-             0.5f0 * (p_ll * v1_rr + p_rr * v1_ll)
-    else
-        f1 = rho_mean * v2_avg
-        f2 = f1 * v1_avg
-        f3 = f1 * v2_avg + p_avg
-        f4 = f1 *
-             (velocity_square_avg + inv_rho_p_mean * equations.inv_gamma_minus_one) +
-             0.5f0 * (p_ll * v2_rr + p_rr * v2_ll)
-    end
-
-    return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
-end
-
 @inline function flux_ranocha(u_ll, u_rr, normal_direction::AbstractVector,
                               equations::CompressibleEulerInternalKineticEnergyEquationsWithGravity2D)
     # Unpack left and right state
@@ -480,45 +380,6 @@ end
     f4 = (f1 * (velocity_square_avg + inv_rho_p_mean * equations.inv_gamma_minus_one)
           +
           0.5f0 * (p_ll * v_dot_n_rr + p_rr * v_dot_n_ll))
-
-    return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
-end
-
-@inline function (flux_lmars::FluxLMARS)(u_ll, u_rr, orientation::Integer,
-                                         equations::CompressibleEulerInternalKineticEnergyEquationsWithGravity2D)
-    c = flux_lmars.speed_of_sound
-
-    # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
-
-    if orientation == 1
-        v_ll = v1_ll
-        v_rr = v1_rr
-    else # orientation == 2
-        v_ll = v2_ll
-        v_rr = v2_rr
-    end
-
-    rho = 0.5f0 * (rho_ll + rho_rr)
-    p = 0.5f0 * (p_ll + p_rr) - 0.5f0 * c * rho * (v_rr - v_ll)
-    v = 0.5f0 * (v_ll + v_rr) - 1 / (2 * c * rho) * (p_rr - p_ll)
-
-    # We treat the energy term analogous to the potential temperature term in the paper by
-    # Chen et al., i.e. we use p_ll and p_rr, and not p
-    if v >= 0
-        f1, f2, f3, f4 = v * u_ll
-        f4 = f4 + p_ll * v
-    else
-        f1, f2, f3, f4 = v * u_rr
-        f4 = f4 + p_rr * v
-    end
-
-    if orientation == 1
-        f2 = f2 + p
-    else # orientation == 2
-        f3 = f3 + p
-    end
 
     return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
 end
@@ -642,39 +503,6 @@ end
     norm_ = norm(normal_direction)
     return max(abs(v_ll) + c_ll * norm_,
                abs(v_rr) + c_rr * norm_)
-end
-
-# Calculate estimate for minimum and maximum wave speeds for HLL-type fluxes
-@inline function min_max_speed_naive(u_ll, u_rr, orientation::Integer,
-                                     equations::CompressibleEulerInternalKineticEnergyEquationsWithGravity2D)
-    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
-
-    if orientation == 1 # x-direction
-        λ_min = v1_ll - sqrt(equations.gamma * p_ll / rho_ll)
-        λ_max = v1_rr + sqrt(equations.gamma * p_rr / rho_rr)
-    else # y-direction
-        λ_min = v2_ll - sqrt(equations.gamma * p_ll / rho_ll)
-        λ_max = v2_rr + sqrt(equations.gamma * p_rr / rho_rr)
-    end
-
-    return λ_min, λ_max
-end
-
-@inline function min_max_speed_naive(u_ll, u_rr, normal_direction::AbstractVector,
-                                     equations::CompressibleEulerInternalKineticEnergyEquationsWithGravity2D)
-    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
-
-    v_normal_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2]
-    v_normal_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2]
-
-    norm_ = norm(normal_direction)
-    # The v_normals are already scaled by the norm
-    λ_min = v_normal_ll - sqrt(equations.gamma * p_ll / rho_ll) * norm_
-    λ_max = v_normal_rr + sqrt(equations.gamma * p_rr / rho_rr) * norm_
-
-    return λ_min, λ_max
 end
 
 @inline function max_abs_speeds(u,
