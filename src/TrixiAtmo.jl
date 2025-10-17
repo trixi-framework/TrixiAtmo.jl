@@ -30,7 +30,8 @@ using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
                         energy_kinetic, energy_internal, energy_total, entropy, pressure,
                         flux, flux_ec, flux_chandrashekar, flux_wintermeyer_etal,
                         flux_fjordholm_etal, flux_nonconservative_wintermeyer_etal,
-                        flux_nonconservative_fjordholm_etal, FluxLMARS
+                        flux_nonconservative_fjordholm_etal, FluxLMARS, flux_shima_etal,
+                        flux_ranocha, flux_kennedy_gruber
 
 using Trixi: ln_mean, stolarsky_mean, inv_ln_mean
 
@@ -49,7 +50,8 @@ export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
        CompressibleEulerPotentialTemperatureEquations3D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity1D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity2D,
-       CompressibleEulerPotentialTemperatureEquationsWithGravity3D
+       CompressibleEulerPotentialTemperatureEquationsWithGravity3D,
+       CompressibleEulerInternalKineticEnergyEquationsWithGravity2D
 
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
