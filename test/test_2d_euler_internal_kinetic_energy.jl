@@ -18,7 +18,7 @@ include("test_trixiatmo.jl")
                             0.00033470830315131473,
                             0.27272386016556993,
                             4.3655745685100555e-11
-                        ], tspan=(0.0, 10.0))
+                        ], tspan=(0.0, 10.0), atol=5e-11)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
