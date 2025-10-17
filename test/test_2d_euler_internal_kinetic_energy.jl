@@ -2,7 +2,7 @@ module TestExamples2DEulerInternalKineticEnergy
 
 include("test_trixiatmo.jl")
 
-@trixi_testset "elixir_euler_potential_temperature_inertia_gravity_waves_2d" begin
+@trixi_testset "elixir_euler_internal_kinetic_energy_inertia_gravity_waves_2d" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_euler_internal_kinetic_energy_inertia_gravity_waves.jl"),
                         l2=[
