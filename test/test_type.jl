@@ -405,6 +405,25 @@ isdir(outdir) && rm(outdir, recursive = true)
                   RealT
             @test eltype(@inferred flux_shima_etal(u_ll, u_rr, normal_direction, equations)) ==
                   RealT
+            @test eltype(@inferred flux_nonconservative_artiano_etal(u_ll, u_rr,
+                                                                     normal_direction,
+                                                                     equations)) ==
+                  RealT
+            @test eltype(@inferred flux_nonconservative_waruzewski_etal(u_ll, u_rr,
+                                                                        normal_direction,
+                                                                        equations)) ==
+                  RealT
+            @test eltype(@inferred flux_nonconservative_souza_etal(u_ll, u_rr,
+                                                                   normal_direction,
+                                                                   equations)) ==
+                  RealT
+            @test eltype(@inferred boundary_condition_slip_wall(u_inner,
+                                                                normal_direction,
+                                                                x, t,
+                                                                surface_flux_functions,
+                                                                equations)) ==
+                  SVector{5, RealT}
+            @test eltype(varnames(cons2prim, equations)) == NTuple{5, String}
 
             @test eltype(@inferred cons2prim(u, equations)) == RealT
             @test eltype(@inferred prim2cons(u, equations)) == RealT
