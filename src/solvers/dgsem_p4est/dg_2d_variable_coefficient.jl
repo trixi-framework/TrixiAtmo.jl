@@ -72,7 +72,7 @@ end
     end
 end
 
-@inline function Trixi.calc_boundary_flux!(surface_flux_values, t, boundary_condition,
+@inline function Trixi.calc_boundary_flux!(surface_flux_values, t, boundary_conditions::Union{NamedTuple{(:x_neg, :x_pos, :y_neg, :y_pos)}, Dict{Symbol, Any}},
                                     mesh::P4estMesh{2},
                                     nonconservative_terms::Trixi.False,
                                     equations::AbstractVariableCoefficientEquations{2},
@@ -84,7 +84,7 @@ end
     (; node_coordinates, contravariant_vectors) = cache.elements
     (; surface_flux) = surface_integral
     (; aux_node_vars) = cache.aux_vars
-
+    #@show stacktrace()
     # Extract solution data from boundary container
     u_inner = Trixi.get_node_vars(boundaries.u, equations, dg, node_index, boundary_index)
     aux_vars_inner = get_node_aux_vars(aux_node_vars, equations, dg, i_index, j_index, element_index)
@@ -105,4 +105,14 @@ end
         surface_flux_values[v, node_index, direction_index, element_index] = flux_[v]
     end
 end
+
+function Trixi.calc_boundary_flux!(cache, t,
+                                   boundary_conditions::NamedTuple{(:x_neg, :x_pos, :y_neg, :y_pos)},
+                                   mesh::P4estMesh{2},
+                                   equations::AbstractVariableCoefficientEquations{2},
+                                   surface_integral, dg::DG, cache_extra...)
+    # Call your auxiliary-variable version here
+    #Trixi.calc_boundary_flux_with_aux!(cache, t, boundary_conditions, mesh, equations, surface_integral, dg, cache_extra...)
+end
+
 end 

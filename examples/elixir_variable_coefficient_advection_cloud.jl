@@ -55,10 +55,34 @@ polydeg = 3
 
 # P4est HOHQ mesh 
 mesh_file = joinpath("src", "meshes", "schaer_mountain_advection2.inp")
-mesh = P4estMesh{2}(mesh_file, polydeg = polydeg)
+mesh_hohq = P4estMesh{2}(mesh_file, polydeg = polydeg)
 
 initial_condition = initial_condition_schaer_mountain_cloud
 
+# P4est transformation mesh
+function mapping(xi_, eta_) 
+    # transformation from [-1,1]x[-1,1] to [-75000,75000]x[0,15000]
+    xi = xi_ * 75_000  #xi_ * 10_000.0 
+    eta = eta_ * 7_500 + 7_500# eta_ * 500.0 + 500.0 
+    #upper boundary 
+    H = 15_000.0
+
+    #topography
+    h_c = 3_000.0
+    lambda_c = 8_000.0
+    a_c = 9_511.0
+
+    topo = -h_c * exp(-(xi / a_c)^2) * cos(pi * xi / lambda_c)^2
+
+    x = xi
+    y = H * (eta - topo) / (H - topo)
+    return SVector(x, y)
+end
+
+cells_per_dimension = (50, 30)
+mesh_transform = P4estMesh(cells_per_dimension; polydeg=2, mapping)
+
+mesh = mesh_transform
 # flux and solver 
 surface_flux = flux_lax_friedrichs 
 
@@ -68,7 +92,7 @@ solver = DGSEM(polydeg = polydeg,
                
 # boundary conditions 
 
-boundary_conditions_dirichlet = Dict(:left => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
+boundary_conditions_dirichlet_hohq = Dict(:left => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
                                      :right => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
                                      :bottom => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
                                      :top => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain)) #boundary_condition_slip_wall,
@@ -77,20 +101,36 @@ boundary_conditions_dirichlet = Dict(:left => BoundaryConditionDirichletAux(init
                                      #:bottom_left_connection => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
                                      #:bottom_right_connection => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain))
 
+boundary_conditions_dirichlet_transform = (x_neg = BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
+                       x_pos = BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
+                       y_neg = BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
+                       y_pos = BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain))
 
 # the velocity is passed as auxiliary_field into the cache
-semi = SemidiscretizationHyperbolic(mesh,
+semi_hohq = SemidiscretizationHyperbolic(mesh_hohq,
                                     equations,
                                     initial_condition,
                                     solver,
                                     #source_terms = source_term,
-                                    boundary_conditions = boundary_conditions_dirichlet,
+                                    boundary_conditions = boundary_conditions_dirichlet_hohq,
                                     aux_field = velocity_schaer_mountain)
+
+semi_transform = SemidiscretizationHyperbolic(mesh_transform,
+                                    equations,
+                                    initial_condition,
+                                    solver,
+                                    #source_terms = source_term,
+                                    boundary_conditions = boundary_conditions_dirichlet_transform,
+                                    aux_field = velocity_schaer_mountain)
+
+semi = semi_transform
+
+
 
 ##############################################################################################
 # ODE solvers, callbacks etc.
 
-tspan = (0.0, 5000.0)
+tspan = (0.0, 10000.0) #10000.0
 
 ode = semidiscretize(semi, tspan)
 
@@ -123,11 +163,11 @@ callbacks = CallbackSet(summary_callback,
 
 ###############################################################################
 # run the simulation
+
 sol = solve(ode,
             CarpenterKennedy2N54(williamson_condition = false),
             maxiters = 1.0e7,
             dt = 0.5, # solve needs some value here but it will be overwritten by the stepsize_callback
             save_everystep = false,
             callback = callbacks);
-
 summary_callback()
