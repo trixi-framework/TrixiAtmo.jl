@@ -423,7 +423,7 @@ isdir(outdir) && rm(outdir, recursive = true)
                                                                 surface_flux_function,
                                                                 equations)) ==
                   SVector{5, RealT}
-            @test eltype(varnames(cons2prim, equations)) == NTuple{5, String}
+            @test eltype(varnames(cons2prim, equations)) == String
 
             @test eltype(@inferred cons2prim(u, equations)) == RealT
             @test eltype(@inferred prim2cons(u, equations)) == RealT
