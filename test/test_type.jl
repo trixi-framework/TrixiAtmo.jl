@@ -420,7 +420,7 @@ isdir(outdir) && rm(outdir, recursive = true)
             @test eltype(@inferred boundary_condition_slip_wall(u_inner,
                                                                 normal_direction,
                                                                 x, t,
-                                                                surface_flux_functions,
+                                                                surface_flux_function,
                                                                 equations)) ==
                   SVector{5, RealT}
             @test eltype(varnames(cons2prim, equations)) == NTuple{5, String}
