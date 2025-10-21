@@ -31,7 +31,7 @@ The compressible Euler equations with gravity
 ```
 for an ideal gas with ratio of specific heats `gamma`
 in two space dimensions.
-Here, ``\rho`` is the density, ``v_1``, ``v_2`` the velocities, ``e`` the specific total energy **rather than** specific internal energy, ``phi`` is the potential and
+Here, ``\rho`` is the density, ``v_1``, ``v_2`` are the velocities, ``e`` is the specific total energy **rather than** specific internal energy, ``phi`` is the gravitational potential, and
 ```math
 p = (\gamma - 1) \left( \rho e - \frac{1}{2} \rho (v_1^2+v_2^2) \right)
 ```
@@ -168,13 +168,16 @@ end
 """
 	flux_nonconservative_waruzewski_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerInternalKineticEnergyEquationsWithGravity2D)
 
-Well-balanced gravity term for isothermal background state
+Well-balanced gravity term for an isothermal background state
+for the [`CompressibleEulerInternalKineticEnergyEquationsWithGravity2D`](@ref)
+developed by
+
 -  Maciej Waruszewski and Jeremy E. Kozdon and Lucas C. Wilcox and Thomas H. Gibson and Francis X. Giraldo (2022)
    Entropy stable discontinuous {G}alerkin methods for balance laws 
    in non-conservative form: Applications to the {E}uler equations with gravity
    [DOI: 10.1016/j.jcp.2022.111507](https://doi.org/10.1016/j.jcp.2022.111507)
 
-The well balanced on curvilinear coordinates was proven by
+The well-balancedness on curvilinear coordinates was proven by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
    Structure-Preserving High-Order Methods for the Compressible Euler Equations 
    in Potential Temperature Formulation for Atmospheric Flows
@@ -204,7 +207,10 @@ end
 """
 	flux_nonconservative_artiano_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerInternalKineticEnergyEquationsWithGravity2D)
 
-Well-balanced gravity term for constant potential temperature background state by
+Well-balanced gravity term for a constant potential temperature background state
+for the [`CompressibleEulerInternalKineticEnergyEquationsWithGravity2D`](@ref)
+developed by
+
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
    Structure-Preserving High-Order Methods for the Compressible Euler Equations 
    in Potential Temperature Formulation for Atmospheric Flows
@@ -449,13 +455,11 @@ end
     # Calculate normal velocities and sound speed
     # left
     v_ll = (v1_ll * normal_direction[1]
-            +
-            v2_ll * normal_direction[2])
+            + v2_ll * normal_direction[2])
     c_ll = sqrt(equations.gamma * p_ll / rho_ll)
     # right
     v_rr = (v1_rr * normal_direction[1]
-            +
-            v2_rr * normal_direction[2])
+            + v2_rr * normal_direction[2])
     c_rr = sqrt(equations.gamma * p_rr / rho_rr)
 
     return max(abs(v_ll), abs(v_rr)) + max(c_ll, c_rr) * norm(normal_direction)
@@ -491,13 +495,11 @@ end
     # Calculate normal velocities and sound speeds
     # left
     v_ll = (v1_ll * normal_direction[1]
-            +
-            v2_ll * normal_direction[2])
+            + v2_ll * normal_direction[2])
     c_ll = sqrt(equations.gamma * p_ll / rho_ll)
     # right
     v_rr = (v1_rr * normal_direction[1]
-            +
-            v2_rr * normal_direction[2])
+            + v2_rr * normal_direction[2])
     c_rr = sqrt(equations.gamma * p_rr / rho_rr)
 
     norm_ = norm(normal_direction)
@@ -592,7 +594,7 @@ end
 @inline function entropy_thermodynamic(cons,
                                        equations::CompressibleEulerInternalKineticEnergyEquationsWithGravity2D)
     # Pressure
-    p = (equations.gamma - 1) * (cons[4] - 0.5f0 * (cons[2]^2 + cons[3]^2) / cons[1])
+    p = pressure(u, equations)
 
     # Thermodynamic entropy
     s = log(p) - equations.gamma * log(cons[1])
