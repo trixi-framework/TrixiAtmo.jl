@@ -602,7 +602,7 @@ end
 @inline function entropy_thermodynamic(cons,
                                        equations::CompressibleEulerInternalKineticEnergyEquationsWithGravity2D)
     # Pressure
-    p = pressure(u, equations)
+    p = pressure(cons, equations)
 
     # Thermodynamic entropy
     s = log(p) - equations.gamma * log(cons[1])
