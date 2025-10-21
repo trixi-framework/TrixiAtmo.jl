@@ -240,7 +240,7 @@ end
 """
 	flux_nonconservative_souza_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerInternalKineticEnergyEquationsWithGravity2D)
 
-Kinetic and Potential Energy Preserving (KPEP) gravity term 
+Kinetic and potential energy preserving (KPEP) gravity term 
 for the [`CompressibleEulerInternalKineticEnergyEquationsWithGravity2D`](@ref)
 developed by
 
@@ -248,12 +248,6 @@ developed by
    The Flux-Differencing Discontinuous {G}alerkin Method Applied to 
    an Idealized Fully Compressible Nonhydrostatic Dry Atmosphere
    [DOI: 10.1029/2022MS003527] (https://doi.org/10.1029/2022MS003527)
-
-A generalization of the KPEP property has been introduced by
--  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
-   Structure-Preserving High-Order Methods for the Compressible Euler Equations 
-   in Potential Temperature Formulation for Atmospheric Flows
-   (https://arxiv.org/abs/2509.10311)
 """
 @inline function flux_nonconservative_souza_etal(u_ll, u_rr,
                                                  normal_direction::AbstractVector,
