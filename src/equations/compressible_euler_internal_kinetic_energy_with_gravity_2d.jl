@@ -240,10 +240,20 @@ end
 """
 	flux_nonconservative_souza_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerInternalKineticEnergyEquationsWithGravity2D)
 
+Kinetic and Potential Energy Preserving (KPEP) gravity term 
+for the [`CompressibleEulerInternalKineticEnergyEquationsWithGravity2D`](@ref)
+developed by
+
 -  Souza et al. 
    The Flux-Differencing Discontinuous {G}alerkin Method Applied to 
    an Idealized Fully Compressible Nonhydrostatic Dry Atmosphere
    [DOI: 10.1029/2022MS003527] (https://doi.org/10.1029/2022MS003527)
+
+A generalization of the KPEP property has been introduced by
+-  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
+   Structure-Preserving High-Order Methods for the Compressible Euler Equations 
+   in Potential Temperature Formulation for Atmospheric Flows
+   (https://arxiv.org/abs/2509.10311)
 """
 @inline function flux_nonconservative_souza_etal(u_ll, u_rr,
                                                  normal_direction::AbstractVector,
@@ -455,11 +465,13 @@ end
     # Calculate normal velocities and sound speed
     # left
     v_ll = (v1_ll * normal_direction[1]
-            + v2_ll * normal_direction[2])
+            +
+            v2_ll * normal_direction[2])
     c_ll = sqrt(equations.gamma * p_ll / rho_ll)
     # right
     v_rr = (v1_rr * normal_direction[1]
-            + v2_rr * normal_direction[2])
+            +
+            v2_rr * normal_direction[2])
     c_rr = sqrt(equations.gamma * p_rr / rho_rr)
 
     return max(abs(v_ll), abs(v_rr)) + max(c_ll, c_rr) * norm(normal_direction)
@@ -495,11 +507,13 @@ end
     # Calculate normal velocities and sound speeds
     # left
     v_ll = (v1_ll * normal_direction[1]
-            + v2_ll * normal_direction[2])
+            +
+            v2_ll * normal_direction[2])
     c_ll = sqrt(equations.gamma * p_ll / rho_ll)
     # right
     v_rr = (v1_rr * normal_direction[1]
-            + v2_rr * normal_direction[2])
+            +
+            v2_rr * normal_direction[2])
     c_rr = sqrt(equations.gamma * p_rr / rho_rr)
 
     norm_ = norm(normal_direction)
