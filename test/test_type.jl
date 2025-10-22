@@ -369,11 +369,11 @@ isdir(outdir) && rm(outdir, recursive = true)
         end
     end
 
-    @timed_testset "Compressible Euler Internal And Kinetic Energy With Gravity 2D" begin
+    @timed_testset "Compressible Euler Energy With Gravity 2D" begin
         for RealT in (Float32, Float64)
-            equations = @inferred CompressibleEulerInternalKineticEnergyEquationsWithGravity2D(c_p = RealT(1004),
-                                                                                               c_v = RealT(717),
-                                                                                               gravity = RealT(9.81))
+            equations = @inferred CompressibleEulerEnergyEquationsWithGravity2D(c_p = RealT(1004),
+                                                                                c_v = RealT(717),
+                                                                                gravity = RealT(9.81))
 
             x = SVector(zero(RealT))
             t = zero(RealT)
