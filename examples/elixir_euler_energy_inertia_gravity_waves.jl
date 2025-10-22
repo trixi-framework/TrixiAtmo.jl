@@ -13,7 +13,7 @@
 #   and Francis X. Giraldo (2022):
 #   "Entropy stable discontinuous Galerkin methods for balance laws
 #   in non-conservative form: Applications to the Euler equations with gravity"
-#   J. Computational Physics, DOI: 10.1016/j.jcp.2022.111507
+#   JCP, DOI: 10.1016/j.jcp.2022.111507
 #   https://doi.org/10.1016/j.jcp.2022.111507
 #
 # - Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025):
