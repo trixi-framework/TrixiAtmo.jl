@@ -74,35 +74,6 @@ end
 have_nonconservative_terms(::CompressibleEulerEnergyEquationsWithGravity3D) = Trixi.True()
 
 # Calculate 1D flux for a single point
-@inline function flux(u, orientation::Integer,
-                      equations::CompressibleEulerEnergyEquationsWithGravity3D)
-    rho, rho_v1, rho_v2, rho_v3, rho_e = u
-    v1 = rho_v1 / rho
-    v2 = rho_v2 / rho
-    v3 = rho_v3 / rho
-    p = pressure(u, equations)
-    if orientation == 1
-        f1 = rho_v1
-        f2 = rho_v1 * v1 + p
-        f3 = rho_v1 * v2
-        f4 = rho_v1 * v3
-        f5 = (rho_e + p) * v1
-    elseif orientation == 2
-        f1 = rho_v2
-        f2 = rho_v2 * v1
-        f3 = rho_v2 * v2 + p
-        f4 = rho_v2 * v3
-        f5 = (rho_e + p) * v2
-    else
-        f1 = rho_v3
-        f2 = rho_v3 * v1
-        f3 = rho_v3 * v2
-        f4 = rho_v3 * v3 + p
-        f5 = (rho_e + p) * v3
-    end
-    return SVector(f1, f2, f3, f4, f5, zero(eltype(u)))
-end
-
 @inline function flux(u, normal_direction::AbstractVector,
                       equations::CompressibleEulerEnergyEquationsWithGravity3D)
     rho_e = last(u)
