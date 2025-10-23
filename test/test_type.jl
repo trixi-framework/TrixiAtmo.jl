@@ -368,5 +368,79 @@ isdir(outdir) && rm(outdir, recursive = true)
                                                                        equations)) == RealT
         end
     end
+
+    @timed_testset "Compressible Euler Energy With Gravity 2D" begin
+        for RealT in (Float32, Float64)
+            equations = @inferred CompressibleEulerEnergyEquationsWithGravity2D(c_p = RealT(1004),
+                                                                                c_v = RealT(717),
+                                                                                gravity = RealT(9.81))
+
+            x = SVector(zero(RealT))
+            t = zero(RealT)
+            u = u_ll = u_rr = u_inner = cons = SVector(one(RealT), one(RealT), one(RealT),
+                                                       one(RealT), one(RealT))
+
+            normal_direction = SVector(one(RealT), one(RealT))
+            surface_flux_function = (flux_lax_friedrichs, flux_zero)
+            orientations = [1, 2]
+            directions = [1, 2]
+
+            for direction in directions, orientation in orientations
+                @test eltype(@inferred boundary_condition_slip_wall(u_inner, orientation,
+                                                                    direction,
+                                                                    x, t,
+                                                                    surface_flux_function,
+                                                                    equations)) ==
+                      SVector{5, RealT}
+                @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, orientation,
+                                                           equations)) == RealT
+                @test typeof(@inferred max_abs_speed(u_ll, u_rr, orientation,
+                                                     equations)) == RealT
+            end
+            @test eltype(@inferred flux(u, normal_direction, equations)) == RealT
+            @test eltype(@inferred flux_ranocha(u_ll, u_rr, normal_direction, equations)) ==
+                  RealT
+            @test eltype(@inferred flux_kennedy_gruber(u_ll, u_rr, normal_direction,
+                                                       equations)) ==
+                  RealT
+            @test eltype(@inferred flux_shima_etal(u_ll, u_rr, normal_direction, equations)) ==
+                  RealT
+            @test eltype(@inferred flux_nonconservative_artiano_etal(u_ll, u_rr,
+                                                                     normal_direction,
+                                                                     equations)) ==
+                  RealT
+            @test eltype(@inferred flux_nonconservative_waruzewski_etal(u_ll, u_rr,
+                                                                        normal_direction,
+                                                                        equations)) ==
+                  RealT
+            @test eltype(@inferred flux_nonconservative_souza_etal(u_ll, u_rr,
+                                                                   normal_direction,
+                                                                   equations)) ==
+                  RealT
+            @test eltype(@inferred boundary_condition_slip_wall(u_inner,
+                                                                normal_direction,
+                                                                x, t,
+                                                                surface_flux_function,
+                                                                equations)) ==
+                  SVector{5, RealT}
+            @test eltype(varnames(cons2prim, equations)) == String
+
+            @test eltype(@inferred cons2prim(u, equations)) == RealT
+            @test eltype(@inferred prim2cons(u, equations)) == RealT
+            @test eltype(@inferred cons2entropy(u, equations)) == RealT
+            @test eltype(@inferred entropy2cons(cons2entropy(u, equations), equations)) ==
+                  RealT
+            @test typeof(@inferred pressure(u, equations)) == RealT
+            @test typeof(@inferred entropy(cons, equations)) == RealT
+            @test typeof(@inferred energy_kinetic(cons, equations)) == RealT
+            @test typeof(@inferred energy_total(cons, equations)) == RealT
+            @test typeof(@inferred energy_internal(cons, equations)) == RealT
+            @test eltype(@inferred Trixi.max_abs_speeds(u, equations)) == RealT
+            @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, normal_direction,
+                                                       equations)) == RealT
+            @test typeof(@inferred max_abs_speed(u_ll, u_rr, normal_direction,
+                                                 equations)) == RealT
+        end
+    end
 end
 end
