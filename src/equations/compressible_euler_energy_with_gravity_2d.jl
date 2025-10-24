@@ -26,7 +26,7 @@ The compressible Euler equations with gravity
 \end{pmatrix}
 =
 \begin{pmatrix}
-0 \\ - rho \frac{\partial}{\partial x} \phi \\ - rho \frac{\partial}{\partial y} \phi \\ - rho v \frac{\partial}{\partial x} \phi - rho v \frac{\partial}{\partial y} \phi
+0 \\ - \rho \frac{\partial}{\partial x} \phi \\ - \rho \frac{\partial}{\partial y} \phi \\ - \rho v_1 \frac{\partial}{\partial x} \phi - rho v_2 \frac{\partial}{\partial y} \phi
 \end{pmatrix}
 ```
 for an ideal gas with ratio of specific heats `gamma`
@@ -134,7 +134,7 @@ end
     rho, rho_v1, rho_v2, rho_e = u
     v1 = rho_v1 / rho
     v2 = rho_v2 / rho
-    p = (equations.gamma - 1) * (rho_e - 0.5f0 * (rho_v1 * v1 + rho_v2 * v2))
+    p = pressure(u, equations)
     if orientation == 1
         f1 = rho_v1
         f2 = rho_v1 * v1 + p
