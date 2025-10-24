@@ -36,7 +36,7 @@ The compressible Euler equations with gravity
 ```
 for an ideal gas with ratio of specific heats `gamma`
 in three space dimensions.
-Here, ``\rho`` is the density, ``v_1``, ``v_2``, ``v_3`` the velocities, ``e`` the specific energy **rather than** specific internal energy, ``\phi`` isthe gravitational potential, and
+Here, ``\rho`` is the density, ``v_1``, ``v_2``, ``v_3`` the velocities, ``e`` the specific energy **rather than** specific internal energy, ``\phi`` is the gravitational potential, and
 ```math
 p = (\gamma - 1) \left( \rho e - \frac{1}{2} \rho (v_1^2+v_2^2+v_3^2) \right)
 ```
@@ -98,7 +98,7 @@ end
     # normalize the outward pointing direction
     normal = normal_direction / norm(normal_direction)
     surface_flux_function, nonconservative_flux_function = surface_flux_functions
-    # compute the normal velocity
+    # compute the normal momentum
     u_normal = normal[1] * u_inner[2] + normal[2] * u_inner[3] + normal[3] * u_inner[4]
 
     # create the "external" boundary solution state

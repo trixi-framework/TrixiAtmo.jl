@@ -1,5 +1,6 @@
 # An idealized baroclinic instability test case
-# For optimal results consider increasing the resolution to 16x16x8 trees per cube face.
+# For optimal results consider increasing the resolution to 16x16x8 trees per cube face, i.e.,
+# set `trees_per_cube_face = (16, 8)` below.
 # 
 # This elixir takes about 8 hours, using 16 threads of an AMD Ryzen 7 7800X3D.
 #
