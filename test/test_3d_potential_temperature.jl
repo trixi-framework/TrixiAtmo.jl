@@ -173,4 +173,30 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
+@trixi_testset "elixir_euler_potential_temperature_held_suarez" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_euler_potential_temperature_held_suarez.jl"),
+                        l2=[
+                            0.0005238485705127624,
+                            0.014658738174940492,
+                            0.012858043298446848,
+                            0.012928235735411159,
+                            0.13996694572679722,
+                            99.03486863938933
+                        ],
+                        linf=[
+                            0.004242590990033657,
+                            1.1140990093072491,
+                            0.6517474500047321,
+                            1.1292857239244998,
+                            1.0019906488095103,
+                            333.2487183585763
+                        ],
+                        tspan=(0.0, 0.01 * SECONDS_PER_DAY),
+                        lat_lon_trees_per_dim=2, layers=2)
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+end
+
 end
