@@ -1,12 +1,5 @@
 # Implemented by Lucas Gemein
 # https://github.com/NichtLucas/Trixi.jl/tree/thesis_gemein_2022
-
-using Trixi
-using Trixi: ln_mean, inv_ln_mean
-import Trixi: varnames, flux_chandrashekar, boundary_condition_slip_wall,
-              cons2prim, cons2entropy, max_abs_speed_naive, max_abs_speeds,
-              entropy, energy_total, flux, FluxLMARS
-
 @muladd begin
 #! format: noindent
 struct CompressibleMoistEulerEquations2D{RealT <: Real} <:
@@ -23,22 +16,18 @@ struct CompressibleMoistEulerEquations2D{RealT <: Real} <:
     kappa::RealT # ratio of the gas constant R_d
     gamma::RealT # = inv(kappa- 1); can be used to write slow divisions as fast multiplications
     L_00::RealT # latent heat of evaporation  at 0 K
-end
-
-function CompressibleMoistEulerEquations2D(; g = 9.81, RealT = Float64)
-    p_0 = 100000.0
-    c_pd = 1004.0
-    c_vd = 717.0
-    R_d = c_pd - c_vd
-    c_pv = 1885.0
-    c_vv = 1424.0
-    R_v = c_pv - c_vv
-    c_pl = 4186.0
-    gamma = c_pd / c_vd # = 1/(1 - kappa)
-    kappa = 1 - inv(gamma)
-    L_00 = 3147620
-    return CompressibleMoistEulerEquations2D{RealT}(p_0, c_pd, c_vd, R_d, c_pv, c_vv,
-                                                    R_v, c_pl, g, kappa, gamma, L_00)
+    function CompressibleMoistEulerEquations2D(; c_pd, c_vd, c_pv, c_vv, gravity)
+        c_pd, c_vd, c_pv, c_vv, g = promote(c_pd, c_vd, c_pv, c_vv, gravity)
+        p_0 = 100_000
+        R_d = c_pd - c_vd
+        R_v = c_pv - c_vv
+        c_pl = 4186
+        gamma = c_pd / c_vd # = 1/(1 - kappa)
+        kappa = 1 - inv(gamma)
+        L_00 = 3147620
+        return new{typeof(gamma)}(p_0, c_pd, c_vd, R_d, c_pv, c_vv, R_v, c_pl, g, kappa,
+                                  gamma, L_00)
+    end
 end
 
 # Calculate 1D flux for a single point.
@@ -107,6 +96,7 @@ end
     # compute the primitive variables
     rho_local, v_normal, v_tangent, p_local, qv_local, ql_local = cons2prim(u_local,
                                                                             equations)
+
     qd_local = 1 - qv_local - ql_local
     gamma = (qd_local * c_pd + qv_local * c_pv + ql_local * c_pl) *
             inv(qd_local * c_vd + qv_local * c_vv + ql_local * c_pl)
@@ -529,18 +519,18 @@ end
 
     # Workaround if an individual density is zero
     # Thermodynamic entropy
-    s_d = 0
-    s_v = 0
-    s_l = 0
+    s_d = zero(eltype(u))
+    s_v = zero(eltype(u))
+    s_l = zero(eltype(u))
 
     # Thermodynamic entropy
-    if (rho_qd > 0.0)
+    if (rho_qd > 0)
         s_d = c_pd * log(T) - R_d * log(rho_qd * R_d * T)
     end
-    if (rho_qv > 0.0)
+    if (rho_qv > 0)
         s_v = c_pv * log(T) - R_v * log(rho_qv * R_v * T)
     end
-    if (rho_ql > 0.0)
+    if (rho_ql > 0)
         s_l = c_pl * log(T)
     end
 
@@ -565,7 +555,7 @@ end
     rho_v2 = rho * v2
     rho_qv = rho * qv
     rho_ql = rho * ql
-    rho_E = p * equations.inv_gamma_minus_one + 0.5f0 * (rho_v1 * v1 + rho_v2 * v2)
+    rho_E = p / (equations.gamma - 1) + 0.5f0 * (rho_v1 * v1 + rho_v2 * v2)
     return SVector(rho, rho_v1, rho_v2, rho_E, rho_qv, rho_ql)
 end
 

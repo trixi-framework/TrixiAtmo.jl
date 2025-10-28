@@ -28,12 +28,7 @@ include("test_trixiatmo.jl")
                         tspan=(0.0, 0.1))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 2000
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 2000)
 end
 end
 end # module

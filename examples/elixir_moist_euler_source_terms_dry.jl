@@ -5,7 +5,12 @@ using TrixiAtmo: source_terms_convergence_test_dry, initial_condition_convergenc
 ###############################################################################
 # semidiscretization of the compressible Euler equations
 
-equations = CompressibleMoistEulerEquations2D(; g = 0.0)
+c_pd = 1004 # specific heat at constant pressure for dry air
+c_vd = 717  # specific heat at constant volume for dry air
+c_pv = 1885 # specific heat at constant pressure for moist air
+c_vv = 1424 # specific heat at constant volume for moist air
+equations = CompressibleMoistEulerEquations2D(c_pd = c_pd, c_vd = c_vd, c_pv = c_pv,
+                                              c_vv = c_vv, gravity = 0.0)
 
 initial_condition = initial_condition_convergence_test_dry
 

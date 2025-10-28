@@ -58,13 +58,13 @@ end
 
 # This alternative flux formulation has non-conservative terms even in the absence of 
 # variable bottom topography
-Trixi.have_nonconservative_terms(::SplitCovariantShallowWaterEquations2D) = True()
+have_nonconservative_terms(::SplitCovariantShallowWaterEquations2D) = True()
 
 # Flux as a function of the state vector u, as well as the auxiliary variables aux_vars, 
 # which contain the geometric information required for the covariant form.
 # Note that this flux does not include the pressure term.
-@inline function Trixi.flux(u, aux_vars, orientation::Integer,
-                            equations::SplitCovariantShallowWaterEquations2D)
+@inline function flux(u, aux_vars, orientation::Integer,
+                      equations::SplitCovariantShallowWaterEquations2D)
     # Geometric variables
     J = area_element(aux_vars, equations)
 
@@ -80,7 +80,7 @@ Trixi.have_nonconservative_terms(::SplitCovariantShallowWaterEquations2D) = True
 end
 
 @doc raw"""
-    Trixi.flux_ec(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
+    flux_ec(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
                                orientation::Integer,
                                equations::SplitCovariantShallowWaterEquations2D)
 
@@ -97,9 +97,9 @@ paper for the special case of the Euclidean metric $G_{ab} = \delta_{ab}$:
     The use of entropy-stable split-form/flux-differencing formulations for covariant 
     equations is an experimental feature and may change in future releases.
 """
-@inline function Trixi.flux_ec(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
-                               orientation::Integer,
-                               equations::SplitCovariantShallowWaterEquations2D)
+@inline function flux_ec(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
+                         orientation::Integer,
+                         equations::SplitCovariantShallowWaterEquations2D)
     # Geometric variables
     J_ll = area_element(aux_vars_ll, equations)
     J_rr = area_element(aux_vars_rr, equations)
