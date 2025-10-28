@@ -74,11 +74,11 @@ end
 
     @unpack p_0, c_p, c_v, R = equations
 
-    _, _, _, _, pressure = cons2prim(u, equations)
+    p = pressure(u, equations)
     lon, lat, r = cartesian_to_sphere(x)
-    temperature = pressure / (u[1] * R)
+    temperature = p / (u[1] * R)
 
-    sigma = pressure / p_0   # "p_0 instead of instantaneous surface pressure"
+    sigma = p / p_0   # "p_0 instead of instantaneous surface pressure"
     delta_sigma = max(0, (sigma - sigma_b) / (1 - sigma_b))   # "height factor"
     k_v = k_f * delta_sigma
     k_T = k_a + (k_s - k_a) * delta_sigma * cos(lat)^4
@@ -121,7 +121,7 @@ boundary_conditions = Dict(:inside => boundary_condition_slip_wall,
 
 polydeg = 4
 surface_flux = (FluxLMARS(340), flux_zero)
-volume_flux = (flux_tec, flux_nonconservative_souza_etal)
+volume_flux = (flux_ec, flux_nonconservative_waruzewski_etal)
 
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
