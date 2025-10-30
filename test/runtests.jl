@@ -18,7 +18,8 @@ const TRIXI_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
         # cf. https://github.com/JuliaParallel/MPI.jl/pull/391
         @test true
 
-        run(`$(mpiexec()) -n $TRIXI_MPI_NPROCS $(Base.julia_cmd()) --threads=1 --check-bounds=yes $(abspath("test_mpi.jl"))`)
+        status = run(ignorestatus(`$(mpiexec()) -n $TRIXI_MPI_NPROCS $(Base.julia_cmd()) --threads=1 --check-bounds=yes $(abspath("test_mpi.jl"))`))
+        @test success(status)
     end
 
     @time if TRIXI_TEST == "all" || TRIXI_TEST == "threaded"
@@ -27,7 +28,8 @@ const TRIXI_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
         # cf. https://github.com/JuliaParallel/MPI.jl/pull/391
         @test true
 
-        run(`$(Base.julia_cmd()) --threads=$TRIXI_NTHREADS --check-bounds=yes --code-coverage=none $(abspath("test_threaded.jl"))`)
+        status = run(ignorestatus(`$(Base.julia_cmd()) --threads=$TRIXI_NTHREADS --check-bounds=yes --code-coverage=none $(abspath("test_threaded.jl"))`))
+        @test success(status)
     end
 
     @time if TRIXI_TEST == "all" || TRIXI_TEST == "trixi_consistency"
@@ -44,6 +46,7 @@ const TRIXI_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
 
     @time if TRIXI_TEST == "all" || TRIXI_TEST == "moist_euler"
         include("test_2d_moist_euler.jl")
+        include("test_2d_rainy_euler.jl")
     end
 
     @time if TRIXI_TEST == "all" || TRIXI_TEST == "spherical_advection"

@@ -732,17 +732,17 @@ function calc_node_coordinates_triangle_vertices!(triangle_vertices,
 
     triangle_vertices[:, 1] = corners_triangle[:, 1]
 
-    v2_bilinear = 0.5 * (corners_triangle[:, 1] + corners_triangle[:, 2])
+    v2_bilinear = 0.5f0 * (corners_triangle[:, 1] + corners_triangle[:, 2])
     triangle_vertices[:, 2] = radius * v2_bilinear / norm(v2_bilinear)
 
     triangle_vertices[:, 3] = corners_triangle[:, 2]
 
-    v4_bilinear = 0.5 * (corners_triangle[:, 2] + corners_triangle[:, 3])
+    v4_bilinear = 0.5f0 * (corners_triangle[:, 2] + corners_triangle[:, 3])
     triangle_vertices[:, 4] = radius * v4_bilinear / norm(v4_bilinear)
 
     triangle_vertices[:, 5] = corners_triangle[:, 3]
 
-    v6_bilinear = 0.5 * (corners_triangle[:, 1] + corners_triangle[:, 3])
+    v6_bilinear = 0.5f0 * (corners_triangle[:, 1] + corners_triangle[:, 3])
     triangle_vertices[:, 6] = radius * v6_bilinear / norm(v6_bilinear)
 
     v7_bilinear = (corners_triangle[:, 1] + corners_triangle[:, 2] +
