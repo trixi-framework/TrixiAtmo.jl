@@ -12,7 +12,7 @@ function initial_condition_robert_bubble(x, t,
     # center of perturbation
     center_x = 500.0
     center_z = 260.0
-    g = 9.81
+    g = EARTH_GRAVITATIONAL_ACCELERATION
     # radius of perturbation
     radius = 250.0
     # distance of current x to center of perturbation
@@ -47,7 +47,7 @@ end
 @inline function source_terms_gravity(u, x, t,
                                       equations::CompressibleEulerPotentialTemperatureEquations2D)
     rho, _, _, _ = u
-    g = 9.81
+    g = EARTH_GRAVITATIONAL_ACCELERATION
     return SVector(zero(eltype(u)), zero(eltype(u)), -g * rho, zero(eltype(u)))
 end
 

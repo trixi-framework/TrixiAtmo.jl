@@ -10,7 +10,7 @@ using OrdinaryDiffEqLowStorageRK, Trixi, TrixiAtmo
 # Parameters
 
 # Initial condition is atmosphere at rest with constant total geopotential height
-initial_condition = (x, t, equations) -> SVector(5960.0, 0.0, 0.0, 0.0)
+initial_condition = (x, t, equations) -> SVector(5960, 0, 0, 0)
 
 polydeg = 3
 cells_per_dimension = (5, 5)
