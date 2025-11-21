@@ -7,7 +7,7 @@ using Trixi, TrixiAtmo
 
 Test cases for linearized analytical solution by
 -  Baldauf, Michael and Brdar, Slavko (2013)
-   An analytic solution for linear gravity waves in a channel as a test 
+   An analytic solution for linear gravity waves in a channel as a test
    for numerical models using the non-hydrostatic, compressible {E}uler equations
    [DOI: 10.1002/qj.2105] (https://doi.org/10.1002/qj.2105)
 """
@@ -40,12 +40,12 @@ equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 10
                                                                         c_v = 717,
                                                                         gravity = 9.81)
 
-# We have an isothermal background state with T0 = 250 K. 
+# We have an isothermal background state with T0 = 250 K.
 # The reference speed of sound can be computed as:
 # cs = sqrt(gamma * R * T0)
 cs = sqrt(equations.gamma * equations.R * 250)
 surface_flux = (FluxLMARS(cs), flux_zero)
-volume_flux = (flux_tec, flux_nonconservative_waruzewski_etal)
+volume_flux = (flux_tec, flux_nonconservative_waruszewski_etal)
 polydeg = 3
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
