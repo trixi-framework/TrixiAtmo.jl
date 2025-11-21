@@ -141,7 +141,7 @@ end
                             333.2487183585763
                         ],
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
-                        volume_flux=(flux_ec, flux_nonconservative_waruzewski_etal))
+                        volume_flux=(flux_ec, flux_nonconservative_waruszewski_etal))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)

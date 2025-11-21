@@ -44,7 +44,7 @@ struct CompressibleEulerEnergyEquationsWithGravity2D{RealT <: Real} <:
     c_v::RealT # specific heat at constant volume in J/(kg K)
     g::RealT # gravitational acceleration in m/s²
     R::RealT # gas constant in J/(kg K)
-    gamma::RealT # ratio of specific heats 
+    gamma::RealT # ratio of specific heats
     inv_gamma_minus_one::RealT # = inv(gamma - 1); can be used to write slow divisions as fast multiplications
     function CompressibleEulerEnergyEquationsWithGravity2D(; c_p, c_v,
                                                            gravity)
@@ -166,26 +166,26 @@ end
 end
 
 """
-	flux_nonconservative_waruzewski_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerEnergyEquationsWithGravity2D)
+	flux_nonconservative_waruszewski_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerEnergyEquationsWithGravity2D)
 
 Well-balanced gravity term for an isothermal background state
 for the [`CompressibleEulerEnergyEquationsWithGravity2D`](@ref)
 developed by
 
 -  Maciej Waruszewski and Jeremy E. Kozdon and Lucas C. Wilcox and Thomas H. Gibson and Francis X. Giraldo (2022)
-   Entropy stable discontinuous {G}alerkin methods for balance laws 
+   Entropy stable discontinuous {G}alerkin methods for balance laws
    in non-conservative form: Applications to the {E}uler equations with gravity
    [DOI: 10.1016/j.jcp.2022.111507](https://doi.org/10.1016/j.jcp.2022.111507)
 
 The well-balancedness on curvilinear coordinates was proven by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
-   Structure-Preserving High-Order Methods for the Compressible Euler Equations 
+   Structure-Preserving High-Order Methods for the Compressible Euler Equations
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)
 """
-@inline function flux_nonconservative_waruzewski_etal(u_ll, u_rr,
-                                                      normal_direction::AbstractVector,
-                                                      equations::CompressibleEulerEnergyEquationsWithGravity2D)
+@inline function flux_nonconservative_waruszewski_etal(u_ll, u_rr,
+                                                       normal_direction::AbstractVector,
+                                                       equations::CompressibleEulerEnergyEquationsWithGravity2D)
     rho_ll, rho_v1_ll, rho_v2_ll, _, phi_ll = u_ll
     rho_rr, rho_v1_rr, rho_v2_rr, _, phi_rr = u_rr
     v1_ll = rho_v1_ll / rho_ll
@@ -212,7 +212,7 @@ for the [`CompressibleEulerEnergyEquationsWithGravity2D`](@ref)
 developed by
 
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
-   Structure-Preserving High-Order Methods for the Compressible Euler Equations 
+   Structure-Preserving High-Order Methods for the Compressible Euler Equations
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)
 """
@@ -240,12 +240,12 @@ end
 """
 	flux_nonconservative_souza_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerEnergyEquationsWithGravity2D)
 
-Kinetic and potential energy preserving (KPEP) gravity term 
+Kinetic and potential energy preserving (KPEP) gravity term
 for the [`CompressibleEulerEnergyEquationsWithGravity2D`](@ref)
 developed by
 
--  Souza et al. 
-   The Flux-Differencing Discontinuous {G}alerkin Method Applied to 
+-  Souza et al.
+   The Flux-Differencing Discontinuous {G}alerkin Method Applied to
    an Idealized Fully Compressible Nonhydrostatic Dry Atmosphere
    [DOI: 10.1029/2022MS003527] (https://doi.org/10.1029/2022MS003527)
 """

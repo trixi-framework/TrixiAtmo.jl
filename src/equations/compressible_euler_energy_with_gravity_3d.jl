@@ -49,7 +49,7 @@ struct CompressibleEulerEnergyEquationsWithGravity3D{RealT <: Real} <:
     c_v::RealT # specific heat at constant volume in J/(kg K)
     g::RealT # gravitational acceleration in m/s²
     R::RealT # gas constant in J/(kg K)
-    gamma::RealT # ratio of specific heats 
+    gamma::RealT # ratio of specific heats
     inv_gamma_minus_one::RealT # = inv(gamma - 1); can be used to write slow divisions as fast multiplications
     function CompressibleEulerEnergyEquationsWithGravity3D(; c_p, c_v,
                                                            gravity)
@@ -116,25 +116,25 @@ end
 end
 
 """
-	flux_nonconservative_waruzewski_etal(u_ll, u_rr,
+	flux_nonconservative_waruszewski_etal(u_ll, u_rr,
 										 normal_direction::AbstractVector,
 										 	equations::CompressibleEulerEulerEquationsWithGravity3D)
 
 Well-balanced gravity term for isothermal background state
 -  Maciej Waruszewski and Jeremy E. Kozdon and Lucas C. Wilcox and Thomas H. Gibson and Francis X. Giraldo (2022),
-   Entropy stable discontinuous {G}alerkin methods for balance laws 
+   Entropy stable discontinuous {G}alerkin methods for balance laws
    in non-conservative form: Applications to the {E}uler equations with gravity
    [DOI: 10.1016/j.jcp.2022.111507](https://doi.org/10.1016/j.jcp.2022.111507)
 
 The well balanced on curvilinear coordinates was proven by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
-   Structure-Preserving High-Order Methods for the Compressible Euler Equations 
+   Structure-Preserving High-Order Methods for the Compressible Euler Equations
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)
 """
-@inline function flux_nonconservative_waruzewski_etal(u_ll, u_rr,
-                                                      normal_direction::AbstractVector,
-                                                      equations::CompressibleEulerEnergyEquationsWithGravity3D)
+@inline function flux_nonconservative_waruszewski_etal(u_ll, u_rr,
+                                                       normal_direction::AbstractVector,
+                                                       equations::CompressibleEulerEnergyEquationsWithGravity3D)
     rho_ll, rho_v1_ll, rho_v2_ll, rho_v3_ll, _, phi_ll = u_ll
     rho_rr, rho_v1_rr, rho_v2_rr, rho_v3_rr, _, phi_rr = u_rr
     v1_ll = rho_v1_ll
@@ -165,7 +165,7 @@ end
 
 Well-balanced gravity term for constant potential temperature background state by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
-   Structure-Preserving High-Order Methods for the Compressible Euler Equations 
+   Structure-Preserving High-Order Methods for the Compressible Euler Equations
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)
 """
@@ -198,8 +198,8 @@ end
 """
 	flux_nonconservative_souza_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerEnergyEquationsWithGravity3D)
 
--  Souza et al. 
-   The Flux-Differencing Discontinuous {G}alerkin Method Applied to 
+-  Souza et al.
+   The Flux-Differencing Discontinuous {G}alerkin Method Applied to
    an Idealized Fully Compressible Nonhydrostatic Dry Atmosphere
    [DOI: 10.1029/2022MS003527] (https://doi.org/10.1029/2022MS003527)
 """
