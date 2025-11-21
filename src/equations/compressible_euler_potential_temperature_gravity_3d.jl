@@ -105,8 +105,8 @@ The well balanced on curvilinear coordinates was proven by
    (https://arxiv.org/abs/2509.10311)
 """
 @inline function flux_nonconservative_waruszewski_etal(u_ll, u_rr,
-                                                      normal_direction::AbstractVector,
-                                                      equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                                       normal_direction::AbstractVector,
+                                                       equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     rho_ll, _, _, _, _, phi_ll = u_ll
     rho_rr, _, _, _, _, phi_rr = u_rr
     rho_avg = ln_mean(rho_ll, rho_rr)

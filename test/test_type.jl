@@ -73,8 +73,8 @@ isdir(outdir) && rm(outdir, recursive = true)
             @test eltype(@inferred flux_etec(u_ll, u_rr, orientation, equations)) ==
                   RealT
             @test eltype(@inferred flux_nonconservative_waruszewski_etal(u_ll, u_rr,
-                                                                        orientation,
-                                                                        equations)) ==
+                                                                         orientation,
+                                                                         equations)) ==
                   RealT
             @test eltype(@inferred flux_nonconservative_artiano_etal(u_ll, u_rr,
                                                                      orientation,
@@ -410,8 +410,8 @@ isdir(outdir) && rm(outdir, recursive = true)
                                                                      equations)) ==
                   RealT
             @test eltype(@inferred flux_nonconservative_waruszewski_etal(u_ll, u_rr,
-                                                                        normal_direction,
-                                                                        equations)) ==
+                                                                         normal_direction,
+                                                                         equations)) ==
                   RealT
             @test eltype(@inferred flux_nonconservative_souza_etal(u_ll, u_rr,
                                                                    normal_direction,
@@ -479,8 +479,8 @@ isdir(outdir) && rm(outdir, recursive = true)
                                                                      equations)) ==
                   RealT
             @test eltype(@inferred flux_nonconservative_waruszewski_etal(u_ll, u_rr,
-                                                                        normal_direction,
-                                                                        equations)) ==
+                                                                         normal_direction,
+                                                                         equations)) ==
                   RealT
             @test eltype(@inferred flux_nonconservative_souza_etal(u_ll, u_rr,
                                                                    normal_direction,

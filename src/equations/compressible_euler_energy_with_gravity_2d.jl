@@ -184,8 +184,8 @@ The well-balancedness on curvilinear coordinates was proven by
    (https://arxiv.org/abs/2509.10311)
 """
 @inline function flux_nonconservative_waruszewski_etal(u_ll, u_rr,
-                                                      normal_direction::AbstractVector,
-                                                      equations::CompressibleEulerEnergyEquationsWithGravity2D)
+                                                       normal_direction::AbstractVector,
+                                                       equations::CompressibleEulerEnergyEquationsWithGravity2D)
     rho_ll, rho_v1_ll, rho_v2_ll, _, phi_ll = u_ll
     rho_rr, rho_v1_rr, rho_v2_rr, _, phi_rr = u_rr
     v1_ll = rho_v1_ll / rho_ll
