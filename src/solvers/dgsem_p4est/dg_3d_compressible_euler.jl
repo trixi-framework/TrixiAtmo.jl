@@ -157,7 +157,6 @@ end
             g4 = 0.5f0 * normal_direction_3 * gravity
             g5 = gravity * v_dot_n_avg
             # Add scaled fluxes to RHS
-            # Add scaled fluxes to RHS
             factor_i = alpha * derivative_split[i, ii]
             du_permuted[jk, i, 1] += factor_i * f1
             du_permuted[jk, i, 2] += factor_i * (f2 + g2)
@@ -347,7 +346,6 @@ end
                 g3 = 0.5f0 * normal_direction_2 * gravity
                 g4 = 0.5f0 * normal_direction_3 * gravity
                 g5 = gravity * v_dot_n_avg
-                # Add scaled fluxes to RHS
                 # Add scaled fluxes to RHS
                 factor_k = alpha * derivative_split[k, kk]
                 du_reshaped[ij, k, 1] += factor_k * f1
