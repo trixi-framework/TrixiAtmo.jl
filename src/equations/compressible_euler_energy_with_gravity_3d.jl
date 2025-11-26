@@ -137,12 +137,12 @@ The well balanced on curvilinear coordinates was proven by
                                                        equations::CompressibleEulerEnergyEquationsWithGravity3D)
     rho_ll, rho_v1_ll, rho_v2_ll, rho_v3_ll, _, phi_ll = u_ll
     rho_rr, rho_v1_rr, rho_v2_rr, rho_v3_rr, _, phi_rr = u_rr
-    v1_ll = rho_v1_ll/rho_ll
-    v2_ll = rho_v2_ll/rho_ll
-    v3_ll = rho_v3_ll/rho_ll
-    v1_rr = rho_v1_rr/rho_rr
-    v2_rr = rho_v2_rr/rho_rr
-    v3_rr = rho_v3_rr/rho_rr
+    v1_ll = rho_v1_ll / rho_ll
+    v2_ll = rho_v2_ll / rho_ll
+    v3_ll = rho_v3_ll / rho_ll
+    v1_rr = rho_v1_rr / rho_rr
+    v2_rr = rho_v2_rr / rho_rr
+    v3_rr = rho_v3_rr / rho_rr
     v1_avg = 0.5f0 * (v1_ll + v1_rr)
     v2_avg = 0.5f0 * (v2_ll + v2_rr)
     v3_avg = 0.5f0 * (v3_ll + v3_rr)
@@ -174,12 +174,12 @@ Well-balanced gravity term for constant potential temperature background state b
                                                    equations::CompressibleEulerEnergyEquationsWithGravity3D)
     rho_ll, rho_v1_ll, rho_v2_ll, rho_v3_ll, _, phi_ll = u_ll
     rho_rr, rho_v1_rr, rho_v2_rr, rho_v3_rr, _, phi_rr = u_rr
-    v1_ll = rho_v1_ll/rho_ll
-    v2_ll = rho_v2_ll/rho_ll
-    v3_ll = rho_v3_ll/rho_ll
-    v1_rr = rho_v1_rr/rho_rr
-    v2_rr = rho_v2_rr/rho_rr
-    v3_rr = rho_v3_rr/rho_rr
+    v1_ll = rho_v1_ll / rho_ll
+    v2_ll = rho_v2_ll / rho_ll
+    v3_ll = rho_v3_ll / rho_ll
+    v1_rr = rho_v1_rr / rho_rr
+    v2_rr = rho_v2_rr / rho_rr
+    v3_rr = rho_v3_rr / rho_rr
     v1_avg = 0.5f0 * (v1_ll + v1_rr)
     v2_avg = 0.5f0 * (v2_ll + v2_rr)
     v3_avg = 0.5f0 * (v3_ll + v3_rr)
@@ -208,12 +208,12 @@ end
                                                  equations::CompressibleEulerEnergyEquationsWithGravity3D)
     rho_ll, rho_v1_ll, rho_v2_ll, rho_v3_ll, _, phi_ll = u_ll
     rho_rr, rho_v1_rr, rho_v2_rr, rho_v3_rr, _, phi_rr = u_rr
-    v1_ll = rho_v1_ll/rho_ll
-    v2_ll = rho_v2_ll/rho_ll
-    v3_ll = rho_v3_ll/rho_ll
-    v1_rr = rho_v1_rr/rho_rr
-    v2_rr = rho_v2_rr/rho_rr
-    v3_rr = rho_v3_rr/rho_rr
+    v1_ll = rho_v1_ll / rho_ll
+    v2_ll = rho_v2_ll / rho_ll
+    v3_ll = rho_v3_ll / rho_ll
+    v1_rr = rho_v1_rr / rho_rr
+    v2_rr = rho_v2_rr / rho_rr
+    v3_rr = rho_v3_rr / rho_rr
     v1_avg = 0.5f0 * (v1_ll + v1_rr)
     v2_avg = 0.5f0 * (v2_ll + v2_rr)
     v3_avg = 0.5f0 * (v3_ll + v3_rr)
