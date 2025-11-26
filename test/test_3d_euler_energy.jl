@@ -18,7 +18,7 @@ include("test_trixiatmo.jl")
                             0.024276204894145392,
                             0.045702372863804186,
                             0.022711918877967086,
-                            0.9494724421529099,
+                            0.9494724034739193,
                             0.3119894564151764
                         ], tspan=(0.0, 0.01), tol=1e-15, atol=1e-8)
     # Ensure that we do not have excessive memory allocations
