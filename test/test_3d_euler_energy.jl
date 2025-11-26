@@ -1,5 +1,5 @@
 module TestExamples3DEulerEnergy
-using TrixiAtmo: flux_kenndy_gruber
+using TrixiAtmo: flux_kennedy_gruber
 include("test_trixiatmo.jl")
 
 @trixi_testset "elixir_euler_energy_baroclinic_instability" begin
