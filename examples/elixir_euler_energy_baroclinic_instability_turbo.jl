@@ -9,7 +9,6 @@
 #   A proposed baroclinic wave test case for deep- and shallow-atmosphere dynamical cores
 #   https://doi.org/10.1002/qj.2241
 
-using OrdinaryDiffEqSSPRK
 using OrdinaryDiffEqLowStorageRK
 using Trixi, TrixiAtmo
 using LinearAlgebra: norm
@@ -276,7 +275,6 @@ callbacks = CallbackSet(summary_callback,
 # Use a Runge-Kutta method with automatic (error based) time step size control
 # Enable threading of the RK method for better performance on multiple threads
 sol = solve(ode,
-            #SSPRK43(thread = Trixi.True());
             RDPK3SpFSAL49(thread = Trixi.True());
             abstol = 1.0e-5, reltol = 1.0e-5, ode_default_options()...,
             callback = callbacks);
