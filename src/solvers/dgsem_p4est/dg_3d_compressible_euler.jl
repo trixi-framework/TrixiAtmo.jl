@@ -11,11 +11,13 @@ methods, e.g., when used with [`VolumeIntegralFluxDifferencing`](@ref).
 These specialized methods may enable better use of SIMD instructions to
 increase runtime efficiency on modern hardware.
 """
-## TODO: dummy to be removed
 @inline function flux_kennedy_gruber_souza_etal_turbo(u_ll, u_rr,
                                                       orientation_or_normal_direction,
                                                       equations)
-    flux_kennedy_gruber(u_ll, u_rr, orientation_or_normal_direction, equations)
+    flux = flux_kennedy_gruber(u_ll, u_rr, orientation_or_normal_direction, equations)
+    flux_noncons = flux_nonconservative_souza(u_ll, u_rr, orientation_or_normal_direction,
+                                              equations)
+    return flux + 0.5f0 * flux_noncons, flux - 0.5f0 * flux_noncons
 end
 
 @inline function Trixi.flux_differencing_kernel!(_du::PtrArray, u_cons::PtrArray,
