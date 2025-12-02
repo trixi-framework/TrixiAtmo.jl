@@ -1,9 +1,32 @@
+# This test case is used to compute convergence rates via a linearized solution.
+# The setup follows the approach commonly adopted in benchmark studies; therefore,
+# a fixed CFL number is employed.
+#
+# References:
+# - Michael Baldauf and Slavko Brdar (2013):
+#   "An analytic solution for linear gravity waves in a channel as a test
+#   for numerical models using the non-hydrostatic, compressible Euler equations"
+#   Q. J. R. Meteorol. Soc., DOI: 10.1002/qj.2105
+#   https://doi.org/10.1002/qj.2105
+#
+# - Maciej Waruszewski, Jeremy E. Kozdon, Lucas C. Wilcox, Thomas H. Gibson,
+#   and Francis X. Giraldo (2022):
+#   "Entropy stable discontinuous Galerkin methods for balance laws
+#   in non-conservative form: Applications to the Euler equations with gravity"
+#   JCP, DOI: 10.1016/j.jcp.2022.111507
+#   https://doi.org/10.1016/j.jcp.2022.111507
+#
+# - Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025):
+#   "Structure-Preserving High-Order Methods for the Compressible Euler Equations
+#   in Potential Temperature Formulation for Atmospheric Flows"
+#   https://arxiv.org/abs/2509.10311
+
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
 """
 	initial_condition_gravity_waves(x, t,
-                                        equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+                                        equations::CompressibleEulerEnergyEquationsWithGravity2D)
 
 Test cases for linearized analytical solution by
 -  Baldauf, Michael and Brdar, Slavko (2013)
@@ -12,7 +35,7 @@ Test cases for linearized analytical solution by
    [DOI: 10.1002/qj.2105] (https://doi.org/10.1002/qj.2105)
 """
 function initial_condition_gravity_waves(x, t,
-                                         equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+                                         equations::CompressibleEulerEnergyEquationsWithGravity2D)
     g = equations.g
     c_p = equations.c_p
     c_v = equations.c_v
@@ -32,20 +55,19 @@ function initial_condition_gravity_waves(x, t,
     rho = rhos * exp(-delta * x[2]) + rho_b * exp(-0.5 * delta * x[2])
     v1 = 20
     v2 = 0
-
     return prim2cons(SVector(rho, v1, v2, p, g * x[2]), equations)
 end
 
-equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004,
-                                                                        c_v = 717,
-                                                                        gravity = 9.81)
+equations = CompressibleEulerEnergyEquationsWithGravity2D(c_p = 1004,
+                                                          c_v = 717,
+                                                          gravity = 9.81)
 
 # We have an isothermal background state with T0 = 250 K.
 # The reference speed of sound can be computed as:
 # cs = sqrt(gamma * R * T0)
 cs = sqrt(equations.gamma * equations.R * 250)
 surface_flux = (FluxLMARS(cs), flux_zero)
-volume_flux = (flux_tec, flux_nonconservative_waruszewski_etal)
+volume_flux = (flux_ranocha, flux_nonconservative_waruszewski_etal)
 polydeg = 3
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))

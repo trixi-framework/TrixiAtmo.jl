@@ -31,7 +31,8 @@ using SpecialFunctions: gamma
                         energy_kinetic, energy_internal, energy_total, entropy, pressure,
                         flux, flux_ec, flux_chandrashekar, flux_wintermeyer_etal,
                         flux_fjordholm_etal, flux_nonconservative_wintermeyer_etal,
-                        flux_nonconservative_fjordholm_etal, FluxLMARS, flux_lax_friedrichs
+                        flux_nonconservative_fjordholm_etal, FluxLMARS, flux_shima_etal,
+                        flux_ranocha, flux_kennedy_gruber, flux_lax_friedrichs
 
 using Trixi: ln_mean, stolarsky_mean, inv_ln_mean
 
@@ -58,6 +59,8 @@ export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity1D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity2D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity3D,
+       CompressibleEulerEnergyEquationsWithGravity2D,
+       CompressibleEulerEnergyEquationsWithGravity3D,
        CompressibleEulerAtmo
 
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
@@ -69,7 +72,7 @@ export flux_nonconservative_zeros, flux_nonconservative_ec,
        source_terms_coriolis, source_terms_coriolis_lagrange_multiplier,
        flux_tec, flux_etec, flux_nonconservative_souza_etal,
        flux_nonconservative_artiano_etal,
-       flux_nonconservative_waruzewski_etal, flux_zero
+       flux_nonconservative_waruszewski_etal, flux_zero
 
 export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!
 

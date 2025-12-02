@@ -109,7 +109,7 @@ boundary_conditions = Dict(:x_neg => boundary,
                            :y_neg => boundary_condition_slip_wall,
                            :y_pos => boundary)
 
-# We have an isothermal background state with T0 = 250 K. 
+# We have an isothermal background state with T0 = 250 K.
 # The reference speed of sound can be computed as:
 # cs = sqrt(gamma * R * T0)
 cs = sqrt(equations.gamma * equations.R * linear_hydrostatic_setup.T_0)
@@ -117,7 +117,7 @@ polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
 
 surface_flux = (FluxLMARS(cs), flux_zero)
-volume_flux = (flux_tec, flux_nonconservative_waruzewski_etal)
+volume_flux = (flux_tec, flux_nonconservative_waruszewski_etal)
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
 solver = DGSEM(basis, surface_flux, volume_integral)

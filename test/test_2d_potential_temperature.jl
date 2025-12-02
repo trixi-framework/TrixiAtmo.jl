@@ -133,7 +133,7 @@ end
                             1.3602645625916122e-6,
                             1.708726631477475e-5,
                             3.637978807091713e-12
-                        ], surface_flux=(flux_ec, flux_nonconservative_waruzewski_etal),
+                        ], surface_flux=(flux_ec, flux_nonconservative_waruszewski_etal),
                         volume_flux=(flux_etec, flux_nonconservative_souza_etal), atol=1e-5)
 
     # Ensure that we do not have excessive memory allocations
