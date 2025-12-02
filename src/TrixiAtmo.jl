@@ -12,7 +12,7 @@ using Reexport: @reexport
 using Trixi
 using MuladdMacro: @muladd
 using Printf: @sprintf
-using Static: True, False
+using Static: True, False, StaticInt
 using StrideArrays: PtrArray
 using StaticArrayInterface: static_size
 using LinearAlgebra: cross, norm, dot, det
@@ -21,6 +21,7 @@ using LoopVectorization: @turbo
 using QuadGK: quadgk
 using ForwardDiff: derivative
 using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
+using SpecialFunctions: gamma
 
 @reexport using StaticArrays: SVector, SMatrix
 @reexport import Trixi: waterheight, varnames, cons2cons, cons2prim,
@@ -30,16 +31,23 @@ using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
                         energy_kinetic, energy_internal, energy_total, entropy, pressure,
                         flux, flux_ec, flux_chandrashekar, flux_wintermeyer_etal,
                         flux_fjordholm_etal, flux_nonconservative_wintermeyer_etal,
-                        flux_nonconservative_fjordholm_etal, FluxLMARS
+                        flux_nonconservative_fjordholm_etal, FluxLMARS, flux_lax_friedrichs
 
 using Trixi: ln_mean, stolarsky_mean, inv_ln_mean
 
 include("auxiliary/auxiliary.jl")
+include("parametrization/parametrization.jl")
 include("equations/equations.jl")
+include("reference_data/reference_data.jl")
 include("meshes/meshes.jl")
 include("semidiscretization/semidiscretization.jl")
 include("solvers/solvers.jl")
 include("callbacks_step/callbacks_step.jl")
+
+export Parameters,
+       IdealGas, IdealGasesAndLiquids,
+       TotalEnergy, PotentialTemperature,
+       MicrophysicsRelaxation
 
 export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
        CovariantLinearAdvectionEquation2D, CovariantShallowWaterEquations2D,
@@ -49,7 +57,8 @@ export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
        CompressibleEulerPotentialTemperatureEquations3D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity1D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity2D,
-       CompressibleEulerPotentialTemperatureEquationsWithGravity3D
+       CompressibleEulerPotentialTemperatureEquationsWithGravity3D,
+       CompressibleEulerAtmo
 
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
@@ -73,7 +82,7 @@ export P4estMeshCubedSphere2D, P4estMeshQuadIcosahedron2D, MetricTermsCrossProdu
 export EARTH_RADIUS, EARTH_GRAVITATIONAL_ACCELERATION,
        EARTH_ROTATION_RATE, SECONDS_PER_DAY
 
-export transform_initial_condition
+export transform_initial_condition, transform_source_terms
 
 export initial_condition_gaussian, initial_condition_geostrophic_balance,
        initial_condition_rossby_haurwitz, initial_condition_isolated_mountain,

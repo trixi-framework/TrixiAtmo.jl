@@ -416,3 +416,8 @@ end
     return u * (2 * EARTH_ROTATION_RATE * sin(lat) + u * tan(lat) / a)
 end
 end # @muladd
+
+
+include("ic_bubble.jl")
+
+include("st_gravity.jl")
