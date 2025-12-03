@@ -1,5 +1,5 @@
 module TestExamples3DEulerEnergy
-
+using Trixi: flux_kennedy_gruber
 include("test_trixiatmo.jl")
 
 @trixi_testset "elixir_euler_energy_baroclinic_instability" begin
@@ -24,6 +24,22 @@ include("test_trixiatmo.jl")
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+end
+
+@trixi_testset "elixir_euler_energy_baroclinic_instability" begin
+    trixi_include(@__MODULE__,
+                  joinpath(EXAMPLES_DIR,
+                           "elixir_euler_energy_baroclinic_instability.jl"),
+                  volume_flux = (flux_kennedy_gruber, flux_nonconservative_souza_etal),
+                  tspan = (0.0, 0.01))
+    u_ode = copy(sol.u[end])
+    trixi_include(@__MODULE__,
+                  joinpath(EXAMPLES_DIR,
+                           "elixir_euler_energy_baroclinic_instability_turbo.jl"),
+                  tspan = (0.0, 0.01))
+
+    u_ode_specialized = copy(sol.u[end])
+    @test u_ode_specialized ≈ u_ode
 end
 
 end
