@@ -13,7 +13,7 @@ using LinearAlgebra: norm
 function initial_condition_isothermal(x, t,
                                       equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     # equation (60) in the paper
-    temperature = 285       # T_I
+    temperature = 285
 
     @unpack p_0, R = equations
 
@@ -22,8 +22,7 @@ function initial_condition_isothermal(x, t,
     z = max(r - EARTH_RADIUS, 0.0)
     r = z + EARTH_RADIUS
 
-    # pressure
-    # geopotential formulation?
+    # pressure, geopotential formulation
     p = p_0 *
         exp(EARTH_GRAVITATIONAL_ACCELERATION *
             (EARTH_RADIUS^2 / r - EARTH_RADIUS) /
@@ -99,7 +98,7 @@ end
     du3 = -k_v * (u[3] - dotprod * x[2])
     du4 = -k_v * (u[4] - dotprod * x[3])
 
-    du5 = -k_T * u[1] * c_v * (temperature - T_equi)
+    du5 = -k_T * u[5] / temperature * (temperature - T_equi)
 
     return SVector(du0, du2, du3, du4, du5, du0)
 end
@@ -126,8 +125,10 @@ volume_flux = (flux_ec, flux_nonconservative_waruzewski_etal)
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
 
+# these are the settings used in Souza et al.
 lat_lon_trees_per_dim = 10
 layers = 8
+
 mesh = Trixi.T8codeMeshCubedSphere(lat_lon_trees_per_dim, layers, EARTH_RADIUS, 30000.0,
                                    polydeg = polydeg, initial_refinement_level = 0)
 
@@ -137,8 +138,10 @@ semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
 
 ###############################################################################
 # ODE solvers, callbacks etc.
-T = 365 # 1 year
-tspan = (0.0, T * SECONDS_PER_DAY) # time in seconds for 1 year
+
+# this test case is typically run for a long time and evaluated statistically
+T = 365
+tspan = (0.0, T * SECONDS_PER_DAY)
 ode = semidiscretize(semi, tspan)
 
 summary_callback = SummaryCallback()
