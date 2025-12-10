@@ -63,7 +63,7 @@ export flux_nonconservative_zeros, flux_nonconservative_ec,
        source_terms_coriolis, source_terms_coriolis_lagrange_multiplier,
        flux_tec, flux_etec, flux_nonconservative_souza_etal,
        flux_nonconservative_artiano_etal,
-       flux_nonconservative_waruzewski_etal, flux_zero
+       flux_nonconservative_waruszewski_etal, flux_zero
 
 export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!
 
