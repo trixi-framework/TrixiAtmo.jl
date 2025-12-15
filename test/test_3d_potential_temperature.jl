@@ -174,7 +174,6 @@ end
 end
 
 @trixi_testset "elixir_euler_potential_temperature_held_suarez" begin
-
     import ..CI_ON_MACOS
     if CI_ON_MACOS
         global _rtol = 1e-10  # increased error tolerance
@@ -200,7 +199,7 @@ end
                             4.88597072706591,
                             1703.946276059638
                         ],
-                        rtol = _rtol,
+                        rtol=_rtol,
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY),
                         lat_lon_trees_per_dim=2, layers=2)
     # Ensure that we do not have excessive memory allocations
