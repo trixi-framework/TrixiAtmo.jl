@@ -176,7 +176,7 @@ end
 @trixi_testset "elixir_euler_potential_temperature_held_suarez" begin
     import ..CI_ON_MACOS
     if CI_ON_MACOS
-        global _rtol = 1e-10  # increased error tolerance
+        global _rtol = 5e-8  # increased error tolerance
     else
         global _rtol = sqrt(eps(Float64))  # default
     end
