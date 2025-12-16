@@ -10,7 +10,7 @@ EXAMPLES_DIR = examples_dir()
 # Check whether we run CI in the cloud with Windows or Mac, see also
 # https://docs.github.com/en/actions/learn-github-actions/environment-variables
 CI_ON_WINDOWS = (get(ENV, "GITHUB_ACTIONS", false) == "true") && Sys.iswindows()
-CI_ON_MAC = (get(ENV, "GITHUB_ACTIONS", false) == "true") && Sys.isapple()
+CI_ON_MACOS = (get(ENV, "GITHUB_ACTIONS", false) == "true") && Sys.isapple()
 
 macro test_trixi_include(expr, args...)
     local add_to_additional_ignore_content = [
@@ -20,7 +20,8 @@ macro test_trixi_include(expr, args...)
     ]
     args = append_to_kwargs(args, :additional_ignore_content,
                             add_to_additional_ignore_content)
-    quote
-        @test_trixi_include_base($(esc(expr)), $(args...))
+    ex = quote
+        @test_trixi_include_base($expr, $(args...))
     end
+    return esc(ex)
 end
