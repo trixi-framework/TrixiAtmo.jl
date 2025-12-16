@@ -13,7 +13,7 @@ using LinearAlgebra: norm
 function initial_condition_isothermal(x, t,
                                       equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     # equation (60) in the paper
-    temperature = 285
+    T = 285
 
     @unpack p_0, R = equations
 
@@ -26,10 +26,10 @@ function initial_condition_isothermal(x, t,
     p = p_0 *
         exp(EARTH_GRAVITATIONAL_ACCELERATION *
             (EARTH_RADIUS^2 / r - EARTH_RADIUS) /
-            (R * temperature))
+            (R * T))
 
     # density (via ideal gas law)
-    rho = p / (R * temperature)
+    rho = p / (R * T)
 
     # geopotential
     phi = EARTH_GRAVITATIONAL_ACCELERATION * (EARTH_RADIUS - EARTH_RADIUS^2 / r)
