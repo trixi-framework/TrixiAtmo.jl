@@ -74,7 +74,7 @@ function bottom(x)
     a = 1000
     x_length = 40000
     # linear function cx for x in [-1,1]
-    c = x_length / 2
+    c = 0.5f0 * x_length
     # return (cx , f(cx)-f(c))
     return SVector(c * x, (h * a^2 * inv((c * x)^2 + a^2)) - (h * a^2 * inv((c)^2 + a^2)))
 end

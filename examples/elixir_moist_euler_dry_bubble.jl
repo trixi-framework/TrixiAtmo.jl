@@ -43,7 +43,6 @@ function initial_condition_warm_bubble(x, t, equations::CompressibleMoistEulerEq
     T = p / (R_d * rho)
 
     v1 = 20
-    # v1 = 0
     v2 = 0
     rho_v1 = rho * v1
     rho_v2 = rho * v2
