@@ -166,6 +166,7 @@ end
                             1.0016134087282467,
                             333.1178018152714
                         ],
+                        rtol=2e-8,
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
                         volume_flux=(flux_etec, flux_nonconservative_artiano_etal))
     # Ensure that we do not have excessive memory allocations
