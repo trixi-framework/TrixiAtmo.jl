@@ -95,7 +95,7 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_baroclinic_instability" begin
+@trixi_testset "elixir_euler_potential_temperature_baroclinic_instability Souza" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_euler_potential_temperature_baroclinic_instability.jl"),
                         l2=[
@@ -121,7 +121,7 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_baroclinic_instability" begin
+@trixi_testset "elixir_euler_potential_temperature_baroclinic_instability Waruszewski" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_euler_potential_temperature_baroclinic_instability.jl"),
                         l2=[
@@ -147,12 +147,12 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_baroclinic_instability" begin
+@trixi_testset "elixir_euler_potential_temperature_baroclinic_instability Artiano" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_euler_potential_temperature_baroclinic_instability.jl"),
                         l2=[
                             0.0005237192887527135,
-                            0.014655078153251792,
+                            0.01465507839361827,
                             0.012853482849295788,
                             0.012929758648242088,
                             0.13994217088888805,

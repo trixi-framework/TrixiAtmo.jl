@@ -13,23 +13,25 @@ Trixi.MPI.Barrier(Trixi.mpi_comm())
 #! format: noindent
 
 @trixi_testset "elixir_moist_euler_moist_bubble" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "elixir_moist_euler_dry_bubble.jl"),
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "elixir_moist_euler_moist_bubble.jl"),
                         l2=[
-                            9.103834949215729e-7,
-                            1.8209333828866736e-5,
-                            0.0004709417153612775,
-                            0.006342004383628925,
-                            0.0,
-                            0.0
+                            7.3515680983123215e-6,
+                            1.1067008939664827e-7,
+                            0.0006971968385493199,
+                            1.715939603224655,
+                            8.832720252288771e-7,
+                            1.025736269959355e-6
                         ],
                         linf=[
-                            1.0258282803210506e-5,
-                            0.0002051932980897675,
-                            0.006394867661494521,
-                            0.076401537633501,
-                            0.0,
-                            0.0
+                            8.056395313560394e-5,
+                            1.1981461033088162e-6,
+                            0.0058959697735631155,
+                            19.248694115842227,
+                            1.0043632092967755e-5,
+                            1.1439573103299433e-5
                         ],
+                        polydeg=3,
+                        cells_per_dimension=(16, 8),
                         tspan=(0.0, 0.1))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
