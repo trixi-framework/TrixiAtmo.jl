@@ -1,0 +1,55 @@
+\begin{MODEL}
+   \begin{OUTER_BOUNDARY}
+      \begin{PARAMETRIC_EQUATION_CURVE}
+         name = bottom
+         yEqn = y(t) = cos(pi*(-25000.0+t*50000.0)/8000.0)^2.0*3000.0*cos(pi*(-25000.0+t*50000.0)/(2.0*25000.0))^2.0
+         zEqn = z(t) = 0.0
+         xEqn = x(t) = -75000.0 + t * 150000.0
+      \end{PARAMETRIC_EQUATION_CURVE}
+      \begin{PARAMETRIC_EQUATION_CURVE}
+         name = right
+         yEqn = y(t)=t*15000.0
+         zEqn = z(t)=0.0
+         xEqn = x(t)=75000.0
+      \end{PARAMETRIC_EQUATION_CURVE}
+      \begin{END_POINTS_LINE}
+         name = top
+         xEnd = [-75000.0,15000.0,0.0]
+         xStart = [75000.0,15000.0,0.0]
+      \end{END_POINTS_LINE}
+      \begin{PARAMETRIC_EQUATION_CURVE}
+         name = left
+         yEqn = y(t)=(1 - t)*15000.0 
+         zEqn = z(t)=0.0
+         xEqn = x(t)=-75000.0
+      \end{PARAMETRIC_EQUATION_CURVE}
+   \end{OUTER_BOUNDARY}
+\end{MODEL}
+\begin{CONTROL_INPUT}
+   \begin{REFINEMENT_REGIONS}
+      \begin{REFINEMENT_LINE}
+         name = mountain_refinement
+         x1 = [18000.0,1500.0,0.0]
+         w = 1500.0
+         x0 = [-18000.0,1500.0,0.0]
+         type = smooth
+         h = 0.2
+      \end{REFINEMENT_LINE}
+   \end{REFINEMENT_REGIONS}
+   \begin{SPRING_SMOOTHER}
+      smoothing type = LinearAndCrossbarSpring
+      smoothing = ON
+   \end{SPRING_SMOOTHER}
+   \begin{BACKGROUND_GRID}
+      background grid size = [500.0,250.0,0.0]
+   \end{BACKGROUND_GRID}
+   \begin{RUN_PARAMETERS}
+      mesh file name = mesh/schaer_mountain_advection.inp
+      plot file format = sem
+      plot file name = mesh/schaer_mountain_advection.tec
+      stats file name = mesh/schaer_mountain_advection.txt
+      mesh file format = ABAQUS
+      polynomial order = 1
+   \end{RUN_PARAMETERS}
+\end{CONTROL_INPUT}
+\end{FILE}

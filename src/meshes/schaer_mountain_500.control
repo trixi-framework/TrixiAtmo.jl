@@ -1,0 +1,45 @@
+\begin{MODEL}
+   \begin{OUTER_BOUNDARY}
+      \begin{PARAMETRIC_EQUATION_CURVE}
+         name = bottom
+         yEqn = y(t) = 250.0 * exp(-((-25000.0 + t * 50000.0) / 5000.0)^2) * cos(pi * (-25000.0 + t * 50000.0) / 4000.0)^2
+         zEqn = z(t) = 0.0
+         xEqn = x(t) = -25000.0 + t * 50000.0
+      \end{PARAMETRIC_EQUATION_CURVE}
+      \begin{PARAMETRIC_EQUATION_CURVE}
+         name = right
+         yEqn = y(t) = 1.7359929831205142e-9 + t * (21000.0 - 1.7359929831205142e-9)
+         zEqn = z(t) = 0.0
+         xEqn = x(t) = 25000.0
+      \end{PARAMETRIC_EQUATION_CURVE}
+      \begin{END_POINTS_LINE}
+         name = top
+         xEnd = [-25000.0,21000.0,0.0]
+         xStart = [25000.0,21000.0,0.0]
+      \end{END_POINTS_LINE}
+      \begin{PARAMETRIC_EQUATION_CURVE}
+         name = left
+         yEqn = y(t) = 1.7359929831205142e-9 + (1 - t) * (21000.0 - 1.7359929831205142e-9)
+         zEqn = z(t) = 0.0
+         xEqn = x(t) = -25000.0
+      \end{PARAMETRIC_EQUATION_CURVE}
+   \end{OUTER_BOUNDARY}
+\end{MODEL}
+\begin{CONTROL_INPUT}
+   \begin{SPRING_SMOOTHER}
+      smoothing type = LinearAndCrossbarSpring
+      smoothing = ON
+   \end{SPRING_SMOOTHER}
+   \begin{BACKGROUND_GRID}
+      background grid size = [500.0,420.0,0.0]
+   \end{BACKGROUND_GRID}
+   \begin{RUN_PARAMETERS}
+      mesh file name = mesh/schaer_mountain_500.inp
+      plot file format = sem
+      plot file name = mesh/schaer_mountain_500.tec
+      stats file name = mesh/schaer_mountain_500.txt
+      mesh file format = ABAQUS
+      polynomial order = 2
+   \end{RUN_PARAMETERS}
+\end{CONTROL_INPUT}
+\end{FILE}

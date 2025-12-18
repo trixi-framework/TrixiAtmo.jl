@@ -100,14 +100,18 @@ function mapping(xi_, eta_)
     return SVector(x, y)
 end
 
-cells_per_dimension = (16,38) 
+H1 = (128, 300)
+H2 = (64, 150) 
+H3 = (32, 75)
+
+cells_per_dimension = H3
 # in the paper are 3 different resolutions:
 # H1: (128, 300), dx = 3200 m,  dz = 100 m
 # H2: (64, 150),  dx = 64000 m, dz = 200 m 
 # H3: (32, 75),   dx = 12800 m, dz = 400 m 
 
 mesh_Structured = StructuredMesh(cells_per_dimension, mapping,
-                      periodicity = true)
+                      periodicity = (true,false))
 
 ###############################################################################
 # semidiscretization of the compressible Euler equations
@@ -176,7 +180,7 @@ callbacks = CallbackSet(summary_callback,
 # H1: dt = 100.0, H2: dt = 200.0, H3: dt = 400.0
 sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
             maxiters = 1.0e7,
-            dt = 400.0, # solve needs some value here but it will be overwritten by the stepsize_callback
+            dt = 0.2, # solve needs some value here but it will be overwritten by the stepsize_callback
             save_everystep = false, callback = callbacks);
 
 summary_callback()

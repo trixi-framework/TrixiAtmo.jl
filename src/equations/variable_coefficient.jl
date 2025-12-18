@@ -6,8 +6,7 @@ struct VariableCoefficientAdvectionEquation2D{} <:
 varnames(::typeof(cons2cons), ::VariableCoefficientAdvectionEquation2D) = ("scalar",)
 varnames(::typeof(cons2prim), ::VariableCoefficientAdvectionEquation2D) = ("scalar",)
 varnames(::typeof(cons2aux), ::VariableCoefficientAdvectionEquation2D) = ("v1", "v2")
-
-
+varnames(::typeof(cons2prim_and_aux), ::VariableCoefficientAdvectionEquation2D) = ("scalar", "v1", "v2")
 
 @inline function Trixi.flux(u, aux_vars, orientation::Integer, equations::VariableCoefficientAdvectionEquation2D)
        a = aux_vars[orientation]
@@ -70,5 +69,7 @@ end
 
 @inline Trixi.cons2entropy(u, equations::VariableCoefficientAdvectionEquation2D) = u 
 @inline Trixi.cons2prim(u, equations::VariableCoefficientAdvectionEquation2D) = u 
+#@inline Trixi.cons2prim(u, aux, equations::LinearVariableScalarAdvectionEquation2D) = u
+
 
 end

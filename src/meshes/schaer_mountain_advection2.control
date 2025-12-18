@@ -1,3 +1,43 @@
+\begin{CONTROL_INPUT}
+   \begin{RUN_PARAMETERS}
+      mesh file name = mesh/schaer_mountain_advection2.inp
+      plot file format = sem
+      plot file name = mesh/schaer_mountain_advection2.tec
+      stats file name = mesh/schaer_mountain_advection2.txt
+      mesh file format = ABAQUS
+      polynomial order = 1
+   \end{RUN_PARAMETERS}
+
+   \begin{BACKGROUND_GRID}
+      background grid size =  [1500.0,750.0,0.0]   % I hoped to get 2000 elements, but there are 29217 
+      % grid size of [1570.0,785.0,0.0] still works, with [1580.0,790.0,0.0] and biggers grid cells 
+      % sizes I get "Program received signal SIGSEGV: Segmentation fault - invalid memory reference."
+      %x0 = [-75000.0, 0.0, 0.0]
+      %dx = [1000.0, 500.0, 0.0]
+      %N  = [150,30,0]
+      % for these specifications (x0, dx, N) instead of grid size I get the the Segmentation fault as well
+   \end{BACKGROUND_GRID}
+
+   \begin{SPRING_SMOOTHER}
+      smoothing            = ON
+      smoothing type       = LinearAndCrossbarSpring 
+      spring constant      = 1.0 
+      mass                 = 1.0 
+      rest length          = 0.0 
+      damping coefficient  = 5.0 
+      number of iterations = 2
+      time step            = 0.1 
+   \end{SPRING_SMOOTHER}
+   
+   \begin{REFINEMENT_LINE}%this does not seem change the number of elements 
+      type = smooth 
+      x0   = [-18000.0,1500.0,0.0]
+      x1   = [18000.0,1500.0,0.0]
+      h    = 0.20
+      w    = 1500.0
+   \end{REFINEMENT_LINE}
+\end{CONTROL_INPUT}
+
 \begin{MODEL}
    \begin{OUTER_BOUNDARY}
       \begin{PARAMETRIC_EQUATION_CURVE}
@@ -25,21 +65,4 @@
       \end{PARAMETRIC_EQUATION_CURVE}
    \end{OUTER_BOUNDARY}
 \end{MODEL}
-\begin{CONTROL_INPUT}
-   \begin{SPRING_SMOOTHER}
-      smoothing type = LinearAndCrossbarSpring
-      smoothing = ON
-   \end{SPRING_SMOOTHER}
-   \begin{BACKGROUND_GRID}
-      background grid size = [500.0,300.0,0.0]
-   \end{BACKGROUND_GRID}
-   \begin{RUN_PARAMETERS}
-      mesh file name = mesh/schaer_mountain_advec2.inp
-      plot file format = sem
-      plot file name = mesh/schaer_mountain_advec2.tec
-      stats file name = mesh/schaer_mountain_advec2.txt
-      mesh file format = ABAQUS
-      polynomial order = 2
-   \end{RUN_PARAMETERS}
-\end{CONTROL_INPUT}
 \end{FILE}

@@ -337,8 +337,15 @@ end
 
 @inline have_aux_node_vars(::AbstractVariableCoefficientEquations) = True()
 
+function n_aux_node_vars end
+@inline eachauxvariable(equations::AbstractEquations) = Base.OneTo(n_aux_node_vars(equations))
+
 function cons2aux(u, aux, equations::AbstractEquations)
     return aux
+end
+
+function cons2prim_and_aux(u, aux, equations::AbstractEquations)
+    return SVector(vcat(u, aux)...)
 end
 
 @inline function Trixi.flux_central(u_ll, u_rr, aux_vars_ll, aux_vars_rr,

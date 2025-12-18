@@ -62,7 +62,7 @@ function mapping(xi_, eta_)
     H = 21_000.0
 
     #topography
-    h_c = 250.0
+    h_c = 500.0
     lambda_c = 4000.0
     a_c = 5000.0
 
@@ -79,7 +79,7 @@ function mapping(xi_, eta_)
 end
 
 # Create curved mesh with 200 x 100 elements
-cells_per_dimension = (100,50)
+cells_per_dimension = (200, 100)
 mesh = StructuredMesh(cells_per_dimension, mapping,
                       periodicity = false)
 

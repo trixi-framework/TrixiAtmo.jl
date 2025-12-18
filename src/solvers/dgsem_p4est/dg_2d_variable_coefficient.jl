@@ -72,7 +72,7 @@ end
     end
 end
 
-@inline function Trixi.calc_boundary_flux!(surface_flux_values, t, boundary_conditions::Union{NamedTuple{(:x_neg, :x_pos, :y_neg, :y_pos)}, Dict{Symbol, Any}},
+@inline function Trixi.calc_boundary_flux!(surface_flux_values, t, boundary_condition,#::Union{NamedTuple{(:x_neg, :x_pos, :y_neg, :y_pos)}, Dict{Symbol, Any}},
                                     mesh::P4estMesh{2},
                                     nonconservative_terms::Trixi.False,
                                     equations::AbstractVariableCoefficientEquations{2},
