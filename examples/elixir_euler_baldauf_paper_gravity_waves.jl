@@ -63,7 +63,7 @@ function (setup::InteriaWaveSetup)(x, t,
 end
 
 
-# Source terms  
+# Source terms 
 @inline function (setup::InteriaWaveSetup)(u, x, t, equations::CompressibleEulerEquations2D)
     @unpack g = setup
     rho, _, rho_v2, _ = u
@@ -126,7 +126,7 @@ solver = DGSEM(basis, surface_flux, volume_integral)
 coordinates_min = (0.0, 0.0)
 coordinates_max = (300_000.0, 10_000.0)
 
-cells_per_dimension = (300, 10)
+cells_per_dimension = (64, 32)
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = (true, false))
 
