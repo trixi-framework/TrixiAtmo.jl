@@ -173,4 +173,38 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
+@trixi_testset "elixir_euler_potential_temperature_held_suarez" begin
+    import ..CI_ON_MACOS
+    if CI_ON_MACOS
+        global _rtol = 7e-8  # increased error tolerance
+    else
+        global _rtol = sqrt(eps(Float64))  # default
+    end
+
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_euler_potential_temperature_held_suarez.jl"),
+                        l2=[
+                            0.0031433373482917877,
+                            0.00013227403214817446,
+                            0.0001322740320211912,
+                            0.00014259768410822775,
+                            0.7578318727895532,
+                            569.8247547308886
+                        ],
+                        linf=[
+                            0.023356419582470034,
+                            0.001522627198332827,
+                            0.0015226271932242787,
+                            0.0005022230908559857,
+                            4.88597072706591,
+                            1703.946276059638
+                        ],
+                        rtol=_rtol,
+                        tspan=(0.0, 0.01 * SECONDS_PER_DAY),
+                        lat_lon_trees_per_dim=2, layers=2)
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+end
+
 end
