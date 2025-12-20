@@ -69,4 +69,31 @@ function Trixi.max_dt(u, t, mesh::P4estMesh{2}, constant_speed::False,
     end
     return 2 / (nnodes(dg) * max_scaled_speed)
 end
+
+function Trixi.max_dt(u, t, mesh::DGMultiMesh,
+                constant_speed::False, equations::AbstractCovariantEquations{NDIMS},
+                dg::DGMulti, cache) where {NDIMS}
+    @unpack md = mesh
+    rd = dg.basis
+    (; aux_values) = cache
+
+    dt_min = Inf
+    for e in eachelement(mesh, dg, cache)
+        max_speeds = ntuple(_ -> nextfloat(zero(t)), NDIMS)
+        for i in 1:nnodes(dg)
+            u_node = u[i, e]
+            aux_node = aux_values[i, e]
+            detg = area_element(aux_node, equations)
+            lambda_i = max_abs_speeds(u_node, aux_node, equations)
+            max_speeds = max.(max_speeds, lambda_i)
+        end
+        dt_min = min(dt_min, 1 / sum(max_speeds))
+    end
+
+    # This mimics `max_dt` for `TreeMesh`, except that `nnodes(dg)` is replaced by
+    # `polydeg+1`. This is because `nnodes(dg)` returns the total number of
+    # multi-dimensional nodes for DGMulti solver types, while `nnodes(dg)` returns
+    # the number of 1D nodes for `DGSEM` solvers.
+    return 2 * dt_min * Trixi.dt_polydeg_scaling(dg)
+end
 end # @muladd
