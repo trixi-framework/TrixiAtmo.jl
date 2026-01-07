@@ -18,7 +18,7 @@ function Trixi.create_cache(mesh::P4estMesh, equations::AbstractEquations, dg::D
 
     # Add specialized parts of the cache required to compute the volume integral etc.
     cache = (; cache...,
-             Trixi.create_cache(mesh, equations, dg.volume_integral, dg, uEltype)...)
+             Trixi.create_cache(mesh, equations, dg.volume_integral, dg, cache, uEltype)...)
     cache = (; cache..., Trixi.create_cache(mesh, equations, dg.mortar, uEltype)...)
 
     # Add specialized parts of the cache for auxiliary node variables

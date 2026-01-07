@@ -2,26 +2,26 @@ module TestThreaded
 
 include("test_trixiatmo.jl")
 
-@testset "Threaded tests" begin
+@testset verbose=true showtiming=true "Threaded tests" begin
 #! format: noindent
 
 @trixi_testset "elixir_moist_euler_moist_bubble" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "elixir_moist_euler_moist_bubble.jl"),
                         l2=[
-                            7.351043427240923e-6,
-                            1.1070342432069074e-7,
-                            0.0006974588377288118,
-                            1.715668353329522,
-                            8.831269143134121e-7,
-                            1.025579538944668e-6
+                            7.3515680983123215e-6,
+                            1.1067008939664827e-7,
+                            0.0006971968385493199,
+                            1.715939603224655,
+                            8.832720252288771e-7,
+                            1.025736269959355e-6
                         ],
                         linf=[
-                            8.055695643149896e-5,
-                            1.1985203677080201e-6,
-                            0.005897639251024437,
-                            19.24776030163048,
-                            1.0043133039065386e-5,
-                            1.1439046776775402e-5
+                            8.056395313560394e-5,
+                            1.1981461033088162e-6,
+                            0.0058959697735631155,
+                            19.248694115842227,
+                            1.0043632092967755e-5,
+                            1.1439573103299433e-5
                         ],
                         polydeg=3,
                         cells_per_dimension=(16, 8),

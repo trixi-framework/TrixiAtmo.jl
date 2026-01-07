@@ -13,12 +13,12 @@ using TrixiAtmo: CompressibleMoistEulerEquations2D, source_terms_geopotential,
 # Review Vol. 128.4, pages 1153–1164, 2000,
 # https://doi.org/10.1175/1520-0493(2000)128<1153:BOFOSO>2.0.CO;2.
 function initial_condition_nonhydrostatic_gravity_wave(x, t,
-                                                       equations::CompressibleMoistEulerEquations2D)
+                                                       equations::CompressibleMoistEulerEquations2D{RealT}) where {RealT}
     @unpack p_0, kappa, gamma, g, c_pd, c_vd, R_d, R_v = equations
     z = x[2]
-    T_0 = 280.0
+    T_0 = 280
     theta_0 = T_0
-    N = 0.01
+    N = convert(RealT, 0.01)
 
     theta = theta_0 * exp(N^2 * z / g)
     p = p_0 * (1 + g^2 * inv(c_pd * theta_0 * N^2) * (exp(-z * N^2 / g) - 1))^(1 / kappa)
@@ -29,7 +29,7 @@ function initial_condition_nonhydrostatic_gravity_wave(x, t,
     v2 = 0
     rho_v1 = rho * v1
     rho_v2 = rho * v2
-    rho_E = rho * c_vd * T + 0.5 * rho * (v1^2 + v2^2)
+    rho_E = rho * c_vd * T + 0.5f0 * rho * (v1^2 + v2^2)
     rho_qv = 0
     rho_ql = 0
     return SVector(rho, rho_v1, rho_v2, rho_E, rho_qv, rho_ql)
@@ -40,7 +40,8 @@ c_vd = 717  # specific heat at constant volume for dry air
 c_pv = 1885 # specific heat at constant pressure for moist air
 c_vv = 1424 # specific heat at constant volume for moist air
 equations = CompressibleMoistEulerEquations2D(c_pd = c_pd, c_vd = c_vd, c_pv = c_pv,
-                                              c_vv = c_vv, gravity = 9.81)
+                                              c_vv = c_vv,
+                                              gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 
 initial_condition = initial_condition_nonhydrostatic_gravity_wave
 
@@ -59,34 +60,33 @@ boundary_conditions = (x_neg = boundary_condition_periodic,
                        y_pos = boundary_condition_slip_wall)
 
 polydeg = 4
-basis = LobattoLegendreBasis(polydeg)
 surface_flux = FluxLMARS(360.0)
 volume_flux = flux_chandrashekar
 
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
-solver = DGSEM(basis, surface_flux, volume_integral)
+solver = DGSEM(polydeg, surface_flux, volume_integral)
 
 # Deformed rectangle that has "witch of agnesi" as bottom
 
 function bottom(x)
-    h = 400.0
-    a = 1000.0
-    x_length = 40000.0
+    h = 400
+    a = 1000
+    x_length = 40000
     # linear function cx for x in [-1,1]
-    c = x_length / 2
+    c = 0.5f0 * x_length
     # return (cx , f(cx)-f(c))
     return SVector(c * x, (h * a^2 * inv((c * x)^2 + a^2)) - (h * a^2 * inv((c)^2 + a^2)))
 end
 
-f1(s) = SVector(-20000.0, 8000.0 * s + 8000.0)
-f2(s) = SVector(20000.0, 8000.0 * s + 8000.0)
+f1(s) = SVector(-20000, 8000 * s + 8000)
+f2(s) = SVector(20000, 8000 * s + 8000)
 function f3(s)
-    SVector(20000.0 * s,
-            (400.0 * 1000.0^2 * inv((20000.0 * s)^2 + 1000.0^2)) -
-            (400.0 * 1000.0^2 * inv((20000.0)^2 + 1000.0^2)))
+    SVector(20000 * s,
+            (400 * 1000.0^2 * inv((20000 * s)^2 + 1000^2)) -
+            (400 * 1000.0^2 * inv((20000)^2 + 1000^2)))
 end
-f4(s) = SVector(20000.0 * s, 16000.0)
+f4(s) = SVector(20000 * s, 16000)
 
 faces = (f1, f2, f3, f4)
 

@@ -10,7 +10,8 @@ c_vd = 717  # specific heat at constant volume for dry air
 c_pv = 1885 # specific heat at constant pressure for moist air
 c_vv = 1424 # specific heat at constant volume for moist air
 equations = CompressibleMoistEulerEquations2D(c_pd = c_pd, c_vd = c_vd, c_pv = c_pv,
-                                              c_vv = c_vv, gravity = 9.81)
+                                              c_vv = c_vv,
+                                              gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 
 # Warm bubble test from paper:
 # Wicker, L. J., and W. C. Skamarock, 1998: A time-splitting scheme
@@ -18,15 +19,15 @@ equations = CompressibleMoistEulerEquations2D(c_pd = c_pd, c_vd = c_vd, c_pv = c
 # time differencing. Mon. Wea. Rev., 126, 1992–1999.
 function initial_condition_warm_bubble(x, t, equations::CompressibleMoistEulerEquations2D)
     @unpack p_0, kappa, g, c_pd, c_vd, R_d, R_v = equations
-    xc = 10000.0
-    zc = 2000.0
+    xc = 10000
+    zc = 2000
     r = sqrt((x[1] - xc)^2 + (x[2] - zc)^2)
-    rc = 2000.0
-    θ_ref = 300.0
-    Δθ = 0.0
+    rc = 2000
+    θ_ref = 300
+    Δθ = 0
 
     if r <= rc
-        Δθ = 2 * cospi(0.5 * r / rc)^2
+        Δθ = 2 * cospi(0.5f0 * r / rc)^2
     end
 
     # Perturbed state:
@@ -41,9 +42,8 @@ function initial_condition_warm_bubble(x, t, equations::CompressibleMoistEulerEq
     rho = p / ((p / p_0)^kappa * R_d * θ)
     T = p / (R_d * rho)
 
-    v1 = 20.0
-    # v1 = 0.0
-    v2 = 0.0
+    v1 = 20
+    v2 = 0
     rho_v1 = rho * v1
     rho_v2 = rho * v2
     rho_E = rho * c_vd * T + 1 / 2 * rho * (v1^2 + v2^2)
@@ -61,7 +61,6 @@ source_term = source_terms_geopotential
 ###############################################################################
 # Get the DG approximation space
 polydeg = 4
-basis = LobattoLegendreBasis(polydeg)
 
 surface_flux = FluxLMARS(360.0)
 volume_flux = flux_chandrashekar
@@ -70,7 +69,7 @@ volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
 # Create DG solver with polynomial degree = 4 and LMARS flux as surface flux
 # and the EC flux (chandrashekar) as volume flux
-solver = DGSEM(basis, surface_flux, volume_integral)
+solver = DGSEM(polydeg, surface_flux, volume_integral)
 
 coordinates_min = (0.0, -5000.0)
 coordinates_max = (20000.0, 15000.0)

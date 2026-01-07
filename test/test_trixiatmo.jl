@@ -7,7 +7,7 @@ using TrixiAtmo: examples_dir
 
 EXAMPLES_DIR = examples_dir()
 
-# Check for Windows and MacOS when using GitHub Actions. See also
+# Check whether we run CI in the cloud with Windows or Mac, see also
 # https://docs.github.com/en/actions/learn-github-actions/environment-variables
 CI_ON_WINDOWS = (get(ENV, "GITHUB_ACTIONS", false) == "true") && Sys.iswindows()
 CI_ON_MACOS = (get(ENV, "GITHUB_ACTIONS", false) == "true") && Sys.isapple()
