@@ -2,9 +2,11 @@ module TestExamples3DEulerEnergy
 
 include("test_trixiatmo.jl")
 
-@trixi_testset "elixir_euler_energy_baroclinic_instability" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_energy_baroclinic_instability.jl"),
+EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "cartesian_euler/dry_air")
+
+@trixi_testset "elixir_energy_baroclinic_instability" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
+                                 "elixir_energy_baroclinic_instability.jl"),
                         l2=[
                             6.552421954615372e-7,
                             0.00019731220715342904,

@@ -2,6 +2,8 @@ module TestShallowWaterCartesian
 
 include("test_trixiatmo.jl")
 
+EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "cartesian_manifold")
+
 @trixi_testset "elixir_shallowwater_cartesian_unsteady_solid_body_rotation_EC_correction" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_shallowwater_cartesian_unsteady_solid_body_rotation_EC_correction.jl"),

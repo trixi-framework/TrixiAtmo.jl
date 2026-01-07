@@ -39,7 +39,8 @@ isdir(outdir) && rm(outdir, recursive = true)
     end
 
     # Now use the elixir in TrixiAtmo
-    elixir_atmo = joinpath(EXAMPLES_DIR, "elixir_moist_euler_dry_bubble.jl")
+    elixir_atmo = joinpath(EXAMPLES_DIR, "cartesian_euler/dry_air/buoyancy",
+                           "elixir_gemein_bubble.jl")
 
     # Override initial condition, maxiters,
     # gravitational acceleration constant to match Trixi's equations
