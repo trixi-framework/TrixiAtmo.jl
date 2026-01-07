@@ -34,7 +34,7 @@ function Trixi.rhs!(du, u, t,
 
     # Prolong solution to boundaries
     Trixi.@trixi_timeit Trixi.timer() "prolong2boundaries" begin
-        Trixi.prolong2boundaries!(cache, u, mesh, equations, dg.surface_integral, dg)
+        Trixi.prolong2boundaries!(cache, u, mesh, equations, dg)
     end
 
     # Calculate boundary fluxes

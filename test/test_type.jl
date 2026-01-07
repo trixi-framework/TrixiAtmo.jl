@@ -10,7 +10,7 @@ include("test_trixiatmo.jl")
 outdir = "out"
 isdir(outdir) && rm(outdir, recursive = true)
 
-@testset "Test Type Stability" begin
+@testset verbose=true showtiming=true "Test Type Stability" begin
     @timed_testset "Compressible Euler Potential Temperature 1D" begin
         for RealT in (Float32, Float64)
             equations = @inferred CompressibleEulerPotentialTemperatureEquations1D(c_p = RealT(1004),
@@ -45,7 +45,7 @@ isdir(outdir) && rm(outdir, recursive = true)
         for RealT in (Float32, Float64)
             equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity1D(c_p = RealT(1004),
                                                                                               c_v = RealT(717),
-                                                                                              gravity = RealT(9.81))
+                                                                                              gravity = RealT(EARTH_GRAVITATIONAL_ACCELERATION))
 
             x = SVector(zero(RealT))
             t = zero(RealT)
@@ -152,7 +152,7 @@ isdir(outdir) && rm(outdir, recursive = true)
         for RealT in (Float32, Float64)
             equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = RealT(1004),
                                                                                               c_v = RealT(717),
-                                                                                              gravity = RealT(9.81))
+                                                                                              gravity = RealT(EARTH_GRAVITATIONAL_ACCELERATION))
 
             x = SVector(zero(RealT))
             t = zero(RealT)
@@ -245,7 +245,7 @@ isdir(outdir) && rm(outdir, recursive = true)
         for RealT in (Float32, Float64)
             equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = RealT(1004),
                                                                                               c_v = RealT(717),
-                                                                                              gravity = RealT(9.81))
+                                                                                              gravity = RealT(EARTH_GRAVITATIONAL_ACCELERATION))
 
             x = SVector(zero(RealT))
             t = zero(RealT)
@@ -337,6 +337,84 @@ isdir(outdir) && rm(outdir, recursive = true)
             @test eltype(@inferred Trixi.max_abs_speeds(u, equations)) == RealT
             @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, normal_direction,
                                                        equations)) == RealT
+        end
+    end
+
+    @timed_testset "Compressible Rainy Euler" begin
+        using TrixiAtmo: boundary_condition_simple_slip_wall, cons2eq_pot_temp,
+                         cons2nonlinearsystemsol, cons2speeds, densities, velocities,
+                         energy_density, speed_of_sound, terminal_velocity_rain,
+                         saturation_vapour_pressure, saturation_vapour_pressure_derivative,
+                         saturation_residual, saturation_residual_jacobian, theta_d,
+                         AtmosphereLayersRainyBubble
+        for RealT in (Float32, Float64)
+            equations = @inferred CompressibleRainyEulerEquations2D(RealT)
+
+            x = SVector(zero(RealT))
+            t = zero(RealT)
+            u = u_ll = u_rr = SVector(ntuple(i -> one(RealT), 9))
+
+            normal_direction = SVector(one(RealT), one(RealT))
+            surface_flux_function = flux_lax_friedrichs
+            orientations = [1, 2]
+            directions = [1, 2]
+
+            for direction in directions, orientation in orientations
+                @test eltype(@inferred boundary_condition_simple_slip_wall(u, orientation,
+                                                                           direction,
+                                                                           x, t,
+                                                                           surface_flux_function,
+                                                                           equations)) ==
+                      RealT
+            end
+            for direction in directions
+                @test eltype(@inferred boundary_condition_slip_wall(u, normal_direction,
+                                                                    direction,
+                                                                    x, t,
+                                                                    surface_flux_function,
+                                                                    equations)) == RealT
+            end
+            for orientation in orientations
+                @test eltype(@inferred max_abs_speed(u_ll, u_rr, orientation, equations)) ==
+                      RealT
+                @test eltype(@inferred max_abs_speed_naive(u_ll, u_rr, orientation,
+                                                           equations)) == RealT
+                @test eltype(@inferred flux(u, orientation, equations)) == RealT
+                @test eltype(@inferred flux_ec_rain(u_ll, u_rr, orientation, equations)) ==
+                      RealT
+            end
+
+            @test eltype(@inferred flux(u, normal_direction, equations)) == RealT
+            @test eltype(@inferred flux_ec_rain(u_ll, u_rr, normal_direction, equations)) ==
+                  RealT
+            @test eltype(@inferred flux_LMARS(u_ll, u_rr, normal_direction, equations)) ==
+                  RealT
+            @test eltype(@inferred cons2prim(u, equations)) == RealT
+            @test eltype(@inferred cons2entropy(u, equations)) == RealT
+            @test eltype(@inferred cons2eq_pot_temp(u, equations)) == RealT
+            @test eltype(@inferred cons2nonlinearsystemsol(u, equations)) == RealT
+            @test eltype(@inferred cons2speeds(u, equations)) == RealT
+            @test eltype(@inferred densities(u, equations)) == RealT
+            @test eltype(@inferred velocities(u, u[1], equations)) == RealT
+            @test eltype(@inferred energy_density(u, equations)) == RealT
+            @test eltype(@inferred pressure(u, equations)) == RealT
+            @test eltype(@inferred speed_of_sound(u, equations)) == RealT
+            @test eltype(@inferred terminal_velocity_rain(u[2], u[3], equations)) == RealT
+            @test eltype(@inferred saturation_vapour_pressure(u[9], equations)) == RealT
+            @test eltype(@inferred saturation_vapour_pressure_derivative(u[9], equations)) ==
+                  RealT
+            @test eltype(@inferred Trixi.max_abs_speeds(u, equations)) == RealT
+            @test eltype(@inferred boundary_condition_slip_wall(u, normal_direction,
+                                                                x, t,
+                                                                surface_flux_function,
+                                                                equations)) == RealT
+            @test eltype(@inferred saturation_residual(u, u, equations)) == RealT
+            @test eltype(@inferred saturation_residual_jacobian(u, u, equations)) == RealT
+            @test eltype(@inferred max_abs_speed_naive(u_ll, u_rr, normal_direction,
+                                                       equations)) == RealT
+            @test eltype(@inferred theta_d(x[1], equations)) == RealT
+
+            @inferred AtmosphereLayersRainyBubble(equations; total_height = x[1])
         end
     end
 

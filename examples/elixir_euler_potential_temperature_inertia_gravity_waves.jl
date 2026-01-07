@@ -38,7 +38,7 @@ end
 
 equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004,
                                                                         c_v = 717,
-                                                                        gravity = 9.81)
+                                                                        gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 
 # We have an isothermal background state with T0 = 250 K.
 # The reference speed of sound can be computed as:

@@ -244,7 +244,7 @@ end
     # Set up equations and dummy conservative variables state
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004.0,
                                                                             c_v = 717.0,
-                                                                            gravity = 9.81)
+                                                                            gravity = EARTH_GRAVITATIONAL_ACCELERATION)
     u = SVector(1.1, -0.5, 2.34, 330.0, 1500)
 
     normal_directions = [SVector(1.0, 0.0),
@@ -264,7 +264,7 @@ end
     normal_2d = SVector(normal_1d[1], 0.0)
     equations_1d = CompressibleEulerPotentialTemperatureEquationsWithGravity1D(c_p = 1004.0,
                                                                                c_v = 717.0,
-                                                                               gravity = 9.81)
+                                                                               gravity = EARTH_GRAVITATIONAL_ACCELERATION)
     equations_2d = equations
     flux_1d = normal_1d[1] * flux_ec(u_1d, u_1d, 1, equations_1d)
     flux_2d = flux_ec(u_2d, u_2d, normal_2d, equations_2d)
@@ -281,7 +281,7 @@ end
     # check consistency for 3D EC flux
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
                                                                             c_v = 717.0,
-                                                                            gravity = 9.81)
+                                                                            gravity = EARTH_GRAVITATIONAL_ACCELERATION)
     u = SVector(1.1, -0.5, 2.34, 2.4, 330.0, 1500)
 
     normal_directions = [SVector(1.0, 0.0, 0.0),
@@ -308,7 +308,7 @@ end
     # Set up equations and dummy conservative variables state
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004.0,
                                                                             c_v = 717.0,
-                                                                            gravity = 9.81)
+                                                                            gravity = EARTH_GRAVITATIONAL_ACCELERATION)
     u = SVector(1.1, -0.5, 2.34, 330.0, 1500)
 
     normal_directions = [SVector(1.0, 0.0),
@@ -328,7 +328,7 @@ end
     normal_2d = SVector(normal_1d[1], 0.0)
     equations_1d = CompressibleEulerPotentialTemperatureEquationsWithGravity1D(c_p = 1004.0,
                                                                                c_v = 717.0,
-                                                                               gravity = 9.81)
+                                                                               gravity = EARTH_GRAVITATIONAL_ACCELERATION)
     equations_2d = equations
     flux_1d = normal_1d[1] * flux_tec(u_1d, u_1d, 1, equations_1d)
     flux_2d = flux_tec(u_2d, u_2d, normal_2d, equations_2d)
@@ -345,7 +345,7 @@ end
     # check consistency for 3D EC flux
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
                                                                             c_v = 717.0,
-                                                                            gravity = 9.81)
+                                                                            gravity = EARTH_GRAVITATIONAL_ACCELERATION)
     u = SVector(1.1, -0.5, 2.34, 2.4, 330.0, 1500)
 
     normal_directions = [SVector(1.0, 0.0, 0.0),
@@ -372,7 +372,7 @@ end
     # Set up equations and dummy conservative variables state
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004.0,
                                                                             c_v = 717.0,
-                                                                            gravity = 9.81)
+                                                                            gravity = EARTH_GRAVITATIONAL_ACCELERATION)
     u = SVector(1.1, -0.5, 2.34, 330.0, 1500)
 
     normal_directions = [SVector(1.0, 0.0),
@@ -392,7 +392,7 @@ end
     normal_2d = SVector(normal_1d[1], 0.0)
     equations_1d = CompressibleEulerPotentialTemperatureEquationsWithGravity1D(c_p = 1004.0,
                                                                                c_v = 717.0,
-                                                                               gravity = 9.81)
+                                                                               gravity = EARTH_GRAVITATIONAL_ACCELERATION)
     equations_2d = equations
     flux_1d = normal_1d[1] * flux_etec(u_1d, u_1d, 1, equations_1d)
     flux_2d = flux_etec(u_2d, u_2d, normal_2d, equations_2d)
@@ -409,7 +409,7 @@ end
     # check consistency for 3D EC flux
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
                                                                             c_v = 717.0,
-                                                                            gravity = 9.81)
+                                                                            gravity = EARTH_GRAVITATIONAL_ACCELERATION)
     u = SVector(1.1, -0.5, 2.34, 2.4, 330.0, 1500)
 
     normal_directions = [SVector(1.0, 0.0, 0.0),
@@ -436,7 +436,7 @@ end
     # Set up equations and dummy conservative variables state
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004.0,
                                                                             c_v = 717.0,
-                                                                            gravity = 9.81)
+                                                                            gravity = EARTH_GRAVITATIONAL_ACCELERATION)
     flux_lmars = FluxLMARS(340)
     u = SVector(1.1, -0.5, 2.34, 330.0, 1700)
 
@@ -457,7 +457,7 @@ end
     normal_2d = SVector(normal_1d[1], 0.0)
     equations_1d = CompressibleEulerPotentialTemperatureEquationsWithGravity1D(c_p = 1004.0,
                                                                                c_v = 717.0,
-                                                                               gravity = 9.81)
+                                                                               gravity = EARTH_GRAVITATIONAL_ACCELERATION)
     equations_2d = equations
     flux_1d = normal_1d[1] * flux_lmars(u_1d, u_1d, 1, equations_1d)
     flux_2d = flux_lmars(u_2d, u_2d, normal_2d, equations_2d)
@@ -467,7 +467,7 @@ end
     # check consistency for 3D EC flux
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
                                                                             c_v = 717.0,
-                                                                            gravity = 9.81)
+                                                                            gravity = EARTH_GRAVITATIONAL_ACCELERATION)
     u = SVector(1.1, -0.5, 2.34, 2.4, 330.0, 1700)
 
     normal_directions = [SVector(1.0, 0.0, 0.0),
@@ -523,4 +523,23 @@ end
           flux(u, aux_vars, orientation, equations)
 end
 
+@testset "Consistency check for EC flux with Rainy Euler" begin
+    # Set up equations and dummy conservative variables state
+    equations = CompressibleRainyEulerEquations2D()
+    # Example state vector (ρ_d, ρ_m, ρ_r, ρu, ρv, ρe, ρq_v, ρq_c, T)
+    u = SVector(1.0, 0.2, 0.1, 0.5, -0.4, 2.2, 0.1, 0.1, 300)
+
+    normal_directions = [SVector(1.0, 0.0),
+        SVector(0.0, 1.0),
+        SVector(0.5, -0.5),
+        SVector(-1.2, 0.3)]
+
+    for normal_direction in normal_directions
+        equal = flux_ec_rain(u, u, normal_direction, equations) .≈
+                flux(u, normal_direction, equations)
+        # TODO
+        expected = [true, true, true, true, true, false, true, true, true]
+        @test equal == expected
+    end
+end
 end

@@ -274,7 +274,7 @@ function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArr
 
             for ii in eachnode(basis)
                 # Multiply derivative_matrix to j-dimension to differentiate wrt η
-                result += 0.5 * derivative_matrix[j, ii] *
+                result += 0.5f0 * derivative_matrix[j, ii] *
                           (node_coordinates[m, i, ii, element] *
                            node_coordinates[l, i, ii, element] -
                            node_coordinates[l, i, ii, element] *
@@ -318,7 +318,7 @@ function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArr
 
             for ii in eachnode(basis)
                 # Multiply derivative_matrix to i-dimension to differentiate wrt ξ
-                result += 0.5 * derivative_matrix[i, ii] *
+                result += 0.5f0 * derivative_matrix[i, ii] *
                           (node_coordinates[m, ii, j, element] *
                            node_coordinates[l, ii, j, element] -
                            node_coordinates[l, ii, j, element] *
@@ -336,7 +336,7 @@ function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArr
 
             for ii in eachnode(basis)
                 # Multiply derivative_matrix to i-dimension to differentiate wrt ξ
-                result += 0.5 * derivative_matrix[i, ii] *
+                result += 0.5f0 * derivative_matrix[i, ii] *
                           (node_coordinates[m, ii, j, element] *
                            jacobian_matrix[l, 2, ii, j, element] -
                            node_coordinates[l, ii, j, element] *
@@ -352,7 +352,7 @@ function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArr
 
             for ii in eachnode(basis)
                 # Multiply derivative_matrix to j-dimension to differentiate wrt η
-                result += 0.5 * derivative_matrix[j, ii] *
+                result += 0.5f0 * derivative_matrix[j, ii] *
                           (node_coordinates[m, i, ii, element] *
                            jacobian_matrix[l, 1, i, ii, element] -
                            node_coordinates[l, i, ii, element] *
