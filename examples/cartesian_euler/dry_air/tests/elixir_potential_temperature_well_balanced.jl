@@ -61,7 +61,7 @@ tspan = (0, 0.4)
 
 summary_callback = SummaryCallback()
 
-analysis_interval = 1
+analysis_interval = 10
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval)
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)

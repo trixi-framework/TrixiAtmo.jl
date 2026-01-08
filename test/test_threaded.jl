@@ -5,8 +5,9 @@ include("test_trixiatmo.jl")
 @testset verbose=true showtiming=true "Threaded tests" begin
 #! format: noindent
 
-@trixi_testset "elixir_moist_euler_moist_bubble" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "elixir_moist_euler_moist_bubble.jl"),
+@trixi_testset "elixir_gemein_bubble moist" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "cartesian_euler/moist_air/buoyancy",
+                                 "elixir_gemein_bubble.jl"),
                         l2=[
                             7.3515680983123215e-6,
                             1.1067008939664827e-7,

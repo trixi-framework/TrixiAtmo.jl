@@ -2,9 +2,11 @@ module TestExamples1DEulerPotentialTemperature
 
 include("test_trixiatmo.jl")
 
-@trixi_testset "elixir_euler_potential_temperature_ec" begin
+EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "cartesian_euler/dry_air/tests")
+
+@trixi_testset "elixir_potential_temperature_ec" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_ec.jl"),
+                                 "elixir_potential_temperature_ec.jl"),
                         l2=[1.5370166271447887, 1.5370166326302963, 8.204456414321612e-7],
                         linf=[2.2832636713770533, 2.2832429092995072, 4.835357438226495e-6],
                         tspan=(0.0, 0.4), atol=1.2e-4)
@@ -13,9 +15,9 @@ include("test_trixiatmo.jl")
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_tec" begin
+@trixi_testset "elixir_potential_temperature_tec" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_ec.jl"),
+                                 "elixir_potential_temperature_ec.jl"),
                         l2=[1.537016627436546, 1.537016627247785, 1.9668131414528186e-7],
                         linf=[2.283288573878569, 2.283292545888576, 1.1052571658176635e-6],
                         tspan=(0.0, 0.4), surface_flux=flux_tec, volume_flux=flux_tec,
@@ -25,9 +27,9 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_etec" begin
+@trixi_testset "elixir_potential_temperature_etec" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_ec.jl"),
+                                 "elixir_potential_temperature_ec.jl"),
                         l2=[1.5370166265639917, 1.5370166276315467, 4.6312969205197763e-7],
                         linf=[2.2832797537013914, 2.283274979103027, 2.547940256003578e-6],
                         tspan=(0.0, 0.4), surface_flux=flux_etec, volume_flux=flux_etec,
@@ -37,9 +39,9 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_well_balanced_1d" begin
+@trixi_testset "elixir_potential_temperature_well_balanced_1d" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_well_balanced.jl"),
+                                 "elixir_potential_temperature_well_balanced.jl"),
                         l2=[
                             8.475270558027727e-10,
                             2.6389816902456284e-13,
@@ -57,9 +59,9 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_well_balanced_1d" begin
+@trixi_testset "elixir_potential_temperature_well_balanced_1d" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_well_balanced.jl"),
+                                 "elixir_potential_temperature_well_balanced.jl"),
                         l2=[
                             4.16546935255369e-9,
                             1.2863411480535975e-6,
