@@ -88,19 +88,19 @@ const TRIXI_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
     end
 
     @time if TRIXI_TEST == "all" || TRIXI_TEST == "euler_potential_temperature_1d"
-        @testset verbose=true showtiming=true "Euler potential temperatur 1D tests" begin
+        @testset verbose=true showtiming=true "Euler potential temperature 1D tests" begin
             include("test_1d_potential_temperature.jl")
         end
     end
 
     @time if TRIXI_TEST == "all" || TRIXI_TEST == "euler_potential_temperature_2d"
-        @testset verbose=true showtiming=true "Euler potential temperatur 2D tests" begin
+        @testset verbose=true showtiming=true "Euler potential temperature 2D tests" begin
             include("test_2d_potential_temperature.jl")
         end
     end
 
     @time if TRIXI_TEST == "all" || TRIXI_TEST == "euler_potential_temperature_3d"
-        @testset verbose=true showtiming=true "Euler potential temperatur 3D tests" begin
+        @testset verbose=true showtiming=true "Euler potential temperature 3D tests" begin
             include("test_3d_potential_temperature.jl")
         end
     end
