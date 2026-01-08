@@ -43,8 +43,8 @@ end
 @timed_testset "Compressible Euler Potential Temperature With Gravity 1D" begin
     for RealT in (Float32, Float64)
         equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity1D(c_p = RealT(1004),
-                                                                    c_v = RealT(717),
-                                                                    gravity = RealT(EARTH_GRAVITATIONAL_ACCELERATION))
+                                                                                          c_v = RealT(717),
+                                                                                          gravity = RealT(EARTH_GRAVITATIONAL_ACCELERATION))
 
         x = SVector(zero(RealT))
         t = zero(RealT)
@@ -150,8 +150,8 @@ end
 @timed_testset "Compressible Euler Potential Temperature With Gravity 2D" begin
     for RealT in (Float32, Float64)
         equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = RealT(1004),
-                                                                    c_v = RealT(717),
-                                                                    gravity = RealT(EARTH_GRAVITATIONAL_ACCELERATION))
+                                                                                          c_v = RealT(717),
+                                                                                          gravity = RealT(EARTH_GRAVITATIONAL_ACCELERATION))
 
         x = SVector(zero(RealT))
         t = zero(RealT)
@@ -243,8 +243,8 @@ end
 @timed_testset "Compressible Euler Potential Temperature With Gravity 3D" begin
     for RealT in (Float32, Float64)
         equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = RealT(1004),
-                                                                    c_v = RealT(717),
-                                                                    gravity = RealT(EARTH_GRAVITATIONAL_ACCELERATION))
+                                                                                          c_v = RealT(717),
+                                                                                          gravity = RealT(EARTH_GRAVITATIONAL_ACCELERATION))
 
         x = SVector(zero(RealT))
         t = zero(RealT)
