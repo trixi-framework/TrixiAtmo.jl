@@ -71,7 +71,7 @@ ode = semidiscretize(semi, tspan)
 summary_callback = SummaryCallback()
 
 # The AnalysisCallback allows to analyse the solution in regular intervals and prints the results
-analysis_callback = AnalysisCallback(semi, interval = 10,
+analysis_callback = AnalysisCallback(semi, interval = 100,
                                      save_analysis = true,
                                      extra_analysis_errors = (:conservation_error,),
                                      extra_analysis_integrals = (waterheight, energy_total),
