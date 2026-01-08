@@ -5,7 +5,7 @@ include("test_trixiatmo.jl")
 EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "cartesian_euler")
 
 @trixi_testset "convergence_test" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "precipitation/tests"
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "precipitation/tests",
                                  "convergence_test.jl"),
                         l2=[
                             2.39895785368954e-6,

@@ -1,5 +1,7 @@
 module TestSphericalAdvection
 
+include("test_trixiatmo.jl")
+
 @trixi_testset "Spherical advection (cubed sphere), Cartesian weak form, LLF surface flux" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "cartesian_manifold",
                                  "elixir_shallowwater_cartesian_advection_cubed_sphere.jl"),
