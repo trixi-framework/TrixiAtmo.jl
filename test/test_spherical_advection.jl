@@ -73,7 +73,7 @@ end
 
 @trixi_testset "Spherical advection, covariant weak form, LLF surface flux" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "covariant_advection",
-                                 "elixir_spherical_advection_covariant_cubed_sphere.jl"),
+                                 "elixir_cubed_sphere.jl"),
                         l2=[1.0007043506351705, 0.0, 0.0],
                         linf=[14.235905681508598, 0.0, 0.0])
     # Ensure that we do not have excessive memory allocations
