@@ -20,7 +20,10 @@ atmosphere_data = AtmosphereLayers(equations)
 
 # Create the initial condition with the initial data set
 function initial_condition_moist(x, t, equations)
-    return initial_condition_moist_bubble(x, t, equations, atmosphere_data)
+    rho, rho_v1, rho_v2, rho_E, rho_qv, rho_ql = initial_condition_moist_bubble(x, t,
+                                                                                equations_moist,
+                                                                                atmosphere_data)
+    return SVector(rho, rho_v1, rho_v2, rho_E, rho_qv, rho_ql)
 end
 
 initial_condition = initial_condition_moist
