@@ -70,6 +70,8 @@ export flux_nonconservative_zeros, flux_nonconservative_ec,
        flux_nonconservative_waruszewski_etal, flux_zero,
        flux_ec_rain, flux_LMARS
 
+export flux_kennedy_gruber_souza_etal_turbo
+
 export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!
 
 export cons2prim_and_vorticity, contravariant2global
