@@ -2,7 +2,7 @@ module TestShallowWaterCovariant
 
 include("test_trixiatmo.jl")
 
-EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "shallowwater/covariant")
+EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "shallow_water/covariant")
 
 @trixi_testset "elixir_geostrophic_balance" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,

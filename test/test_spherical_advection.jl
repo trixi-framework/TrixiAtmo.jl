@@ -26,7 +26,7 @@ include("test_trixiatmo.jl")
 end
 
 @trixi_testset "Spherical advection (quad icosahedron), Cartesian weak form, LLF surface flux" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection_cartesian_manifold",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/cartesian_manifold",
                                  "elixir_quad_icosahedron.jl"),
                         l2=[
                             0.45702277148770143,
