@@ -2,7 +2,7 @@ module TestExamples3DEulerPotentialTemperature
 
 include("test_trixiatmo.jl")
 
-EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "cartesian_euler/dry_air")
+EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler/cartesian/dry_air")
 
 @trixi_testset "elixir_potential_temperature_taylor_green_vortex" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "tests",

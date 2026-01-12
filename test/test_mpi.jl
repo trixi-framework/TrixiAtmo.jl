@@ -12,7 +12,7 @@ Trixi.MPI.Barrier(Trixi.mpi_comm())
 @testset verbose=true showtiming=true "MPI tests" begin
 #! format: noindent
 @trixi_testset "elixir_gemein_bubble" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "cartesian_euler/dry_air/buoyancy",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "euler/cartesian/dry_air/buoyancy",
                                  "elixir_gemein_bubble.jl"),
                         l2=[
                             9.104437114458848e-7,

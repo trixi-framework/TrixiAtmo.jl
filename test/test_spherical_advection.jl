@@ -3,8 +3,8 @@ module TestSphericalAdvection
 include("test_trixiatmo.jl")
 
 @trixi_testset "Spherical advection (cubed sphere), Cartesian weak form, LLF surface flux" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "cartesian_manifold",
-                                 "elixir_shallowwater_cartesian_advection_cubed_sphere.jl"),
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/cartesian_manifold",
+                                 "elixir_cubed_sphere.jl"),
                         l2=[
                             0.796321633847963,
                             20.317829852214242,
@@ -26,8 +26,8 @@ include("test_trixiatmo.jl")
 end
 
 @trixi_testset "Spherical advection (quad icosahedron), Cartesian weak form, LLF surface flux" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "cartesian_manifold",
-                                 "elixir_shallowwater_cartesian_advection_quad_icosahedron.jl"),
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection_cartesian_manifold",
+                                 "elixir_quad_icosahedron.jl"),
                         l2=[
                             0.45702277148770143,
                             11.807355540181147,
@@ -49,8 +49,8 @@ end
 end
 
 @trixi_testset "Spherical advection, Cartesian weak form, element-local mapping" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "cartesian_manifold",
-                                 "elixir_shallowwater_cartesian_advection_cubed_sphere.jl"),
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/cartesian_manifold",
+                                 "elixir_cubed_sphere.jl"),
                         l2=[
                             0.893342967293854,
                             22.848879918993113,
@@ -72,7 +72,7 @@ end
 end
 
 @trixi_testset "Spherical advection, covariant weak form, LLF surface flux" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "covariant_advection",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/covariant",
                                  "elixir_cubed_sphere.jl"),
                         l2=[1.0007043506351705, 0.0, 0.0],
                         linf=[14.235905681508598, 0.0, 0.0])
@@ -82,7 +82,7 @@ end
 end
 
 @trixi_testset "Spherical advection, covariant weak form, LLF surface flux, global spherical coords" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "covariant_advection",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/covariant",
                                  "elixir_cubed_sphere.jl"),
                         l2=[1.0007043506351705, 0.0, 0.0],
                         linf=[14.235905681508598, 0.0, 0.0],
@@ -95,7 +95,7 @@ end
 # The covariant flux-differencing form should be equivalent to the weak form when the 
 # arithmetic mean is used as the two-point flux
 @trixi_testset "Spherical advection, covariant flux-differencing, central/LLF" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "covariant_advection",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/covariant",
                                  "elixir_cubed_sphere.jl"),
                         l2=[1.0007043506351412, 0.0, 0.0],
                         linf=[14.23590568150928, 0.0, 0.0],
@@ -107,7 +107,7 @@ end
 
 # Version with arithmetic mean used for both the volume and surface fluxes
 @trixi_testset "Spherical advection, covariant flux-differencing, central/central" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "covariant_advection",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/covariant",
                                  "elixir_cubed_sphere.jl"),
                         l2=[2.499889861385917, 0.0, 0.0],
                         linf=[38.085244441156085, 0.0, 0.0],
@@ -119,7 +119,7 @@ end
 end
 
 @trixi_testset "Spherical advection on icosahedral grid, covariant weak form, LLF surface flux" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "covariant_advection",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/covariant",
                                  "elixir_quad_icosahedron.jl"),
                         l2=[0.5183886767005157, 0.0, 0.0],
                         linf=[13.54834739856517, 0.0, 0.0])
