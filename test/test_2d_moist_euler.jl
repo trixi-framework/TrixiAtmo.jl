@@ -2,9 +2,11 @@ module TestExamples2DMoistEuler
 
 include("test_trixiatmo.jl")
 
-@trixi_testset "elixir_moist_euler_dry_bubble" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_moist_euler_dry_bubble.jl"),
+EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler")
+
+@trixi_testset "elixir_gemein_bubble dry" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "dry_air/buoyancy",
+                                 "elixir_gemein_bubble.jl"),
                         l2=[
                             9.104437114458848e-7,
                             1.8210536975490044e-5,
@@ -27,34 +29,9 @@ include("test_trixiatmo.jl")
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_moist_euler_EC_bubble" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "elixir_moist_euler_EC_bubble.jl"),
-                        l2=[
-                            0.013447085987943223,
-                            0.8068251596072465,
-                            7.936347113950603,
-                            4499.374157770971,
-                            0.0001558955006164849,
-                            0.00014158317108630596
-                        ],
-                        linf=[
-                            0.14269971054475983,
-                            8.56198789638185,
-                            91.5416482779971,
-                            49513.45383421928,
-                            0.001936136935497778,
-                            0.0013257223472355924
-                        ],
-                        polydeg=3,
-                        cells_per_dimension=(16, 16),
-                        tspan=(0.0, 0.1))
-    # Ensure that we do not have excessive memory allocations
-    # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
-end
-
-@trixi_testset "elixir_moist_euler_moist_bubble" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "elixir_moist_euler_moist_bubble.jl"),
+@trixi_testset "elixir_gemein_bubble moist" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "moist_air/buoyancy",
+                                 "elixir_gemein_bubble.jl"),
                         l2=[
                             7.3515680983123215e-6,
                             1.1067008939664827e-7,
@@ -79,9 +56,9 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_moist_euler_nonhydrostatic_gravity_waves" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_moist_euler_nonhydrostatic_gravity_waves.jl"),
+@trixi_testset "elixir_gemein_nonhydrostatic_gravity_waves" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "dry_air/buoyancy",
+                                 "elixir_gemein_nonhydrostatic_gravity_waves.jl"),
                         l2=[
                             3.54205348345642e-5,
                             0.00212660009365362,
@@ -106,8 +83,9 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_moist_euler_source_terms_dry" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "elixir_moist_euler_source_terms_dry.jl"),
+@trixi_testset "elixir_gemein_source_terms dry" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "dry_air/tests",
+                                 "elixir_gemein_source_terms.jl"),
                         l2=[
                             1.3992076791281227e-5,
                             1.4486417486907815e-5,
@@ -132,35 +110,9 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_moist_euler_source_terms_moist" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "elixir_moist_euler_source_terms_moist.jl"),
-                        l2=[
-                            1.8307629289484104e-5,
-                            0.04008077097727512,
-                            0.015104690877128945,
-                            0.5242098451814421,
-                            5.474006801215573e-10,
-                            1.1103883907226752e-10
-                        ],
-                        linf=[
-                            0.00013219471042114073,
-                            0.10771224937484702,
-                            0.037896456119137945,
-                            3.90888311638264,
-                            3.938382289041286e-9,
-                            6.892033377287209e-10
-                        ],
-                        polydeg=3,
-                        cells_per_dimension=(10, 8),
-                        tspan=(0.0, 0.1))
-    # Ensure that we do not have excessive memory allocations
-    # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
-end
-
-@trixi_testset "elixir_moist_euler_source_terms_split_moist" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_moist_euler_source_terms_split_moist.jl"),
+@trixi_testset "elixir_gemein_source_terms moist" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "moist_air/tests",
+                                 "elixir_gemein_source_terms.jl"),
                         l2=[
                             0.0001480393714768623,
                             0.11945481031503036,
