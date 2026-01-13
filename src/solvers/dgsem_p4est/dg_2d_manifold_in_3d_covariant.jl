@@ -11,7 +11,7 @@ function Trixi.rhs!(du, u, t,
                     boundary_conditions, source_terms::Source,
                     dg::DG, cache) where {Source}
     # Reset du
-    Trixi.@trixi_timeit Trixi.timer() "reset ∂u/∂t" Trixi.reset_du!(du, dg, cache)
+    Trixi.@trixi_timeit Trixi.timer() "reset ∂u/∂t" Trixi.set_zero!(du, dg, cache)
 
     # Calculate volume integral
     Trixi.@trixi_timeit Trixi.timer() "volume integral" begin
