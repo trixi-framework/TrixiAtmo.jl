@@ -5,23 +5,22 @@ using TrixiAtmo
 # To run a convergence test, we have two options:
 # 1. Use the p4est variable initial_refinement_level to refine the grid:
 #    - To do this, line 46 ("initial_refinement_level = 0") must NOT be a comment
-#    - Call convergence_test("../examples/advection/cartesian_manifold/elixir_cubed_sphere.jl", 4, initial_refinement_level = 0)
+#    - Call convergence_test("../examples/advection/cartesian/elixir_quad_icosahedron.jl", 4, initial_refinement_level = 0)
 #    - NOT OPTIMAL: Good convergence the first iterations, but then it stagnates. Reason: The geometry does not improve with refinement.
-# 2. Use the variable trees_per_face_dimension of P4estMeshCubedSphere2D
-#    - To do this, line 46 ("initial_refinement_level = 0") MUST BE commented/removed.
-#    - Call convergence_test("../examples/advection/cartesian_manifold/elixir_cubed_sphere.jl", 4, cells_per_dimension = (3,3))
+# 2. Use the variable trees_per_face_dimension of P4estMeshQuadIcosahedron2D
+#    - To do this, line 46 ("initial_refinement_level = 0") MUST BE commented/removed
+#    - Call convergence_test("../examples/advection/cartesian/ elixir_quad_icosahedron.jl", 4, cells_per_dimension = (1,1))
 #    - OPTIMAL convergence of polydeg + 1. Reason: The geometry improves with refinement.
 
 ###############################################################################
 # semidiscretization of the linear advection equation
-
 initial_condition = initial_condition_gaussian
 polydeg = 3
-cells_per_dimension = (5, 5)
+cells_per_dimension = (2, 2)
 
 # We use the ShallowWaterEquations3D equations structure but modify the rhs! function to
 # convert it to a variable-coefficient advection equation
-equations = ShallowWaterEquations3D(gravity = 0.0)
+equations = ShallowWaterEquations3D(gravity = 0)
 
 # Create DG solver with polynomial degree = 3 and (local) Lax-Friedrichs/Rusanov flux as surface flux
 solver = DGSEM(polydeg = polydeg,
@@ -39,7 +38,7 @@ function source_terms_convert_to_linear_advection(u, du, x, t,
     s3 = du[1] * v2 - du[3]
     s4 = du[1] * v3 - du[4]
 
-    return SVector(0.0, s2, s3, s4, 0.0)
+    return SVector(0, s2, s3, s4, 0)
 end
 
 # Hack to use the weak form kernel with ShallowWaterEquations3D (a non-conservative equation).
@@ -57,12 +56,11 @@ end
     Trixi.weak_form_kernel!(du, u, element, mesh, Trixi.False(), equations, dg, cache)
 end
 
-# Create a 2D cubed sphere mesh the size of the Earth
-mesh = P4estMeshCubedSphere2D(cells_per_dimension[1], EARTH_RADIUS, polydeg = 3,
-                              #initial_refinement_level = 0, # Comment to use cells_per_dimension in the convergence test
-                              element_local_mapping = false)
+# Create a 2D quad-based icosahedral mesh the size of the Earth
+mesh = P4estMeshQuadIcosahedron2D(cells_per_dimension[1], EARTH_RADIUS,
+                                  #initial_refinement_level = 0,
+                                  polydeg = polydeg)
 
-# Transform the initial condition to the proper set of conservative variables
 initial_condition_transformed = transform_initial_condition(initial_condition, equations)
 
 # A semidiscretization collects data structures and functions for the spatial discretization
@@ -85,7 +83,7 @@ analysis_callback = AnalysisCallback(semi, interval = 100,
 
 # The SaveSolutionCallback allows to save the solution to a file in regular intervals
 save_solution = SaveSolutionCallback(interval = 100,
-                                     solution_variables = cons2prim)
+                                     solution_variables = cons2prim_and_vorticity)
 
 # The StepsizeCallback handles the re-calculation of the maximum Δt after each time step
 stepsize_callback = StepsizeCallback(cfl = 0.7)

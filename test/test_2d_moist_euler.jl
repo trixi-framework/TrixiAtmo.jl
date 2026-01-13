@@ -2,7 +2,7 @@ module TestExamples2DMoistEuler
 
 include("test_trixiatmo.jl")
 
-EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler/cartesian")
+EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler")
 
 @trixi_testset "elixir_gemein_bubble dry" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "dry_air/buoyancy",

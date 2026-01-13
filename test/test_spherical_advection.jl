@@ -3,7 +3,7 @@ module TestSphericalAdvection
 include("test_trixiatmo.jl")
 
 @trixi_testset "Spherical advection (cubed sphere), Cartesian weak form, LLF surface flux" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/cartesian_manifold",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/cartesian",
                                  "elixir_cubed_sphere.jl"),
                         l2=[
                             0.796321633847963,
@@ -26,7 +26,7 @@ include("test_trixiatmo.jl")
 end
 
 @trixi_testset "Spherical advection (quad icosahedron), Cartesian weak form, LLF surface flux" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/cartesian_manifold",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/cartesian",
                                  "elixir_quad_icosahedron.jl"),
                         l2=[
                             0.45702277148770143,
@@ -49,7 +49,7 @@ end
 end
 
 @trixi_testset "Spherical advection, Cartesian weak form, element-local mapping" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/cartesian_manifold",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/cartesian",
                                  "elixir_cubed_sphere.jl"),
                         l2=[
                             0.893342967293854,

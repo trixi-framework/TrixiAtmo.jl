@@ -2,7 +2,7 @@ module TestExamples2DRainyEuler
 
 include("test_trixiatmo.jl")
 
-EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler/cartesian")
+EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler")
 
 @trixi_testset "convergence_test" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "precipitation/tests",

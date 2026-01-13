@@ -6,7 +6,7 @@ include("test_trixiatmo.jl")
 #! format: noindent
 
 @trixi_testset "elixir_gemein_bubble moist" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "euler/cartesian/moist_air/buoyancy",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "euler/moist_air/buoyancy",
                                  "elixir_gemein_bubble.jl"),
                         l2=[
                             7.3515680983123215e-6,
