@@ -33,23 +33,18 @@ If you have not yet installed Julia, please [follow the instructions for your
 operating system](https://julialang.org/downloads/platform/). TrixiAtmo.jl works
 with Julia v1.10 and newer. We recommend using the latest stable release of Julia.
 
-TrixiAtmo.jl is **not** a registered Julia package yet, and therefore needs to be
-downloaded manually and then run from within the cloned directory:
-```bash
-git clone https://github.com/trixi-framework/TrixiAtmo.jl.git
-julia --project=@.
-```
-In addition, TrixiAtmo.jl requires the numerical solver framework
-[Trixi.jl](https://github.com/trixi-framework/Trixi.jl), relevant sub-packages of
-[OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) for time integration, and
-[Plots.jl](https://github.com/JuliaPlots/Plots.jl) for visualization, which can be
-installed by executing the following in the Julia REPL:
+TrixiAtmo.jl is a registered Julia package and can be installed using Julia's package manager. 
+In addition, TrixiAtmo.jl requires the numerical solver framework 
+[Trixi.jl](https://github.com/trixi-framework/Trixi.jl) as well as relevant sub-packages of
+[OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) for time integration. Executing the
+following in the Julia REPL will install the packages required to run the cases in the `examples` 
+directory, along with [Trixi2Vtk.jl](https://github.com/trixi-framework/Trixi2Vtk.jl), which enables 
+visualization of the resulting HDF5-based output files:
 ```julia
 julia> using Pkg
 
-julia> Pkg.add(["Trixi", "Trixi2Vtk", "OrdinaryDiffEqLowStorageRK", "OrdinaryDiffEqSSPRK", "Plots"])
+julia> Pkg.add(["TrixiAtmo", "Trixi", "OrdinaryDiffEqLowStorageRK", "OrdinaryDiffEqSSPRK", "Trixi2Vtk"])
 ```
-
 
 ## Usage
 
