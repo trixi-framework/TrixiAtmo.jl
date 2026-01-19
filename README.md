@@ -13,9 +13,6 @@
   <img width="60%" src="https://trixi-framework.github.io/assets/logo_atmo.png">
 </p>
 
-**Note: This repository is still in its alpha stage and anything might change at
-any time and without warning.**
-
 **TrixiAtmo.jl** is a numerical simulation package focused on atmospheric flows. It builds
 upon [Trixi.jl](https://github.com/trixi-framework/Trixi.jl), a generic flow solver for
 conservation laws, implementing discontinuous Galerkin methods and written in Julia.
