@@ -1,0 +1,41 @@
+{
+    "description": "Adaptive high-order numerical simulations focused on atmospheric flows",
+    "license": "MIT",
+    "title": "TrixiAtmo.jl",
+    "upload_type": "software",
+    "creators": [
+        {
+            "affiliation": "Department of Mathematics and Computer Science, University of Cologne, Germany",
+            "name": "Gassner, Gregor J.",
+            "orcid": "0000-0002-1752-1158"
+        },
+        {
+            "affiliation": "Numerical Mathematics, Johannes Gutenberg University Mainz, Germany",
+            "name": "Ranocha, Hendrik",
+            "orcid": "0000-0002-3456-2277"
+        },
+        {
+            "affiliation": "Department of Applied Mathematics in Aerospace Engineering, Polytechnic University of Madrid (UPM), Spain",
+            "name": "Rueda-Ramírez, Andrés",
+            "orcid": "0000-0001-6557-9162"
+        },
+        {
+            "affiliation": "High-Performance Scientific Computing, University of Augsburg, Germany",
+            "name": "Schlottke-Lakemper, Michael",
+            "orcid": "0000-0002-3195-2536"
+        },
+
+        {
+            "affiliation": "Department of Mathematics and Computer Science, University of Cologne, Germany",
+            "name": "Geihe, Benedict",
+            "orcid": "0000-0002-9519-6872"
+        },
+        {
+            "affiliation": "Department of Mathematics and Computer Science, University of Cologne, Germany",
+            "name": "Montoya, Tristan",
+            "orcid": "0000-0002-4259-1449"
+        },
+        
+    ],
+    "access_right": "open"
+}
