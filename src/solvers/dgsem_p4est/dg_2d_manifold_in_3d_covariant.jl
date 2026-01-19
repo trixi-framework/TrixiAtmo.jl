@@ -96,7 +96,7 @@ end
                                          nonconservative_terms::False,
                                          equations::AbstractCovariantEquations{2},
                                          dg::DGSEM, cache, alpha = true)
-    (; derivative_dhat) = dg.basis
+    (; derivative_hat) = dg.basis
     (; aux_node_vars) = cache.auxiliary_variables
 
     for j in eachnode(dg), i in eachnode(dg)
@@ -110,13 +110,13 @@ end
 
         # Apply weak form derivative with respect to ξ¹ 
         for ii in eachnode(dg)
-            Trixi.multiply_add_to_node_vars!(du, alpha * derivative_dhat[ii, i],
+            Trixi.multiply_add_to_node_vars!(du, alpha * derivative_hat[ii, i],
                                              flux1, equations, dg, ii, j, element)
         end
 
         # Apply weak form derivative with respect to ξ²
         for jj in eachnode(dg)
-            Trixi.multiply_add_to_node_vars!(du, alpha * derivative_dhat[jj, j],
+            Trixi.multiply_add_to_node_vars!(du, alpha * derivative_hat[jj, j],
                                              flux2, equations, dg, i, jj, element)
         end
     end
