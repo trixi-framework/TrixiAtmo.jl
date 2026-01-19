@@ -1102,6 +1102,109 @@ function AtmosphereLayers(equations; total_height = 10010, preciseness = 10,
                                    theta_e0, mixing_ratios)
 end
 
+# Moist bubble test case from paper:
+# G.H. Bryan, J.M. Fritsch, A Benchmark Simulation for Moist Nonhydrostatic Numerical
+# Models, MonthlyWeather Review Vol.130, 2917–2928, 2002,
+# https://journals.ametsoc.org/view/journals/mwre/130/12/1520-0493_2002_130_2917_absfmn_2.0.co_2.xml.
+function initial_condition_moist_bubble(x, t,
+                                        equations::CompressibleMoistEulerEquations2D,
+                                        atmosphere_layers::AtmosphereLayers)
+    @unpack layer_data, preciseness, total_height = atmosphere_layers
+    dz = preciseness
+    z = x[2]
+    if (z > total_height && !(isapprox(z, total_height)))
+        error("The atmosphere does not match the simulation domain")
+    end
+    n = convert(Int, floor((z + eps()) / dz)) + 1
+    z_l = (n - 1) * dz
+    (rho_l, rho_theta_l, rho_qv_l, rho_ql_l) = layer_data[n, :]
+    z_r = n * dz
+    if (z_l == total_height)
+        z_r = z_l + dz
+        n = n - 1
+    end
+    (rho_r, rho_theta_r, rho_qv_r, rho_ql_r) = layer_data[n + 1, :]
+    rho = (rho_r * (z - z_l) + rho_l * (z_r - z)) / dz
+    rho_theta = rho *
+                (rho_theta_r / rho_r * (z - z_l) + rho_theta_l / rho_l * (z_r - z)) /
+                dz
+    rho_qv = rho * (rho_qv_r / rho_r * (z - z_l) + rho_qv_l / rho_l * (z_r - z)) / dz
+    rho_ql = rho * (rho_ql_r / rho_r * (z - z_l) + rho_ql_l / rho_l * (z_r - z)) / dz
+
+    rho, rho_e, rho_qv, rho_ql, T_loc = perturb_moist_profile!(x, rho, rho_theta,
+                                                               rho_qv, rho_ql,
+                                                               equations::CompressibleMoistEulerEquations2D)
+
+    v1 = 0
+    v2 = 0
+    rho_v1 = rho * v1
+    rho_v2 = rho * v2
+    rho_E = rho_e + 1 / 2 * rho * (v1^2 + v2^2)
+
+    return SVector(rho, rho_v1, rho_v2, rho_E, rho_qv, rho_ql, T_loc)
+end
+
+function perturb_moist_profile!(x, rho, rho_theta, rho_qv, rho_ql,
+                                equations::CompressibleMoistEulerEquations2D{RealT}) where {RealT}
+    @unpack kappa, p_0, c_pd, c_vd, c_pv, c_vv, R_d, R_v, c_pl, L_00 = equations
+    xc = 10000
+    zc = 2000
+    rc = 2000
+    Δθ = 2
+
+    r = sqrt((x[1] - xc)^2 + (x[2] - zc)^2)
+    rho_d = rho - rho_qv - rho_ql
+    kappa_M = (R_d * rho_d + R_v * rho_qv) /
+              (c_pd * rho_d + c_pv * rho_qv + c_pl * rho_ql)
+    p_loc = p_0 * (R_d * rho_theta / p_0)^(1 / (1 - kappa_M))
+    T_loc = p_loc / (R_d * rho_d + R_v * rho_qv)
+    rho_e = (c_vd * rho_d + c_vv * rho_qv + c_pl * rho_ql) * T_loc + L_00 * rho_qv
+
+    # Assume pressure stays constant
+    if (r < rc && Δθ > 0)
+        # Calculate background density potential temperature
+        θ_dens = rho_theta / rho * (p_loc / p_0)^(kappa_M - kappa)
+        # Calculate perturbed density potential temperature
+        θ_dens_new = θ_dens * (1 + Δθ * cospi(0.5f0 * r / rc)^2 / 300)
+        rt = (rho_qv + rho_ql) / rho_d
+        rv = rho_qv / rho_d
+        # Calculate moist potential temperature
+        θ_loc = θ_dens_new * (1 + rt) / (1 + (R_v / R_d) * rv)
+        # Adjust varuables until the temperature is met
+        if rt > 0
+            while true
+                T_loc = θ_loc * (p_loc / p_0)^kappa
+                T_C = T_loc - convert(RealT, 273.15)
+                # SaturVapor
+                pvs = convert(RealT, 611.2) *
+                      exp(convert(RealT, 17.62) * T_C / (convert(RealT, 243.12) + T_C))
+                rho_d_new = (p_loc - pvs) / (R_d * T_loc)
+                rvs = pvs / (R_v * rho_d_new * T_loc)
+                θ_new = θ_dens_new * (1 + rt) / (1 + (R_v / R_d) * rvs)
+                if abs(θ_new - θ_loc) <= θ_loc * 1.0e-12
+                    break
+                else
+                    θ_loc = θ_new
+                end
+            end
+        else
+            rvs = 0
+            T_loc = θ_loc * (p_loc / p_0)^kappa
+            rho_d_new = p_loc / (R_d * T_loc)
+            θ_new = θ_dens_new * (1 + rt) / (1 + (R_v / R_d) * rvs)
+        end
+        rho_qv = rvs * rho_d_new
+        rho_ql = (rt - rvs) * rho_d_new
+        rho = rho_d_new * (1 + rt)
+        rho_d = rho - rho_qv - rho_ql
+        kappa_M = (R_d * rho_d + R_v * rho_qv) /
+                  (c_pd * rho_d + c_pv * rho_qv + c_pl * rho_ql)
+        rho_theta = rho * θ_dens_new * (p_loc / p_0)^(kappa - kappa_M)
+        rho_e = (c_vd * rho_d + c_vv * rho_qv + c_pl * rho_ql) * T_loc + L_00 * rho_qv
+    end
+    return SVector(rho, rho_e, rho_qv, rho_ql, T_loc)
+end
+
 varnames(::typeof(cons2cons), ::CompressibleMoistEulerEquations2D) = ("rho", "rho_v1",
                                                                       "rho_v2", "rho_E",
                                                                       "rho_qv",

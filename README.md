@@ -59,7 +59,7 @@ julia> using Trixi
 ```
 Then start a simulation by executing
 ```julia
-julia> trixi_include("examples/elixir_euler_warmbubble.jl")
+julia> trixi_include("examples/euler/dry_air/buoyancy/elixir_gemein_bubble.jl")
 ```
 Please see our documentation for more advanced setups.
 

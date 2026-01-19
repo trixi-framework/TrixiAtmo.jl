@@ -6,7 +6,7 @@ include("test_trixiatmo.jl")
 outdir = "out"
 isdir(outdir) && rm(outdir, recursive = true)
 
-@trixi_testset "Dry air consistency check" begin
+@trixi_testset "Euler bubble" begin
     using Trixi
     using TrixiAtmo: CompressibleMoistEulerEquations2D
 
@@ -39,7 +39,8 @@ isdir(outdir) && rm(outdir, recursive = true)
     end
 
     # Now use the elixir in TrixiAtmo
-    elixir_atmo = joinpath(EXAMPLES_DIR, "elixir_moist_euler_dry_bubble.jl")
+    elixir_atmo = joinpath(EXAMPLES_DIR, "euler/dry_air/buoyancy",
+                           "elixir_gemein_bubble.jl")
 
     # Override initial condition, maxiters,
     # gravitational acceleration constant to match Trixi's equations

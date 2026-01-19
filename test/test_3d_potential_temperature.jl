@@ -2,9 +2,11 @@ module TestExamples3DEulerPotentialTemperature
 
 include("test_trixiatmo.jl")
 
-@trixi_testset "elixir_euler_potential_temperature_taylor_green_vortex_3d" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_taylor_green_vortex.jl"),
+EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler/dry_air")
+
+@trixi_testset "elixir_potential_temperature_taylor_green_vortex" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "tests",
+                                 "elixir_potential_temperature_taylor_green_vortex.jl"),
                         l2=[
                             0.007135833158819355,
                             0.05920026666636394,
@@ -25,9 +27,9 @@ include("test_trixiatmo.jl")
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_taylor_green_vortex_3d" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_taylor_green_vortex.jl"),
+@trixi_testset "elixir_potential_temperature_taylor_green_vortex" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "tests",
+                                 "elixir_potential_temperature_taylor_green_vortex.jl"),
                         l2=[
                             0.00713580882298077,
                             0.05920027226189781,
@@ -48,9 +50,9 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_taylor_green_vortex_3d" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_taylor_green_vortex.jl"),
+@trixi_testset "elixir_potential_temperature_taylor_green_vortex" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "tests",
+                                 "elixir_potential_temperature_taylor_green_vortex.jl"),
                         l2=[
                             0.007135944983851745,
                             0.05920027807981362,
@@ -71,9 +73,9 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_taylor_green_vortex_3d" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_taylor_green_vortex.jl"),
+@trixi_testset "elixir_potential_temperature_taylor_green_vortex" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "tests",
+                                 "elixir_potential_temperature_taylor_green_vortex.jl"),
                         l2=[
                             0.006704842021819753,
                             0.018574880297682488,
@@ -95,9 +97,9 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_baroclinic_instability Souza" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_baroclinic_instability.jl"),
+@trixi_testset "elixir_potential_temperature_baroclinic_instability Souza" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
+                                 "elixir_potential_temperature_baroclinic_instability.jl"),
                         l2=[
                             0.0005402395829626791,
                             0.0155041989645114,
@@ -121,9 +123,9 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_baroclinic_instability Waruszewski" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_baroclinic_instability.jl"),
+@trixi_testset "elixir_potential_temperature_baroclinic_instability Waruszewski" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
+                                 "elixir_potential_temperature_baroclinic_instability.jl"),
                         l2=[
                             0.0005196272070117161,
                             0.0141817969707941,
@@ -147,9 +149,9 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_baroclinic_instability Artiano" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_baroclinic_instability.jl"),
+@trixi_testset "elixir_potential_temperature_baroclinic_instability Artiano" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
+                                 "elixir_potential_temperature_baroclinic_instability.jl"),
                         l2=[
                             0.0005237192887527135,
                             0.014655078153251792,
@@ -174,7 +176,7 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_held_suarez" begin
+@trixi_testset "elixir_potential_temperature_held_suarez" begin
     import ..CI_ON_MACOS
     if CI_ON_MACOS
         global _rtol = 7e-8  # increased error tolerance
@@ -182,8 +184,8 @@ end
         global _rtol = sqrt(eps(Float64))  # default
     end
 
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_held_suarez.jl"),
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
+                                 "elixir_potential_temperature_held_suarez.jl"),
                         l2=[
                             0.0031433373482917877,
                             0.00013227403214817446,

@@ -2,12 +2,11 @@ module TestExamples2DRainyEuler
 
 include("test_trixiatmo.jl")
 
-EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "moist_euler")
+EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler")
 
-@trixi_testset "convergence_test_rainy" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "convergence_test",
-                                 "convergence_test_rainy.jl"),
+@trixi_testset "convergence_test" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "precipitation/tests",
+                                 "convergence_test.jl"),
                         l2=[
                             2.39895785368954e-6,
                             3.892427386570826e-5,
@@ -40,10 +39,9 @@ EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "moist_euler")
     end
 end
 
-@trixi_testset "elixir_rainy_euler_moist_bubble" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "moist_bubble",
-                                 "elixir_rainy_euler_moist_bubble.jl"),
+@trixi_testset "elixir_hoeck_bubble moist" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "moist_air/buoyancy",
+                                 "elixir_hoeck_bubble.jl"),
                         l2=[
                             0.0031469268543095233,
                             6.293853704548511e-5,
@@ -78,10 +76,9 @@ end
     end
 end
 
-@trixi_testset "elixir_rainy_euler_rainy_bubble" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "rainy_bubble",
-                                 "elixir_rainy_euler_rainy_bubble.jl"),
+@trixi_testset "elixir_hoeck_bubble rainy" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "precipitation/buoyancy",
+                                 "elixir_hoeck_bubble.jl"),
                         l2=[
                             7.959523735914366e-5,
                             4.8983178144498016e-5,
@@ -118,10 +115,9 @@ end
 
 # For unknown reasons, github's macos runners produce results exceeding the default
 # tolerance
-@trixi_testset "elixir_rainy_euler_rainy_bubble_diffusion" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "rainy_bubble",
-                                 "elixir_rainy_euler_rainy_bubble_diffusion.jl"),
+@trixi_testset "elixir_hoeck_bubble_diffusion rainy" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "precipitation/buoyancy",
+                                 "elixir_hoeck_bubble_diffusion.jl"),
                         l2=[
                             8.025606283886885e-5,
                             4.9286718733941776e-5,

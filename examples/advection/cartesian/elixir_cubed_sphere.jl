@@ -5,11 +5,11 @@ using TrixiAtmo
 # To run a convergence test, we have two options:
 # 1. Use the p4est variable initial_refinement_level to refine the grid:
 #    - To do this, line 46 ("initial_refinement_level = 0") must NOT be a comment
-#    - Call convergence_test("../examples/elixir_shallowwater_cubed_sphere_shell_advection.jl", 4, initial_refinement_level = 0)
+#    - Call convergence_test("../examples/advection/cartesian/elixir_cubed_sphere.jl", 4, initial_refinement_level = 0)
 #    - NOT OPTIMAL: Good convergence the first iterations, but then it stagnates. Reason: The geometry does not improve with refinement.
 # 2. Use the variable trees_per_face_dimension of P4estMeshCubedSphere2D
 #    - To do this, line 46 ("initial_refinement_level = 0") MUST BE commented/removed.
-#    - Call convergence_test("../examples/elixir_shallowwater_cubed_sphere_shell_advection.jl", 4, cells_per_dimension = (3,3))
+#    - Call convergence_test("../examples/advection/cartesian/elixir_cubed_sphere.jl", 4, cells_per_dimension = (3,3))
 #    - OPTIMAL convergence of polydeg + 1. Reason: The geometry improves with refinement.
 
 ###############################################################################
