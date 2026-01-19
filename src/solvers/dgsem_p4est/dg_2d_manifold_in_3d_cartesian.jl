@@ -8,7 +8,7 @@ function Trixi.rhs!(du, u, t,
                     dg::DG, cache) where {Source}
 
     # Reset du
-    Trixi.@trixi_timeit Trixi.timer() "reset ∂u/∂t" Trixi.reset_du!(du, dg, cache)
+    Trixi.@trixi_timeit Trixi.timer() "reset ∂u/∂t" Trixi.set_zero!(du, dg, cache)
 
     # Calculate volume integral
     Trixi.@trixi_timeit Trixi.timer() "volume integral" begin
@@ -84,7 +84,7 @@ end
                                          dg::DGSEM, cache, alpha = true)
     # true * [some floating point value] == [exactly the same floating point value]
     # This can (hopefully) be optimized away due to constant propagation.
-    @unpack derivative_dhat = dg.basis
+    @unpack derivative_hat = dg.basis
     @unpack contravariant_vectors = cache.elements
 
     for j in eachnode(dg), i in eachnode(dg)
@@ -101,7 +101,7 @@ end
                                                           element)
         contravariant_flux1 = Ja11 * flux1 + Ja12 * flux2 + Ja13 * flux3
         for ii in eachnode(dg)
-            Trixi.multiply_add_to_node_vars!(du, alpha * derivative_dhat[ii, i],
+            Trixi.multiply_add_to_node_vars!(du, alpha * derivative_hat[ii, i],
                                              contravariant_flux1, equations, dg, ii, j,
                                              element)
         end
@@ -113,7 +113,7 @@ end
                                                           element)
         contravariant_flux2 = Ja21 * flux1 + Ja22 * flux2 + Ja23 * flux3
         for jj in eachnode(dg)
-            Trixi.multiply_add_to_node_vars!(du, alpha * derivative_dhat[jj, j],
+            Trixi.multiply_add_to_node_vars!(du, alpha * derivative_hat[jj, j],
                                              contravariant_flux2, equations, dg, i, jj,
                                              element)
         end
