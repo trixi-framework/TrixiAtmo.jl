@@ -2,9 +2,11 @@ module TestExamples2DEulerEnergy
 
 include("test_trixiatmo.jl")
 
-@trixi_testset "elixir_euler_energy_inertia_gravity_waves_2d" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_energy_inertia_gravity_waves.jl"),
+EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler/dry_air")
+
+@trixi_testset "elixir_energy_inertia_gravity_waves" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "buoyancy",
+                                 "elixir_energy_inertia_gravity_waves.jl"),
                         l2=[
                             2.3800999105272615e-7,
                             6.190703408721927e-6,

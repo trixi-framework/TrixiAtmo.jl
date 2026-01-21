@@ -44,15 +44,17 @@ include("meshes/meshes.jl")
 include("semidiscretization/semidiscretization.jl")
 include("solvers/solvers.jl")
 include("callbacks_step/callbacks_step.jl")
+include("callbacks_stage/callbacks_stage.jl")
 
 export Parameters,
        IdealGas, IdealGasesAndLiquids,
        TotalEnergy, PotentialTemperature,
        MicrophysicsRelaxation
 
-export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
+export CompressibleMoistEulerEquations2D,
+       CompressibleRainyEulerEquations2D,
        CovariantLinearAdvectionEquation2D, CovariantShallowWaterEquations2D,
-       SplitCovariantShallowWaterEquations2D,
+       ShallowWaterEquations3D, SplitCovariantShallowWaterEquations2D,
        CompressibleEulerPotentialTemperatureEquations1D,
        CompressibleEulerPotentialTemperatureEquations2D,
        CompressibleEulerPotentialTemperatureEquations3D,
@@ -65,6 +67,8 @@ export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
 
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
+export NonlinearSolveDG
+
 export flux_chandrashekar, FluxLMARS
 
 export flux_nonconservative_zeros, flux_nonconservative_ec,
@@ -72,7 +76,8 @@ export flux_nonconservative_zeros, flux_nonconservative_ec,
        source_terms_coriolis, source_terms_coriolis_lagrange_multiplier,
        flux_tec, flux_etec, flux_nonconservative_souza_etal,
        flux_nonconservative_artiano_etal,
-       flux_nonconservative_waruszewski_etal, flux_zero
+       flux_nonconservative_waruszewski_etal, flux_zero,
+       flux_ec_rain, flux_LMARS
 
 export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!
 
@@ -93,6 +98,8 @@ export initial_condition_gaussian, initial_condition_geostrophic_balance,
        initial_condition_barotropic_instability
 
 export bottom_topography_isolated_mountain, bottom_topography_unsteady_solid_body_rotation
+
+export AtmosphereLayers, AtmosphereLayersRainyBubble
 
 export examples_dir
 
