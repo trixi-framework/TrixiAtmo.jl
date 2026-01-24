@@ -23,42 +23,42 @@ function (setup::InteriaWaveSetup)(x, t,
     @unpack g, c_p, c_v = setup
 
     # Exner pressure from hydrostatic balance for x[2]
-    potential_temperature_int = 300.0 #constant of integration 
+    theta_0 = 300.0 #constant of integration 
     bvfrequency = 0.01 #Brunt-Väisälä frequency
 
     exner = 1 +
-            g^2 / (c_p * potential_temperature_int * bvfrequency^2) *
+            g^2 / (c_p * theta_0 * bvfrequency^2) *
             (exp(-bvfrequency^2 / g * x[2]) - 1)
 
     # mean potential temperature
-    potential_temperature_mean = potential_temperature_int * exp(bvfrequency^2 / g * x[2])
+    theta_mean = theta_0 * exp(bvfrequency^2 / g * x[2])
 
     # perturbed potential temperature
-    potential_temperature_const = 0.01
+    theta_c = 0.01
     h_c = 10_000.0
     a_c = 5_000.0
     x_c = 100_000.0
 
-    potential_temperature_perturbation = potential_temperature_const * sin(pi * x[2] / h_c) /
+    theta_prime = theta_c * sin(pi * x[2] / h_c) /
                                       (1 + ((x[1] - x_c) / a_c)^2)
 
     # potential temperature
-    potential_temperature = potential_temperature_mean + potential_temperature_perturbation 
+    theta = theta_mean + theta_prime 
 
     # temperature
-    T = potential_temperature * exner
+    T = theta * exner
 
-    # pressure
+    # pressurey    
     p_0 = 100_000.0  # reference pressure
     R = c_p - c_v    # gas constant (dry air)
-    p = p_0 * exner^(c_p / R)
+    #< p = p_0 * exner^(c_p / R)
 
     # density
-    rho = p / (R * T)
+    rho = p_0 / (R * theta) * exner ^ (c_v / R)
 
     v1 = 20.0
     v2 = 0.0
-    E = c_v * T + 0.5 * (v1^2 + v2^2)
+    E = c_v * T + 0.5 * (v1^2 + v2^2) 
     return SVector(rho, rho * v1, rho * v2, rho * E)
 end
 
@@ -68,6 +68,7 @@ end
     @unpack g = setup
     rho, _, rho_v2, _ = u
     return SVector(zero(eltype(u)), zero(eltype(u)), -g * rho, -g * rho_v2)
+
 end
 
 # Background reference state
@@ -75,30 +76,30 @@ function hydrostatic_background(x, t, equations::CompressibleEulerEquations2D)
     g = 9.81
     c_p = 1004.0f0
     c_v = 717.0f0    
-    potential_temperature_int = 300.0 #constant of integration 
+    theta_0 = 300.0 #constant of integration 
     bvfrequency = 0.01 #Brunt-Väisälä frequency
 
     exner = 1 +
-            g^2 / (c_p * potential_temperature_int * bvfrequency^2) *
+            g^2 / (c_p * theta_0 * bvfrequency^2) *
             (exp(-bvfrequency^2 / g * x[2]) - 1)
 
     # mean potential temperature
-    potential_temperature = potential_temperature_int * exp(bvfrequency^2 / g * x[2])
+    theta = theta_0 * exp(bvfrequency^2 / g * x[2])
 
     # pressure
     p_0 = 100_000.0  # reference pressure
     R = c_p - c_v    # gas constant (dry air)
-    p = p_0 * exner^(c_p / R)
+    #p = p_0 * exner^(c_p / R)
 
     # temperature
-    T = potential_temperature * exner
+    T = theta * exner
 
-    # density
-    rho = p / (R * T)
+   # density
+    rho = p_0 / (R * theta) * exner ^ (c_v / R)
 
     v1 = 20.0
     v2 = 0.0
-    E = c_v * T + 0.5 * (v1^2 + v2^2)
+    E = c_v * T + 0.5 * (v1^2 + v2^2) 
     return SVector(rho, rho * v1, rho * v2, rho * E)
 end
 
