@@ -19,13 +19,6 @@ end
 return a * u
 end
 
-
-
-#struct FluxPlusDissipation{NumericalFlux, Dissipation}
-#    numerical_flux::NumericalFlux
-#    dissipation::Dissipation
-#end
-
 @inline function (numflux::FluxPlusDissipation)(u_ll, u_rr, aux_ll, aux_rr,
                                                 orientation_or_normal_direction,
                                                 equations)
@@ -64,12 +57,14 @@ end
 
 # Maximum wave speeds in each direction for CFL calculation
 @inline function Trixi.max_abs_speeds(u, aux_vars, equations::VariableCoefficientAdvectionEquation2D)
-    return abs.(aux_vars)
+       return abs.(aux_vars)
 end
+
+
 
 @inline Trixi.cons2entropy(u, equations::VariableCoefficientAdvectionEquation2D) = u 
 @inline Trixi.cons2prim(u, equations::VariableCoefficientAdvectionEquation2D) = u 
 #@inline Trixi.cons2prim(u, aux, equations::LinearVariableScalarAdvectionEquation2D) = u
 
 
-end
+end #muladd

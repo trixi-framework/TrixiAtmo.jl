@@ -39,4 +39,19 @@ function Trixi.max_dt(u, t,
     return 2 / (nnodes(dg) * max_scaled_speed)
 end
 
+function Trixi.analyze(::typeof(Trixi.entropy_timederivative), du, u, t,
+                 mesh::Union{TreeMesh{2}, StructuredMesh{2}, StructuredMeshView{2},
+                             UnstructuredMesh2D, P4estMesh{2}, T8codeMesh{2}},
+                 equations::PerturbationEulerEquations2DAuxVars, dg::DG, cache)
+    # Calculate ∫(∂S/∂u ⋅ ∂u/∂t)dΩ
+    (; aux_node_vars) = cache.aux_vars
+    Trixi.integrate_via_indices(u, mesh, equations, dg, cache,
+                          du) do u, i, j, element, equations, dg, du
+        u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
+        aux_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
+        du_node = Trixi.get_node_vars(du, equations, dg, i, j, element)
+        dot(cons2entropy(u_node, aux_node, equations), du_node)
+    end
+end
+
 end #@muladd

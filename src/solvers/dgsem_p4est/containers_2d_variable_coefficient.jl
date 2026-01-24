@@ -22,7 +22,7 @@ end
 
 
 function init_aux_vars(mesh::P4estMesh{2},
-                        equations::AbstractVariableCoefficientEquations{2,1}, 
+                        equations::AbstractVariableCoefficientEquations{}, 
                         solver, cache, aux_field)
     @unpack elements, interfaces, boundaries, mortars = cache
 
@@ -97,23 +97,25 @@ end
 function init_aux_node_vars!(
     aux_vars::P4estAuxNodeVarsContainer{2},
     mesh::P4estMesh{2},
-    equations::AbstractVariableCoefficientEquations{2,1},
+    equations::AbstractVariableCoefficientEquations{},
     solver,
     cache)
 
     (; node_coordinates) = cache.elements
     (; aux_node_vars, aux_field) = aux_vars
-
+    n_aux = size(aux_node_vars, 1) 
 
     Trixi.@threaded for element in eachelement(solver, cache) #go through the elements 
         for j in eachnode(solver), i in eachnode(solver) #and the nodes in both directions in the elements 
             if !isnothing(aux_field)
                 x_node = Trixi.get_node_coords(node_coordinates, equations, solver, i, j, element)
-                aux_node_vars[1, i, j, element] = aux_field(x_node)[1]
-                aux_node_vars[2, i, j, element] = aux_field(x_node)[2]
+                for k in 1:n_aux 
+                    aux_node_vars[k, i, j, element] = aux_field(x_node)[k]
+                end
             else
-                aux_node_vars[1, i, j, element] = zero(eltype(aux_node_vars))
-                aux_node_vars[2, i, j, element] = zero(eltype(aux_node_vars))
+                for k in 1:n_aux
+                    aux_node_vars[k, i, j, element] = zero(eltype(aux_node_vars))
+                end
             end
         end
     end
@@ -125,7 +127,7 @@ end
 function init_aux_surface_node_vars!(
     aux_vars,
     mesh::P4estMesh{2},
-    equations::AbstractVariableCoefficientEquations{2,1},
+    equations::AbstractVariableCoefficientEquations{},
     solver,
     cache)
 
@@ -133,7 +135,6 @@ function init_aux_surface_node_vars!(
     (; aux_node_vars, aux_surface_node_vars) = aux_vars
     
     index_range = eachnode(solver)
-
 
     Trixi.@threaded for interface in Trixi.eachinterface(solver, cache)
         primary_element = neighbor_ids[1, interface]
@@ -176,9 +177,9 @@ end
 function init_aux_boundary_node_vars!(
     aux_vars,
     mesh::P4estMesh{2},
-    equations::AbstractVariableCoefficientEquations{2,1},
+    equations::AbstractVariableCoefficientEquations{NDIMS, NVARS},
     solver,
-    cache)
+    cache) where {NDIMS, NVARS}
 
     (; neighbor_ids, node_indices) = cache.boundaries
     (; aux_node_vars, aux_boundary_node_vars) = aux_vars
@@ -213,9 +214,9 @@ end
 function init_aux_mortar_node_vars!(
     aux_vars,
     mesh::P4estMesh{2},
-    equations::AbstractVariableCoefficientEquations{2,1},
+    equations::AbstractVariableCoefficientEquations{NDIMS, NVARS},
     solver,
-    cache)
+    cache) where {NDIMS, NVARS}
 
     (; neighbor_ids, node_indices) = cache.mortars
     (; aux_node_vars, aux_mortar_node_vars) = aux_vars
@@ -243,10 +244,12 @@ function init_aux_mortar_node_vars!(
         i2 = i2_start
         j2 = j2_start
 
-        for l in eachnode(solver), v in axes(aux_mortar_node_vars, 2)
-            aux_mortar_node_vars[:, v, 1, l, mortar] .= aux_node_vars[v, i1, j1, first_element]
-            aux_mortar_node_vars[:, v, 2, l, mortar] .= aux_node_vars[v, i2, j2, second_element]
-        
+        for l in eachnode(solver) 
+            for v in axes(aux_mortar_node_vars, 2)
+                aux_mortar_node_vars[:, v, 1, l, mortar] .= aux_node_vars[v, i1, j1, first_element]
+                aux_mortar_node_vars[:, v, 2, l, mortar] .= aux_node_vars[v, i2, j2, second_element]
+            end 
+
             i1 += i1_step
             j1 += j1_step
 
@@ -259,7 +262,7 @@ end
 
 function Trixi.init_elements(
     mesh::P4estMesh{2,2,RealT},
-    equations::VariableCoefficientAdvectionEquation2D,
+    equations::AbstractVariableCoefficientEquations, #VariableCoefficientAdvectionEquation2D,
     basis,
     metric_terms,
     ::Type{uEltype},

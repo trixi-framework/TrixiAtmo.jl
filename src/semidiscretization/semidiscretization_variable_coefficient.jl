@@ -18,7 +18,7 @@ per node.
 
 
 function Trixi.SemidiscretizationHyperbolic(mesh::P4estMesh{2},
-                                            equations::AbstractVariableCoefficientEquations{2,1},
+                                            equations::AbstractVariableCoefficientEquations{},
                                             initial_condition,
                                             solver;
                                             source_terms = nothing, 

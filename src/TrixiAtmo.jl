@@ -36,7 +36,7 @@ include("callbacks_step/callbacks_step.jl")
 
 export CompressibleMoistEulerEquations2D, ShallowWaterEquations3D,
        CovariantLinearAdvectionEquation2D, CovariantShallowWaterEquations2D,
-       SplitCovariantShallowWaterEquations2D, VariableCoefficientAdvectionEquation2D
+       SplitCovariantShallowWaterEquations2D, VariableCoefficientAdvectionEquation2D, PerturbationEulerEquations2DAuxVars
 
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
