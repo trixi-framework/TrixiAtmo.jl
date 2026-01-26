@@ -278,6 +278,17 @@ end
     return 0.5f0 * (flux_ll + flux_rr)
 end
 
+@inline function Trixi.flux_godunov(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
+                                    normal_direction::AbstractVector,
+                                    equation::AbstractCovariantEquations)
+    a_normal = dot(velocity_contravariant(u_ll, equation), normal_direction)
+    if a_normal >= 0
+        return Trixi.flux(u_ll, aux_vars_ll, normal_direction, equation)
+    else
+        return Trixi.flux(u_rr, aux_vars_rr, normal_direction, equation)
+    end
+end
+
 # Local Lax-Friedrichs dissipation for abstract covariant equations, where dissipation is 
 # applied to all conservative variables and the wave speed may depend on auxiliary variables
 @inline function (dissipation::DissipationLocalLaxFriedrichs)(u_ll, u_rr, aux_vars_ll,
