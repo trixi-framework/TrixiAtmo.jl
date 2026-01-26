@@ -55,6 +55,27 @@ julia> trixi_include("examples/euler/dry_air/buoyancy/elixir_gemein_bubble.jl")
 ```
 Please see our documentation for more advanced setups.
 
+## Referencing
+You can directly refer to TrixiAtmo.jl as
+
+```bibtex
+@software{trixiatmo_18297711,
+  author       = {Artiano, Marco and
+                  Gassner, Gregor and
+                  Geihe, Benedict and
+                  Montoya, Tristan and
+                  Ranocha, Hendrik and
+                  Rueda-Ramírez, Andrés and
+                  Schlottke-Lakemper, Michael},
+  title        = {TrixiAtmo.jl}: athmospheric flow simulations with {Trixi.jl},
+  month        = jan,
+  year         = 2026,
+  publisher    = {Zenodo},
+  version      = {0.1.0},
+  doi          = {10.5281/zenodo.18297711},
+  url          = {https://doi.org/10.5281/zenodo.18297711},
+}
+```
 
 ## Authors
 TrixiAtmo.jl is maintained by the
@@ -65,6 +86,7 @@ It was initiated by
 [Benedict Geihe](https://www.mi.uni-koeln.de/NumSim/), and
 [Tristan Montoya](https://tjbmontoya.com/)
 (University of Cologne, Germany).
+The full list of contributors can be found in [AUTHORS.md](AUTHORS.md).
 
 ## License and contributing
 TrixiAtmo.jl is licensed under the MIT license (see [LICENSE.md](LICENSE.md)).
