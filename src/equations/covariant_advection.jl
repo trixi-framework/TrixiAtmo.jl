@@ -96,6 +96,15 @@ end
     return SVector(J * u[1] * vcon[orientation], z, z)
 end
 
+@inline function flux(u, aux_vars, normal_direction::AbstractVector,
+                      equations::CovariantLinearAdvectionEquation2D)
+    z = zero(eltype(u))
+    J = area_element(aux_vars, equations)
+    vcon = velocity_contravariant(u, equations)
+    a = dot(vcon, normal_direction) # velocity in normal direction
+    return SVector(J * u[1] * a, z, z)
+end
+
 # Local Lax-Friedrichs dissipation which is not applied to the contravariant velocity 
 # components, as they should remain unchanged in time
 @inline function (dissipation::DissipationLocalLaxFriedrichs)(u_ll, u_rr, aux_vars_ll,
@@ -116,6 +125,17 @@ end
     vcon_ll = velocity_contravariant(u_ll, equations)  # Contravariant components on left side
     vcon_rr = velocity_contravariant(u_rr, equations)  # Contravariant components on right side
     return max(abs(vcon_ll[orientation]), abs(vcon_rr[orientation]))
+end
+
+@inline function max_abs_speed(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
+                                     normal_direction::AbstractVector,
+                                     equations::CovariantLinearAdvectionEquation2D)
+    vcon_ll = velocity_contravariant(u_ll, equations)  # Contravariant components on left side
+    vcon_rr = velocity_contravariant(u_rr, equations)  # Contravariant components on right side
+    # Calculate the velocity in the normal direction
+    a_ll = abs(dot(vcon_ll, normal_direction))
+    a_rr = abs(dot(vcon_rr, normal_direction))
+    return max(a_ll, a_rr)
 end
 
 # Maximum wave speeds in each direction for CFL calculation
