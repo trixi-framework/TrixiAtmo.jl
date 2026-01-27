@@ -52,8 +52,8 @@ end
 
 initial_condition = initial_condition_warm_bubble
 
-boundary_conditions = Dict(:y_neg => boundary_condition_slip_wall,
-                           :y_pos => boundary_condition_slip_wall)
+boundary_conditions = (; y_neg = boundary_condition_slip_wall,
+                       y_pos = boundary_condition_slip_wall)
 
 # Gravity source since Q_ph=0
 source_term = source_terms_geopotential
