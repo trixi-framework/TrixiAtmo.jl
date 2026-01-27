@@ -115,8 +115,8 @@ equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 10
 
 initial_condition = initial_condition_isothermal
 
-boundary_conditions = Dict(:inside => boundary_condition_slip_wall,
-                           :outside => boundary_condition_slip_wall)
+boundary_conditions = (; inside = boundary_condition_slip_wall,
+                       outside = boundary_condition_slip_wall)
 
 polydeg = 4
 surface_flux = (FluxLMARS(340), flux_zero)
