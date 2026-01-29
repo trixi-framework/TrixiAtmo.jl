@@ -7,7 +7,7 @@ function Trixi.integrate(func::Func, u,
                          mesh::Union{TreeMesh{2}, StructuredMesh{2},
                                      StructuredMeshView{2},
                                      UnstructuredMesh2D, P4estMesh{2}, T8codeMesh{2}},
-                         equations::AbstractCovariantEquations{2}, dg::DG,
+                         equations::AbstractCovariantEquations{2}, dg::Union{DGSEM, FDSBP},
                          cache; normalize = true) where {Func}
     (; aux_node_vars) = cache.auxiliary_variables
 
@@ -59,8 +59,8 @@ end
 
 # Entropy time derivative for cons2entropy function which depends on auxiliary variables
 function Trixi.analyze(::typeof(Trixi.entropy_timederivative), du, u, t,
-                       mesh::P4estMesh{2},
-                       equations::AbstractCovariantEquations{2}, dg::DG, cache)
+                       mesh::P4estMesh{2}, equations::AbstractCovariantEquations{2},
+                       dg::Union{DGSEM, FDSBP}, cache)
     (; aux_node_vars) = cache.auxiliary_variables
 
     # Calculate ∫(∂S/∂u ⋅ ∂u/∂t)dΩ
