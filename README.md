@@ -1,20 +1,17 @@
 # 🌎 TrixiAtmo.jl 🌍
 
-<!-- [![Docs-stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://trixi-framework.github.io/TrixiAtmo.jl/stable) -->
+[![Docs-stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://trixi-framework.github.io/TrixiAtmo.jl/stable)
 [![Docs-dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://trixi-framework.github.io/TrixiAtmo.jl/dev)
 [![Slack](https://img.shields.io/badge/chat-slack-e01e5a)](https://join.slack.com/t/trixi-framework/shared_invite/zt-sgkc6ppw-6OXJqZAD5SPjBYqLd8MU~g)
 [![Build Status](https://github.com/trixi-framework/TrixiAtmo.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/trixi-framework/TrixiAtmo.jl/actions?query=workflow%3ACI)
 [![Codecov](https://codecov.io/gh/trixi-framework/TrixiAtmo.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/trixi-framework/TrixiAtmo.jl)
 [![Coveralls](https://coveralls.io/repos/github/trixi-framework/TrixiAtmo.jl/badge.svg?branch=main)](https://coveralls.io/github/trixi-framework/TrixiAtmo.jl?branch=main)
 [![License: MIT](https://img.shields.io/badge/License-MIT-success.svg)](https://opensource.org/licenses/MIT)
-<!-- [![DOI](https://zenodo.org/badge/DOI/TODO.svg)](https://doi.org/TODO) -->
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18297711.svg)](https://doi.org/10.5281/zenodo.18297711)
 
 <p align="center">
   <img width="60%" src="https://trixi-framework.github.io/assets/logo_atmo.png">
 </p>
-
-**Note: This repository is still in its alpha stage and anything might change at
-any time and without warning.**
 
 **TrixiAtmo.jl** is a numerical simulation package focused on atmospheric flows. It builds
 upon [Trixi.jl](https://github.com/trixi-framework/Trixi.jl), a generic flow solver for
@@ -33,23 +30,18 @@ If you have not yet installed Julia, please [follow the instructions for your
 operating system](https://julialang.org/downloads/platform/). TrixiAtmo.jl works
 with Julia v1.10 and newer. We recommend using the latest stable release of Julia.
 
-TrixiAtmo.jl is **not** a registered Julia package yet, and therefore needs to be
-downloaded manually and then run from within the cloned directory:
-```bash
-git clone https://github.com/trixi-framework/TrixiAtmo.jl.git
-julia --project=@.
-```
-In addition, TrixiAtmo.jl requires the numerical solver framework
-[Trixi.jl](https://github.com/trixi-framework/Trixi.jl), relevant sub-packages of
-[OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) for time integration, and
-[Plots.jl](https://github.com/JuliaPlots/Plots.jl) for visualization, which can be
-installed by executing the following in the Julia REPL:
+TrixiAtmo.jl is a registered Julia package and can be installed using Julia's package manager. 
+In addition, TrixiAtmo.jl requires the numerical solver framework 
+[Trixi.jl](https://github.com/trixi-framework/Trixi.jl) as well as relevant sub-packages of
+[OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) for time integration. Executing the
+following in the Julia REPL will install the packages required to run the cases in the `examples` 
+directory, along with [Trixi2Vtk.jl](https://github.com/trixi-framework/Trixi2Vtk.jl), which enables 
+visualization of the resulting HDF5-based output files:
 ```julia
 julia> using Pkg
 
-julia> Pkg.add(["Trixi", "Trixi2Vtk", "OrdinaryDiffEqLowStorageRK", "OrdinaryDiffEqSSPRK", "Plots"])
+julia> Pkg.add(["TrixiAtmo", "Trixi", "OrdinaryDiffEqLowStorageRK", "OrdinaryDiffEqSSPRK", "Trixi2Vtk"])
 ```
-
 
 ## Usage
 
@@ -63,6 +55,27 @@ julia> trixi_include("examples/euler/dry_air/buoyancy/elixir_gemein_bubble.jl")
 ```
 Please see our documentation for more advanced setups.
 
+## Referencing
+You can directly refer to TrixiAtmo.jl as
+
+```bibtex
+@software{trixiatmo_18297711,
+  author       = {Artiano, Marco and
+                  Gassner, Gregor and
+                  Geihe, Benedict and
+                  Montoya, Tristan and
+                  Ranocha, Hendrik and
+                  Rueda-Ramírez, Andrés and
+                  Schlottke-Lakemper, Michael},
+  title        = {TrixiAtmo.jl}: athmospheric flow simulations with {Trixi.jl},
+  month        = jan,
+  year         = 2026,
+  publisher    = {Zenodo},
+  version      = {0.1.0},
+  doi          = {10.5281/zenodo.18297711},
+  url          = {https://doi.org/10.5281/zenodo.18297711},
+}
+```
 
 ## Authors
 TrixiAtmo.jl is maintained by the
@@ -73,6 +86,7 @@ It was initiated by
 [Benedict Geihe](https://www.mi.uni-koeln.de/NumSim/), and
 [Tristan Montoya](https://tjbmontoya.com/)
 (University of Cologne, Germany).
+The full list of contributors can be found in [AUTHORS.md](AUTHORS.md).
 
 ## License and contributing
 TrixiAtmo.jl is licensed under the MIT license (see [LICENSE.md](LICENSE.md)).
