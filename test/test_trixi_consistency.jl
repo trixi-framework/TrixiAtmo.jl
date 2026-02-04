@@ -24,16 +24,16 @@ isdir(outdir) && rm(outdir, recursive = true)
                         maxiters = maxiters)
 
     # Save errors
-    errors_trixi = Main.analysis_callback(Main.sol)
+    errors_trixi = analysis_callback(sol)
 
     # Create an instance of Trixi's equations, just used for dispatch below
-    equations_trixi = Trixi.CompressibleEulerEquations2D(Main.warm_bubble_setup.gamma)
-    add_zeros = SVector(zero(eltype(Main.sol)), zero(eltype(Main.sol)))
+    equations_trixi = Trixi.CompressibleEulerEquations2D(warm_bubble_setup.gamma)
+    add_zeros = SVector(zero(eltype(sol)), zero(eltype(sol)))
 
     # Redefine initial condition in Trixi.jl for CompressibleMoistEulerEquations2D
     # Different formulae were used!
-    @inline function (setup::Main.WarmBubbleSetup)(x, t,
-                                                   ::CompressibleMoistEulerEquations2D)
+    @inline function (setup::WarmBubbleSetup)(x, t,
+                                              ::CompressibleMoistEulerEquations2D)
         ret_trixi = setup(x, t, equations_trixi)
         return vcat(ret_trixi, add_zeros)
     end
@@ -45,12 +45,12 @@ isdir(outdir) && rm(outdir, recursive = true)
     # Override initial condition, maxiters,
     # gravitational acceleration constant to match Trixi's equations
     @test_trixi_include(elixir_atmo,
-                        initial_condition = Main.warm_bubble_setup,
+                        initial_condition = warm_bubble_setup,
                         gravity = 9.81,
                         maxiters = maxiters)
 
     # Save errors
-    errors_atmo = Main.analysis_callback(Main.sol)
+    errors_atmo = analysis_callback(sol)
 
     for (error_trixi, error_atmo) in zip(errors_trixi.l2, errors_atmo.l2)
         @test isapprox(error_trixi, error_atmo, rtol = 1e-12)
