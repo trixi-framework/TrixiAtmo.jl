@@ -11,7 +11,7 @@ isdir(outdir) && rm(outdir, recursive = true)
     using TrixiAtmo: CompressibleMoistEulerEquations2D
 
     # Dry air warm bubble test case in Trixi.jl
-    maxiters = 100
+    global maxiters = 100
     trixi_elixir = joinpath(Trixi.examples_dir(), "tree_2d_dgsem",
                             "elixir_euler_warm_bubble.jl")
 
