@@ -16,12 +16,12 @@ isdir(outdir) && rm(outdir, recursive = true)
                             "elixir_euler_warm_bubble.jl")
 
     # Override fluxes, polydeg, cfl, maxiters
-    trixi_include(trixi_elixir;
-                  volume_flux = Trixi.flux_chandrashekar,
-                  surface_flux = Trixi.FluxLMARS(360.0),
-                  polydeg = 4,
-                  stepsize_callback = Trixi.StepsizeCallback(cfl = 0.2),
-                  maxiters = maxiters)
+    @test_trixi_include(trixi_elixir;
+                        volume_flux=Trixi.flux_chandrashekar,
+                        surface_flux=Trixi.FluxLMARS(360.0),
+                        polydeg=4,
+                        stepsize_callback=Trixi.StepsizeCallback(cfl = 0.2),
+                        maxiters=maxiters)
 
     # Save errors
     errors_trixi = Main.analysis_callback(Main.sol)
@@ -44,10 +44,10 @@ isdir(outdir) && rm(outdir, recursive = true)
 
     # Override initial condition, maxiters,
     # gravitational acceleration constant to match Trixi's equations
-    trixi_include(elixir_atmo;
-                  initial_condition = Main.warm_bubble_setup,
-                  gravity = 9.81,
-                  maxiters = maxiters)
+    @test_trixi_include(elixir_atmo;
+                        initial_condition=Main.warm_bubble_setup,
+                        gravity=9.81,
+                        maxiters=maxiters)
 
     # Save errors
     errors_atmo = Main.analysis_callback(Main.sol)
