@@ -40,6 +40,38 @@ function Trixi.SemidiscretizationHyperbolic(mesh::P4estMesh{2},
                                                                 performance_counter)
 end
 
+function Trixi.SemidiscretizationHyperbolic(mesh::DGMultiMesh,
+                                            equations::AbstractCovariantEquations,
+                                            initial_condition,
+                                            solver;
+                                            source_terms = nothing,
+                                            boundary_conditions = boundary_condition_periodic,
+                                            # `RealT` is used as real type for node locations etc.
+                                            # while `uEltype` is used as element type of solutions etc.
+                                            RealT = real(solver), uEltype = RealT,
+                                            initial_cache = NamedTuple(),
+                                            metric_terms = MetricTermsCrossProduct(),
+                                            auxiliary_field = nothing)
+    cache = (;
+             Trixi.create_cache(mesh, equations, solver, RealT, metric_terms,
+                                auxiliary_field, uEltype)..., initial_cache...)
+    _boundary_conditions = Trixi.digest_boundary_conditions(boundary_conditions, mesh,
+                                                            solver,
+                                                            cache)
+
+    performance_counter = Trixi.PerformanceCounter()
+
+    SemidiscretizationHyperbolic{typeof(mesh), typeof(equations),
+                                 typeof(initial_condition),
+                                 typeof(_boundary_conditions), typeof(source_terms),
+                                 typeof(solver), typeof(cache)}(mesh, equations,
+                                                                initial_condition,
+                                                                _boundary_conditions,
+                                                                source_terms, solver,
+                                                                cache,
+                                                                performance_counter)
+end
+
 # Constructor for SemidiscretizationHyperbolic for the covariant form. Requires 
 # compatibility between the mesh and equations (i.e. the same `NDIMS` and `NDIMS_AMBIENT`)
 # and sets the default metric terms to MetricTermsCovariantSphere.

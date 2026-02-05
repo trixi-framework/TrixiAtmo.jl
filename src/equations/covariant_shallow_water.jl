@@ -186,6 +186,29 @@ end
     return SVector(J * h_vcon[orientation], J * momentum_flux_1, J * momentum_flux_2)
 end
 
+# Flux as a function of the state vector u, as well as the auxiliary variables aux_vars, 
+# which contain the geometric information required for the covariant form
+@inline function flux(u, aux_vars, normal_direction::AbstractVector,
+                      equations::CovariantShallowWaterEquations2D)
+    # Geometric variables
+    Gcon = metric_contravariant(aux_vars, equations)
+    J = area_element(aux_vars, equations)
+
+    # Physical variables
+    h = waterheight(u, equations)
+    h_vcon = momentum_contravariant(u, equations)
+
+    # Compute and store the velocity and gravitational terms
+    vcon = dot(h_vcon, normal_direction) / h
+    gravitational_term = 0.5f0 * equations.gravity * h^2
+
+    # Compute the momentum flux components in the desired orientation
+    momentum_flux_1 = h_vcon[1] * vcon + dot(Gcon[1, :], normal_direction) * gravitational_term
+    momentum_flux_2 = h_vcon[2] * vcon + dot(Gcon[2, :], normal_direction) * gravitational_term
+
+    return SVector(J * dot(h_vcon, normal_direction), J * momentum_flux_1, J * momentum_flux_2)
+end
+
 # Standard geometric and Coriolis source terms for a rotating sphere
 @inline function source_terms_geometric_coriolis(u, x, t, aux_vars,
                                                  equations::CovariantShallowWaterEquations2D)
@@ -218,7 +241,7 @@ end
 
 # Maximum wave speed along the normal direction in reference space
 @inline function max_abs_speed(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
-                               orientation,
+                               orientation::Integer,
                                equations::AbstractCovariantShallowWaterEquations2D)
     # Geometric variables
     Gcon_ll = metric_contravariant(aux_vars_ll, equations)
@@ -234,6 +257,26 @@ end
                sqrt(Gcon_ll[orientation, orientation] * h_ll * equations.gravity),
                abs(h_vcon_rr[orientation] / h_rr) +
                sqrt(Gcon_rr[orientation, orientation] * h_rr * equations.gravity))
+end
+
+# Maximum wave speed along the normal direction in reference space
+@inline function max_abs_speed(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
+                               normal_direction::AbstractVector,
+                               equations::AbstractCovariantShallowWaterEquations2D)
+    # Geometric variables
+    Gcon_ll = metric_contravariant(aux_vars_ll, equations)
+    Gcon_rr = metric_contravariant(aux_vars_rr, equations)
+
+    # Physical variables 
+    h_ll = waterheight(u_ll, equations)
+    h_rr = waterheight(u_rr, equations)
+    h_vcon_ll = momentum_contravariant(u_ll, equations)
+    h_vcon_rr = momentum_contravariant(u_rr, equations)
+
+    return max(abs(dot(normal_direction, h_vcon_ll) / h_ll) +
+               sqrt(dot(normal_direction, Gcon_ll * normal_direction) * h_ll * equations.gravity),
+               abs(dot(normal_direction, h_vcon_rr) / h_rr) +
+               sqrt(dot(normal_direction, Gcon_rr * normal_direction) * h_rr * equations.gravity))
 end
 
 # Maximum wave speeds with respect to the covariant basis
