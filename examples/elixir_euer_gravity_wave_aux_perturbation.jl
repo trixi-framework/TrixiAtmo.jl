@@ -5,7 +5,6 @@ using TrixiAtmo
 
 equations = PerturbationEulerEquations2DAuxVars(1.4)
 
-
 # initial condition with perturbation
 @inline function initial_condition_gravity_wave(x, t, equations)
     # constants 
@@ -88,7 +87,7 @@ end
 end 
 
 
-# Source terms  
+# Source terms   
 @inline function source_terms(u, x, t, equations::PerturbationEulerEquations2DAuxVars)
     g = 9.81
     rho_prime = u[1]
@@ -109,8 +108,8 @@ mesh = P4estMesh(cells_per_dimension; polydeg = 2, coordinates_min, coordinates_
 
 boundary_conditions = (x_neg = boundary_condition_periodic,
                        x_pos = boundary_condition_periodic,
-                       y_neg = boundary_condition_slip_wall,
-                       y_pos = boundary_condition_slip_wall)
+                       y_neg = boundary_condition_slip_wall_aux,
+                       y_pos = boundary_condition_slip_wall_aux)
               
 initial_condition = initial_condition_gravity_wave
 
@@ -137,7 +136,7 @@ ode = semidiscretize(semi, tspan)
 
 summary_callback = SummaryCallback()
 
-analysis_interval = 1000
+analysis_interval = 100
 solution_variables = cons2prim
 
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval)

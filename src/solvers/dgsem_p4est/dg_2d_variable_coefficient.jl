@@ -1,8 +1,94 @@
 @muladd begin
+
+function Trixi.rhs!(du, u, t,
+              mesh::Union{TreeMesh{2}, P4estMesh{2}},
+              equations::AbstractVariableCoefficientEquations,
+              boundary_conditions, source_terms::Source,
+              dg::DG, cache) where {Source}
+    # Reset du
+    Trixi.@trixi_timeit Trixi.timer() "reset ∂u/∂t" Trixi.reset_du!(du, dg, cache)
+
+    # Calculate volume integral
+    Trixi.@trixi_timeit Trixi.timer() "volume integral" begin
+        Trixi.calc_volume_integral!(du, u, mesh, equations,
+                              dg.volume_integral, dg, cache)
+    end
+
+    # Prolong solution to interfaces
+    Trixi.@trixi_timeit Trixi.timer() "prolong2interfaces" begin
+        Trixi.prolong2interfaces!(cache, u, mesh, equations, Trixi.surface_integral, dg)
+    end
+
+    # Calculate interface fluxes
+    Trixi.@trixi_timeit Trixi.timer() "interface flux" begin
+        Trixi.calc_interface_flux!(cache.elements.surface_flux_values, mesh,
+                             Trixi.have_nonconservative_terms(equations),
+                             have_aux_node_vars(equations), equations,
+                             dg.surface_integral, dg, cache)
+    end
+
+    # Prolong solution to boundaries
+    Trixi.@trixi_timeit Trixi.timer() "prolong2boundaries" begin
+        Trixi.prolong2boundaries!(cache, u, mesh, equations,
+                            dg.surface_integral, dg)
+    end
+
+    # Calculate boundary fluxes
+    Trixi.@trixi_timeit Trixi.timer() "boundary flux" begin
+        Trixi.calc_boundary_flux!(cache, t, boundary_conditions, mesh, equations,
+                            dg.surface_integral, dg)
+    end
+
+    # Prolong solution to mortars
+    Trixi.@trixi_timeit Trixi.timer() "prolong2mortars" begin
+        Trixi.prolong2mortars!(cache, u, mesh, equations,
+                         dg.mortar, dg)
+    end
+
+    # Calculate mortar fluxes
+    Trixi.@trixi_timeit Trixi.timer() "mortar flux" begin
+        Trixi.calc_mortar_flux!(cache.elements.surface_flux_values, mesh,
+                          Trixi.have_nonconservative_terms(equations),
+                          have_aux_node_vars(equations), equations,
+                          dg.mortar, dg.surface_integral, dg, cache)
+    end
+
+    # Calculate surface integrals
+    Trixi.@trixi_timeit Trixi.timer() "surface integral" begin
+        Trixi.calc_surface_integral!(du, u, mesh, equations,
+                               dg.surface_integral, dg, cache)
+    end
+
+    # Apply Jacobian from mapping to reference element
+    Trixi.@trixi_timeit Trixi.timer() "Jacobian" apply_jacobian!(du, mesh, equations, dg, cache)
+
+    # Calculate source terms
+    Trixi.@trixi_timeit Trixi.timer() "source terms" begin
+        calc_sources!(du, u, t, source_terms, have_aux_node_vars(equations),
+                      equations, dg, cache)
+    end
+
+    return nothing
+end
+
+function Trixi.calc_volume_integral!(du, u, mesh, equations,
+                               volume_integral::VolumeIntegralWeakForm,
+                               dg::DGSEM, cache)
+    Trixi.@threaded for element in Trixi.eachelement(dg, cache)
+        Trixi.weak_form_kernel!(du, u, element, mesh,
+                          Trixi.have_nonconservative_terms(equations),
+                          have_aux_node_vars(equations), equations,
+                          dg, cache)
+    end
+
+    return nothing
+end
+
 @inline function Trixi.weak_form_kernel!(du, u,
                                          element,
                                          mesh::P4estMesh{2},
                                          nonconservative_terms::Trixi.False,
+                                         have_aux_node_vars::True,
                                          equations::AbstractVariableCoefficientEquations{2},
                                          dg::DGSEM, cache, alpha = true)
     (; derivative_dhat) = dg.basis
@@ -96,7 +182,7 @@ end
     # Coordinates at boundary node
     x = Trixi.get_node_coords(node_coordinates, equations, dg, i_index, j_index,
                         element_index)
-
+    println("CALCBOUNDARYFLUX")
     flux_ = boundary_condition(u_inner, aux_vars_inner, normal_direction, x, t,
                             surface_flux, equations)
 

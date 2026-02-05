@@ -173,7 +173,7 @@ save_solution = SaveSolutionCallback(interval = 10,
 
 stepsize_callback = StepsizeCallback(cfl = 0.1)
 
-visualization = VisualizationCallback(interval = 100)
+visualization = VisualizationCallback(interval = 100) 
 
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,

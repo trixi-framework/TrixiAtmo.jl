@@ -158,11 +158,18 @@ end
     v_ll = (v1_ll * normal_direction[1]
             +
             v2_ll * normal_direction[2])
+    
+    if p_ll < 0 || rho_ll < 0
+        println("L; p, rho:", p_ll, rho_ll)
+    end
     c_ll = sqrt(equations.gamma * p_ll / rho_ll)
     # right
     v_rr = (v1_rr * normal_direction[1]
             +
             v2_rr * normal_direction[2])
+    if p_rr < 0 || rho_rr < 0
+        println("r; p, rho:", p_rr, rho_rr)
+    end
     c_rr = sqrt(equations.gamma * p_rr / rho_rr)    
 
     return max(abs(v_ll), abs(v_rr)) + max(c_ll, c_rr) * norm(normal_direction)
@@ -175,5 +182,50 @@ end
 
     return abs(v1) + c, abs(v2) + c
 end
+
+@inline function boundary_condition_slip_wall_aux(u_inner, aux_inner, normal_direction::AbstractVector, 
+                                                x, t, surface_flux_function, 
+                                                equations::PerturbationEulerEquations2DAuxVars)
+    norm_ = norm(normal_direction)
+    # Normalize the vector without using `normalize` since we need to multiply by the `norm_` later
+    normal = normal_direction / norm_
+
+    u_inner_total = cons2constotal(u_inner, aux_inner, equations)
+    # rotate the internal solution state
+    u_local = Trixi.rotate_to_x(u_inner_total, normal, equations)
+
+    # compute the primitive variables
+    rho_local, v_normal, v_tangent, p_local = cons2prim(u_local, equations::CompressibleEulerEquations2D)
+
+    # Get the solution of the pressure Riemann problem
+    # See Section 6.3.3 of
+    # Eleuterio F. Toro (2009)
+    # Riemann Solvers and Numerical Methods for Fluid Dynamics: A Practical Introduction
+    # [DOI: 10.1007/b79761](https://doi.org/10.1007/b79761)
+    if v_normal <= 0
+        sound_speed = sqrt(equations.gamma * p_local / rho_local) # local sound speed
+        p_star = p_local *
+                 (1 + 0.5f0 * (equations.gamma - 1) * v_normal / sound_speed)^(2 *
+                                                                               equations.gamma *
+                                                                               equations.inv_gamma_minus_one)
+    else # v_normal > 0
+        A = 2 / ((equations.gamma + 1) * rho_local)
+        B = p_local * (equations.gamma - 1) / (equations.gamma + 1)
+        p_star = p_local +
+                 0.5f0 * v_normal / A *
+                 (v_normal + sqrt(v_normal^2 + 4 * A * (p_local + B)))
+    end
+
+    # For the slip wall we directly set the flux as the normal velocity is zero
+    return SVector(0,
+                   p_star * normal[1],
+                   p_star * normal[2],
+                   0) * norm_
+end
+
+
+
+
+    
 
 end
