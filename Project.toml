@@ -1,10 +1,10 @@
 name = "TrixiAtmo"
 uuid = "c9ed1054-d170-44a9-8ee2-d5566f5d1389"
 authors = ["Benedict Geihe <bgeihe@uni-koeln.de>", "Tristan Montoya <montoya.tristan@gmail.com>", "Hendrik Ranocha <hendrik.ranocha@uni-mainz.de>", "Andrés Rueda-Ramírez <aruedara@uni-koeln.de>", "Michael Schlottke-Lakemper <michael@sloede.com>"]
-version = "0.1.0-DEV"
+version = "0.1.2-DEV"
 
 [deps]
-GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
+ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
 HOHQMesh = "e4f4c7b8-17cb-445a-93c5-f69190ed6c8c"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
@@ -25,7 +25,7 @@ Trixi = "a7f1ee26-1774-49b1-8366-f1abc58fbfcb"
 Trixi2Vtk = "bc1476a1-1ca6-4cc3-950b-c312b255ff95"
 
 [compat]
-GLMakie = "0.9.11"
+ForwardDiff = "0.10.36, 1"
 HDF5 = "0.16.10, 0.17"
 HOHQMesh = "0.2.7"
 LinearAlgebra = "1"
@@ -41,5 +41,5 @@ Static = "0.8, 1"
 StaticArrayInterface = "1.5.1"
 StaticArrays = "1"
 StrideArrays = "0.1.28"
-Trixi = "0.9.3, 0.9.9, 0.10, 0.11, 0.12"
-julia = "1.9"
+Trixi = "0.14"
+julia = "1.10"

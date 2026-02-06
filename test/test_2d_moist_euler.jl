@@ -1,121 +1,77 @@
 module TestExamples2DMoistEuler
 
-using Test
-using TrixiAtmo
-
 include("test_trixiatmo.jl")
 
-EXAMPLES_DIR = TrixiAtmo.examples_dir()
+EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler")
 
-@trixiatmo_testset "elixir_moist_euler_dry_bubble" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_moist_euler_dry_bubble.jl"),
+@trixi_testset "elixir_gemein_bubble dry" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "dry_air/buoyancy",
+                                 "elixir_gemein_bubble.jl"),
                         l2=[
-                            1.300428671901329e-6,
-                            2.601090012108739e-5,
-                            0.0006660124630171347,
-                            0.008969786054960861,
+                            9.104437114458848e-7,
+                            1.8210536975490044e-5,
+                            0.0004707887343135412,
+                            0.0063400898518523935,
                             0.0,
                             0.0
                         ],
                         linf=[
-                            1.0312042909910168e-5,
-                            0.00020625488871672815,
-                            0.006392107590872236,
-                            0.07612038028310053,
+                            1.0258941581242631e-5,
+                            0.00020520634691933992,
+                            0.006392782691233334,
+                            0.07637640493339859,
                             0.0,
                             0.0
                         ],
-                        polydeg=3,
                         tspan=(0.0, 0.1))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixiatmo_testset "elixir_moist_euler_EC_bubble" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "elixir_moist_euler_EC_bubble.jl"),
+@trixi_testset "elixir_gemein_bubble moist" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "moist_air/buoyancy",
+                                 "elixir_gemein_bubble.jl"),
                         l2=[
-                            0.01345154393018332,
-                            0.8070926361417218,
-                            7.938812668709457,
-                            4500.747616411578,
-                            0.00015592413050814787,
-                            0.00014163475049532796
+                            7.3515680983123215e-6,
+                            1.1067008939664827e-7,
+                            0.0006971968385493199,
+                            1.715939603224655,
+                            8.832720252288771e-7,
+                            1.025736269959355e-6
                         ],
                         linf=[
-                            0.1427479052298466,
-                            8.564879578662357,
-                            91.56822550162855,
-                            49528.383866247605,
-                            0.0019364397602254623,
-                            0.0013259689889851285
-                        ],
-                        polydeg=3,
-                        cells_per_dimension=(16, 16),
-                        tspan=(0.0, 0.1))
-    # Ensure that we do not have excessive memory allocations
-    # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
-end
-
-@trixiatmo_testset "elixir_moist_euler_moist_bubble" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "elixir_moist_euler_moist_bubble.jl"),
-                        l2=[
-                            7.351043427240923e-6,
-                            1.1070342432069074e-7,
-                            0.0006974588377288118,
-                            1.715668353329522,
-                            8.831269143134121e-7,
-                            1.025579538944668e-6
-                        ],
-                        linf=[
-                            8.055695643149896e-5,
-                            1.1985203677080201e-6,
-                            0.005897639251024437,
-                            19.24776030163048,
-                            1.0043133039065386e-5,
-                            1.1439046776775402e-5
+                            8.056395313560394e-5,
+                            1.1981461033088162e-6,
+                            0.0058959697735631155,
+                            19.248694115842227,
+                            1.0043632092967755e-5,
+                            1.1439573103299433e-5
                         ],
                         polydeg=3,
                         cells_per_dimension=(16, 8),
                         tspan=(0.0, 0.1))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixiatmo_testset "elixir_moist_euler_nonhydrostatic_gravity_waves" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_moist_euler_nonhydrostatic_gravity_waves.jl"),
+@trixi_testset "elixir_gemein_nonhydrostatic_gravity_waves" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "dry_air/buoyancy",
+                                 "elixir_gemein_nonhydrostatic_gravity_waves.jl"),
                         l2=[
-                            3.5420405147937216e-5,
-                            0.0021265774152361538,
-                            0.01172830034500581,
-                            9.898560584459009,
+                            3.54205348345642e-5,
+                            0.00212660009365362,
+                            0.011728423281347147,
+                            9.898615652683135,
                             0.0,
                             0.0
                         ],
                         linf=[
-                            0.0017602202683439927,
-                            0.14941973735192882,
-                            0.5945327351674782,
-                            489.89171406268724,
+                            0.0017602402189631494,
+                            0.1494206825191764,
+                            0.5945421207691134,
+                            489.9007739148801,
                             0.0,
                             0.0
                         ],
@@ -124,16 +80,12 @@ end
                         tspan=(0.0, 0.1))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixiatmo_testset "elixir_moist_euler_source_terms_dry" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "elixir_moist_euler_source_terms_dry.jl"),
+@trixi_testset "elixir_gemein_source_terms dry" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "dry_air/tests",
+                                 "elixir_gemein_source_terms.jl"),
                         l2=[
                             1.3992076791281227e-5,
                             1.4486417486907815e-5,
@@ -155,61 +107,25 @@ end
                         tspan=(0.0, 0.1))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixiatmo_testset "elixir_moist_euler_source_terms_moist" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "elixir_moist_euler_source_terms_moist.jl"),
+@trixi_testset "elixir_gemein_source_terms moist" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "moist_air/tests",
+                                 "elixir_gemein_source_terms.jl"),
                         l2=[
-                            1.8307663991129928e-5,
-                            0.04008077097727512,
-                            0.015104690877128945,
-                            0.5242098451814421,
-                            5.474006801215573e-10,
-                            1.1103883907226752e-10
-                        ],
-                        linf=[
-                            0.00013219484616722177,
-                            0.10771224937484702,
-                            0.03789645369775574,
-                            3.90888311638264,
-                            3.938382289041286e-9,
-                            6.892033377287209e-10
-                        ],
-                        polydeg=3,
-                        cells_per_dimension=(10, 8),
-                        tspan=(0.0, 0.1))
-    # Ensure that we do not have excessive memory allocations
-    # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
-end
-
-@trixiatmo_testset "elixir_moist_euler_source_terms_split_moist" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_moist_euler_source_terms_split_moist.jl"),
-                        l2=[
-                            0.0001480393848825987,
+                            0.0001480393714768623,
                             0.11945481031503036,
                             0.07460345535073129,
-                            5.943049264963717,
+                            5.9430508465000385,
                             4.471792794168725e-9,
                             7.10320253652373e-10
                         ],
                         linf=[
-                            0.0007084183215528839,
-                            0.5047962996690205,
-                            0.3697160082709827,
-                            27.843155286573165,
+                            0.0007084175808387272,
+                            0.504796333566,
+                            0.3697160820183014,
+                            27.843165651072923,
                             2.1168438904322837e-8,
                             3.691699932047233e-9
                         ],
@@ -218,12 +134,7 @@ end
                         tspan=(0.0, 0.1))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
 end # module

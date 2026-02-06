@@ -1,6 +1,22 @@
 @muladd begin
 #! format: noindent
 
+# Container storing element information used by the covariant form. Note that most of the 
+# geometric information is stored in `cache.auxiliary_variables` (allowing such data to 
+# be passed into flux functions and treated as "variable coefficients") rather than in 
+# `cache.elements` (the contents of which are inaccessible to the flux functions).
+struct P4estElementContainerCovariant{NDIMS, RealT <: Real, uEltype <: Real,
+                                      NDIMSP2} <: Trixi.AbstractContainer
+    # Physical coordinates at each node
+    node_coordinates::Array{RealT, NDIMSP2}   # [orientation, node_i, node_j, node_k, element]
+    # Buffer for calculated surface flux
+    surface_flux_values::Array{uEltype, NDIMSP2} # [variable, i, j, direction, element]
+
+    # internal `resize!`able storage
+    _node_coordinates::Vector{RealT}
+    _surface_flux_values::Vector{uEltype}
+end
+
 # Container for storing values of auxiliary variables at volume/surface quadrature nodes
 struct P4estAuxiliaryNodeVariableContainer{NDIMS, uEltype <: Real, NDIMSP2}
     aux_node_vars::Array{uEltype, NDIMSP2} # [variable, i, j, k, element]
@@ -9,6 +25,20 @@ struct P4estAuxiliaryNodeVariableContainer{NDIMS, uEltype <: Real, NDIMSP2}
     # internal `resize!`able storage
     _aux_node_vars::Vector{uEltype}
     _aux_surface_node_vars::Vector{uEltype}
+end
+
+@inline function Trixi.nelements(elements::P4estElementContainerCovariant)
+    return size(elements.node_coordinates, ndims(elements) + 2)
+end
+@inline Base.ndims(::P4estElementContainerCovariant{NDIMS}) where {NDIMS} = NDIMS
+@inline function Base.eltype(::P4estElementContainerCovariant{NDIMS,
+                                                              RealT,
+                                                              uEltype}) where {
+                                                                               NDIMS,
+                                                                               RealT,
+                                                                               uEltype
+                                                                               }
+    return uEltype
 end
 
 # Return the auxiliary variables at a given volume node index
@@ -27,10 +57,45 @@ end
     return aux_vars_ll, aux_vars_rr
 end
 
+function Trixi.init_elements(mesh::P4estMesh{NDIMS, NDIMS_AMBIENT, RealT},
+                             equations::AbstractCovariantEquations{NDIMS,
+                                                                   NDIMS_AMBIENT},
+                             basis, metric_terms,
+                             ::Type{uEltype}) where {NDIMS, NDIMS_AMBIENT,
+                                                     RealT <: Real, uEltype <: Real}
+    nelements = Trixi.ncells(mesh)
+
+    _node_coordinates = Vector{RealT}(undef,
+                                      NDIMS_AMBIENT * nnodes(basis)^NDIMS * nelements)
+    node_coordinates = Trixi.unsafe_wrap(Array, pointer(_node_coordinates),
+                                         (NDIMS_AMBIENT,
+                                          ntuple(_ -> nnodes(basis), NDIMS)...,
+                                          nelements))
+
+    _surface_flux_values = Vector{uEltype}(undef,
+                                           nvariables(equations) *
+                                           nnodes(basis)^(NDIMS - 1) * (NDIMS * 2) *
+                                           nelements)
+    surface_flux_values = Trixi.unsafe_wrap(Array, pointer(_surface_flux_values),
+                                            (nvariables(equations),
+                                             ntuple(_ -> nnodes(basis), NDIMS - 1)...,
+                                             NDIMS * 2, nelements))
+
+    elements = P4estElementContainerCovariant{NDIMS, RealT, uEltype,
+                                              NDIMS + 2}(node_coordinates,
+                                                         surface_flux_values,
+                                                         _node_coordinates,
+                                                         _surface_flux_values)
+
+    Trixi.calc_node_coordinates!(elements.node_coordinates, mesh, basis)
+
+    return elements
+end
+
 # Create auxiliary node variable container and initialize auxiliary variables
 function init_auxiliary_node_variables(mesh::Union{P4estMesh, T8codeMesh},
                                        equations, dg, elements, interfaces,
-                                       auxiliary_field)
+                                       metric_terms, auxiliary_field)
     nelements = Trixi.ncells(mesh)
     ninterfaces = Trixi.count_required_surfaces(mesh).interfaces
     NDIMS = ndims(elements)
@@ -62,7 +127,7 @@ function init_auxiliary_node_variables(mesh::Union{P4estMesh, T8codeMesh},
                                                                          _aux_surface_node_vars)
 
     init_auxiliary_node_variables!(auxiliary_variables, mesh, equations, dg, elements,
-                                   auxiliary_field)
+                                   metric_terms, auxiliary_field)
     init_auxiliary_surface_node_variables!(auxiliary_variables, mesh, equations, dg,
                                            interfaces)
     return auxiliary_variables
@@ -166,7 +231,7 @@ end
 # topography
 function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 3},
                                         equations::AbstractCovariantEquations{2, 3}, dg,
-                                        elements, bottom_topography)
+                                        elements, metric_terms, bottom_topography)
     (; tree_node_coordinates) = mesh
     (; node_coordinates) = elements
     (; aux_node_vars) = auxiliary_variables
@@ -232,7 +297,8 @@ function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 
         end
 
         # Christoffel symbols of the second kind (aux_node_vars[21:26, :, :, element])
-        calc_christoffel_symbols!(aux_node_vars, mesh, equations, dg, element)
+        calc_christoffel_symbols!(aux_node_vars, mesh, equations, metric_terms, dg,
+                                  element, v1, v2, v3, v4, radius)
     end
 
     return nothing
@@ -306,68 +372,119 @@ end
     return SMatrix{3, 2}(A[1, 1], A[2, 1], 0.0f0, A[1, 2], A[2, 2], 0.0f0)
 end
 
-# Calculate Christoffel symbols approximately using the collocation derivative. Note that
-# they could alternatively be computed exactly without affecting the entropy stability 
-# properties of the scheme.
-function calc_christoffel_symbols!(aux_node_vars, mesh::P4estMesh{2, 3},
-                                   equations::AbstractCovariantEquations{2, 3}, dg,
-                                   element)
+# Calculate the covariant metric tensor components G₁₁, G₁₂ (= G₂₁), and G₂₂ and return in 
+# that order as an SVector of length 3
+function calc_metric_covariant(v1, v2, v3, v4, xi1, xi2, radius, equations)
+    A = calc_basis_covariant(v1, v2, v3, v4, xi1, xi2, radius,
+                             equations.global_coordinate_system)
+    Gcov = A' * A
+    return SVector(Gcov[1, 1], Gcov[1, 2], Gcov[2, 2])
+end
+
+# Use ForwardDiff.jl to automatically differentiate the covariant metric tensor components 
+function calc_metric_derivatives_autodiff(v1, v2, v3, v4, xi1, xi2, radius, equations)
+    dGdxi1 = derivative(x -> calc_metric_covariant(v1, v2, v3, v4, x, xi2, radius,
+                                                   equations), xi1)
+    dGdxi2 = derivative(x -> calc_metric_covariant(v1, v2, v3, v4, xi1, x, radius,
+                                                   equations), xi2)
+    return dGdxi1, dGdxi2
+end
+
+# Use the collocation derivative operator to numerically differentiate the covariant 
+# metric tensor components
+function calc_metric_derivatives_collocation(aux_node_vars, equations, dg, i, j,
+                                             element)
     (; derivative_matrix) = dg.basis
 
+    # Numerically differentiate covariant metric components with respect to ξ¹
+    dG11dxi1 = zero(eltype(aux_node_vars))
+    dG12dxi1 = zero(eltype(aux_node_vars))
+    dG22dxi1 = zero(eltype(aux_node_vars))
+    for ii in eachnode(dg)
+        aux_node_ii = get_node_aux_vars(aux_node_vars, equations, dg, ii, j,
+                                        element)
+        Gcov_ii = metric_covariant(aux_node_ii, equations)
+        dG11dxi1 = dG11dxi1 + derivative_matrix[i, ii] * Gcov_ii[1, 1]
+        dG12dxi1 = dG12dxi1 + derivative_matrix[i, ii] * Gcov_ii[1, 2]
+        dG22dxi1 = dG22dxi1 + derivative_matrix[i, ii] * Gcov_ii[2, 2]
+    end
+
+    # Numerically differentiate covariant metric components with respect to ξ²
+    dG11dxi2 = zero(eltype(aux_node_vars))
+    dG12dxi2 = zero(eltype(aux_node_vars))
+    dG22dxi2 = zero(eltype(aux_node_vars))
+    for jj in eachnode(dg)
+        aux_node_jj = get_node_aux_vars(aux_node_vars, equations, dg, i, jj,
+                                        element)
+        Gcov_jj = metric_covariant(aux_node_jj, equations)
+        dG11dxi2 = dG11dxi2 + derivative_matrix[j, jj] * Gcov_jj[1, 1]
+        dG12dxi2 = dG12dxi2 + derivative_matrix[j, jj] * Gcov_jj[1, 2]
+        dG22dxi2 = dG22dxi2 + derivative_matrix[j, jj] * Gcov_jj[2, 2]
+    end
+
+    return SVector(dG11dxi1, dG12dxi1, dG22dxi1), SVector(dG11dxi2, dG12dxi2, dG22dxi2)
+end
+
+# Calculate the Christoffel symbols given the contravariant metric tensor components and 
+# the partial derivatives of the covariant metric tensor components
+function calc_christoffel_symbols(dGdxi1, dGdxi2, Gcon)
+    dG11dxi1, dG12dxi1, dG22dxi1 = dGdxi1
+    dG11dxi2, dG12dxi2, dG22dxi2 = dGdxi2
+
+    # Compute Christoffel symbols of the first kind
+    Gamma_1 = SMatrix{2, 2}(0.5f0 * dG11dxi1,             # Γ₁₁₁
+                            0.5f0 * dG11dxi2,             # Γ₁₂₁
+                            0.5f0 * dG11dxi2,             # Γ₁₁₂
+                            dG12dxi2 - 0.5f0 * dG22dxi1)  # Γ₁₂₂
+    Gamma_2 = SMatrix{2, 2}(dG12dxi1 - 0.5f0 * dG11dxi2,  # Γ₂₁₁
+                            0.5f0 * dG22dxi1,             # Γ₂₂₁
+                            0.5f0 * dG22dxi1,             # Γ₂₁₂
+                            0.5f0 * dG22dxi2)             # Γ₂₂₂
+
+    # Raise indices to get Christoffel symbols of the second kind
+    return SVector(Gcon[1, 1] * Gamma_1[1, 1] + Gcon[1, 2] * Gamma_2[1, 1],  # Γ¹₁₁
+                   Gcon[1, 1] * Gamma_1[1, 2] + Gcon[1, 2] * Gamma_2[1, 2],  # Γ¹₁₂ (= Γ¹₂₁)
+                   Gcon[1, 1] * Gamma_1[2, 2] + Gcon[1, 2] * Gamma_2[2, 2],  # Γ¹₂₂
+                   Gcon[2, 1] * Gamma_1[1, 1] + Gcon[2, 2] * Gamma_2[1, 1],  # Γ²₁₁
+                   Gcon[2, 1] * Gamma_1[1, 2] + Gcon[2, 2] * Gamma_2[1, 2],  # Γ²₁₂ (= Γ²₂₁)
+                   Gcon[2, 1] * Gamma_1[2, 2] + Gcon[2, 2] * Gamma_2[2, 2])  # Γ²₂₂
+end
+
+# Calculate Christoffel symbols using automatic differentiation based on the exact 
+# spherical geometry
+function calc_christoffel_symbols!(aux_node_vars, mesh::P4estMesh{2, 3},
+                                   equations::AbstractCovariantEquations{2, 3},
+                                   metric_terms::MetricTermsCovariantSphere{ChristoffelSymbolsAutodiff},
+                                   dg, element, v1, v2, v3, v4, radius)
     for j in eachnode(dg), i in eachnode(dg)
-
-        # Numerically differentiate covariant metric components with respect to ξ¹
-        dG11dxi1 = zero(eltype(aux_node_vars))
-        dG12dxi1 = zero(eltype(aux_node_vars))
-        dG22dxi1 = zero(eltype(aux_node_vars))
-        for ii in eachnode(dg)
-            aux_node_ii = get_node_aux_vars(aux_node_vars, equations, dg, ii, j,
-                                            element)
-            Gcov_ii = metric_covariant(aux_node_ii, equations)
-            dG11dxi1 = dG11dxi1 + derivative_matrix[i, ii] * Gcov_ii[1, 1]
-            dG12dxi1 = dG12dxi1 + derivative_matrix[i, ii] * Gcov_ii[1, 2]
-            dG22dxi1 = dG22dxi1 + derivative_matrix[i, ii] * Gcov_ii[2, 2]
-        end
-
-        # Numerically differentiate covariant metric components with respect to ξ²
-        dG11dxi2 = zero(eltype(aux_node_vars))
-        dG12dxi2 = zero(eltype(aux_node_vars))
-        dG22dxi2 = zero(eltype(aux_node_vars))
-        for jj in eachnode(dg)
-            aux_node_jj = get_node_aux_vars(aux_node_vars, equations, dg, i, jj,
-                                            element)
-            Gcov_jj = metric_covariant(aux_node_jj, equations)
-            dG11dxi2 = dG11dxi2 + derivative_matrix[j, jj] * Gcov_jj[1, 1]
-            dG12dxi2 = dG12dxi2 + derivative_matrix[j, jj] * Gcov_jj[1, 2]
-            dG22dxi2 = dG22dxi2 + derivative_matrix[j, jj] * Gcov_jj[2, 2]
-        end
-
+        # Differentiate the metric tensor components 
+        dGdxi1, dGdxi2 = calc_metric_derivatives_autodiff(v1, v2, v3, v4,
+                                                          dg.basis.nodes[i],
+                                                          dg.basis.nodes[j],
+                                                          radius, equations)
         # Compute Christoffel symbols of the first kind
-        christoffel_firstkind_1 = SMatrix{2, 2}(0.5f0 * dG11dxi1,
-                                                0.5f0 * dG11dxi2,
-                                                0.5f0 * dG11dxi2,
-                                                dG12dxi2 - 0.5f0 * dG22dxi1)
-        christoffel_firstkind_2 = SMatrix{2, 2}(dG12dxi1 - 0.5f0 * dG11dxi2,
-                                                0.5f0 * dG22dxi1,
-                                                0.5f0 * dG22dxi1,
-                                                0.5f0 * dG22dxi2)
-
-        # Raise indices to get Christoffel symbols of the second kind
         aux_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
         Gcon = metric_contravariant(aux_node, equations)
-        aux_node_vars[21, i, j, element] = Gcon[1, 1] * christoffel_firstkind_1[1, 1] +
-                                           Gcon[1, 2] * christoffel_firstkind_2[1, 1]
-        aux_node_vars[22, i, j, element] = Gcon[1, 1] * christoffel_firstkind_1[1, 2] +
-                                           Gcon[1, 2] * christoffel_firstkind_2[1, 2]
-        aux_node_vars[23, i, j, element] = Gcon[1, 1] * christoffel_firstkind_1[2, 2] +
-                                           Gcon[1, 2] * christoffel_firstkind_2[2, 2]
+        aux_node_vars[21:26, i, j, element] = calc_christoffel_symbols(dGdxi1, dGdxi2,
+                                                                       Gcon)
+    end
+end
 
-        aux_node_vars[24, i, j, element] = Gcon[2, 1] * christoffel_firstkind_1[1, 1] +
-                                           Gcon[2, 2] * christoffel_firstkind_2[1, 1]
-        aux_node_vars[25, i, j, element] = Gcon[2, 1] * christoffel_firstkind_1[1, 2] +
-                                           Gcon[2, 2] * christoffel_firstkind_2[1, 2]
-        aux_node_vars[26, i, j, element] = Gcon[2, 1] * christoffel_firstkind_1[2, 2] +
-                                           Gcon[2, 2] * christoffel_firstkind_2[2, 2]
+# Calculate Christoffel symbols approximately using the collocation derivative
+function calc_christoffel_symbols!(aux_node_vars, mesh::P4estMesh{2, 3},
+                                   equations::AbstractCovariantEquations{2, 3},
+                                   metric_terms::MetricTermsCovariantSphere{ChristoffelSymbolsCollocationDerivative},
+                                   dg, element, v1, v2, v3, v4, radius)
+    for j in eachnode(dg), i in eachnode(dg)
+        # Differentiate the metric tensor components 
+        dGdxi1, dGdxi2 = calc_metric_derivatives_collocation(aux_node_vars, equations,
+                                                             dg,
+                                                             i, j, element)
+        # Compute Christoffel symbols of the first kind
+        aux_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
+        Gcon = metric_contravariant(aux_node, equations)
+        aux_node_vars[21:26, i, j, element] = calc_christoffel_symbols(dGdxi1, dGdxi2,
+                                                                       Gcon)
     end
 end
 end # @muladd

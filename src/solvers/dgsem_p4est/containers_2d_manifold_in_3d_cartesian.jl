@@ -65,8 +65,7 @@ end
 # This function dispatches on the dimensions of the mesh and the equation (AbstractEquations{3})
 function Trixi.init_elements(mesh::Union{P4estMesh{2, 3, RealT},
                                          T8codeMesh{2}},
-                             equations::Union{AbstractEquations{3},
-                                              AbstractCovariantEquations{2, 3}},
+                             equations::AbstractEquations{3},
                              basis,
                              metric_terms,
                              ::Type{uEltype}) where {RealT <: Real, uEltype <: Real}
@@ -140,7 +139,7 @@ function init_elements_2d_manifold_in_3d!(elements,
     contravariant_vectors, inverse_jacobian) = elements
 
     # The standard calc_node_coordinates! can be used, since Trixi.jl now dispatches on
-    # P4estMesh{NDIMS, NDIMS_AMBIENT}, so it can be used here.
+    # P4estMesh{NDIMS, NDIMS_AMBIENT}.
     Trixi.calc_node_coordinates!(node_coordinates, mesh, basis)
 
     for element in 1:Trixi.ncells(mesh)
@@ -275,7 +274,7 @@ function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArr
 
             for ii in eachnode(basis)
                 # Multiply derivative_matrix to j-dimension to differentiate wrt η
-                result += 0.5 * derivative_matrix[j, ii] *
+                result += 0.5f0 * derivative_matrix[j, ii] *
                           (node_coordinates[m, i, ii, element] *
                            node_coordinates[l, i, ii, element] -
                            node_coordinates[l, i, ii, element] *
@@ -319,7 +318,7 @@ function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArr
 
             for ii in eachnode(basis)
                 # Multiply derivative_matrix to i-dimension to differentiate wrt ξ
-                result += 0.5 * derivative_matrix[i, ii] *
+                result += 0.5f0 * derivative_matrix[i, ii] *
                           (node_coordinates[m, ii, j, element] *
                            node_coordinates[l, ii, j, element] -
                            node_coordinates[l, ii, j, element] *
@@ -337,7 +336,7 @@ function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArr
 
             for ii in eachnode(basis)
                 # Multiply derivative_matrix to i-dimension to differentiate wrt ξ
-                result += 0.5 * derivative_matrix[i, ii] *
+                result += 0.5f0 * derivative_matrix[i, ii] *
                           (node_coordinates[m, ii, j, element] *
                            jacobian_matrix[l, 2, ii, j, element] -
                            node_coordinates[l, ii, j, element] *
@@ -353,7 +352,7 @@ function calc_contravariant_vectors_2d_shell!(contravariant_vectors::AbstractArr
 
             for ii in eachnode(basis)
                 # Multiply derivative_matrix to j-dimension to differentiate wrt η
-                result += 0.5 * derivative_matrix[j, ii] *
+                result += 0.5f0 * derivative_matrix[j, ii] *
                           (node_coordinates[m, i, ii, element] *
                            jacobian_matrix[l, 1, i, ii, element] -
                            node_coordinates[l, i, ii, element] *
