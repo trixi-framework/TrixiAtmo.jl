@@ -21,10 +21,11 @@ coordinates_max = (2.0, 2.0)
 
 cells_per_dimension = (16, 16)
 
-mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max)
+mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max, periodicity = true)
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
-                                    source_terms = source_terms_convergence_test_dry)
+                                    source_terms = source_terms_convergence_test_dry,
+                                    boundary_conditions = boundary_condition_periodic)
 
 ###############################################################################
 # ODE solvers, callbacks etc.

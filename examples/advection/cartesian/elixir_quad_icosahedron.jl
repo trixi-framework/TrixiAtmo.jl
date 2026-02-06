@@ -65,7 +65,8 @@ initial_condition_transformed = transform_initial_condition(initial_condition, e
 
 # A semidiscretization collects data structures and functions for the spatial discretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver,
-                                    source_terms = source_terms_convert_to_linear_advection)
+                                    source_terms = source_terms_convert_to_linear_advection,
+                                    boundary_conditions = boundary_condition_periodic)
 
 ###############################################################################
 # ODE solvers, callbacks etc.
