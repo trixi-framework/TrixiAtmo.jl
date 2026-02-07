@@ -1,6 +1,6 @@
 # References:
 # - Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
-#   Structure-Preserving High-Order Methods for the Compressible Euler Equations 
+#   Structure-Preserving High-Order Methods for the Compressible Euler Equations
 #   in Potential Temperature Formulation for Atmospheric Flows
 #   https://arxiv.org/abs/2509.10311 (pre-print)
 using OrdinaryDiffEqSSPRK
@@ -50,8 +50,10 @@ mesh = TreeMesh(coordinates_min, coordinates_max,
                 initial_refinement_level = 3,
                 n_cells_max = 100_000, periodicity = false)
 
-boundary_conditions = (x_pos = boundary_condition_slip_wall,
-                       x_neg = boundary_condition_slip_wall)
+boundary_conditions = (; x_pos = boundary_condition_slip_wall,
+                       x_neg = boundary_condition_slip_wall,
+                       y_pos = boundary_condition_slip_wall,
+                       y_neg = boundary_condition_slip_wall)
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_adiabatic, solver,
                                     boundary_conditions = boundary_conditions)

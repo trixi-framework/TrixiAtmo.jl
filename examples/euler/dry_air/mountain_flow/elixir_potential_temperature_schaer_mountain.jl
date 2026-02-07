@@ -98,10 +98,10 @@ alpha = 0.03
 xr_B = 20000
 schär_setup = SchärSetup(alpha, xr_B)
 boundary = BoundaryConditionDirichlet(schär_setup)
-boundary_conditions = Dict(:x_neg => boundary,
-                           :x_pos => boundary,
-                           :y_neg => boundary_condition_slip_wall,
-                           :y_pos => boundary)
+boundary_conditions = (; x_neg = boundary,
+                       x_pos = boundary,
+                       y_neg = boundary_condition_slip_wall,
+                       y_pos = boundary)
 
 polydeg = 3
 basis = LobattoLegendreBasis(polydeg)

@@ -1,6 +1,6 @@
 # An idealized baroclinic instability test case
 # For optimal results consider increasing the resolution to 16x16x8 trees per cube face.
-# 
+#
 # This elixir takes about 8 hours, using 16 threads of an AMD Ryzen 7 7800X3D.
 #
 # References:
@@ -198,8 +198,8 @@ equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 10
 
 initial_condition = initial_condition_baroclinic_instability
 
-boundary_conditions = Dict(:inside => boundary_condition_slip_wall,
-                           :outside => boundary_condition_slip_wall)
+boundary_conditions = (; inside = boundary_condition_slip_wall,
+                       outside = boundary_condition_slip_wall)
 
 polydeg = 5
 surface_flux = (FluxLMARS(340), flux_zero)
