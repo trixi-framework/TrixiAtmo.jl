@@ -48,7 +48,7 @@ end
 
 # The conservative variables are the scalar conserved quantity and two contravariant 
 # velocity components.
-function Trixi.varnames(::typeof(cons2cons), ::CovariantLinearAdvectionEquation2D)
+function varnames(::typeof(cons2cons), ::CovariantLinearAdvectionEquation2D)
     return ("h", "vcon1", "vcon2")
 end
 
@@ -73,23 +73,23 @@ end
 end
 
 # Scalar conserved quantity and three global velocity components
-function Trixi.varnames(::typeof(contravariant2global),
-                        ::CovariantLinearAdvectionEquation2D)
+function varnames(::typeof(contravariant2global),
+                  ::CovariantLinearAdvectionEquation2D)
     return ("h", "v1", "v2", "v3")
 end
 
 # We will define the "entropy variables" here to just be the scalar variable in the first 
 # slot, with zeros in all other positions
-@inline function Trixi.cons2entropy(u, aux_vars,
-                                    equations::CovariantLinearAdvectionEquation2D)
+@inline function cons2entropy(u, aux_vars,
+                              equations::CovariantLinearAdvectionEquation2D)
     z = zero(eltype(u))
     return SVector(u[1], z, z)
 end
 
 # Flux as a function of the state vector u, as well as the auxiliary variables aux_vars, 
 # which contain the geometric information required for the covariant form
-@inline function Trixi.flux(u, aux_vars, orientation::Integer,
-                            equations::CovariantLinearAdvectionEquation2D)
+@inline function flux(u, aux_vars, orientation::Integer,
+                      equations::CovariantLinearAdvectionEquation2D)
     z = zero(eltype(u))
     J = area_element(aux_vars, equations)
     vcon = velocity_contravariant(u, equations)
@@ -110,17 +110,17 @@ end
 end
 
 # Maximum contravariant wave speed with respect to specific basis vector
-@inline function Trixi.max_abs_speed(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
-                                     orientation::Integer,
-                                     equations::CovariantLinearAdvectionEquation2D)
+@inline function max_abs_speed(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
+                               orientation::Integer,
+                               equations::CovariantLinearAdvectionEquation2D)
     vcon_ll = velocity_contravariant(u_ll, equations)  # Contravariant components on left side
     vcon_rr = velocity_contravariant(u_rr, equations)  # Contravariant components on right side
     return max(abs(vcon_ll[orientation]), abs(vcon_rr[orientation]))
 end
 
 # Maximum wave speeds in each direction for CFL calculation
-@inline function Trixi.max_abs_speeds(u, aux_vars,
-                                      equations::CovariantLinearAdvectionEquation2D)
+@inline function max_abs_speeds(u, aux_vars,
+                                equations::CovariantLinearAdvectionEquation2D)
     return abs.(velocity_contravariant(u, equations))
 end
 

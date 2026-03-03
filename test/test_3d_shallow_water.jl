@@ -2,9 +2,11 @@ module TestShallowWaterCartesian
 
 include("test_trixiatmo.jl")
 
-@trixi_testset "elixir_shallowwater_cartesian_unsteady_solid_body_rotation_EC_correction" begin
+EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "shallow_water/cartesian")
+
+@trixi_testset "elixir_unsteady_solid_body_rotation_EC_correction" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_shallowwater_cartesian_unsteady_solid_body_rotation_EC_correction.jl"),
+                                 "elixir_unsteady_solid_body_rotation_EC_correction.jl"),
                         l2=[
                             1.1385840313142226,
                             464.8283750621118,
@@ -24,17 +26,12 @@ include("test_trixiatmo.jl")
                         tspan=(0.0, 1.0 * SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_shallowwater_cartesian_unsteady_solid_body_rotation_EC_projection" begin
+@trixi_testset "elixir_unsteady_solid_body_rotation_EC_projection" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_shallowwater_cartesian_unsteady_solid_body_rotation_EC_projection.jl"),
+                                 "elixir_unsteady_solid_body_rotation_EC_projection.jl"),
                         l2=[
                             1.271506524857498,
                             598.6835303675092,
@@ -54,17 +51,12 @@ end
                         tspan=(0.0, 1.0 * SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_shallowwater_cartesian_unsteady_solid_body_rotation_EC_projection (ES)" begin
+@trixi_testset "elixir_unsteady_solid_body_rotation_EC_projection (ES)" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_shallowwater_cartesian_unsteady_solid_body_rotation_EC_projection.jl"),
+                                 "elixir_unsteady_solid_body_rotation_EC_projection.jl"),
                         l2=[
                             0.27440876588211627,
                             280.22773491124406,
@@ -87,33 +79,23 @@ end
                         tspan=(0.0, 1.0 * SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_shallowwater_cartesian_well_balanced" begin
+@trixi_testset "elixir_well_balanced" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_shallowwater_cartesian_well_balanced.jl"),
+                                 "elixir_well_balanced.jl"),
                         l2=[0.0, 0.0, 0.0, 0.0, 0.0],
                         linf=[0.0, 0.0, 0.0, 0.0, 0.0],
                         atol=8.0e-11) # Needs a slightly larger tolerance for linf
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_shallowwater_cartesian_geostrophic_balance (naive)" begin
+@trixi_testset "elixir_geostrophic_balance (naive)" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_shallowwater_cartesian_geostrophic_balance.jl"),
+                                 "elixir_geostrophic_balance.jl"),
                         l2=[0.27676841776660904,
                             103.39838614468599,
                             103.39838614468121,
@@ -131,17 +113,12 @@ end
                                       flux_nonconservative_wintermeyer_etal)) # use "naive" wave speed estimate for coverage
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_shallowwater_cartesian_isolated_mountain" begin
+@trixi_testset "elixir_isolated_mountain" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_shallowwater_cartesian_isolated_mountain.jl"),
+                                 "elixir_isolated_mountain.jl"),
                         l2=[
                             13.189868962884406,
                             4656.890871865292,
@@ -161,12 +138,7 @@ end
                         tspan=(0.0, 1.0 * SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
 end # module

@@ -9,42 +9,31 @@ outdir = "out"
 Trixi.mpi_isroot() && isdir(outdir) && rm(outdir, recursive = true)
 Trixi.MPI.Barrier(Trixi.mpi_comm())
 
-# CI with MPI and some tests fails often on Windows. Thus, we check whether this
-# is the case here. We use GitHub Actions, so we can check whether we run CI
-# in the cloud with Windows as follows, see also
-# https://docs.github.com/en/actions/learn-github-actions/environment-variables
-CI_ON_WINDOWS = (get(ENV, "GITHUB_ACTIONS", false) == "true") && Sys.iswindows()
-
-@testset "MPI tests" begin
+@testset verbose=true showtiming=true "MPI tests" begin
 #! format: noindent
-
-@trixi_testset "elixir_moist_euler_moist_bubble" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "elixir_moist_euler_dry_bubble.jl"),
+@trixi_testset "elixir_gemein_bubble" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "euler/dry_air/buoyancy",
+                                 "elixir_gemein_bubble.jl"),
                         l2=[
-                            9.103834949215729e-7,
-                            1.8209333828866736e-5,
-                            0.0004709417153612775,
-                            0.006342004383628925,
+                            9.104437114458848e-7,
+                            1.8210536975490044e-5,
+                            0.0004707887343135412,
+                            0.0063400898518523935,
                             0.0,
                             0.0
                         ],
                         linf=[
-                            1.0258282803210506e-5,
-                            0.0002051932980897675,
-                            0.006394867661494521,
-                            0.076401537633501,
+                            1.0258941581242631e-5,
+                            0.00020520634691933992,
+                            0.006392782691233334,
+                            0.07637640493339859,
                             0.0,
                             0.0
                         ],
                         tspan=(0.0, 0.1))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    let
-        t = sol.t[end]
-        u_ode = sol.u[end]
-        du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 1000
-    end
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 1000)
 end
 end
 

@@ -77,15 +77,15 @@ struct CovariantShallowWaterEquations2D{GlobalCoordinateSystem, RealT <: Real} <
 end
 
 # Until we implement bottom topography, there are no nonconservative terms
-Trixi.have_nonconservative_terms(::CovariantShallowWaterEquations2D) = False()
+have_nonconservative_terms(::CovariantShallowWaterEquations2D) = False()
 
 # The conservative variables are the height and contravariant momentum components
-function Trixi.varnames(::typeof(cons2cons), ::AbstractCovariantShallowWaterEquations2D)
+function varnames(::typeof(cons2cons), ::AbstractCovariantShallowWaterEquations2D)
     return ("h", "h_vcon1", "h_vcon2")
 end
 
 # The primitive variables are the height and contravariant velocity components
-function Trixi.varnames(::typeof(cons2prim), ::AbstractCovariantShallowWaterEquations2D)
+function varnames(::typeof(cons2prim), ::AbstractCovariantShallowWaterEquations2D)
     return ("H", "vcon1", "vcon2")
 end
 
@@ -94,13 +94,13 @@ end
 # equations.global_coordinate_system (e.g. spherical or Cartesian). This transformation 
 # works for both primitive and conservative variables, although varnames refers 
 # specifically to transformations from conservative variables.
-function Trixi.varnames(::typeof(contravariant2global),
-                        ::AbstractCovariantShallowWaterEquations2D)
+function varnames(::typeof(contravariant2global),
+                  ::AbstractCovariantShallowWaterEquations2D)
     return ("h", "h_v1", "h_v2", "h_v3")
 end
 
 # Convenience functions to extract physical variables from state vector
-@inline Trixi.waterheight(u, ::AbstractCovariantShallowWaterEquations2D) = u[1]
+@inline waterheight(u, ::AbstractCovariantShallowWaterEquations2D) = u[1]
 @inline velocity_contravariant(u,
 ::AbstractCovariantShallowWaterEquations2D) = SVector(u[2] /
                                                       u[1],
@@ -110,15 +110,15 @@ end
 ::AbstractCovariantShallowWaterEquations2D) = SVector(u[2],
                                                       u[3])
 
-@inline function Trixi.cons2prim(u, aux_vars,
-                                 equations::AbstractCovariantShallowWaterEquations2D)
+@inline function cons2prim(u, aux_vars,
+                           equations::AbstractCovariantShallowWaterEquations2D)
     h, h_vcon1, h_vcon2 = u
     h_s = bottom_topography(aux_vars, equations)
     return SVector(h + h_s, h_vcon1 / h, h_vcon2 / h)
 end
 
-@inline function Trixi.prim2cons(u, aux_vars,
-                                 equations::AbstractCovariantShallowWaterEquations2D)
+@inline function prim2cons(u, aux_vars,
+                           equations::AbstractCovariantShallowWaterEquations2D)
     H, vcon1, vcon2 = u
     h_s = bottom_topography(aux_vars, equations)
     h = H - h_s
@@ -126,8 +126,8 @@ end
 end
 
 # Entropy variables are w = (g(h+hₛ) - (v₁v¹ + v₂v²)/2, v₁, v₂)ᵀ
-@inline function Trixi.cons2entropy(u, aux_vars,
-                                    equations::AbstractCovariantShallowWaterEquations2D)
+@inline function cons2entropy(u, aux_vars,
+                              equations::AbstractCovariantShallowWaterEquations2D)
     h = waterheight(u, equations)
     h_s = bottom_topography(aux_vars, equations)
     vcon = velocity_contravariant(u, equations)
@@ -153,8 +153,8 @@ end
 end
 
 # Entropy function (total energy) given by S = (h(v₁v¹ + v₂v²) + gh² + ghhₛ)/2
-@inline function Trixi.entropy(u, aux_vars,
-                               equations::AbstractCovariantShallowWaterEquations2D)
+@inline function entropy(u, aux_vars,
+                         equations::AbstractCovariantShallowWaterEquations2D)
     h = waterheight(u, equations)
     h_s = bottom_topography(aux_vars, equations)
     vcon = velocity_contravariant(u, equations)
@@ -165,8 +165,8 @@ end
 
 # Flux as a function of the state vector u, as well as the auxiliary variables aux_vars, 
 # which contain the geometric information required for the covariant form
-@inline function Trixi.flux(u, aux_vars, orientation::Integer,
-                            equations::CovariantShallowWaterEquations2D)
+@inline function flux(u, aux_vars, orientation::Integer,
+                      equations::CovariantShallowWaterEquations2D)
     # Geometric variables
     Gcon = metric_contravariant(aux_vars, equations)
     J = area_element(aux_vars, equations)
@@ -217,9 +217,9 @@ end
 end
 
 # Maximum wave speed along the normal direction in reference space
-@inline function Trixi.max_abs_speed(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
-                                     orientation,
-                                     equations::AbstractCovariantShallowWaterEquations2D)
+@inline function max_abs_speed(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
+                               orientation,
+                               equations::AbstractCovariantShallowWaterEquations2D)
     # Geometric variables
     Gcon_ll = metric_contravariant(aux_vars_ll, equations)
     Gcon_rr = metric_contravariant(aux_vars_rr, equations)
@@ -237,8 +237,8 @@ end
 end
 
 # Maximum wave speeds with respect to the covariant basis
-@inline function Trixi.max_abs_speeds(u, aux_vars,
-                                      equations::AbstractCovariantShallowWaterEquations2D)
+@inline function max_abs_speeds(u, aux_vars,
+                                equations::AbstractCovariantShallowWaterEquations2D)
     vcon = velocity_contravariant(u, equations)
     h = waterheight(u, equations)
     Gcon = metric_contravariant(aux_vars, equations)
