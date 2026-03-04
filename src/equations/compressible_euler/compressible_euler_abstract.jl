@@ -58,14 +58,21 @@ end
 # Transform initial conditions
 # By convention all initial conditions are given in primitive variables
 # in the form (rho, u, v, [w, ] p)
-function transform_initial_condition(initial_condition, ::AbstractCompressibleEulerAtmo)
+# TODO moist air
+# Additional tracer can be given as initial_tracer
+function transform_initial_condition(
+    initial_condition,
+    ::AbstractCompressibleEulerAtmo{NDIMS, NVARS, NPASSIVE};
+    initial_tracers = zeros(SVector{NPASSIVE, Int64})) where {NDIMS, NVARS, NPASSIVE}
+
     function initial_condition_transformed(x, t,
-        equations::AbstractCompressibleEulerAtmo{NDIMS, NVARS}) where
-        {NDIMS, NVARS}
+        equations::AbstractCompressibleEulerAtmo{NDIMS, NVARS, NPASSIVE}) where
+        {NDIMS, NVARS, NPASSIVE}
         prim = initial_condition(x, t, equations)
         prim_transformed = SVector(prim[SVector{NDIMS+1}(2:NDIMS+2)]...,
                                    prim[1],
-                                   ntuple(i->0, Val(NVARS-NDIMS-2))...)
+                                   ntuple(i->0, Val(NVARS-NPASSIVE-NDIMS-2))...,
+                                   initial_tracers...)
         return prim2cons(prim_transformed, equations)
     end
     return initial_condition_transformed
@@ -74,14 +81,15 @@ end
 # Transform source terms
 # By convention refers to conservative variables
 # in the form (rho, rho u, rho v, [rho w, ] rho X) with X being the thermodynamic quantitiy
-function transform_source_terms(source_terms, ::AbstractCompressibleEulerAtmo)
+function transform_source_terms_sum(source_terms::Tuple{Function},
+                                    ::AbstractCompressibleEulerAtmo)
     function source_terms_transformed(u, x, t,
         equations::AbstractCompressibleEulerAtmo{NDIMS, NVARS}) where
         {NDIMS, NVARS}
         # rearrange to match with convention
         u_ref = SVector(u[NDIMS+2],
-                        u[SVector{NDIMS+1}(1:NDIMS+1)]...) 
-        source_ref = source_terms(u_ref, x, t, equations)
+                        u[SVector{NDIMS+1}(1:NDIMS+1)]...)
+        source_ref = mapreduce((f) -> f(u_ref, x, t, equations), + , source_terms)
         # rearrange back
         return SVector(source_ref[SVector{NDIMS+1}(2:NDIMS+2)]...,
                        source_ref[1],

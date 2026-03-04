@@ -417,6 +417,7 @@ end
 end
 end # @muladd
 
+include("auxiliary.jl")
 
 include("ic_bubble.jl")
 

@@ -56,5 +56,6 @@ function initial_condition_dry_air_warm_bubble_generator(
 
         return SVector(rho, velocity_x, velocity_z, p)
     end
+    return initial_condition
 end
 end # @muladd
