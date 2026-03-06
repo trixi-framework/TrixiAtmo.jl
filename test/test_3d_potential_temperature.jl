@@ -2,9 +2,11 @@ module TestExamples3DEulerPotentialTemperature
 
 include("test_trixiatmo.jl")
 
-@trixi_testset "elixir_euler_potential_temperature_taylor_green_vortex_3d" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_taylor_green_vortex.jl"),
+EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler/dry_air")
+
+@trixi_testset "elixir_potential_temperature_taylor_green_vortex" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "tests",
+                                 "elixir_potential_temperature_taylor_green_vortex.jl"),
                         l2=[
                             0.007135833158819355,
                             0.05920026666636394,
@@ -25,9 +27,9 @@ include("test_trixiatmo.jl")
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_taylor_green_vortex_3d" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_taylor_green_vortex.jl"),
+@trixi_testset "elixir_potential_temperature_taylor_green_vortex" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "tests",
+                                 "elixir_potential_temperature_taylor_green_vortex.jl"),
                         l2=[
                             0.00713580882298077,
                             0.05920027226189781,
@@ -48,9 +50,9 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_taylor_green_vortex_3d" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_taylor_green_vortex.jl"),
+@trixi_testset "elixir_potential_temperature_taylor_green_vortex" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "tests",
+                                 "elixir_potential_temperature_taylor_green_vortex.jl"),
                         l2=[
                             0.007135944983851745,
                             0.05920027807981362,
@@ -71,9 +73,9 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_taylor_green_vortex_3d" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_taylor_green_vortex.jl"),
+@trixi_testset "elixir_potential_temperature_taylor_green_vortex" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "tests",
+                                 "elixir_potential_temperature_taylor_green_vortex.jl"),
                         l2=[
                             0.006704842021819753,
                             0.018574880297682488,
@@ -95,24 +97,24 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_baroclinic_instability" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_baroclinic_instability.jl"),
+@trixi_testset "elixir_potential_temperature_baroclinic_instability Souza" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
+                                 "elixir_potential_temperature_baroclinic_instability.jl"),
                         l2=[
-                            0.0005404243857532021,
-                            0.015509341701453983,
-                            0.013816888681309869,
-                            0.012939539158878471,
-                            0.14000483720269236,
-                            99.03486863938933
+                            0.0005402395829626791,
+                            0.0155041989645114,
+                            0.0138107622096068,
+                            0.012941059816206165,
+                            0.13997998628314068,
+                            98.99596252593278
                         ],
                         linf=[
-                            0.004654666656827899,
-                            1.1039456510593342,
-                            0.6663687353552903,
-                            1.1276247531737227,
-                            1.0016885503585513,
-                            333.2487183585763
+                            0.00465163790895784,
+                            1.103975340100896,
+                            0.6663546984155281,
+                            1.1276305037303587,
+                            1.001311664438731,
+                            333.1178018152714
                         ],
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
                         atol=4e-9)
@@ -121,24 +123,24 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_baroclinic_instability" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_baroclinic_instability.jl"),
+@trixi_testset "elixir_potential_temperature_baroclinic_instability Waruszewski" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
+                                 "elixir_potential_temperature_baroclinic_instability.jl"),
                         l2=[
-                            0.0005197413655079329,
-                            0.01418417025867247,
-                            0.012316380118663012,
-                            0.012923996341032916,
-                            0.13995018762188344,
-                            99.03486863938933
+                            0.0005196272070117161,
+                            0.0141817969707941,
+                            0.012313242513833094,
+                            0.012925522828705729,
+                            0.1399254026439438,
+                            98.99596252593278
                         ],
                         linf=[
-                            0.004231440709953516,
-                            1.1219699347067773,
-                            0.639464645826298,
-                            1.1308558982893109,
-                            1.0018943890534047,
-                            333.2487183585763
+                            0.0042295649514556555,
+                            1.121978987805587,
+                            0.6394799808438503,
+                            1.1308638979672447,
+                            1.0015178951935582,
+                            333.1178018152714
                         ],
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
                         volume_flux=(flux_ec, flux_nonconservative_waruszewski_etal))
@@ -147,27 +149,62 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_baroclinic_instability" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_baroclinic_instability.jl"),
+@trixi_testset "elixir_potential_temperature_baroclinic_instability Artiano" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
+                                 "elixir_potential_temperature_baroclinic_instability.jl"),
                         l2=[
-                            0.0005238485705127624,
-                            0.014658738174940492,
-                            0.012858043298446848,
-                            0.012928235735411159,
-                            0.13996694572679722,
-                            99.03486863938933
+                            0.0005237192887527135,
+                            0.014655078153251792,
+                            0.012853482849295788,
+                            0.012929758648242088,
+                            0.13994217088888805,
+                            98.99596252593278
                         ],
                         linf=[
-                            0.004242590990033657,
-                            1.1140990093072491,
-                            0.6517474500047321,
-                            1.1292857239244998,
-                            1.0019906488095103,
-                            333.2487183585763
+                            0.00424067775992687,
+                            1.1141182921289354,
+                            0.6517477285197878,
+                            1.1292930037247177,
+                            1.0016134087282467,
+                            333.1178018152714
                         ],
+                        rtol=2e-8,
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
                         volume_flux=(flux_etec, flux_nonconservative_artiano_etal))
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+end
+
+@trixi_testset "elixir_potential_temperature_held_suarez" begin
+    import ..CI_ON_MACOS
+    if CI_ON_MACOS
+        global _rtol = 7e-8  # increased error tolerance
+    else
+        global _rtol = sqrt(eps(Float64))  # default
+    end
+
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
+                                 "elixir_potential_temperature_held_suarez.jl"),
+                        l2=[
+                            0.0031433373482917877,
+                            0.00013227403214817446,
+                            0.0001322740320211912,
+                            0.00014259768410822775,
+                            0.7578318727895532,
+                            569.8247547308886
+                        ],
+                        linf=[
+                            0.023356419582470034,
+                            0.001522627198332827,
+                            0.0015226271932242787,
+                            0.0005022230908559857,
+                            4.88597072706591,
+                            1703.946276059638
+                        ],
+                        rtol=_rtol,
+                        tspan=(0.0, 0.01 * SECONDS_PER_DAY),
+                        lat_lon_trees_per_dim=2, layers=2)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)

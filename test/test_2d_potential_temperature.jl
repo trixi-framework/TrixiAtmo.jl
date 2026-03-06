@@ -2,9 +2,11 @@ module TestExamples2DEulerPotentialTemperature
 
 include("test_trixiatmo.jl")
 
-@trixi_testset "elixir_euler_potential_temperature_inertia_gravity_waves_2d" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_inertia_gravity_waves.jl"),
+EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler/dry_air")
+
+@trixi_testset "elixir_potential_temperature_inertia_gravity_waves" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "buoyancy",
+                                 "elixir_potential_temperature_inertia_gravity_waves.jl"),
                         l2=[
                             5.360162314066379e-7,
                             0.00013097436752903342,
@@ -24,9 +26,9 @@ include("test_trixiatmo.jl")
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_linear_hydrostatic" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_linear_hydrostatic.jl"),
+@trixi_testset "elixir_potential_temperature_linear_hydrostatic" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "tests",
+                                 "elixir_potential_temperature_linear_hydrostatic.jl"),
                         l2=[
                             2.669332229493225e-6,
                             0.0006518362209690377,
@@ -48,9 +50,9 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_linear_nonhydrostatic" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_linear_nonhydrostatic.jl"),
+@trixi_testset "elixir_potential_temperature_linear_nonhydrostatic" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "tests",
+                                 "elixir_potential_temperature_linear_nonhydrostatic.jl"),
                         l2=[
                             4.345825921806206e-7,
                             0.00018887049967917287,
@@ -71,9 +73,9 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_schaer_mountain" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_schaer_mountain.jl"),
+@trixi_testset "elixir_potential_temperature_schaer_mountain" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "mountain_flow",
+                                 "elixir_potential_temperature_schaer_mountain.jl"),
                         l2=[
                             0.00010948264917453087,
                             0.09903481134935169,
@@ -83,7 +85,7 @@ end
                         ],
                         linf=[
                             0.0017570540164735249,
-                            2.3793065145457373,
+                            2.3792558995181707,
                             2.354152711825134,
                             0.0764797692902448,
                             8.731149137020111e-11
@@ -95,9 +97,9 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_well_balanced_curvilinear" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_well_balanced_curvilinear.jl"),
+@trixi_testset "elixir_potential_temperature_well_balanced_curvilinear" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "tests",
+                                 "elixir_potential_temperature_well_balanced_curvilinear.jl"),
                         l2=[
                             1.9638272579852512e-8,
                             9.794074039239054e-13,
@@ -117,9 +119,9 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_well_balanced_curvilinear" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_well_balanced_curvilinear.jl"),
+@trixi_testset "elixir_potential_temperature_well_balanced_curvilinear" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "tests",
+                                 "elixir_potential_temperature_well_balanced_curvilinear.jl"),
                         l2=[
                             1.9676517857526736e-8,
                             1.5583712851610544e-7,
@@ -141,20 +143,20 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_robert_bubble" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_robert_bubble.jl"),
+@trixi_testset "elixir_potential_temperature_robert_bubble" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "buoyancy",
+                                 "elixir_potential_temperature_robert_bubble.jl"),
                         l2=[
-                            4.340663039714642e-5,
-                            0.001692897756925827,
-                            0.00227376439545421,
-                            0.0025218814703435823
+                            4.3406554813061024e-5,
+                            0.0016924594668553596,
+                            0.002272895766783168,
+                            0.0025209103450235496
                         ],
                         linf=[
-                            0.0002625474539201811,
-                            0.00764528219618299,
-                            0.011127978809369847,
-                            0.013220520420190951
+                            0.00026253980321122583,
+                            0.00764409768320462,
+                            0.0111236926691191,
+                            0.013215426049498546
                         ],
                         tspan=(0.0, 1.0), cells_per_dimension=(8, 8))
 
@@ -163,20 +165,20 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_potential_temperature_robert_bubble" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_euler_potential_temperature_robert_bubble.jl"),
+@trixi_testset "elixir_potential_temperature_robert_bubble" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "buoyancy",
+                                 "elixir_potential_temperature_robert_bubble.jl"),
                         l2=[
-                            4.342420821076261e-5,
-                            0.001695019338905481,
-                            0.0022757837600482053,
-                            0.0025188579882716756
+                            4.342413055592755e-5,
+                            0.0016945803933380045,
+                            0.002274914518054041,
+                            0.0025178880253885075
                         ],
                         linf=[
-                            0.00026379373697027475,
-                            0.007819150913434214,
-                            0.011485073881189902,
-                            0.012656992311349313
+                            0.00026378589582520817,
+                            0.00781773220859705,
+                            0.011480660134785742,
+                            0.012652115689945731
                         ],
                         tspan=(0.0, 1.0), cells_per_dimension=(8, 8), surface_flux=flux_ec,
                         volume_flux=flux_etec)
