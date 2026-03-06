@@ -26,7 +26,7 @@ include("test_trixiatmo.jl")
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_euler_energy_baroclinic_instability" begin
+@trixi_testset "elixir_euler_energy_baroclinic_instability with turbo flux" begin
     trixi_include(@__MODULE__,
                   joinpath(EXAMPLES_DIR,
                            "elixir_euler_energy_baroclinic_instability.jl"),
