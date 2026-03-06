@@ -1,6 +1,6 @@
 using Trixi: True, get_contravariant_vector, multiply_add_to_node_vars!, @threaded,
              get_surface_node_vars, get_normal_direction, get_node_coords, @turbo, PtrArray,
-             StrideArray
+             StrideArray, flux_kennedy_gruber
 using Trixi: StaticInt, indices
 
 """
