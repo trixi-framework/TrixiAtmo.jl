@@ -18,7 +18,7 @@ function Trixi.save_solution_file(u, time, dt, timestep,
     end
 
     # Convert to different set of variables if requested
-    converted_variables, n_vars = Trixi.convert_variables(u, aux_node_vars, equations, solution_variables)
+    converted_variables, n_vars = convert_variables(u, aux_node_vars, equations, solution_variables)
 
     # Subtract reference solution
     if !isnothing(reference_solution)
@@ -75,7 +75,7 @@ function Trixi.save_solution_file(u, time, dt, timestep,
     return filename
 end
 
-function Trixi.convert_variables(u, aux, equations::PerturbationEulerEquations2DAuxVars, solution_variables)
+function convert_variables(u, aux, equations::PerturbationEulerEquations2DAuxVars, solution_variables)
     if solution_variables === Trixi.cons2cons
         data = u
         n_vars = Trixi.nvariables(equations)
