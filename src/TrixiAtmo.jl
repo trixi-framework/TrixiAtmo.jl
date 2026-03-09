@@ -25,7 +25,7 @@ using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
 @reexport using StaticArrays: SVector, SMatrix
 @reexport import Trixi: waterheight, varnames, cons2cons, cons2prim,
                         prim2cons, cons2entropy, entropy2cons, velocity,
-                        max_abs_speeds, max_abs_speed_naive, max_abs_speed,
+                        max_abs_speeds, max_abs_speed_naive,
                         have_nonconservative_terms, boundary_condition_slip_wall,
                         energy_kinetic, energy_internal, energy_total, entropy, pressure,
                         flux, flux_ec, flux_chandrashekar, flux_wintermeyer_etal,
