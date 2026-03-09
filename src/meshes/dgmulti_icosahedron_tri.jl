@@ -1,10 +1,10 @@
-function DGMultiMeshTriIcosahedron2D(dg::DGMulti{NDIMS, <:Tri};
-    initial_refinement = 3,
-    is_on_boundary = nothing) where {NDIMS}
+function DGMultiMeshTriIcosahedron2D(dg::DGMulti{NDIMS, <:Tri}, radius;
+                                     initial_refinement = 3,
+                                     is_on_boundary = nothing) where {NDIMS}
 
     NDIMS_AMBIENT = 3
 
-    vertex_coordinates = calc_node_coordinates_icosahedron_vertices(EARTH_RADIUS)
+    vertex_coordinates = calc_node_coordinates_icosahedron_vertices(radius)
 
     Vxyz = ntuple(n -> vertex_coordinates[n, :], NDIMS_AMBIENT)
 
@@ -68,16 +68,51 @@ function DGMultiMeshTriIcosahedron2D(dg::DGMulti{NDIMS, <:Tri};
     end
 
     md = StartUpDG.MeshData(Vxyz, EToV, dg.basis)
-    norms = sqrt.(md.xyz[1].^2 .+ md.xyz[2].^2 .+ md.xyz[3].^2)
-    md = @set md.xyz = map(c -> c ./ norms .* EARTH_RADIUS, md.xyz)
-    norms = sqrt.(md.xyzq[1].^2 .+ md.xyzq[2].^2 .+ md.xyzq[3].^2)
-    md = @set md.xyzq = map(c -> c ./ norms .* EARTH_RADIUS, md.xyzq)
-    norms = sqrt.(md.xyzf[1].^2 .+ md.xyzf[2].^2 .+ md.xyzf[3].^2)
-    md = @set md.xyzf = map(c -> c ./ norms .* EARTH_RADIUS, md.xyzf)
+    md = spherify_meshdata!(md, dg, EToV, Vxyz, radius)
     boundary_faces = StartUpDG.tag_boundary_faces(md, is_on_boundary)
     return DGMultiMesh(dg, Trixi.GeometricTermsType(Trixi.Curved(), dg), md, boundary_faces)
 end
 
+function spherify_meshdata!(md::MeshData, dg::DGMulti{NDIMS}, EToV, Vxyz, radius) where {NDIMS}
+    rd = dg.basis
+    (; xyz, xyzq, xyzf) = md
+    for e in 1:size(EToV, 1)
+        v1, v2, v3 = ntuple(n -> SVector(ntuple(d -> Vxyz[d][EToV[e, n]], 3)), 3)
+        for j in 1:size(rd.rst[1], 1)
+            r, s = rd.rst[1][j], rd.rst[2][j]
+            # Bilinear mapping from reference square to physical space
+            x_node = local_mapping(r, s, v1, v2, v3, radius)
+
+            for n in 1:3
+                xyz[n][j, e] = x_node[n]
+            end
+        end
+
+        for j in 1:size(rd.rstq[1], 1)
+            r, s = rd.rstq[1][j], rd.rstq[2][j]
+            # Bilinear mapping from reference square to physical space
+            x_node = local_mapping(r, s, v1, v2, v3, radius)
+
+            for n in 1:3
+                xyzq[n][j, e] = x_node[n]
+            end
+        end
+
+        for j in 1:size(rd.rstf[1], 1)
+            r, s = rd.rstf[1][j], rd.rstf[2][j]
+            # Bilinear mapping from reference square to physical space
+            x_node = local_mapping(r, s, v1, v2, v3, radius)
+
+            for n in 1:3
+                xyzf[n][j, e] = x_node[n]
+            end
+        end
+    end
+    md = @set md.xyz = xyz
+    md = @set md.xyzq = xyzq
+    md = @set md.xyzf = xyzf
+    return md
+end
 
 # We use a local numbering to obtain the triangle vertices of each triangular face
 #
@@ -110,3 +145,16 @@ const icosahedron_tri_vertices_idx_map = ([1, 2, 6], # Tri 1
                                           [2, 3, 4], # Tri 2
                                           [4, 5, 6], # Tri 3
                                           [2, 4, 6]) # Tri 4
+
+# Local mapping from the reference triangle to a spherical patch based on three vertex
+# positions on the sphere, provided in Cartesian coordinates
+@inline function local_mapping(r, s, v1, v2, v3, radius)
+
+    # Construct a bilinear mapping based on the four corner vertices
+    xe = 0.5f0 * (-(r + s) * v1 +
+                   (1 + r) * v2 +
+                   (1 + s) * v3)
+
+    # Project the mapped local coordinates onto the sphere
+    return radius * xe / norm(xe)
+end

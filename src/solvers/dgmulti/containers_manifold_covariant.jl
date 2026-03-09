@@ -6,21 +6,33 @@ function init_auxiliary_node_variables!(aux_values, aux_quad_values, aux_face_va
                                         dg::DGMulti{<:Any, <:Tri},
                                         bottom_topography)
     rd = dg.basis
-    (; V1) = rd
     (; xyz) = mesh.md
     md = mesh.md
     n_aux = n_aux_node_vars(equations)
 
+    # Identify the vertices corresponding to the corners of the reference element. rd.V1 is not useful,
+    # since the physical nodes are projected onto the sphere and thus the corner nodes would be slightly off.
+    # Instead, we identify the corner nodes by their reference coordinates and build a mask to access them directly
+    VMask = []
+    for corner in [(-1.0, -1.0), (1.0, -1.0), (-1.0, 1.0)]
+        for j in 1:size(rd.rst[1], 1)
+            r, s = rd.rst[1][j], rd.rst[2][j]
+            if all(isapprox.((r, s), corner))
+                push!(VMask, j)
+            end
+        end                     
+    end
+
     # Compute the radius of the sphere from the first element's fourth vertex, such that we can use it
     # throughout the computation. We assume that each Wedge element's last three corner vertices lie
     # on the simulated sphere.
-    VX, VY, VZ = map(coords -> transpose(coords[:, 1]) / V1', xyz)
+    VX, VY, VZ = map(coords -> coords[VMask, 1], xyz)
     v_outer = getindex.([VX, VY, VZ], 1)
     radius = norm(v_outer)
 
     for element in eachelement(mesh, dg)
         # Compute corner vertices of the element
-        VX, VY, VZ = map(coords -> transpose(coords[:, element]) / V1', xyz)
+        VX, VY, VZ = map(coords -> coords[VMask, element], xyz)
         v1, v2, v3 = map(i -> getindex.([VX, VY, VZ], i), 1:3)
 
         aux_node = Vector{eltype(aux_values[1, 1])}(undef, n_aux)
@@ -173,7 +185,7 @@ end
 @inline function calc_basis_covariant(v1, v2, v3, xi1, xi2, radius,
                                       ::GlobalCartesianCoordinates)
 
-    # Construct a bilinear mapping based on the four corner vertices
+    # Construct a bilinear mapping based on the three corner vertices
     xe = 0.5f0 * (-(xi1 + xi2) * v1 + (1 + xi1) * v2 +
           (1 + xi2) * v3)
     # Derivatives of bilinear map with respect to reference coordinates xi1, xi2

@@ -16,7 +16,7 @@ equations = CovariantLinearAdvectionEquation2D(global_coordinate_system = Global
 ###############################################################################
 # Build DG solver.
 
-tensor_polydeg = 2
+tensor_polydeg = 3
 
 dg = DGMulti(element_type = Tri(),
              approximation_type = Polynomial(),
@@ -29,8 +29,8 @@ dg = DGMulti(element_type = Tri(),
 
 initial_refinement_level = 4
 
-mesh = DGMultiMeshTriIcosahedron2D(dg;
-    initial_refinement = initial_refinement_level)
+mesh = DGMultiMeshTriIcosahedron2D(dg, EARTH_RADIUS;
+                                   initial_refinement = initial_refinement_level)
 
 # Transform the initial condition to the proper set of conservative variables
 initial_condition_transformed = transform_initial_condition(initial_condition, equations)

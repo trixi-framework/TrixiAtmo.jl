@@ -36,6 +36,9 @@ using Setfield
 
 using Trixi: ln_mean, stolarsky_mean, inv_ln_mean
 
+# DGMulti Solvers
+using StartUpDG: MeshData
+
 include("auxiliary/auxiliary.jl")
 include("equations/equations.jl")
 include("meshes/meshes.jl")

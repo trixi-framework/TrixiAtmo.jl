@@ -45,7 +45,7 @@ function Trixi.create_cache(mesh::DGMultiMesh{NDIMS}, equations::AbstractCovaria
 
 
     # interpolate J to quadrature points for weight-adjusted DG (WADG)
-    invJ = inv.(rd.Vq * md.J)
+    invJ = inv.(area_element.(aux_quad_values, equations))
 
     # for scaling by curved geometric terms (not used by affine DGMultiMesh)
     flux_threaded = [[Trixi.allocate_nested_array(uEltype, nvars, (rd.Nq,), dg)
