@@ -25,7 +25,7 @@ using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
 @reexport using StaticArrays: SVector, SMatrix
 @reexport import Trixi: waterheight, varnames, cons2cons, cons2prim,
                         prim2cons, cons2entropy, entropy2cons, velocity,
-                        max_abs_speeds, max_abs_speed_naive,
+                        max_abs_speeds, max_abs_speed_naive, max_abs_speed,
                         have_nonconservative_terms, boundary_condition_slip_wall,
                         energy_kinetic, energy_internal, energy_total, entropy, pressure,
                         flux, flux_ec, flux_chandrashekar, flux_wintermeyer_etal,
@@ -40,15 +40,13 @@ include("equations/equations.jl")
 include("meshes/meshes.jl")
 include("semidiscretization/semidiscretization.jl")
 include("solvers/solvers.jl")
-include("semidiscretization/semidiscretization_hyperbolic_2d_manifold_in_3d.jl")
-include("semidiscretization/semidiscretization_variable_coefficient.jl")
 include("callbacks_step/callbacks_step.jl")
 include("callbacks_stage/callbacks_stage.jl")
 
 export CompressibleMoistEulerEquations2D,
        CompressibleRainyEulerEquations2D,
        CovariantLinearAdvectionEquation2D, CovariantShallowWaterEquations2D,
-       ShallowWaterEquations3D, SplitCovariantShallowWaterEquations2D, VariableCoefficientAdvectionEquation2D, PerturbationEulerEquations2DAuxVars,
+       ShallowWaterEquations3D, SplitCovariantShallowWaterEquations2D,
        CompressibleEulerPotentialTemperatureEquations1D,
        CompressibleEulerPotentialTemperatureEquations2D,
        CompressibleEulerPotentialTemperatureEquations3D,
@@ -74,7 +72,7 @@ export flux_nonconservative_zeros, flux_nonconservative_ec,
 
 export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!
 
-export cons2prim_and_vorticity, contravariant2global, cons2prim, cons2aux, cons2prim_and_aux
+export cons2prim_and_vorticity, contravariant2global
 
 export P4estMeshCubedSphere2D, P4estMeshQuadIcosahedron2D, MetricTermsCrossProduct,
        MetricTermsInvariantCurl, MetricTermsCovariantSphere, ChristoffelSymbolsAutodiff,
@@ -91,8 +89,6 @@ export initial_condition_gaussian, initial_condition_geostrophic_balance,
        initial_condition_barotropic_instability
 
 export bottom_topography_isolated_mountain, bottom_topography_unsteady_solid_body_rotation
-
-export BoundaryConditionDirichletAux, boundary_condition_slip_wall_aux
 
 export AtmosphereLayers, AtmosphereLayersRainyBubble
 
