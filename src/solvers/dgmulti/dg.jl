@@ -37,7 +37,7 @@ function Trixi.create_cache(mesh::DGMultiMesh{NDIMS}, equations::AbstractCovaria
     # For affine meshes, we just access one element of this interpolated data.
     dxidxhatj = map(x -> rd.Vq * x, md.rstxyzJ)
 
-    init_auxiliary_node_variables!(aux_values, aux_quad_values, aux_face_values, mesh, equations, dg, auxiliary_field)
+    init_auxiliary_node_variables!(aux_values, mesh, equations, dg, auxiliary_field)
 
     # Interpolate auxiliary variables to quadrature and face points
     Trixi.apply_to_each_field(Trixi.mul_by!(rd.Vq), aux_quad_values, aux_values)

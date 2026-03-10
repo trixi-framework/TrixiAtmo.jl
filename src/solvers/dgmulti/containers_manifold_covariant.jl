@@ -1,7 +1,7 @@
 @muladd begin
 #! format: noindnent
 
-function init_auxiliary_node_variables!(aux_values, aux_quad_values, aux_face_values, mesh::DGMultiMesh,
+function init_auxiliary_node_variables!(aux_values, mesh::DGMultiMesh,
                                         equations::AbstractCovariantEquations{2, 3},
                                         dg::DGMulti{<:Any, <:Tri},
                                         bottom_topography)
