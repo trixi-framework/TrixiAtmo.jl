@@ -16,7 +16,7 @@ equations = CovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION,
 ###############################################################################
 # Build DG solver.
 
-polydeg = 3
+polydeg = 4
 
 dg = DGMulti(element_type = Tri(),
              approximation_type = Polynomial(),
@@ -27,8 +27,8 @@ dg = DGMulti(element_type = Tri(),
 ###############################################################################
 # Build mesh.
 
-mesh = DGMultiMeshTriIcosahedron2D(dg;
-    initial_refinement = 5)
+mesh = DGMultiMeshTriIcosahedron2D(dg, EARTH_RADIUS;
+                                   initial_refinement = initial_refinement_level)
 
 # Transform the initial condition to the proper set of conservative variables
 initial_condition_transformed = transform_initial_condition(initial_condition, equations)
