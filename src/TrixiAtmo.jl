@@ -15,7 +15,7 @@ using Printf: @sprintf
 using Static: True, False
 using StrideArrays: PtrArray
 using StaticArrayInterface: static_size
-using LinearAlgebra: Diagonal, cross, norm, dot, det
+using LinearAlgebra: Diagonal, I, cross, norm, dot, det, diagm
 using Reexport: @reexport
 using LoopVectorization: @turbo
 using QuadGK: quadgk
@@ -37,7 +37,7 @@ using Setfield
 using Trixi: ln_mean, stolarsky_mean, inv_ln_mean
 
 # DGMulti Solvers
-using StartUpDG: MeshData
+using StartUpDG: MeshData, RefElemData
 
 include("auxiliary/auxiliary.jl")
 include("equations/equations.jl")
