@@ -27,6 +27,8 @@ dg = DGMulti(element_type = Tri(),
 ###############################################################################
 # Build mesh.
 
+initial_refinement_level = 4
+
 mesh = DGMultiMeshTriIcosahedron2D(dg, EARTH_RADIUS;
                                    initial_refinement = initial_refinement_level)
 
