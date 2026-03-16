@@ -25,7 +25,7 @@ equations = ShallowWaterEquations3D(gravity = EARTH_GRAVITATIONAL_ACCELERATION,
 volume_flux = (flux_wintermeyer_etal, flux_nonconservative_wintermeyer_etal)
 surface_flux = (flux_wintermeyer_etal, flux_nonconservative_wintermeyer_etal)
 # For provably entropy-stable surface fluxes, use
-# surface_flux = (FluxPlusDissipation(flux_wintermeyer_etal, DissipationLaxFriedrichsEntropyVariables()), 
+# surface_flux = (FluxPlusDissipation(flux_wintermeyer_etal, DissipationLaxFriedrichsEntropyVariables()),
 #                 flux_nonconservative_wintermeyer_etal)
 
 solver = DGSEM(polydeg = polydeg,
@@ -41,7 +41,8 @@ mesh = P4estMeshCubedSphere2D(cells_per_dimension[1], EARTH_RADIUS, polydeg = po
 # A semidiscretization collects data structures and functions for the spatial discretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver,
                                     metric_terms = MetricTermsInvariantCurl(),
-                                    source_terms = source_terms_coriolis_lagrange_multiplier)
+                                    source_terms = source_terms_coriolis_lagrange_multiplier,
+                                    boundary_conditions = boundary_condition_periodic)
 
 ###############################################################################
 # ODE solvers, callbacks etc.
