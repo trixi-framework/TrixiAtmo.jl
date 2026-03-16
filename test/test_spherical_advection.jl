@@ -131,12 +131,19 @@ end
 @trixi_testset "Spherical advection on icosahedral grid, covariant weak form, LLF surface flux" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/covariant",
                                  "elixir_tri_icosahedron.jl"),
-                        l2 = [0.0003761251006794068, 1.0851024650858329e-13, 1.0760196451424737e-13],
-                        linf = [0.009918730242588936, 5.18004530328936e-13, 5.133704062982442e-13])
+                        l2=[
+                            0.0003761251006794068,
+                            1.0851024650858329e-13,
+                            1.0760196451424737e-13
+                        ],
+                        linf=[
+                            0.009918730242588936,
+                            5.18004530328936e-13,
+                            5.133704062982442e-13
+                        ])
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
-
 
 end # module

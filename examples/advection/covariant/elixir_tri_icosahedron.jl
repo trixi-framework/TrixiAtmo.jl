@@ -23,7 +23,6 @@ dg = DGMulti(element_type = Tri(),
              surface_flux = flux_godunov,
              polydeg = tensor_polydeg)
 
-
 ###############################################################################
 # Build mesh.
 
@@ -73,4 +72,4 @@ callbacks = CallbackSet(summary_callback, analysis_callback, save_solution,
 # OrdinaryDiffEq's `solve` method evolves the solution in time and executes the passed 
 # callbacks
 sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
-            dt = 1.0 , save_everystep = false, callback = callbacks)
+            dt = 1.0, save_everystep = false, callback = callbacks)

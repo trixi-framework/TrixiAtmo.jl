@@ -1,6 +1,7 @@
 # Compute coefficients for an initial condition that uses auxiliary variables
 function Trixi.compute_coefficients!(::Nothing, u, initial_condition, t,
-                                     mesh::DGMultiMesh, equations::AbstractCovariantEquations,
+                                     mesh::DGMultiMesh,
+                                     equations::AbstractCovariantEquations,
                                      dg::DGMulti, cache)
     md = mesh.md
     rd = dg.basis
@@ -18,7 +19,8 @@ end
 
 # uses quadrature + projection to compute source terms.
 function Trixi.calc_sources!(du, u, t, source_terms,
-                             mesh, equations::AbstractCovariantEquations, dg::DGMulti, cache)
+                             mesh, equations::AbstractCovariantEquations, dg::DGMulti,
+                             cache)
     rd = dg.basis
     md = mesh.md
     @unpack Pq = rd
@@ -40,12 +42,14 @@ function Trixi.calc_sources!(du, u, t, source_terms,
 end
 
 function Trixi.calc_sources!(du, u, t, source_term::Nothing,
-                             mesh, equations::AbstractCovariantEquations, dg::DGMulti, cache)
+                             mesh, equations::AbstractCovariantEquations, dg::DGMulti,
+                             cache)
     nothing
 end
 
 # version for covariant equations on DGMultiMeshes
-function Trixi.calc_volume_integral!(du, u, mesh::DGMultiMesh{NDIMS_AMBIENT, <:Trixi.NonAffine},
+function Trixi.calc_volume_integral!(du, u,
+                                     mesh::DGMultiMesh{NDIMS_AMBIENT, <:Trixi.NonAffine},
                                      have_nonconservative_terms::False,
                                      equations::AbstractCovariantEquations{NDIMS},
                                      volume_integral::VolumeIntegralWeakForm, dg::DGMulti,
@@ -77,7 +81,8 @@ function Trixi.calc_interface_flux!(cache, surface_integral::SurfaceIntegralWeak
                                     mesh::DGMultiMesh,
                                     have_nonconservative_terms::False,
                                     equations::AbstractCovariantEquations{NDIMS},
-                                    dg::DGMulti{NDIMS_AMBIENT, <:Tri}) where {NDIMS_AMBIENT, NDIMS}
+                                    dg::DGMulti{NDIMS_AMBIENT, <:Tri}) where {NDIMS_AMBIENT,
+                                                                              NDIMS}
     @unpack surface_flux = surface_integral
     md = mesh.md
     rd = dg.basis
@@ -95,12 +100,13 @@ function Trixi.calc_interface_flux!(cache, surface_integral::SurfaceIntegralWeak
         # Transform uP to the same coordinate system as uM
         uP_global = contravariant2global(uP, auxP, equations)
         uP_transformed_to_M = global2contravariant(uP_global, auxM, equations)
-        
+
         # Compute ref_index from face_node_index in order to access covariant normal vector
         # in reference element coordinates.
         ref_index = mod(face_node_index - 1, Nfq) + 1
         normal = SVector(ntuple(k -> nrstJ[k][ref_index], NDIMS))
 
-        flux_face_values[idM] = surface_flux(uM, uP_transformed_to_M, auxM, auxM, normal, equations)
+        flux_face_values[idM] = surface_flux(uM, uP_transformed_to_M, auxM, auxM, normal,
+                                             equations)
     end
 end

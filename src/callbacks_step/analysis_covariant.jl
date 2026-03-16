@@ -104,7 +104,8 @@ end
 
 # Entropy time derivative for cons2entropy function which depends on auxiliary variables
 function Trixi.analyze(::typeof(Trixi.entropy_timederivative), du, u, t,
-                       mesh::DGMultiMesh, equations::AbstractCovariantEquations, dg::DGMulti, cache)
+                       mesh::DGMultiMesh, equations::AbstractCovariantEquations,
+                       dg::DGMulti, cache)
     rd = dg.basis
     md = mesh.md
     @unpack u_values, aux_quad_values = cache
@@ -122,7 +123,8 @@ function Trixi.analyze(::typeof(Trixi.entropy_timederivative), du, u, t,
     for i in Base.OneTo(length(md.wJq))
         ref_index = mod(i - 1, rd.Nq) + 1
         node_weight = rd.wq[ref_index] * area_element(aux_quad_values[i], equations)
-        dS_dt += dot(cons2entropy(u_values[i], aux_quad_values[i], equations), du_values[i]) * node_weight
+        dS_dt += dot(cons2entropy(u_values[i], aux_quad_values[i], equations),
+                     du_values[i]) * node_weight
     end
     return dS_dt
 end
@@ -177,8 +179,11 @@ end
 
 # L2 and Linf error calculation for the covariant form
 function Trixi.calc_error_norms(func, u, t, analyzer,
-                                mesh::DGMultiMesh{NDIMS_AMBIENT}, equations::AbstractCovariantEquations, initial_condition,
-                                dg::DGMulti{NDIMS}, cache, cache_analysis) where {NDIMS, NDIMS_AMBIENT}
+                                mesh::DGMultiMesh{NDIMS_AMBIENT},
+                                equations::AbstractCovariantEquations,
+                                initial_condition,
+                                dg::DGMulti{NDIMS}, cache,
+                                cache_analysis) where {NDIMS, NDIMS_AMBIENT}
     rd = dg.basis
     md = mesh.md
     @unpack u_values, aux_quad_values = cache
@@ -190,7 +195,8 @@ function Trixi.calc_error_norms(func, u, t, analyzer,
     component_linf_errors = zero(eltype(u_values))
     total_volume = zero(eltype(u_values[1]))
     for i in Trixi.each_quad_node_global(mesh, dg, cache)
-        u_exact = initial_condition(SVector(getindex.(md.xyzq, i)), t, aux_quad_values[i], equations)
+        u_exact = initial_condition(SVector(getindex.(md.xyzq, i)), t,
+                                    aux_quad_values[i], equations)
         error_at_node = func(u_values[i], equations) - func(u_exact, equations)
         ref_index = mod(i - 1, rd.Nq) + 1
         node_weight = rd.wq[ref_index] * area_element(aux_quad_values[i], equations)

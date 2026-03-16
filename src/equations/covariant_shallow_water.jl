@@ -203,10 +203,13 @@ end
     gravitational_term = 0.5f0 * equations.gravity * h^2
 
     # Compute the momentum flux components in the desired orientation
-    momentum_flux_1 = h_vcon[1] * vcon + dot(Gcon[1, :], normal_direction) * gravitational_term
-    momentum_flux_2 = h_vcon[2] * vcon + dot(Gcon[2, :], normal_direction) * gravitational_term
+    momentum_flux_1 = h_vcon[1] * vcon +
+                      dot(Gcon[1, :], normal_direction) * gravitational_term
+    momentum_flux_2 = h_vcon[2] * vcon +
+                      dot(Gcon[2, :], normal_direction) * gravitational_term
 
-    return SVector(J * dot(h_vcon, normal_direction), J * momentum_flux_1, J * momentum_flux_2)
+    return SVector(J * dot(h_vcon, normal_direction), J * momentum_flux_1,
+                   J * momentum_flux_2)
 end
 
 # Standard geometric and Coriolis source terms for a rotating sphere
@@ -274,9 +277,11 @@ end
     h_vcon_rr = momentum_contravariant(u_rr, equations)
 
     return max(abs(dot(normal_direction, h_vcon_ll) / h_ll) +
-               sqrt(dot(normal_direction, Gcon_ll * normal_direction) * h_ll * equations.gravity),
+               sqrt(dot(normal_direction, Gcon_ll * normal_direction) * h_ll *
+                    equations.gravity),
                abs(dot(normal_direction, h_vcon_rr) / h_rr) +
-               sqrt(dot(normal_direction, Gcon_rr * normal_direction) * h_rr * equations.gravity))
+               sqrt(dot(normal_direction, Gcon_rr * normal_direction) * h_rr *
+                    equations.gravity))
 end
 
 # Maximum wave speeds with respect to the covariant basis

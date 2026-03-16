@@ -23,7 +23,6 @@ dg = DGMulti(element_type = Tri(),
              surface_flux = flux_lax_friedrichs,
              polydeg = polydeg)
 
-
 ###############################################################################
 # Build mesh.
 

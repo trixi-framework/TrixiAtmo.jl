@@ -226,7 +226,6 @@ end
                velocity_contravariant(u_node_ii, equations)
         dv2dxi1 = dv2dxi1 + Dr[i, ii] * vcov[2]
         dv1dxi2 = dv1dxi2 + Ds[i, ii] * vcov[1]
-
     end
 
     # compute the relative vorticity

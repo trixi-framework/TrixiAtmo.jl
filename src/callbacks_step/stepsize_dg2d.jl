@@ -71,8 +71,9 @@ function Trixi.max_dt(u, t, mesh::P4estMesh{2}, constant_speed::False,
 end
 
 function Trixi.max_dt(u, t, mesh::DGMultiMesh,
-                constant_speed::False, equations::AbstractCovariantEquations{NDIMS},
-                dg::DGMulti, cache) where {NDIMS}
+                      constant_speed::False,
+                      equations::AbstractCovariantEquations{NDIMS},
+                      dg::DGMulti, cache) where {NDIMS}
     (; aux_values) = cache
 
     dt_min = Inf

@@ -1,5 +1,6 @@
 # Constructs cache variables including auxiliary variables for covariant equations and DGMultiMeshes
-function Trixi.create_cache(mesh::DGMultiMesh{NDIMS}, equations::AbstractCovariantEquations, dg::Trixi.DGMultiWeakForm,
+function Trixi.create_cache(mesh::DGMultiMesh{NDIMS}, equations::AbstractCovariantEquations,
+                            dg::Trixi.DGMultiWeakForm,
                             RealT, metric_terms, auxiliary_field,
                             uEltype) where {NDIMS}
     rd = dg.basis
@@ -21,7 +22,7 @@ function Trixi.create_cache(mesh::DGMultiMesh{NDIMS}, equations::AbstractCovaria
     aux_values = Trixi.allocate_nested_array(uEltype, naux, size(md.x), dg)
     aux_quad_values = Trixi.allocate_nested_array(uEltype, naux, size(md.xq), dg)
     aux_face_values = Trixi.allocate_nested_array(uEltype, naux, size(md.xf), dg)
-    
+
     if typeof(rd.approximation_type) <:
        Union{SBP, Trixi.AbstractNonperiodicDerivativeOperator}
         lift_scalings = rd.wf ./ rd.wq[rd.Fmask] # lift scalings for diag-norm SBP operators
@@ -43,7 +44,6 @@ function Trixi.create_cache(mesh::DGMultiMesh{NDIMS}, equations::AbstractCovaria
     Trixi.apply_to_each_field(Trixi.mul_by!(rd.Vq), aux_quad_values, aux_values)
     Trixi.apply_to_each_field(Trixi.mul_by!(rd.Vf), aux_face_values, aux_values)
 
-
     # interpolate J to quadrature points for weight-adjusted DG (WADG)
     invJ = inv.(area_element.(aux_quad_values, equations))
 
@@ -54,9 +54,9 @@ function Trixi.create_cache(mesh::DGMultiMesh{NDIMS}, equations::AbstractCovaria
                              for _ in 1:Threads.nthreads()]
 
     cache = (; md, weak_differentiation_matrices, lift_scalings, invJ, dxidxhatj,
-            u_values, u_face_values, flux_face_values,
-            aux_values, aux_quad_values, aux_face_values,
-            local_values_threaded, flux_threaded, rotated_flux_threaded)
+             u_values, u_face_values, flux_face_values,
+             aux_values, aux_quad_values, aux_face_values,
+             local_values_threaded, flux_threaded, rotated_flux_threaded)
     return cache
 end
 

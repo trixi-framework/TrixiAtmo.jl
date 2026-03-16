@@ -128,8 +128,8 @@ end
 end
 
 @inline function max_abs_speed(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
-                                     normal_direction::AbstractVector,
-                                     equations::CovariantLinearAdvectionEquation2D)
+                               normal_direction::AbstractVector,
+                               equations::CovariantLinearAdvectionEquation2D)
     vcon_ll = velocity_contravariant(u_ll, equations)  # Contravariant components on left side
     vcon_rr = velocity_contravariant(u_rr, equations)  # Contravariant components on right side
     # Calculate the velocity in the normal direction
