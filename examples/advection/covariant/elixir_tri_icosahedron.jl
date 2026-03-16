@@ -20,7 +20,7 @@ tensor_polydeg = 3
 
 dg = DGMulti(element_type = Tri(),
              approximation_type = Polynomial(),
-             surface_flux = flux_godunov,
+             surface_flux = flux_lax_friedrichs,
              polydeg = tensor_polydeg)
 
 ###############################################################################
