@@ -145,10 +145,12 @@ coordinates_max = (2.0, 2.0)
 
 cells_per_dimension = (6, 6)
 
-mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max)
+mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
+                      periodicity = true)
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
-                                    source_terms = source_terms_convergence_test_rainy)
+                                    source_terms = source_terms_convergence_test_rainy,
+                                    boundary_conditions = boundary_condition_periodic)
 
 ###############################################################################
 # ODE solvers, callbacks etc.
@@ -191,10 +193,10 @@ sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false, stage_limite
 #=
 ####################################################################################################
 l2
-rho_dry             rho_moist           rho_rain            rho_v1              rho_v2              energy_density      rho_vapour          rho_cloud           temperature 
+rho_dry             rho_moist           rho_rain            rho_v1              rho_v2              energy_density      rho_vapour          rho_cloud           temperature
 
 error     EOC       error     EOC       error     EOC       error     EOC       error     EOC       error     EOC       error     EOC       error     EOC       error     EOC
-2.40e-06  -         3.89e-05  -         1.52e-05  -         7.53e-03  -         2.09e-02  -         5.20e+01  -         1.75e-08  -         3.89e-05  -         2.16e-04  - 
+2.40e-06  -         3.89e-05  -         1.52e-05  -         7.53e-03  -         2.09e-02  -         5.20e+01  -         1.75e-08  -         3.89e-05  -         2.16e-04  -
 
 1.43e-07  4.07      2.32e-06  4.07      9.72e-07  3.97      2.90e-04  4.70      1.39e-03  3.91      3.14e+00  4.05      1.15e-09  3.93      2.32e-06  4.07      1.42e-05  3.93
 8.48e-09  4.08      1.37e-07  4.08      1.20e-07  3.02      1.13e-05  4.68      3.10e-05  5.49      1.78e-01  4.14      2.69e-11  5.42      1.37e-07  4.08      3.32e-07  5.41
@@ -204,17 +206,17 @@ error     EOC       error     EOC       error     EOC       error     EOC       
 mean      4.04      mean      4.04      mean      4.05      mean      4.39      mean      4.77      mean      4.01      mean      4.48      mean      4.04      mean      4.48
 ----------------------------------------------------------------------------------------------------
 linf
-rho_dry             rho_moist           rho_rain            rho_v1              rho_v2              energy_density      rho_vapour          rho_cloud           temperature 
+rho_dry             rho_moist           rho_rain            rho_v1              rho_v2              energy_density      rho_vapour          rho_cloud           temperature
 
 error     EOC       error     EOC       error     EOC       error     EOC       error     EOC       error     EOC       error     EOC       error     EOC       error     EOC
-1.68e-05  -         2.74e-04  -         8.69e-05  -         2.34e-02  -         6.25e-02  -         3.85e+02  -         6.00e-08  -         2.74e-04  -         7.43e-04  - 
+1.68e-05  -         2.74e-04  -         8.69e-05  -         2.34e-02  -         6.25e-02  -         3.85e+02  -         6.00e-08  -         2.74e-04  -         7.43e-04  -
 
 1.07e-06  3.97      1.73e-05  3.98      4.36e-06  4.32      1.13e-03  4.38      3.11e-03  4.33      2.29e+01  4.07      5.72e-09  3.39      1.73e-05  3.98      7.09e-05  3.39
 6.01e-08  4.15      9.73e-07  4.16      3.46e-07  3.66      4.43e-05  4.67      6.53e-05  5.57      1.08e+00  4.40      1.63e-10  5.13      9.73e-07  4.16      2.00e-06  5.15
-3.69e-09  4.02      5.98e-08  4.03      2.91e-08  3.57      2.47e-06  4.16      2.37e-06  4.79      9.44e-02  3.52      9.40e-12  4.12      5.97e-08  4.03      1.15e-07  4.12       
-2.30e-10  4.01      3.71e-09  4.01      1.47e-09  4.31      1.50e-07  4.04      1.16e-07  4.35      5.51e-03  4.10      5.70e-13  4.04      3.71e-09  4.01      6.97e-09  4.04       
+3.69e-09  4.02      5.98e-08  4.03      2.91e-08  3.57      2.47e-06  4.16      2.37e-06  4.79      9.44e-02  3.52      9.40e-12  4.12      5.97e-08  4.03      1.15e-07  4.12
+2.30e-10  4.01      3.71e-09  4.01      1.47e-09  4.31      1.50e-07  4.04      1.16e-07  4.35      5.51e-03  4.10      5.70e-13  4.04      3.71e-09  4.01      6.97e-09  4.04
 
-mean      4.04      mean      4.04      mean      3.96      mean      4.31      mean      4.76      mean      4.02      mean      4.17      mean      4.04      mean      4.18       
+mean      4.04      mean      4.04      mean      3.96      mean      4.31      mean      4.76      mean      4.02      mean      4.17      mean      4.04      mean      4.18
 ----------------------------------------------------------------------------------------------------
 Dict{Symbol, Any} with 3 entries:
   :variables => ("rho_dry", "rho_moist", "rho_rain", "rho_v1", "rho_v2", "energy_density", "rho_vapour", "rho_cloud", "temperature")

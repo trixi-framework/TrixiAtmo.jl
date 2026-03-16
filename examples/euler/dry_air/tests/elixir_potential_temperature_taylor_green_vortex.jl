@@ -30,7 +30,8 @@ mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = (true, true, true))
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_taylor_green_vortex,
-                                    solver)
+                                    solver,
+                                    boundary_conditions = boundary_condition_periodic)
 ###############################################################################
 # ODE solvers, callbacks etc.
 tspan = (0.0, 0.2)

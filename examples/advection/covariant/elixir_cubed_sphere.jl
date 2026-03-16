@@ -18,8 +18,8 @@ equations = CovariantLinearAdvectionEquation2D(global_coordinate_system = Global
 solver = DGSEM(polydeg = 3, surface_flux = flux_lax_friedrichs,
                volume_integral = VolumeIntegralWeakForm())
 
-# Create a 2D cubed sphere mesh the size of the Earth. For the covariant form to work 
-# properly, we currently need polydeg to equal that of the solver, 
+# Create a 2D cubed sphere mesh the size of the Earth. For the covariant form to work
+# properly, we currently need polydeg to equal that of the solver,
 # initial_refinement_level = 0 (default), and element_local_mapping = true.
 mesh = P4estMeshCubedSphere2D(cells_per_dimension[1], EARTH_RADIUS,
                               polydeg = Trixi.polydeg(solver),
@@ -29,7 +29,8 @@ mesh = P4estMeshCubedSphere2D(cells_per_dimension[1], EARTH_RADIUS,
 initial_condition_transformed = transform_initial_condition(initial_condition, equations)
 
 # A semidiscretization collects data structures and functions for the spatial discretization
-semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver)
+semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver,
+                                    boundary_conditions = boundary_condition_periodic)
 
 ###############################################################################
 # ODE solvers, callbacks etc.

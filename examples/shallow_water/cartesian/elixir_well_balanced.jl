@@ -9,7 +9,7 @@ using OrdinaryDiffEqLowStorageRK, Trixi, TrixiAtmo
 equations = ShallowWaterEquations3D(gravity = EARTH_GRAVITATIONAL_ACCELERATION,
                                     rotation_rate = EARTH_ROTATION_RATE)
 
-# Create DG solver with polynomial degree = 3 and Wintemeyer et al.'s flux as 
+# Create DG solver with polynomial degree = 3 and Wintemeyer et al.'s flux as
 # surface and volume fluxes
 polydeg = 3
 volume_flux = (flux_wintermeyer_etal, flux_nonconservative_wintermeyer_etal)
@@ -39,7 +39,8 @@ mesh = P4estMeshCubedSphere2D(cells_per_dimension[1], EARTH_RADIUS, polydeg = po
 # A semidiscretization collects data structures and functions for the spatial discretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     metric_terms = MetricTermsInvariantCurl(),
-                                    source_terms = source_terms_coriolis_lagrange_multiplier)
+                                    source_terms = source_terms_coriolis_lagrange_multiplier,
+                                    boundary_conditions = boundary_condition_periodic)
 
 ###############################################################################
 # ODE solvers, callbacks etc.
