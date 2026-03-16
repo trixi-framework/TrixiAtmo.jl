@@ -43,7 +43,8 @@ semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transform
 # ODE solvers, callbacks etc.
 
 # Create ODE problem with time span from 0 to T
-ode = semidiscretize(semi, (0.0, 12 * SECONDS_PER_DAY))
+tspan = (0.0, 12.0 * SECONDS_PER_DAY)
+ode = semidiscretize(semi, tspan)
 
 # At the beginning of the main loop, the SummaryCallback prints a summary of the simulation 
 # setup and resets the timers
