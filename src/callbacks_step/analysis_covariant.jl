@@ -20,6 +20,30 @@ function Trixi.integrate(func::Func, u,
     end
 end
 
+function Trixi.integrate(func::Func, u,
+                         mesh::DGMultiMesh,
+                         equations::AbstractCovariantEquations,
+                         dg::DGMulti, cache; normalize = true) where {Func}
+    rd = dg.basis
+    md = mesh.md
+    @unpack u_values, aux_quad_values = cache
+
+    # interpolate u to quadrature points
+    Trixi.apply_to_each_field(Trixi.mul_by!(rd.Vq), u_values, u)
+
+    integral = zero(func(u_values[1], equations))
+    total_volume = zero(sum(rd.wq))
+    for element in Trixi.eachelement(dg, cache)
+        weights = area_element.(aux_quad_values[:, element], equations) .* rd.wq
+        integral += sum(weights .* func.(u_values[:, element], equations))
+        total_volume += sum(weights)
+    end
+    if normalize == true
+        integral /= total_volume
+    end
+    return integral
+end
+
 # For the covariant form, we want to integrate using the exact area element 
 # J = √G = (det(AᵀA))^(1/2), which is stored in cache.auxiliary_variables, not the approximate 
 # area element used in the Cartesian formulation, which stored in cache.elements
@@ -95,7 +119,9 @@ function Trixi.analyze(::typeof(Trixi.entropy_timederivative), du, u, t,
     # property of the L2 projection.
     dS_dt = zero(eltype(first(du)))
     for i in Base.OneTo(length(md.wJq))
-        dS_dt += dot(cons2entropy(u_values[i], aux_quad_values[i], equations), du_values[i]) * md.wJq[i]
+        ref_index = mod(i - 1, rd.Nq) + 1
+        node_weight = rd.wq[ref_index] * area_element(aux_quad_values[i], equations)
+        dS_dt += dot(cons2entropy(u_values[i], aux_quad_values[i], equations), du_values[i]) * node_weight
     end
     return dS_dt
 end
@@ -161,13 +187,16 @@ function Trixi.calc_error_norms(func, u, t, analyzer,
 
     component_l2_errors = zero(eltype(u_values))
     component_linf_errors = zero(eltype(u_values))
+    total_volume = zero(eltype(u_values[1]))
     for i in Trixi.each_quad_node_global(mesh, dg, cache)
         u_exact = initial_condition(SVector(getindex.(md.xyzq, i)), t, aux_quad_values[i], equations)
         error_at_node = func(u_values[i], equations) - func(u_exact, equations)
-        component_l2_errors += md.wJq[i] * error_at_node .^ 2
+        ref_index = mod(i - 1, rd.Nq) + 1
+        node_weight = rd.wq[ref_index] * area_element(aux_quad_values[i], equations)
+        component_l2_errors += node_weight * error_at_node .^ 2
         component_linf_errors = max.(component_linf_errors, abs.(error_at_node))
+        total_volume += node_weight
     end
-    total_volume = sum(md.wJq)
     return sqrt.(component_l2_errors ./ total_volume), component_linf_errors
 end
 end # @muladd
