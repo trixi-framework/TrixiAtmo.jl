@@ -57,21 +57,26 @@ end
 
 # Transform initial conditions
 # By convention all initial conditions are given in primitive variables
-# in the form (rho, u, v, [w, ] p)
-# TODO moist air
+# - in the form (rho, u, v, [w, ] p)
+#   in this case potential additional quantities are assumed zero
+# - in the form (rho_d, u, v, [w, ] p, rho_v, ...)
+#   in this case the number of variables has to match those of the equations
 # Additional tracer can be given as initial_tracer
 function transform_initial_condition(
     initial_condition,
     ::AbstractCompressibleEulerAtmo{NDIMS, NVARS, NPASSIVE};
     initial_tracers = zeros(SVector{NPASSIVE, Int64})) where {NDIMS, NVARS, NPASSIVE}
-
-    function initial_condition_transformed(x, t,
+    
+    @inline function initial_condition_transformed(x, t,
         equations::AbstractCompressibleEulerAtmo{NDIMS, NVARS, NPASSIVE}) where
         {NDIMS, NVARS, NPASSIVE}
         prim = initial_condition(x, t, equations)
+        len = min(length(prim), NVARS-NPASSIVE)
         prim_transformed = SVector(prim[SVector{NDIMS+1}(2:NDIMS+2)]...,
                                    prim[1],
-                                   ntuple(i->0, Val(NVARS-NPASSIVE-NDIMS-2))...,
+                                   prim[SVector{len-NDIMS-2}(
+                                        NDIMS+3:len)]...,
+                                   ntuple(i->0, Val(NVARS-NPASSIVE-len))...,
                                    initial_tracers...)
         return prim2cons(prim_transformed, equations)
     end
@@ -81,22 +86,33 @@ end
 # Transform source terms
 # By convention refers to conservative variables
 # in the form (rho, rho u, rho v, [rho w, ] rho X) with X being the thermodynamic quantitiy
-function transform_source_terms_sum(source_terms::Tuple{Function},
+function transform_source_terms_sum(source_terms::Tuple,
                                     ::AbstractCompressibleEulerAtmo)
     function source_terms_transformed(u, x, t,
         equations::AbstractCompressibleEulerAtmo{NDIMS, NVARS}) where
         {NDIMS, NVARS}
         # rearrange to match with convention
-        u_ref = SVector(u[NDIMS+2],
-                        u[SVector{NDIMS+1}(1:NDIMS+1)]...)
-        source_ref = mapreduce((f) -> f(u_ref, x, t, equations), + , source_terms)
+        #u_ref = SVector(u[NDIMS+2],
+        #                u[SVector{NDIMS+1}(1:NDIMS+1)]...,
+        #                u[SVector{NVARS-NDIMS-2}(NDIMS+3:NVARS)]...)
+
+        # evaluate and add source terms
+        source_ref = mapreduce(+, source_terms) do f
+            ret = f(u, x, t, equations)
+            SVector(ret..., ntuple(i->0, Val(NVARS-length(ret)))...)
+        end
+
+        return source_ref
         # rearrange back
-        return SVector(source_ref[SVector{NDIMS+1}(2:NDIMS+2)]...,
-                       source_ref[1],
-                       ntuple(i->0, Val(NVARS-NDIMS-2))...)
+        #return SVector(source_ref[SVector{NDIMS+1}(2:NDIMS+2)]...,
+        #               source_ref[1],
+        #               source_ref[SVector{NVARS-NDIMS-2}(NDIMS+3:NVARS)]...)
     end
     return source_terms_transformed
 end
+
+transform_source_terms(source_terms, equations::AbstractCompressibleEulerAtmo) =
+    transform_source_terms_sum((source_terms,), equations)
 
 end # @muladd
 

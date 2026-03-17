@@ -11,10 +11,26 @@ end
 varname_td(::typeof(cons2cons), ::TotalEnergy) = "rho_E"
 varname_td(::typeof(cons2prim), ::TotalEnergy) = "p"
 
+# TODO: T_ref!
+@inline function temperature(u, equations::CompressibleEulerAtmo{NDIMS}, ::TotalEnergy,
+                             td_state::IdealGas{RealType}) where
+                            {NDIMS, RealType}
+    @unpack cv = td_state
+
+    rho = u[NDIMS+2]
+    rho_moment = vars_moment(u, equations)
+
+    # Kinetic energy times rho
+    rho_Ekin = 0.5f0 * dot(rho_moment, rho_moment) / rho
+
+    return (u[NDIMS+1] - rho_Ekin) / (rho * cv)
+end
+
+# TODO: T_ref!
 @inline function temperature(u, equations::CompressibleEulerAtmo{NDIMS}, ::TotalEnergy,
                              td_state::IdealGasesAndLiquids{RealType}) where
                             {NDIMS, RealType}
-    @unpack cv_gas, c_condens, gas_constant, parameters = td_state
+    @unpack cv_gas, c_condens, gas_constant, latent_heat = td_state
 
     rho_total = density_total(u, equations)
     rho_gas = vars_gas(u, equations)
@@ -26,7 +42,7 @@ varname_td(::typeof(cons2prim), ::TotalEnergy) = "p"
     rho_Ekin = 0.5f0 * dot(rho_moment, rho_moment) / rho_total
 
     # Latent energy
-    rho_Elat = parameters.latent_heat_vaporization * rho_vapor
+    rho_Elat = latent_heat * rho_vapor
 
     # Absolute temperature
     rho_cv = dot(rho_gas, cv_gas) + dot(rho_condens, c_condens)
@@ -35,7 +51,7 @@ varname_td(::typeof(cons2prim), ::TotalEnergy) = "p"
 end
 
 @inline function pressure(u, equations::CompressibleEulerAtmo, ::TotalEnergy,
-                          td_state::IdealGasesAndLiquids)
+                          td_state::Union{IdealGas,IdealGasesAndLiquids})
     @unpack gas_constant = td_state
    
     rho_gas = vars_gas(u, equations)
@@ -59,27 +75,35 @@ end
     R_m = R_total(rho_gas, td_state)
     cp_m = cv_m + R_m
     T = temperature(u, equations)
-
+#@info T
     return sqrt(cp_m / cv_m * R_m * T)
 end
 
 @inline function flux_td(u, equations::CompressibleEulerAtmo{NDIMS}, ::TotalEnergy,
-                         ::IdealGasesAndLiquids) where {NDIMS}
+                         ::Union{IdealGas,IdealGasesAndLiquids}) where {NDIMS}
 
     p = pressure(u, equations)
     return u[NDIMS+1] + p
 end
 
-function prim2cons_td(prim, equations::CompressibleEulerAtmo{NDIMS}, ::TotalEnergy,
-                      td_state::IdealGas) where {NDIMS}
-    prim_moment = var_moment(prim, equations)
-
-    T = prim[NDIMS+1] / (prim[1] * td_state.gas_constant)
-    # internal + kinetic energy
-    return prim[1] * (td_state.cv * T +
-                      0.5f0 * dot(prim_moment, prim_moment))
+@inline function flux_lmars_td(p, v, ::CompressibleEulerAtmo{NDIMS, NVARS}, ::TotalEnergy) where {NDIMS, NVARS}
+    return SVector(ntuple(i->0, Val(NDIMS))...,
+                   p * v,
+                   ntuple(i->0, Val(NVARS-NDIMS-1))...)
 end
 
+function prim2cons_td(prim, equations::CompressibleEulerAtmo{NDIMS}, ::TotalEnergy,
+                      td_state::IdealGas) where {NDIMS}
+    prim_moment = vars_moment(prim, equations)
+
+    T = prim[NDIMS+1] / (prim[NDIMS+2] * td_state.gas_constant)
+    # internal + kinetic energy
+    return prim[NDIMS+2] * (td_state.cv * T +
+                           0.5f0 * dot(prim_moment, prim_moment))
+end
+
+# TODO check
+# TODO T_ref
 function prim2cons_td(prim, equations::CompressibleEulerAtmo{NDIMS, NVARS, NGAS},
                       ::TotalEnergy, td_state::IdealGasesAndLiquids) where
                       {NDIMS, NVARS, NGAS}
@@ -88,6 +112,7 @@ function prim2cons_td(prim, equations::CompressibleEulerAtmo{NDIMS, NVARS, NGAS}
 
     rho_total = prim2density_total(prim, equations)
     prim_gas = vars_gas(prim, equations)
+    prim_vapor = var_vapor(prim, equations)
     prim_condens = vars_condens(prim, equations)
     prim_moment = vars_moment(prim, equations)
 
@@ -104,7 +129,7 @@ function prim2cons_td(prim, equations::CompressibleEulerAtmo{NDIMS, NVARS, NGAS}
             dot(c_condens, prim_condens)) * T
 
     # latent heats
-    Elatent = dot(latent_heat, prim_condens) * rho_total
+    Elatent = latent_heat * prim_vapor
 
     # kinetic energy
     Ekinetic = 0.5f0 * dot(prim_moment, prim_moment)

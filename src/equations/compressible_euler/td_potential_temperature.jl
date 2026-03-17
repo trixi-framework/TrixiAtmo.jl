@@ -39,6 +39,10 @@ end
     return u[NDIMS+1]
 end
 
+@inline function flux_lmars_td(p, v, ::CompressibleEulerAtmo{NDIMS, NVARS}, ::PotentialTemperature) where {NDIMS, NVARS}
+    return SVector(ntuple(i->0, Val(NVARS))...)
+end
+
 function prim2cons_td(prim, equations::CompressibleEulerAtmo{NDIMS},
                       ::PotentialTemperature,
                       td_state::IdealGas) where {NDIMS}

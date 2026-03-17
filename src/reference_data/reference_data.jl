@@ -418,7 +418,5 @@ end
 end # @muladd
 
 include("auxiliary.jl")
-
-include("ic_bubble.jl")
-
-include("st_gravity.jl")
+include("initial_conditions/initial_conditions.jl")
+include("source_terms/source_terms.jl")

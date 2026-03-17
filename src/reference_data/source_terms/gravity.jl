@@ -1,12 +1,11 @@
-# By convention refers to conservative variables
-# in the form (rho, rho u, rho v, [rho w, ] rho X) with X being the thermodynamic quantit
+# By convention refers to conservative variables as defined in the equations
 
 @muladd begin
 #! format: noindent
 
 @inline function st_gravity_cartZ_td(u, ::CompressibleEulerAtmo{NDIMS}, ::TotalEnergy) where
     {NDIMS}
-    return u[NDIMS+1]
+    return u[NDIMS]
 end
 
 @inline function st_gravity_cartZ_td(u, ::CompressibleEulerAtmo{NDIMS},
@@ -20,12 +19,12 @@ function source_terms_gravity_cartZ_generator(equations::CompressibleEulerAtmo{N
 
     g = equations.parameters.earth_gravitational_acceleration
     function source_terms(u, x, t, equations)
-        rho = u[1]
+        rho = density_total(u, equations)
         u0 = zero(eltype(u))
 
         u_td = st_gravity_cartZ_td(u, equations, equations.td_equation)
 
-        return SVector(ntuple(i->u0, NDIMS)..., -g * rho, -g * u_td)
+        return SVector(ntuple(i->u0, NDIMS-1)..., -g * rho, -g * u_td)
     end
 end
 
@@ -34,7 +33,7 @@ end
     return dot(vars_moment(u, equations), x)
 end
 
-function source_terms_gravity_spherical_generator(equations::CompressibleEulerAtmo{3}) where {NDIMS}
+function source_terms_gravity_spherical_generator(equations::CompressibleEulerAtmo{3})
 
     g = equations.parameters.earth_gravitational_acceleration
     a = equations.parameters.radius_earth

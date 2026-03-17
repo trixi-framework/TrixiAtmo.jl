@@ -72,14 +72,13 @@ export NonlinearSolveDG
 export flux_chandrashekar, FluxLMARS
 
 export flux_nonconservative_zeros, flux_nonconservative_ec,
-       flux_nonconservative_surface_simplified, source_terms_geometric_coriolis,
-       source_terms_coriolis, source_terms_coriolis_lagrange_multiplier,
+       flux_nonconservative_surface_simplified,
        flux_tec, flux_etec, flux_nonconservative_souza_etal,
        flux_nonconservative_artiano_etal,
        flux_nonconservative_waruszewski_etal, flux_zero,
        flux_ec_rain, flux_LMARS
 
-export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!
+export clean_solution_lagrange_multiplier!
 
 export cons2prim_and_vorticity, contravariant2global
 
@@ -90,12 +89,23 @@ export P4estMeshCubedSphere2D, P4estMeshQuadIcosahedron2D, MetricTermsCrossProdu
 export EARTH_RADIUS, EARTH_GRAVITATIONAL_ACCELERATION,
        EARTH_ROTATION_RATE, SECONDS_PER_DAY
 
-export transform_initial_condition, transform_source_terms
+export transform_initial_condition, transform_source_terms, transform_source_terms_sum
 
 export initial_condition_gaussian, initial_condition_geostrophic_balance,
        initial_condition_rossby_haurwitz, initial_condition_isolated_mountain,
        initial_condition_unsteady_solid_body_rotation,
        initial_condition_barotropic_instability
+
+export initial_condition_bryan_fritsch_bubble_generator,
+       initial_condition_rainy_mountain_generator
+
+export source_terms_geometric_coriolis,
+       source_terms_coriolis,
+       source_terms_lagrange_multiplier,
+       source_terms_coriolis_lagrange_multiplier,       
+       source_terms_gravity_cartZ_generator,
+       source_terms_phase_change_generator,
+       source_terms_rayleigh_damping_generator
 
 export bottom_topography_isolated_mountain, bottom_topography_unsteady_solid_body_rotation
 

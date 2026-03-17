@@ -10,17 +10,17 @@ abstract type AbstractThermodynamicState{RealType, NGAS, NCONDENS, NPRECIP} end
 varnames_gas(::Union{typeof(cons2cons), typeof(cons2prim)},
              ::AbstractThermodynamicState{RealType, NGAS, NCONDENS, NPRECIP}) where
              {RealType, NGAS, NCONDENS, NPRECIP} =
-    ntuple(i -> "_gas_$i", Val(NGAS))
+    ntuple(i -> "gas_$i", Val(NGAS))
 
 varnames_liquid(::Union{typeof(cons2cons), typeof(cons2prim)},
                 ::AbstractThermodynamicState{RealType, NGAS, NCONDENS, NPRECIP}) where
                 {RealType, NGAS, NCONDENS, NPRECIP} =
-    ntuple(i -> "_liquid_$i", Val(NCONDENS))
+    ntuple(i -> "liquid_$i", Val(NCONDENS))
 
 varnames_precip(::Union{typeof(cons2cons), typeof(cons2prim)},
                 ::AbstractThermodynamicState{RealType, NGAS, NCONDENS, NPRECIP}) where
                 {RealType, NGAS, NCONDENS, NPRECIP} =
-    ntuple(i -> "_precip_$i", Val(NPRECIP))
+    ntuple(i -> "precip_$i", Val(NPRECIP))
 
 @inline function Base.real(::AbstractThermodynamicState{RealType}) where {RealType}
     return RealType
@@ -51,8 +51,8 @@ end
     return td_state.gamma
 end
 
-varnames_gas(::typeof(cons2cons), ::IdealGas) = ("", )
-
+varnames_gas(::Union{typeof(cons2cons), typeof(cons2prim)},
+             ::IdealGas) = ("", )
 
 
 ############################################################################################
@@ -63,7 +63,7 @@ varnames_gas(::typeof(cons2cons), ::IdealGas) = ("", )
 
 This designed to be in line with CompressibleEulerAtmo
 
-Select how many of the following predefined will be used:
+Select how many of the following predefined species will be used:
 
 Gaseous species (n_gas)
 1. dry air
@@ -84,7 +84,7 @@ struct IdealGasesAndLiquids{ParametersType, NGAS, NCONDENS, NPRECIP, RealType} <
     cp_gas::SVector{NGAS, RealType}
     gas_constant::SVector{NGAS, RealType}
     c_condens::SVector{NCONDENS, RealType}
-    latent_heat::SVector{NCONDENS, RealType}
+    latent_heat::RealType # TODO size?
 
     varnames_gas::SVector{NGAS, String}
     varnames_liquid::SVector{NCONDENS, String}
@@ -101,14 +101,14 @@ struct IdealGasesAndLiquids{ParametersType, NGAS, NCONDENS, NPRECIP, RealType} <
         cv_gas_params = [:c_dry_air_const_volume, :c_vapour_const_volume]
         cp_gas_params = [:c_dry_air_const_pressure, :c_vapour_const_pressure]
         c_condens_param = [:c_liquid_water]
-        latent_heat = [:latent_heat_vaporization]
+        latent_heat = [:ref_latent_heat_vaporization]
 
         cv_gas = SVector{n_gas}(getproperty(parameters, cv_gas_params[i]) for i in 1:n_gas)
         cp_gas = SVector{n_gas}(getproperty(parameters, cp_gas_params[i]) for i in 1:n_gas)
         c_condens = SVector{n_condens}(getproperty(parameters, c_condens_param[i])
                                         for i in 1:n_condens)
-        latent_heat = SVector{n_condens}(getproperty(parameters, latent_heat[i])
-                                        for i in 1:n_condens)
+        latent_heat = getproperty(parameters, latent_heat[1])
+
         gas_constant = cp_gas .- cv_gas
 
         varnames_gas = SVector{n_gas}(["_dry", "_vapor"][1:n_gas])
@@ -121,13 +121,13 @@ struct IdealGasesAndLiquids{ParametersType, NGAS, NCONDENS, NPRECIP, RealType} <
     end
 end
 
-varnames_gas(::typeof(cons2cons),
+varnames_gas(::Union{typeof(cons2cons), typeof(cons2prim)},
              td_state::IdealGasesAndLiquids) = td_state.varnames_gas
 
-varnames_liquid(::typeof(cons2cons),
+varnames_liquid(::Union{typeof(cons2cons), typeof(cons2prim)},
                 td_state::IdealGasesAndLiquids) = td_state.varnames_liquid
 
-varnames_precip(::typeof(cons2cons),
+varnames_precip(::Union{typeof(cons2cons), typeof(cons2prim)},
                 td_state::IdealGasesAndLiquids) = td_state.varnames_precip
 
 # used in equation of state: p = rho R T    
