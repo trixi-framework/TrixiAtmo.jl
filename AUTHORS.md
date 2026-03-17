@@ -6,6 +6,7 @@ Together, they form "The TrixiAtmo.jl Authors" as mentioned in the [LICENSE.md](
 file.
 
 * Marco Artiano
+* Philipp Baasch
 * Arpit Babbar
 * Daniel Döhring
 * Gregor Gassner

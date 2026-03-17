@@ -15,12 +15,13 @@ using Printf: @sprintf
 using Static: True, False
 using StrideArrays: PtrArray
 using StaticArrayInterface: static_size
-using LinearAlgebra: cross, norm, dot, det
+using LinearAlgebra: Diagonal, I, cross, norm, dot, det, diagm
 using Reexport: @reexport
 using LoopVectorization: @turbo
 using QuadGK: quadgk
 using ForwardDiff: derivative
 using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
+using Setfield
 
 @reexport using StaticArrays: SVector, SMatrix
 @reexport import Trixi: waterheight, varnames, cons2cons, cons2prim,
@@ -34,6 +35,9 @@ using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
                         flux_ranocha, flux_kennedy_gruber
 
 using Trixi: ln_mean, stolarsky_mean, inv_ln_mean
+
+# DGMulti Solvers
+using StartUpDG: MeshData, RefElemData
 
 include("auxiliary/auxiliary.jl")
 include("equations/equations.jl")
@@ -77,9 +81,9 @@ export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!
 
 export cons2prim_and_vorticity, contravariant2global
 
-export P4estMeshCubedSphere2D, P4estMeshQuadIcosahedron2D, MetricTermsCrossProduct,
-       MetricTermsInvariantCurl, MetricTermsCovariantSphere, ChristoffelSymbolsAutodiff,
-       ChristoffelSymbolsCollocationDerivative
+export P4estMeshCubedSphere2D, P4estMeshQuadIcosahedron2D, DGMultiMeshTriIcosahedron2D
+MetricTermsCrossProduct, MetricTermsInvariantCurl, MetricTermsCovariantSphere,
+ChristoffelSymbolsAutodiff, ChristoffelSymbolsCollocationDerivative
 
 export EARTH_RADIUS, EARTH_GRAVITATIONAL_ACCELERATION,
        EARTH_ROTATION_RATE, SECONDS_PER_DAY
