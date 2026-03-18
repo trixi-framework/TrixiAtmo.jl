@@ -107,17 +107,17 @@ Should be used together with [`UnstructuredMesh2D`](@ref).
     # Eleuterio F. Toro (2009)
     # Riemann Solvers and Numerical Methods for Fluid Dynamics: A Practical Introduction
     # [DOI: 10.1007/b79761](https://doi.org/10.1007/b79761)
-    if v_normal <= 0.0
+    if v_normal <= 0
         sound_speed = sqrt(equations.gamma * p_local / rho_local) # local sound speed
         p_star = p_local *
-                 (1 + 0.5 * (equations.gamma - 1) * v_normal / sound_speed)^(2 *
-                                                                             equations.gamma *
-                                                                             equations.inv_gamma_minus_one)
+                 (1 + 0.5f0 * (equations.gamma - 1) * v_normal / sound_speed)^(2 *
+                                                                               equations.gamma *
+                                                                               equations.inv_gamma_minus_one)
     else # v_normal > 0.0
         A = 2 / ((equations.gamma + 1) * rho_local)
         B = p_local * (equations.gamma - 1) / (equations.gamma + 1)
         p_star = p_local +
-                 0.5 * v_normal / A *
+                 0.5f0 * v_normal / A *
                  (v_normal + sqrt(v_normal^2 + 4 * A * (p_local + B)))
     end
 
@@ -189,7 +189,7 @@ end
     v1 = rho_v1 / rho
     v2 = rho_v2 / rho
     p = (equations.gamma - 1) *
-        (rho_etot - 0.5 * (rho_v1 * v1 + rho_v2 * v2) - rho * phi)
+        (rho_etot - 0.5f0 * (rho_v1 * v1 + rho_v2 * v2) - rho * phi)
     if orientation == 1
         f1 = rho_v1
         f2 = rho_v1 * v1 + p
@@ -281,7 +281,7 @@ end
     v2_avg = 1 / 2 * (v2_ll + v2_rr)
     v_dot_n_avg = 1 / 2 * (v_dot_n_ll + v_dot_n_rr)
     p_avg = 1 / 2 * (p_ll + p_rr)
-    velocity_square_avg = 0.5 * (v1_ll * v1_rr + v2_ll * v2_rr)
+    velocity_square_avg = 0.5f0 * (v1_ll * v1_rr + v2_ll * v2_rr)
 
     # Calculate fluxes depending on normal_direction
     f1 = rho_avg * v_dot_n_avg
@@ -289,7 +289,7 @@ end
     f3 = f1 * v2_avg + p_avg * normal_direction[2]
     f4 = (f1 * velocity_square_avg +
           p_avg * v_dot_n_avg * equations.inv_gamma_minus_one
-          + 0.5 * (p_ll * v_dot_n_rr + p_rr * v_dot_n_ll))
+          + 0.5f0 * (p_ll * v_dot_n_rr + p_rr * v_dot_n_ll))
 
     return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
 end
@@ -344,12 +344,12 @@ end
     rho_rr, v1_rr, v2_rr, p_rr, _ = cons2prim(u_rr, equations)
 
     # Average each factor of products in flux
-    rho_avg = 0.5 * (rho_ll + rho_rr)
-    v1_avg = 0.5 * (v1_ll + v1_rr)
-    v2_avg = 0.5 * (v2_ll + v2_rr)
+    rho_avg = 0.5f0 * (rho_ll + rho_rr)
+    v1_avg = 0.5f0 * (v1_ll + v1_rr)
+    v2_avg = 0.5f0 * (v2_ll + v2_rr)
     v_dot_n_avg = v1_avg * normal_direction[1] + v2_avg * normal_direction[2]
-    p_avg = 0.5 * (p_ll + p_rr)
-    etot_avg = 0.5 * (rho_etot_ll / rho_ll + rho_etot_rr / rho_rr)
+    p_avg = 0.5f0 * (p_ll + p_rr)
+    etot_avg = 0.5f0 * (rho_etot_ll / rho_ll + rho_etot_rr / rho_rr)
 
     # Calculate fluxes depending on normal_direction
     f1 = rho_avg * v_dot_n_avg
@@ -374,19 +374,19 @@ Entropy conserving two-point flux by
     # Unpack left and right state
     rho_ll, v1_ll, v2_ll, p_ll, _ = cons2prim(u_ll, equations)
     rho_rr, v1_rr, v2_rr, p_rr, _ = cons2prim(u_rr, equations)
-    beta_ll = 0.5 * rho_ll / p_ll
-    beta_rr = 0.5 * rho_rr / p_rr
-    specific_kin_ll = 0.5 * (v1_ll^2 + v2_ll^2)
-    specific_kin_rr = 0.5 * (v1_rr^2 + v2_rr^2)
+    beta_ll = 0.5f0 * rho_ll / p_ll
+    beta_rr = 0.5f0 * rho_rr / p_rr
+    specific_kin_ll = 0.5f0 * (v1_ll^2 + v2_ll^2)
+    specific_kin_rr = 0.5f0 * (v1_rr^2 + v2_rr^2)
 
     # Compute the necessary mean values
-    rho_avg = 0.5 * (rho_ll + rho_rr)
+    rho_avg = 0.5f0 * (rho_ll + rho_rr)
     rho_mean = ln_mean(rho_ll, rho_rr)
     beta_mean = ln_mean(beta_ll, beta_rr)
-    beta_avg = 0.5 * (beta_ll + beta_rr)
-    v1_avg = 0.5 * (v1_ll + v1_rr)
-    v2_avg = 0.5 * (v2_ll + v2_rr)
-    p_mean = 0.5 * rho_avg / beta_avg
+    beta_avg = 0.5f0 * (beta_ll + beta_rr)
+    v1_avg = 0.5f0 * (v1_ll + v1_rr)
+    v2_avg = 0.5f0 * (v2_ll + v2_rr)
+    p_mean = 0.5f0 * rho_avg / beta_avg
     velocity_square_avg = specific_kin_ll + specific_kin_rr
 
     # Calculate fluxes depending on orientation
@@ -394,13 +394,15 @@ Entropy conserving two-point flux by
         f1 = rho_mean * v1_avg
         f2 = f1 * v1_avg + p_mean
         f3 = f1 * v2_avg
-        f4 = f1 * 0.5 * (1 / (equations.gamma - 1) / beta_mean - velocity_square_avg) +
+        f4 = f1 * 0.5f0 *
+             (1 / (equations.gamma - 1) / beta_mean - velocity_square_avg) +
              f2 * v1_avg + f3 * v2_avg
     else
         f1 = rho_mean * v2_avg
         f2 = f1 * v1_avg
         f3 = f1 * v2_avg + p_mean
-        f4 = f1 * 0.5 * (1 / (equations.gamma - 1) / beta_mean - velocity_square_avg) +
+        f4 = f1 * 0.5f0 *
+             (1 / (equations.gamma - 1) / beta_mean - velocity_square_avg) +
              f2 * v1_avg + f3 * v2_avg
     end
 
@@ -435,10 +437,10 @@ See also
     #     log((ϱₗ/pₗ) / (ϱᵣ/pᵣ)) / (ϱₗ/pₗ - ϱᵣ/pᵣ)
     #   = pₗ pᵣ log((ϱₗ pᵣ) / (ϱᵣ pₗ)) / (ϱₗ pᵣ - ϱᵣ pₗ)
     inv_rho_p_mean = p_ll * p_rr * inv_ln_mean(rho_ll * p_rr, rho_rr * p_ll)
-    v1_avg = 0.5 * (v1_ll + v1_rr)
-    v2_avg = 0.5 * (v2_ll + v2_rr)
-    p_avg = 0.5 * (p_ll + p_rr)
-    velocity_square_avg = 0.5 * (v1_ll * v1_rr + v2_ll * v2_rr)
+    v1_avg = 0.5f0 * (v1_ll + v1_rr)
+    v2_avg = 0.5f0 * (v2_ll + v2_rr)
+    p_avg = 0.5f0 * (p_ll + p_rr)
+    velocity_square_avg = 0.5f0 * (v1_ll * v1_rr + v2_ll * v2_rr)
 
     # Calculate fluxes depending on orientation
     if orientation == 1
@@ -447,14 +449,14 @@ See also
         f3 = f1 * v2_avg
         f4 = f1 *
              (velocity_square_avg + inv_rho_p_mean * equations.inv_gamma_minus_one) +
-             0.5 * (p_ll * v1_rr + p_rr * v1_ll)
+             0.5f0 * (p_ll * v1_rr + p_rr * v1_ll)
     else
         f1 = rho_mean * v2_avg
         f2 = f1 * v1_avg
         f3 = f1 * v2_avg + p_avg
         f4 = f1 *
              (velocity_square_avg + inv_rho_p_mean * equations.inv_gamma_minus_one) +
-             0.5 * (p_ll * v2_rr + p_rr * v2_ll)
+             0.5f0 * (p_ll * v2_rr + p_rr * v2_ll)
     end
 
     return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
@@ -475,18 +477,18 @@ end
     #     log((ϱₗ/pₗ) / (ϱᵣ/pᵣ)) / (ϱₗ/pₗ - ϱᵣ/pᵣ)
     #   = pₗ pᵣ log((ϱₗ pᵣ) / (ϱᵣ pₗ)) / (ϱₗ pᵣ - ϱᵣ pₗ)
     inv_rho_p_mean = p_ll * p_rr * inv_ln_mean(rho_ll * p_rr, rho_rr * p_ll)
-    v1_avg = 0.5 * (v1_ll + v1_rr)
-    v2_avg = 0.5 * (v2_ll + v2_rr)
-    p_avg = 0.5 * (p_ll + p_rr)
-    velocity_square_avg = 0.5 * (v1_ll * v1_rr + v2_ll * v2_rr)
+    v1_avg = 0.5f0 * (v1_ll + v1_rr)
+    v2_avg = 0.5f0 * (v2_ll + v2_rr)
+    p_avg = 0.5f0 * (p_ll + p_rr)
+    velocity_square_avg = 0.5f0 * (v1_ll * v1_rr + v2_ll * v2_rr)
 
     # Calculate fluxes depending on normal_direction
-    f1 = rho_mean * 0.5 * (v_dot_n_ll + v_dot_n_rr)
+    f1 = rho_mean * 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
     f2 = f1 * v1_avg + p_avg * normal_direction[1]
     f3 = f1 * v2_avg + p_avg * normal_direction[2]
     f4 = (f1 * (velocity_square_avg + inv_rho_p_mean * equations.inv_gamma_minus_one)
           +
-          0.5 * (p_ll * v_dot_n_rr + p_rr * v_dot_n_ll))
+          0.5f0 * (p_ll * v_dot_n_rr + p_rr * v_dot_n_ll))
 
     return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
 end
@@ -745,7 +747,7 @@ end
     v1 = rho_v1 / rho
     v2 = rho_v2 / rho
     p = (equations.gamma - 1) *
-        (rho_etot - 0.5 * (rho_v1 * v1 + rho_v2 * v2) - rho * phi)
+        (rho_etot - 0.5f0 * (rho_v1 * v1 + rho_v2 * v2) - rho * phi)
 
     return SVector(rho, v1, v2, p, phi)
 end
@@ -758,12 +760,12 @@ end
     v1 = rho_v1 / rho
     v2 = rho_v2 / rho
     v_square = v1^2 + v2^2
-    p = (equations.gamma - 1) * (rho_etot - 0.5 * rho * v_square - rho * phi)
+    p = (equations.gamma - 1) * (rho_etot - 0.5f0 * rho * v_square - rho * phi)
     s = log(p) - equations.gamma * log(rho)
     rho_p = rho / p
 
     w1 = (equations.gamma - s) * equations.inv_gamma_minus_one -
-         rho_p * (0.5 * v_square - phi)
+         rho_p * (0.5f0 * v_square - phi)
     w2 = rho_p * v1
     w3 = rho_p * v2
     w4 = -rho_p
@@ -800,7 +802,7 @@ end
     rho, v1, v2, p, phi = prim
     rho_v1 = rho * v1
     rho_v2 = rho * v2
-    rho_etot = p * equations.inv_gamma_minus_one + 0.5 * (rho_v1 * v1 + rho_v2 * v2) +
+    rho_etot = p * equations.inv_gamma_minus_one + 0.5f0 * (rho_v1 * v1 + rho_v2 * v2) +
                rho * phi
     return SVector(rho, rho_v1, rho_v2, rho_etot, phi)
 end
@@ -813,7 +815,7 @@ end
 @inline function Trixi.pressure(u, equations::CompressibleEulerEquationsWithGravity2D)
     rho, rho_v1, rho_v2, rho_etot, phi = u
     p = (equations.gamma - 1) *
-        (rho_etot - 0.5 * (rho_v1^2 + rho_v2^2) / rho - rho * phi)
+        (rho_etot - 0.5f0 * (rho_v1^2 + rho_v2^2) / rho - rho * phi)
     return p
 end
 
@@ -821,7 +823,7 @@ end
                                         equations::CompressibleEulerEquationsWithGravity2D)
     rho, rho_v1, rho_v2, rho_etot, phi = u
     rho_times_p = (equations.gamma - 1) *
-                  (rho * rho_etot - 0.5 * (rho_v1^2 + rho_v2^2) - rho^2 * phi)
+                  (rho * rho_etot - 0.5f0 * (rho_v1^2 + rho_v2^2) - rho^2 * phi)
     return rho_times_p
 end
 
@@ -883,7 +885,7 @@ end
                                                               equations::CompressibleEulerEquationsWithGravity2D)
     λ = dissipation.max_abs_speed(u_ll, u_rr, orientation_or_normal_direction,
                                   equations)
-    diss = -0.5 * λ * (u_rr - u_ll)
+    diss = -0.5f0 * λ * (u_rr - u_ll)
     return SVector(diss[1], diss[2], diss[3], diss[4], zero(eltype(u_ll)))
 end
 end # @muladd
