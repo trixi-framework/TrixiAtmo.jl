@@ -2,7 +2,7 @@
 # DGSEM for the linear advection equation on a prismed icosahedral grid
 ###############################################################################
 
-using OrdinaryDiffEq, Trixi, TrixiAtmo
+using OrdinaryDiffEqLowStorageRK, Trixi, TrixiAtmo
 
 ###############################################################################
 # Spatial discretization
