@@ -97,7 +97,7 @@ function Trixi.calc_interface_flux!(cache, surface_integral::SurfaceIntegralWeak
         uP = u_face_values[idP]
         auxM = aux_face_values[idM]
         auxP = aux_face_values[idP]
-        
+
         # Transform uP to the same coordinate system as uM
         uP_global = contravariant2global(uP, auxP, equations)
         uP_transformed_to_M = global2contravariant(uP_global, auxM, equations)
