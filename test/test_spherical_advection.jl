@@ -118,7 +118,7 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "Spherical advection on icosahedral grid, covariant weak form, LLF surface flux" begin
+@trixi_testset "Spherical advection on quad icosahedral grid, covariant weak form, LLF surface flux" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/covariant",
                                  "elixir_quad_icosahedron.jl"),
                         l2=[0.5183886767005157, 0.0, 0.0],
@@ -128,7 +128,7 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
-@trixi_testset "Spherical advection on icosahedral grid, covariant weak form, LLF surface flux" begin
+@trixi_testset "Spherical advection on tri icosahedral grid, covariant weak form, LLF surface flux" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/covariant",
                                  "elixir_tri_icosahedron.jl"),
                         l2=[
