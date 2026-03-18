@@ -69,7 +69,7 @@ const TRIXI_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
         end
     end
 
-    @time if TRIXIATMO_TEST == "all" || TRIXIATMO_TEST == "euler_gravity"
+    @time if TRIXI_TEST == "all" || TRIXI_TEST == "euler_gravity"
         include("test_2d_euler_gravity.jl")
     end
 
