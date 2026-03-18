@@ -24,8 +24,10 @@ end
                                  "elixir_euler_gravity_equilibrium.jl"),
                         l2=[0.0, 0.0, 0.0, 0.0, 0.0],
                         linf=[0.0, 0.0, 0.0, 0.0, 0.0],
-                        volume_flux=(flux_kennedy_gruber, flux_nonconservative_waruszewski),
-                        surface_flux=(flux_kennedy_gruber, flux_nonconservative_waruszewski))
+                        volume_flux=(flux_kennedy_gruber,
+                                     flux_nonconservative_waruszewski_etal),
+                        surface_flux=(flux_kennedy_gruber,
+                                      flux_nonconservative_waruszewski_etal))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let
@@ -41,8 +43,8 @@ end
                                  "elixir_euler_gravity_equilibrium.jl"),
                         l2=[0.0, 0.0, 0.0, 0.0, 0.0],
                         linf=[0.0, 0.0, 0.0, 0.0, 0.0],
-                        volume_flux=(flux_ranocha, flux_nonconservative_waruszewski),
-                        surface_flux=(flux_ranocha, flux_nonconservative_waruszewski))
+                        volume_flux=(flux_ranocha, flux_nonconservative_waruszewski_etal),
+                        surface_flux=(flux_ranocha, flux_nonconservative_waruszewski_etal))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     let
