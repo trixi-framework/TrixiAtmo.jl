@@ -1,14 +1,11 @@
-module TestSphericalAdvection
-
-using Test
-using TrixiAtmo
+module Test2DEulerGravity
 
 include("test_trixiatmo.jl")
 
-EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
+EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler/dry_air")
 
-@trixiatmo_testset "elixir_euler_gravity_equilibrium (Shima + LLF)" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
+@trixi_testset "elixir_euler_gravity_equilibrium (Shima + LLF)" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "tests",
                                  "elixir_euler_gravity_equilibrium.jl"),
                         l2=[0.0, 0.0, 0.0, 0.0, 0.0],
                         linf=[0.0, 0.0, 0.0, 0.0, 0.0])
@@ -22,8 +19,8 @@ EXAMPLES_DIR = pkgdir(TrixiAtmo, "examples")
     end
 end
 
-@trixiatmo_testset "elixir_euler_gravity_equilibrium (Kennedy-Gruber)" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
+@trixi_testset "elixir_euler_gravity_equilibrium (Kennedy-Gruber)" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "tests",
                                  "elixir_euler_gravity_equilibrium.jl"),
                         l2=[0.0, 0.0, 0.0, 0.0, 0.0],
                         linf=[0.0, 0.0, 0.0, 0.0, 0.0],
@@ -39,8 +36,8 @@ end
     end
 end
 
-@trixiatmo_testset "elixir_euler_gravity_equilibrium (Ranocha)" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
+@trixi_testset "elixir_euler_gravity_equilibrium (Ranocha)" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "tests",
                                  "elixir_euler_gravity_equilibrium.jl"),
                         l2=[0.0, 0.0, 0.0, 0.0, 0.0],
                         linf=[0.0, 0.0, 0.0, 0.0, 0.0],

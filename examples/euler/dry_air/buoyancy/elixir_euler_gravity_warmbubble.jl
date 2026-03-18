@@ -81,7 +81,7 @@ equations = CompressibleEulerEquationsWithGravity2D(warm_bubble_setup.gamma)
 initial_condition = warm_bubble_setup
 
 volume_flux = (flux_kennedy_gruber, flux_nonconservative_waruszewski)
-surface_flux = (FluxLMARS(340.0), flux_nonconservative_waruszewski)
+surface_flux = (FluxLMARS(340.0), flux_zero)
 
 polydeg = 3
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,

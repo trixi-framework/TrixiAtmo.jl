@@ -1,5 +1,5 @@
-
-using OrdinaryDiffEq
+using OrdinaryDiffEqLowStorageRK
+using TrixiAtmo
 using Trixi
 
 ###############################################################################
@@ -19,7 +19,7 @@ end
 initial_condition = initial_condition_constant
 
 volume_flux = (flux_shima_etal, flux_nonconservative_waruszewski)
-surface_flux = (flux_lax_friedrichs, flux_nonconservative_waruszewski)
+surface_flux = (flux_lax_friedrichs, flux_zero)
 
 polydeg = 3
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,

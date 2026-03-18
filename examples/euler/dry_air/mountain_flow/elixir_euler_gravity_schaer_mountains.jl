@@ -1,4 +1,5 @@
-using OrdinaryDiffEq
+using OrdinaryDiffEqLowStorageRK
+using TrixiAtmo
 using Trixi
 
 #schaer mountain test case 
@@ -74,15 +75,15 @@ equations = CompressibleEulerEquationsWithGravity2D(1004.0 / 717.0)
 
 initial_condition = initial_condition_schaer_mountain
 
-boundary_conditions_dirichlet = Dict(:x_neg => BoundaryConditionDirichlet(initial_condition_schaer_mountain),
-                                     :x_pos => BoundaryConditionDirichlet(initial_condition_schaer_mountain),
-                                     :y_neg => boundary_condition_slip_wall,
-                                     :y_pos => boundary_condition_slip_wall)
+boundary_conditions_dirichlet = (x_neg = BoundaryConditionDirichlet(initial_condition_schaer_mountain),
+                                 x_pos = BoundaryConditionDirichlet(initial_condition_schaer_mountain),
+                                 y_neg = boundary_condition_slip_wall,
+                                 y_pos = boundary_condition_slip_wall)
 
 basis = LobattoLegendreBasis(polydeg)
 
-volume_flux = (flux_kennedy_gruber, flux_nonconservative_waruszewski)
-surface_flux = (FluxLMARS(340.0), flux_nonconservative_waruszewski)
+volume_flux = (flux_shima_etal, flux_nonconservative_waruszewski)
+surface_flux = (FluxLMARS(340.0), flux_zero)
 
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
@@ -131,5 +132,3 @@ sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
             maxiters = 1.0e7,
             dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
             save_everystep = false, callback = callbacks);
-
-summary_callback()
