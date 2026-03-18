@@ -7,21 +7,21 @@
 @doc raw"""
     CompressibleEulerEquationsWithGravity2D(gamma)
 
-The compressible Euler equations with gravity,
+The compressible Euler equations with gravity and total energy,
 ```math
 \frac{\partial}{\partial t}
 \begin{pmatrix}
-\rho \\ \rho v_1 \\ \rho v_2 \\ \rho e \\ \Phi
+\rho \\ \rho v_1 \\ \rho v_2 \\ \rho e_{tot} \\ \Phi
 \end{pmatrix}
 +
 \frac{\partial}{\partial x}
 \begin{pmatrix}
-    \rho v_1 \\ \rho v_1^2 + p \\ \rho v_1 v_2 \\ (\rho e +p) v_1 \\ 0
+    \rho v_1 \\ \rho v_1^2 + p \\ \rho v_1 v_2 \\ (\rho e_{tot} +p) v_1 \\ 0
 \end{pmatrix}
 +
 \frac{\partial}{\partial y}
 \begin{pmatrix}
-\rho v_2 \\ \rho v_1 v_2 \\ \rho v_2^2 + p \\ (\rho e +p) v_2 \\ 0
+    \rho v_2 \\ \rho v_1 v_2 \\ \rho v_2^2 + p \\ (\rho e_{tot} +p) v_2 \\ 0
 \end{pmatrix}
 =
 \begin{pmatrix}
@@ -30,7 +30,7 @@ The compressible Euler equations with gravity,
 ```
 for an ideal gas with ratio of specific heat `gamma` in two space dimensions.
 
-Here, ``\rho`` is the density, ``v_1``,`v_2` the velocities, ``e`` the specific total energy, 
+Here, ``\rho`` is the density, ``v_1``,`v_2` the velocities, ``e_{tot}`` the specific total energy, 
 which includes the internal, kinetik, and geopotential energy, `\Phi` is the gravitational 
 geopotential, and
 ```math
@@ -57,27 +57,13 @@ Trixi.have_nonconservative_terms(::CompressibleEulerEquationsWithGravity2D) = Tr
 Trixi.varnames(::typeof(cons2cons), ::CompressibleEulerEquationsWithGravity2D) = ("rho",
                                                                                   "rho_v1",
                                                                                   "rho_v2",
-                                                                                  "rho_e",
+                                                                                  "rho_etot",
                                                                                   "phi")
 Trixi.varnames(::typeof(cons2prim), ::CompressibleEulerEquationsWithGravity2D) = ("rho",
                                                                                   "v1",
                                                                                   "v2",
                                                                                   "p",
                                                                                   "phi")
-
-# Set initial conditions at physical location `x` for time `t`
-# """
-#     initial_condition_constant(x, t, equations::CompressibleEulerEquationsWithGravity2D)
-
-# A constant initial condition to test free-stream preservation.
-# """
-# function initial_condition_constant(x, t, equations::CompressibleEulerEquationsWithGravity2D)
-#   rho = 1.0
-#   rho_v1 = 0.1
-#   rho_v2 = -0.2
-#   rho_e = 10.0
-#   return SVector(rho, rho_v1, rho_v2, rho_e)
-# end
 
 """
     boundary_condition_slip_wall(u_inner, normal_direction, x, t, surface_flux_function,
@@ -199,20 +185,21 @@ end
 # Calculate 2D flux for a single point
 @inline function Trixi.flux(u, orientation::Integer,
                             equations::CompressibleEulerEquationsWithGravity2D)
-    rho, rho_v1, rho_v2, rho_e, phi = u
+    rho, rho_v1, rho_v2, rho_etot, phi = u
     v1 = rho_v1 / rho
     v2 = rho_v2 / rho
-    p = (equations.gamma - 1) * (rho_e - 0.5 * (rho_v1 * v1 + rho_v2 * v2) - rho * phi)
+    p = (equations.gamma - 1) *
+        (rho_etot - 0.5 * (rho_v1 * v1 + rho_v2 * v2) - rho * phi)
     if orientation == 1
         f1 = rho_v1
         f2 = rho_v1 * v1 + p
         f3 = rho_v1 * v2
-        f4 = (rho_e + p) * v1
+        f4 = (rho_etot + p) * v1
     else
         f1 = rho_v2
         f2 = rho_v2 * v1
         f3 = rho_v2 * v2 + p
-        f4 = (rho_e + p) * v2
+        f4 = (rho_etot + p) * v2
     end
     return SVector(f1, f2, f3, f4, zero(eltype(u)))
 end
@@ -221,7 +208,7 @@ end
 # Note, this directional vector is not normalized
 @inline function Trixi.flux(u, normal_direction::AbstractVector,
                             equations::CompressibleEulerEquationsWithGravity2D)
-    rho_e = u[4]
+    rho_etot = u[4]
     rho, v1, v2, p, _ = cons2prim(u, equations)
 
     v_normal = v1 * normal_direction[1] + v2 * normal_direction[2]
@@ -229,7 +216,7 @@ end
     f1 = rho_v_normal
     f2 = rho_v_normal * v1 + p * normal_direction[1]
     f3 = rho_v_normal * v2 + p * normal_direction[2]
-    f4 = (rho_e + p) * v_normal
+    f4 = (rho_etot + p) * v_normal
     return SVector(f1, f2, f3, f4, zero(eltype(u)))
 end
 
@@ -320,8 +307,8 @@ Kinetic energy preserving two-point flux by
 @inline function Trixi.flux_kennedy_gruber(u_ll, u_rr, orientation::Integer,
                                            equations::CompressibleEulerEquationsWithGravity2D)
     # Unpack left and right state
-    rho_e_ll = u_ll[4]
-    rho_e_rr = u_rr[4]
+    rho_etot_ll = u_ll[4]
+    rho_etot_rr = u_rr[4]
     rho_ll, v1_ll, v2_ll, p_ll, _ = cons2prim(u_ll, equations)
     rho_rr, v1_rr, v2_rr, p_rr, _ = cons2prim(u_rr, equations)
 
@@ -330,19 +317,19 @@ Kinetic energy preserving two-point flux by
     v1_avg = 1 / 2 * (v1_ll + v1_rr)
     v2_avg = 1 / 2 * (v2_ll + v2_rr)
     p_avg = 1 / 2 * (p_ll + p_rr)
-    e_avg = 1 / 2 * (rho_e_ll / rho_ll + rho_e_rr / rho_rr)
+    etot_avg = 1 / 2 * (rho_etot_ll / rho_ll + rho_etot_rr / rho_rr)
 
     # Calculate fluxes depending on orientation
     if orientation == 1
         f1 = rho_avg * v1_avg
         f2 = rho_avg * v1_avg * v1_avg + p_avg
         f3 = rho_avg * v1_avg * v2_avg
-        f4 = (rho_avg * e_avg + p_avg) * v1_avg
+        f4 = (rho_avg * etot_avg + p_avg) * v1_avg
     else
         f1 = rho_avg * v2_avg
         f2 = rho_avg * v2_avg * v1_avg
         f3 = rho_avg * v2_avg * v2_avg + p_avg
-        f4 = (rho_avg * e_avg + p_avg) * v2_avg
+        f4 = (rho_avg * etot_avg + p_avg) * v2_avg
     end
 
     return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
@@ -351,8 +338,8 @@ end
 @inline function Trixi.flux_kennedy_gruber(u_ll, u_rr, normal_direction::AbstractVector,
                                            equations::CompressibleEulerEquationsWithGravity2D)
     # Unpack left and right state
-    rho_e_ll = u_ll[4]
-    rho_e_rr = u_rr[4]
+    rho_etot_ll = u_ll[4]
+    rho_etot_rr = u_rr[4]
     rho_ll, v1_ll, v2_ll, p_ll, _ = cons2prim(u_ll, equations)
     rho_rr, v1_rr, v2_rr, p_rr, _ = cons2prim(u_rr, equations)
 
@@ -362,13 +349,13 @@ end
     v2_avg = 0.5 * (v2_ll + v2_rr)
     v_dot_n_avg = v1_avg * normal_direction[1] + v2_avg * normal_direction[2]
     p_avg = 0.5 * (p_ll + p_rr)
-    e_avg = 0.5 * (rho_e_ll / rho_ll + rho_e_rr / rho_rr)
+    etot_avg = 0.5 * (rho_etot_ll / rho_ll + rho_etot_rr / rho_rr)
 
     # Calculate fluxes depending on normal_direction
     f1 = rho_avg * v_dot_n_avg
     f2 = f1 * v1_avg + p_avg * normal_direction[1]
     f3 = f1 * v2_avg + p_avg * normal_direction[2]
-    f4 = f1 * e_avg + p_avg * v_dot_n_avg
+    f4 = f1 * etot_avg + p_avg * v_dot_n_avg
 
     return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
 end
@@ -743,200 +730,6 @@ end
                    u[5])
 end
 
-"""
-    flux_hllc(u_ll, u_rr, orientation, equations::CompressibleEulerEquationsWithGravity2D)
-
-Computes the HLLC flux (HLL with Contact) for compressible Euler equations developed by E.F. Toro
-[Lecture slides](http://www.prague-sum.com/download/2012/Toro_2-HLLC-RiemannSolver.pdf)
-Signal speeds: [DOI: 10.1137/S1064827593260140](https://doi.org/10.1137/S1064827593260140)
-"""
-function Trixi.flux_hllc(u_ll, u_rr, orientation::Integer,
-                         equations::CompressibleEulerEquationsWithGravity2D)
-    # Calculate primitive variables and speed of sound
-    rho_ll, rho_v1_ll, rho_v2_ll, rho_e_ll, phi_ll = u_ll
-    rho_rr, rho_v1_rr, rho_v2_rr, rho_e_rr, phi_rr = u_rr
-
-    v1_ll = rho_v1_ll / rho_ll
-    v2_ll = rho_v2_ll / rho_ll
-    e_ll = rho_e_ll / rho_ll
-    p_ll = (equations.gamma - 1) *
-           (rho_e_ll - 1 / 2 * rho_ll * (v1_ll^2 + v2_ll^2) - rho_ll * phi_ll)
-    c_ll = sqrt(equations.gamma * p_ll / rho_ll)
-
-    v1_rr = rho_v1_rr / rho_rr
-    v2_rr = rho_v2_rr / rho_rr
-    e_rr = rho_e_rr / rho_rr
-    p_rr = (equations.gamma - 1) *
-           (rho_e_rr - 1 / 2 * rho_rr * (v1_rr^2 + v2_rr^2) - rho_rr * phi_rr)
-    c_rr = sqrt(equations.gamma * p_rr / rho_rr)
-
-    # Obtain left and right fluxes
-    f_ll = flux(u_ll, orientation, equations)
-    f_rr = flux(u_rr, orientation, equations)
-
-    # Compute Roe averages
-    sqrt_rho_ll = sqrt(rho_ll)
-    sqrt_rho_rr = sqrt(rho_rr)
-    sum_sqrt_rho = sqrt_rho_ll + sqrt_rho_rr
-    if orientation == 1 # x-direction
-        vel_L = v1_ll
-        vel_R = v1_rr
-        ekin_roe = (sqrt_rho_ll * v2_ll + sqrt_rho_rr * v2_rr)^2
-    elseif orientation == 2 # y-direction
-        vel_L = v2_ll
-        vel_R = v2_rr
-        ekin_roe = (sqrt_rho_ll * v1_ll + sqrt_rho_rr * v1_rr)^2
-    end
-    vel_roe = (sqrt_rho_ll * vel_L + sqrt_rho_rr * vel_R) / sum_sqrt_rho
-    ekin_roe = 0.5 * (vel_roe^2 + ekin_roe / sum_sqrt_rho^2)
-    H_ll = (rho_e_ll + p_ll) / rho_ll
-    H_rr = (rho_e_rr + p_rr) / rho_rr
-    H_roe = (sqrt_rho_ll * H_ll + sqrt_rho_rr * H_rr) / sum_sqrt_rho
-    c_roe = sqrt((equations.gamma - 1) * (H_roe - ekin_roe))
-    Ssl = min(vel_L - c_ll, vel_roe - c_roe)
-    Ssr = max(vel_R + c_rr, vel_roe + c_roe)
-    sMu_L = Ssl - vel_L
-    sMu_R = Ssr - vel_R
-
-    if Ssl >= 0.0
-        f1 = f_ll[1]
-        f2 = f_ll[2]
-        f3 = f_ll[3]
-        f4 = f_ll[4]
-    elseif Ssr <= 0.0
-        f1 = f_rr[1]
-        f2 = f_rr[2]
-        f3 = f_rr[3]
-        f4 = f_rr[4]
-    else
-        SStar = (p_rr - p_ll + rho_ll * vel_L * sMu_L - rho_rr * vel_R * sMu_R) /
-                (rho_ll * sMu_L - rho_rr * sMu_R)
-        if Ssl <= 0.0 <= SStar
-            densStar = rho_ll * sMu_L / (Ssl - SStar)
-            enerStar = e_ll + (SStar - vel_L) * (SStar + p_ll / (rho_ll * sMu_L))
-            UStar1 = densStar
-            UStar4 = densStar * enerStar
-            if orientation == 1 # x-direction
-                UStar2 = densStar * SStar
-                UStar3 = densStar * v2_ll
-            elseif orientation == 2 # y-direction
-                UStar2 = densStar * v1_ll
-                UStar3 = densStar * SStar
-            end
-            f1 = f_ll[1] + Ssl * (UStar1 - rho_ll)
-            f2 = f_ll[2] + Ssl * (UStar2 - rho_v1_ll)
-            f3 = f_ll[3] + Ssl * (UStar3 - rho_v2_ll)
-            f4 = f_ll[4] + Ssl * (UStar4 - rho_e_ll)
-        else
-            densStar = rho_rr * sMu_R / (Ssr - SStar)
-            enerStar = e_rr + (SStar - vel_R) * (SStar + p_rr / (rho_rr * sMu_R))
-            UStar1 = densStar
-            UStar4 = densStar * enerStar
-            if orientation == 1 # x-direction
-                UStar2 = densStar * SStar
-                UStar3 = densStar * v2_rr
-            elseif orientation == 2 # y-direction
-                UStar2 = densStar * v1_rr
-                UStar3 = densStar * SStar
-            end
-            f1 = f_rr[1] + Ssr * (UStar1 - rho_rr)
-            f2 = f_rr[2] + Ssr * (UStar2 - rho_v1_rr)
-            f3 = f_rr[3] + Ssr * (UStar3 - rho_v2_rr)
-            f4 = f_rr[4] + Ssr * (UStar4 - rho_e_rr)
-        end
-    end
-    return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
-end
-
-"""
-    flux_hlle(u_ll, u_rr, orientation, equations::CompressibleEulerEquationsWithGravity2D)
-
-Computes the HLLE (Harten-Lax-van Leer-Einfeldt) flux for the compressible Euler equations.
-Special estimates of the signal velocites and linearization of the Riemann problem developed
-by Einfeldt to ensure that the internal energy and density remain positive during the computation
-of the numerical flux.
-
-- Bernd Einfeldt (1988)
-    On Godunov-type methods for gas dynamics.
-    [DOI: 10.1137/0725021](https://doi.org/10.1137/0725021)
-- Bernd Einfeldt, Claus-Dieter Munz, Philip L. Roe and Björn Sjögreen (1991)
-    On Godunov-type methods near low densities.
-    [DOI: 10.1016/0021-9991(91)90211-3](https://doi.org/10.1016/0021-9991(91)90211-3)
-"""
-function Trixi.flux_hlle(u_ll, u_rr, orientation::Integer,
-                         equations::CompressibleEulerEquationsWithGravity2D)
-    # Calculate primitive variables, enthalpy and speed of sound
-    rho_ll, v1_ll, v2_ll, p_ll, _ = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr, _ = cons2prim(u_rr, equations)
-
-    # `u_ll[4]` is total energy `rho_e_ll` on the left
-    H_ll = (u_ll[4] + p_ll) / rho_ll
-    c_ll = sqrt(equations.gamma * p_ll / rho_ll)
-
-    # `u_rr[4]` is total energy `rho_e_rr` on the right
-    H_rr = (u_rr[4] + p_rr) / rho_rr
-    c_rr = sqrt(equations.gamma * p_rr / rho_rr)
-
-    # Compute Roe averages
-    sqrt_rho_ll = sqrt(rho_ll)
-    sqrt_rho_rr = sqrt(rho_rr)
-    inv_sum_sqrt_rho = inv(sqrt_rho_ll + sqrt_rho_rr)
-
-    v1_roe = (sqrt_rho_ll * v1_ll + sqrt_rho_rr * v1_rr) * inv_sum_sqrt_rho
-    v2_roe = (sqrt_rho_ll * v2_ll + sqrt_rho_rr * v2_rr) * inv_sum_sqrt_rho
-    v_roe_mag = v1_roe^2 + v2_roe^2
-
-    H_roe = (sqrt_rho_ll * H_ll + sqrt_rho_rr * H_rr) * inv_sum_sqrt_rho
-    c_roe = sqrt((equations.gamma - 1) * (H_roe - 0.5 * v_roe_mag))
-
-    # Compute convenience constant for positivity preservation, see
-    # https://doi.org/10.1016/0021-9991(91)90211-3
-    beta = sqrt(0.5 * (equations.gamma - 1) / equations.gamma)
-
-    # Estimate the edges of the Riemann fan (with positivity conservation)
-    if orientation == 1 # x-direction
-        SsL = min(v1_roe - c_roe, v1_ll - beta * c_ll, zero(v1_roe))
-        SsR = max(v1_roe + c_roe, v1_rr + beta * c_rr, zero(v1_roe))
-    elseif orientation == 2 # y-direction
-        SsL = min(v2_roe - c_roe, v2_ll - beta * c_ll, zero(v2_roe))
-        SsR = max(v2_roe + c_roe, v2_rr + beta * c_rr, zero(v2_roe))
-    end
-
-    if SsL >= 0.0 && SsR > 0.0
-        # Positive supersonic speed
-        f_ll = flux(u_ll, orientation, equations)
-
-        f1 = f_ll[1]
-        f2 = f_ll[2]
-        f3 = f_ll[3]
-        f4 = f_ll[4]
-    elseif SsR <= 0.0 && SsL < 0.0
-        # Negative supersonic speed
-        f_rr = flux(u_rr, orientation, equations)
-
-        f1 = f_rr[1]
-        f2 = f_rr[2]
-        f3 = f_rr[3]
-        f4 = f_rr[4]
-    else
-        # Subsonic case
-        # Compute left and right fluxes
-        f_ll = flux(u_ll, orientation, equations)
-        f_rr = flux(u_rr, orientation, equations)
-
-        f1 = (SsR * f_ll[1] - SsL * f_rr[1] + SsL * SsR * (u_rr[1] - u_ll[1])) /
-             (SsR - SsL)
-        f2 = (SsR * f_ll[2] - SsL * f_rr[2] + SsL * SsR * (u_rr[2] - u_ll[2])) /
-             (SsR - SsL)
-        f3 = (SsR * f_ll[3] - SsL * f_rr[3] + SsL * SsR * (u_rr[3] - u_ll[3])) /
-             (SsR - SsL)
-        f4 = (SsR * f_ll[4] - SsL * f_rr[4] + SsL * SsR * (u_rr[4] - u_ll[4])) /
-             (SsR - SsL)
-    end
-
-    return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
-end
-
 @inline function Trixi.max_abs_speeds(u,
                                       equations::CompressibleEulerEquationsWithGravity2D)
     rho, v1, v2, p, _ = cons2prim(u, equations)
@@ -947,11 +740,12 @@ end
 
 # Convert conservative variables to primitive
 @inline function Trixi.cons2prim(u, equations::CompressibleEulerEquationsWithGravity2D)
-    rho, rho_v1, rho_v2, rho_e, phi = u
+    rho, rho_v1, rho_v2, rho_etot, phi = u
 
     v1 = rho_v1 / rho
     v2 = rho_v2 / rho
-    p = (equations.gamma - 1) * (rho_e - 0.5 * (rho_v1 * v1 + rho_v2 * v2) - rho * phi)
+    p = (equations.gamma - 1) *
+        (rho_etot - 0.5 * (rho_v1 * v1 + rho_v2 * v2) - rho * phi)
 
     return SVector(rho, v1, v2, p, phi)
 end
@@ -959,12 +753,12 @@ end
 # Convert conservative variables to entropy (see, e.g., Waruszewski et al. (2022))
 @inline function Trixi.cons2entropy(u,
                                     equations::CompressibleEulerEquationsWithGravity2D)
-    rho, rho_v1, rho_v2, rho_e, phi = u
+    rho, rho_v1, rho_v2, rho_etot, phi = u
 
     v1 = rho_v1 / rho
     v2 = rho_v2 / rho
     v_square = v1^2 + v2^2
-    p = (equations.gamma - 1) * (rho_e - 0.5 * rho * v_square - rho * phi)
+    p = (equations.gamma - 1) * (rho_etot - 0.5 * rho * v_square - rho * phi)
     s = log(p) - equations.gamma * log(rho)
     rho_p = rho / p
 
@@ -996,8 +790,8 @@ end
     rho = -rho_iota * V5
     rho_v1 = rho_iota * V2
     rho_v2 = rho_iota * V3
-    rho_e = rho_iota * (1 - (V2^2 + V3^2) / (2 * V5)) + rho * phi
-    return SVector(rho, rho_v1, rho_v2, rho_e, phi)
+    rho_etot = rho_iota * (1 - (V2^2 + V3^2) / (2 * V5)) + rho * phi
+    return SVector(rho, rho_v1, rho_v2, rho_etot, phi)
 end
 
 # Convert primitive to conservative variables
@@ -1006,9 +800,9 @@ end
     rho, v1, v2, p, phi = prim
     rho_v1 = rho * v1
     rho_v2 = rho * v2
-    rho_e = p * equations.inv_gamma_minus_one + 0.5 * (rho_v1 * v1 + rho_v2 * v2) +
-            rho * phi
-    return SVector(rho, rho_v1, rho_v2, rho_e, phi)
+    rho_etot = p * equations.inv_gamma_minus_one + 0.5 * (rho_v1 * v1 + rho_v2 * v2) +
+               rho * phi
+    return SVector(rho, rho_v1, rho_v2, rho_etot, phi)
 end
 
 @inline function Trixi.density(u, equations::CompressibleEulerEquationsWithGravity2D)
@@ -1017,16 +811,17 @@ end
 end
 
 @inline function Trixi.pressure(u, equations::CompressibleEulerEquationsWithGravity2D)
-    rho, rho_v1, rho_v2, rho_e, phi = u
-    p = (equations.gamma - 1) * (rho_e - 0.5 * (rho_v1^2 + rho_v2^2) / rho - rho * phi)
+    rho, rho_v1, rho_v2, rho_etot, phi = u
+    p = (equations.gamma - 1) *
+        (rho_etot - 0.5 * (rho_v1^2 + rho_v2^2) / rho - rho * phi)
     return p
 end
 
 @inline function Trixi.density_pressure(u,
                                         equations::CompressibleEulerEquationsWithGravity2D)
-    rho, rho_v1, rho_v2, rho_e, phi = u
+    rho, rho_v1, rho_v2, rho_etot, phi = u
     rho_times_p = (equations.gamma - 1) *
-                  (rho * rho_e - 0.5 * (rho_v1^2 + rho_v2^2) - rho^2 * phi)
+                  (rho * rho_etot - 0.5 * (rho_v1^2 + rho_v2^2) - rho^2 * phi)
     return rho_times_p
 end
 
@@ -1063,7 +858,7 @@ end
 # Calculate kinetic energy for a conservative state `cons`
 @inline function Trixi.energy_kinetic(u,
                                       equations::CompressibleEulerEquationsWithGravity2D)
-    rho, rho_v1, rho_v2, rho_e, _ = u
+    rho, rho_v1, rho_v2, rho_etot, _ = u
     return (rho_v1^2 + rho_v2^2) / (2 * rho)
 end
 
