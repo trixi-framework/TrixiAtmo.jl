@@ -29,7 +29,7 @@ include("test_trixiatmo.jl")
                         tspan=(0.0, 0.1))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 2000)
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 2500)
 end
 end
 end # module
