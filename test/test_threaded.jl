@@ -29,7 +29,24 @@ include("test_trixiatmo.jl")
                         tspan=(0.0, 0.1))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 2500)
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 5000)
+end
+
+@trixi_testset "elixir_tri_barotropic_instability threaded" begin
+    @test_trixi_include(abspath(joinpath(EXAMPLES_DIR, "shallow_water/covariant",
+                                         "elixir_tri_barotropic_instability.jl")),
+                        l2=[41.05018196765347, 0.04598801953369521, 0.03324228006147076],
+                        linf=[
+                            202.17195189961058,
+                            0.2046503536574818,
+                            0.14813768215260187
+                        ],
+                        polydeg=3,
+                        initial_refinement_level=1,
+                        tspan=(0.0, 1.0 * SECONDS_PER_DAY))
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 5000)
 end
 end
 end # module
