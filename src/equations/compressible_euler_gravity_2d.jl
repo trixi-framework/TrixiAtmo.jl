@@ -239,8 +239,8 @@ The modification is in the energy flux to guarantee pressure equilibrium and was
 @inline function Trixi.flux_shima_etal(u_ll, u_rr, orientation::Integer,
                                        equations::CompressibleEulerEquationsWithGravity2D)
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, p_ll, _ = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr, _ = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, p_ll, phi_ll = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr, phi_rr = cons2prim(u_rr, equations)
 
     # Average each factor of products in flux
     rho_avg = 1 / 2 * (rho_ll + rho_rr)
@@ -248,6 +248,7 @@ The modification is in the energy flux to guarantee pressure equilibrium and was
     v2_avg = 1 / 2 * (v2_ll + v2_rr)
     p_avg = 1 / 2 * (p_ll + p_rr)
     kin_avg = 1 / 2 * (v1_ll * v1_rr + v2_ll * v2_rr)
+    phi_avg = 1 / 2 * (phi_ll + phi_rr)
 
     # Calculate fluxes depending on orientation
     if orientation == 1
@@ -255,13 +256,15 @@ The modification is in the energy flux to guarantee pressure equilibrium and was
         f1 = rho_avg * v1_avg
         f2 = f1 * v1_avg + p_avg
         f3 = f1 * v2_avg
-        f4 = p_avg * v1_avg * equations.inv_gamma_minus_one + f1 * kin_avg + pv1_avg
+        f4 = p_avg * v1_avg * equations.inv_gamma_minus_one + f1 * kin_avg + pv1_avg +
+             f1 * phi_avg
     else
         pv2_avg = 1 / 2 * (p_ll * v2_rr + p_rr * v2_ll)
         f1 = rho_avg * v2_avg
         f2 = f1 * v1_avg
         f3 = f1 * v2_avg + p_avg
-        f4 = p_avg * v2_avg * equations.inv_gamma_minus_one + f1 * kin_avg + pv2_avg
+        f4 = p_avg * v2_avg * equations.inv_gamma_minus_one + f1 * kin_avg + pv2_avg +
+             f1 * phi_avg
     end
 
     return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
@@ -270,8 +273,8 @@ end
 @inline function Trixi.flux_shima_etal(u_ll, u_rr, normal_direction::AbstractVector,
                                        equations::CompressibleEulerEquationsWithGravity2D)
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, p_ll, _ = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr, _ = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, p_ll, phi_ll = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr, phi_rr = cons2prim(u_rr, equations)
     v_dot_n_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2]
     v_dot_n_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2]
 
@@ -282,6 +285,7 @@ end
     v_dot_n_avg = 1 / 2 * (v_dot_n_ll + v_dot_n_rr)
     p_avg = 1 / 2 * (p_ll + p_rr)
     velocity_square_avg = 0.5f0 * (v1_ll * v1_rr + v2_ll * v2_rr)
+    phi_avg = 1 / 2 * (phi_ll + phi_rr)
 
     # Calculate fluxes depending on normal_direction
     f1 = rho_avg * v_dot_n_avg
@@ -289,7 +293,7 @@ end
     f3 = f1 * v2_avg + p_avg * normal_direction[2]
     f4 = (f1 * velocity_square_avg +
           p_avg * v_dot_n_avg * equations.inv_gamma_minus_one
-          + 0.5f0 * (p_ll * v_dot_n_rr + p_rr * v_dot_n_ll))
+          + 0.5f0 * (p_ll * v_dot_n_rr + p_rr * v_dot_n_ll)) + f1 * phi_avg
 
     return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
 end
@@ -361,55 +365,6 @@ end
 end
 
 """
-    flux_chandrashekar(u_ll, u_rr, orientation, equations::CompressibleEulerEquationsWithGravity2D)
-
-Entropy conserving two-point flux by
-- Chandrashekar (2013)
-    Kinetic Energy Preserving and Entropy Stable Finite Volume Schemes
-    for Compressible Euler and Navier-Stokes Equations
-    [DOI: 10.4208/cicp.170712.010313a](https://doi.org/10.4208/cicp.170712.010313a)
-"""
-@inline function Trixi.flux_chandrashekar(u_ll, u_rr, orientation::Integer,
-                                          equations::CompressibleEulerEquationsWithGravity2D)
-    # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, p_ll, _ = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr, _ = cons2prim(u_rr, equations)
-    beta_ll = 0.5f0 * rho_ll / p_ll
-    beta_rr = 0.5f0 * rho_rr / p_rr
-    specific_kin_ll = 0.5f0 * (v1_ll^2 + v2_ll^2)
-    specific_kin_rr = 0.5f0 * (v1_rr^2 + v2_rr^2)
-
-    # Compute the necessary mean values
-    rho_avg = 0.5f0 * (rho_ll + rho_rr)
-    rho_mean = ln_mean(rho_ll, rho_rr)
-    beta_mean = ln_mean(beta_ll, beta_rr)
-    beta_avg = 0.5f0 * (beta_ll + beta_rr)
-    v1_avg = 0.5f0 * (v1_ll + v1_rr)
-    v2_avg = 0.5f0 * (v2_ll + v2_rr)
-    p_mean = 0.5f0 * rho_avg / beta_avg
-    velocity_square_avg = specific_kin_ll + specific_kin_rr
-
-    # Calculate fluxes depending on orientation
-    if orientation == 1
-        f1 = rho_mean * v1_avg
-        f2 = f1 * v1_avg + p_mean
-        f3 = f1 * v2_avg
-        f4 = f1 * 0.5f0 *
-             (1 / (equations.gamma - 1) / beta_mean - velocity_square_avg) +
-             f2 * v1_avg + f3 * v2_avg
-    else
-        f1 = rho_mean * v2_avg
-        f2 = f1 * v1_avg
-        f3 = f1 * v2_avg + p_mean
-        f4 = f1 * 0.5f0 *
-             (1 / (equations.gamma - 1) / beta_mean - velocity_square_avg) +
-             f2 * v1_avg + f3 * v2_avg
-    end
-
-    return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
-end
-
-"""
     flux_ranocha(u_ll, u_rr, orientation_or_normal_direction,
                     equations::CompressibleEulerEquationsWithGravity2D)
 
@@ -427,8 +382,8 @@ See also
 @inline function Trixi.flux_ranocha(u_ll, u_rr, orientation::Integer,
                                     equations::CompressibleEulerEquationsWithGravity2D)
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, p_ll, _ = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr, _ = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, p_ll, phi_ll = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr, phi_rr = cons2prim(u_rr, equations)
 
     # Compute the necessary mean values
     rho_mean = ln_mean(rho_ll, rho_rr)
@@ -441,6 +396,7 @@ See also
     v2_avg = 0.5f0 * (v2_ll + v2_rr)
     p_avg = 0.5f0 * (p_ll + p_rr)
     velocity_square_avg = 0.5f0 * (v1_ll * v1_rr + v2_ll * v2_rr)
+    phi_avg = 1 / 2 * (phi_ll + phi_rr)
 
     # Calculate fluxes depending on orientation
     if orientation == 1
@@ -449,14 +405,14 @@ See also
         f3 = f1 * v2_avg
         f4 = f1 *
              (velocity_square_avg + inv_rho_p_mean * equations.inv_gamma_minus_one) +
-             0.5f0 * (p_ll * v1_rr + p_rr * v1_ll)
+             0.5f0 * (p_ll * v1_rr + p_rr * v1_ll) + f1 * phi_avg
     else
         f1 = rho_mean * v2_avg
         f2 = f1 * v1_avg
         f3 = f1 * v2_avg + p_avg
         f4 = f1 *
              (velocity_square_avg + inv_rho_p_mean * equations.inv_gamma_minus_one) +
-             0.5f0 * (p_ll * v2_rr + p_rr * v2_ll)
+             0.5f0 * (p_ll * v2_rr + p_rr * v2_ll) + f1 * phi_avg
     end
 
     return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
@@ -465,8 +421,8 @@ end
 @inline function Trixi.flux_ranocha(u_ll, u_rr, normal_direction::AbstractVector,
                                     equations::CompressibleEulerEquationsWithGravity2D)
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, p_ll, _ = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr, _ = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, p_ll, phi_ll = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr, phi_rr = cons2prim(u_rr, equations)
     v_dot_n_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2]
     v_dot_n_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2]
 
@@ -481,6 +437,7 @@ end
     v2_avg = 0.5f0 * (v2_ll + v2_rr)
     p_avg = 0.5f0 * (p_ll + p_rr)
     velocity_square_avg = 0.5f0 * (v1_ll * v1_rr + v2_ll * v2_rr)
+    phi_avg = 1 / 2 * (phi_ll + phi_rr)
 
     # Calculate fluxes depending on normal_direction
     f1 = rho_mean * 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
@@ -488,7 +445,8 @@ end
     f3 = f1 * v2_avg + p_avg * normal_direction[2]
     f4 = (f1 * (velocity_square_avg + inv_rho_p_mean * equations.inv_gamma_minus_one)
           +
-          0.5f0 * (p_ll * v_dot_n_rr + p_rr * v_dot_n_ll))
+          0.5f0 * (p_ll * v_dot_n_rr + p_rr * v_dot_n_ll)
+          + f1 * phi_avg)
 
     return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
 end
