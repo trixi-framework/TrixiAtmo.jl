@@ -97,6 +97,7 @@ function Trixi.calc_interface_flux!(cache, surface_integral::SurfaceIntegralWeak
         uP = u_face_values[idP]
         auxM = aux_face_values[idM]
         auxP = aux_face_values[idP]
+        
         # Transform uP to the same coordinate system as uM
         uP_global = contravariant2global(uP, auxP, equations)
         uP_transformed_to_M = global2contravariant(uP_global, auxM, equations)
@@ -104,7 +105,7 @@ function Trixi.calc_interface_flux!(cache, surface_integral::SurfaceIntegralWeak
         # Compute ref_index from face_node_index in order to access covariant normal vector
         # in reference element coordinates.
         ref_index = mod(face_node_index - 1, Nfq) + 1
-        normal = SVector(ntuple(k -> nrstJ[k][ref_index], NDIMS))
+        normal = SVector{NDIMS}(getindex.(nrstJ, ref_index))
 
         flux_face_values[idM] = surface_flux(uM, uP_transformed_to_M, auxM, auxM, normal,
                                              equations)
