@@ -42,7 +42,7 @@ function DGMultiMeshTriIcosahedron2D(dg::DGMulti{NDIMS, <:Tri}, radius;
                         vk = ntuple(n -> Vxyz_old[n][k], NDIMS_AMBIENT)
                         vl = ntuple(n -> Vxyz_old[n][l], NDIMS_AMBIENT)
                         midpoint = 0.5 .* (vk .+ vl)
-                        midpoint = midpoint .* (EARTH_RADIUS / norm(midpoint)) # Normalize to outer radius
+                        midpoint = midpoint .* (radius / norm(midpoint)) # Normalize to outer radius
                         for n in 1:NDIMS_AMBIENT
                             push!(Vxyz[n], midpoint[n])
                         end
