@@ -82,7 +82,7 @@ boundary_conditions_dirichlet = (x_neg = BoundaryConditionDirichlet(initial_cond
 
 basis = LobattoLegendreBasis(polydeg)
 
-volume_flux = (flux_shima_etal, flux_nonconservative_waruszewski)
+volume_flux = (flux_shima_etal, flux_nonconservative_waruszewski_etal)
 surface_flux = (FluxLMARS(340.0), flux_zero)
 
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)

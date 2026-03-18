@@ -113,7 +113,7 @@ Should be used together with [`UnstructuredMesh2D`](@ref).
                  (1 + 0.5f0 * (equations.gamma - 1) * v_normal / sound_speed)^(2 *
                                                                                equations.gamma *
                                                                                equations.inv_gamma_minus_one)
-    else # v_normal > 0.0
+    else # v_normal > 0
         A = 2 / ((equations.gamma + 1) * rho_local)
         B = p_local * (equations.gamma - 1) / (equations.gamma + 1)
         p_star = p_local +
@@ -146,9 +146,9 @@ Should be used together with [`TreeMesh`](@ref).
                                                     equations::CompressibleEulerEquationsWithGravity2D)
     # get the appropriate normal vector from the orientation
     if orientation == 1
-        normal_direction = SVector(1, 0)
+        normal_direction = SVector(one(eltype(u_inner)), zero(eltype(u_inner)))
     else # orientation == 2
-        normal_direction = SVector(0, 1)
+        normal_direction = SVector(zero(eltype(u_inner)), one(eltype(u_inner)))
     end
 
     # compute and return the flux using `boundary_condition_slip_wall` routine above
@@ -243,23 +243,23 @@ The modification is in the energy flux to guarantee pressure equilibrium and was
     rho_rr, v1_rr, v2_rr, p_rr, phi_rr = cons2prim(u_rr, equations)
 
     # Average each factor of products in flux
-    rho_avg = 1 / 2 * (rho_ll + rho_rr)
-    v1_avg = 1 / 2 * (v1_ll + v1_rr)
-    v2_avg = 1 / 2 * (v2_ll + v2_rr)
-    p_avg = 1 / 2 * (p_ll + p_rr)
-    kin_avg = 1 / 2 * (v1_ll * v1_rr + v2_ll * v2_rr)
-    phi_avg = 1 / 2 * (phi_ll + phi_rr)
+    rho_avg = 0.5f0 * (rho_ll + rho_rr)
+    v1_avg = 0.5f0 * (v1_ll + v1_rr)
+    v2_avg = 0.5f0 * (v2_ll + v2_rr)
+    p_avg = 0.5f0 * (p_ll + p_rr)
+    kin_avg = 0.5f0 * (v1_ll * v1_rr + v2_ll * v2_rr)
+    phi_avg = 0.5f0 * (phi_ll + phi_rr)
 
     # Calculate fluxes depending on orientation
     if orientation == 1
-        pv1_avg = 1 / 2 * (p_ll * v1_rr + p_rr * v1_ll)
+        pv1_avg = 0.5f0 * (p_ll * v1_rr + p_rr * v1_ll)
         f1 = rho_avg * v1_avg
         f2 = f1 * v1_avg + p_avg
         f3 = f1 * v2_avg
         f4 = p_avg * v1_avg * equations.inv_gamma_minus_one + f1 * kin_avg + pv1_avg +
              f1 * phi_avg
     else
-        pv2_avg = 1 / 2 * (p_ll * v2_rr + p_rr * v2_ll)
+        pv2_avg = 0.5f0 * (p_ll * v2_rr + p_rr * v2_ll)
         f1 = rho_avg * v2_avg
         f2 = f1 * v1_avg
         f3 = f1 * v2_avg + p_avg
@@ -279,13 +279,13 @@ end
     v_dot_n_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2]
 
     # Average each factor of products in flux
-    rho_avg = 1 / 2 * (rho_ll + rho_rr)
-    v1_avg = 1 / 2 * (v1_ll + v1_rr)
-    v2_avg = 1 / 2 * (v2_ll + v2_rr)
-    v_dot_n_avg = 1 / 2 * (v_dot_n_ll + v_dot_n_rr)
-    p_avg = 1 / 2 * (p_ll + p_rr)
+    rho_avg = 0.5f0 * (rho_ll + rho_rr)
+    v1_avg = 0.5f0 * (v1_ll + v1_rr)
+    v2_avg = 0.5f0 * (v2_ll + v2_rr)
+    v_dot_n_avg = 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
+    p_avg = 0.5f0 * (p_ll + p_rr)
     velocity_square_avg = 0.5f0 * (v1_ll * v1_rr + v2_ll * v2_rr)
-    phi_avg = 1 / 2 * (phi_ll + phi_rr)
+    phi_avg = 0.5f0 * (phi_ll + phi_rr)
 
     # Calculate fluxes depending on normal_direction
     f1 = rho_avg * v_dot_n_avg
@@ -317,11 +317,11 @@ Kinetic energy preserving two-point flux by
     rho_rr, v1_rr, v2_rr, p_rr, _ = cons2prim(u_rr, equations)
 
     # Average each factor of products in flux
-    rho_avg = 1 / 2 * (rho_ll + rho_rr)
-    v1_avg = 1 / 2 * (v1_ll + v1_rr)
-    v2_avg = 1 / 2 * (v2_ll + v2_rr)
-    p_avg = 1 / 2 * (p_ll + p_rr)
-    etot_avg = 1 / 2 * (rho_etot_ll / rho_ll + rho_etot_rr / rho_rr)
+    rho_avg = 0.5f0 * (rho_ll + rho_rr)
+    v1_avg = 0.5f0 * (v1_ll + v1_rr)
+    v2_avg = 0.5f0 * (v2_ll + v2_rr)
+    p_avg = 0.5f0 * (p_ll + p_rr)
+    etot_avg = 0.5f0 * (rho_etot_ll / rho_ll + rho_etot_rr / rho_rr)
 
     # Calculate fluxes depending on orientation
     if orientation == 1
@@ -396,7 +396,7 @@ See also
     v2_avg = 0.5f0 * (v2_ll + v2_rr)
     p_avg = 0.5f0 * (p_ll + p_rr)
     velocity_square_avg = 0.5f0 * (v1_ll * v1_rr + v2_ll * v2_rr)
-    phi_avg = 1 / 2 * (phi_ll + phi_rr)
+    phi_avg = 0.5f0 * (phi_ll + phi_rr)
 
     # Calculate fluxes depending on orientation
     if orientation == 1
@@ -437,7 +437,7 @@ end
     v2_avg = 0.5f0 * (v2_ll + v2_rr)
     p_avg = 0.5f0 * (p_ll + p_rr)
     velocity_square_avg = 0.5f0 * (v1_ll * v1_rr + v2_ll * v2_rr)
-    phi_avg = 1 / 2 * (phi_ll + phi_rr)
+    phi_avg = 0.5f0 * (phi_ll + phi_rr)
 
     # Calculate fluxes depending on normal_direction
     f1 = rho_mean * 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
@@ -451,8 +451,9 @@ end
     return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
 end
 
-function flux_nonconservative_waruszewski(u_ll, u_rr, normal_direction::AbstractVector,
-                                          equations::CompressibleEulerEquationsWithGravity2D)
+function flux_nonconservative_waruszewski_etal(u_ll, u_rr,
+                                               normal_direction::AbstractVector,
+                                               equations::CompressibleEulerEquationsWithGravity2D)
     rho_ll, _, _, _, phi_ll = u_ll
     rho_rr, _, _, _, phi_rr = u_rr
 
@@ -464,8 +465,8 @@ function flux_nonconservative_waruszewski(u_ll, u_rr, normal_direction::Abstract
                    f0, f0)
 end
 
-function flux_nonconservative_waruszewski(u_ll, u_rr, orientation::Integer,
-                                          equations::CompressibleEulerEquationsWithGravity2D)
+function flux_nonconservative_waruszewski_etal(u_ll, u_rr, orientation::Integer,
+                                               equations::CompressibleEulerEquationsWithGravity2D)
     rho_ll, _, _, _, phi_ll = u_ll
     rho_rr, _, _, _, phi_rr = u_rr
 
@@ -786,11 +787,11 @@ end
 end
 
 # Calculate thermodynamic entropy for a conservative state `cons`
-@inline function Trixi.entropy_thermodynamic(cons,
-                                             equations::CompressibleEulerEquationsWithGravity2D)
+@inline function entropy_thermodynamic(cons,
+                                       equations::CompressibleEulerEquationsWithGravity2D)
     # Pressure
     p = (equations.gamma - 1) *
-        (cons[4] - 1 / 2 * (cons[2]^2 + cons[3]^2) / cons[1] - cons[1] * cons[5])
+        (cons[4] - 0.5f0 * (cons[2]^2 + cons[3]^2) / cons[1] - cons[1] * cons[5])
 
     # Thermodynamic entropy
     s = log(p) - equations.gamma * log(cons[1])
@@ -799,8 +800,8 @@ end
 end
 
 # Calculate mathematical entropy for a conservative state `cons`
-@inline function Trixi.entropy_math(cons,
-                                    equations::CompressibleEulerEquationsWithGravity2D)
+@inline function entropy_math(cons,
+                              equations::CompressibleEulerEquationsWithGravity2D)
     # Mathematical entropy
     S = -entropy_thermodynamic(cons, equations) * cons[1] *
         equations.inv_gamma_minus_one
