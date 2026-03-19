@@ -31,10 +31,10 @@ The compressible Euler equations with gravity and total energy,
 for an ideal gas with ratio of specific heat `gamma` in two space dimensions.
 
 Here, ``\rho`` is the density, ``v_1``,`v_2` the velocities, ``e_{tot}`` the specific total energy, 
-which includes the internal, kinetik, and geopotential energy, `\Phi` is the gravitational 
+which includes the internal, kinetik, and geopotential energy, ``\Phi`` is the gravitational 
 geopotential, and
 ```math
-p = (\gamma - 1) \left( \rho e - \frac{1}{2} \rho (v_1^2+v_2^2) - \rho \Phi \right)
+p = (\gamma - 1) \left( \rho e_{tot} - \frac{1}{2} \rho (v_1^2+v_2^2) - \rho \Phi \right)
 ```
 the pressure.
 
