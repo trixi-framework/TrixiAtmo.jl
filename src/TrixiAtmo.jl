@@ -68,7 +68,7 @@ export NonlinearSolveDG
 
 export flux_chandrashekar, FluxLMARS
 
-export flux_nonconservative_waruszewski
+export flux_nonconservative_waruszewski, flux_nonconservative_chandrashekar_isothermal
 
 export flux_nonconservative_zeros, flux_nonconservative_ec,
        flux_nonconservative_surface_simplified, source_terms_geometric_coriolis,

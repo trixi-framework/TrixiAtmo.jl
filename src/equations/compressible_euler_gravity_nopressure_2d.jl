@@ -125,7 +125,7 @@ Should be used together with [`UnstructuredMesh2D`](@ref).
     # We omit the 0.5 in the density average since Trixi.jl always multiplies the non-conservative flux with 0.5
     # TODO: compute with surface_flux_function
     # surface_flux, surface_noncons = surface_flux_function
-    # flux_nonconservative_waruszewski_etal(u_ll, u_rr,
+    # surface_noncons(u_ll, u_rr,
     #                                            normal_direction::AbstractVector,
     #                                            equations::CompressibleEulerEquationsWithGravityNoPressure2D)
     noncons = (p_star - p_local)
@@ -137,8 +137,8 @@ Should be used together with [`UnstructuredMesh2D`](@ref).
                     zero(eltype(u_inner)),
                     zero(eltype(u_inner))) * norm_,
             SVector(zero(eltype(u_inner)),
-                    noncons,
-                    noncons,
+                    noncons * normal[1],
+                    noncons * normal[2],
                     zero(eltype(u_inner)),
                     zero(eltype(u_inner))) * norm_)
 end
@@ -532,7 +532,7 @@ end
     RT = 1.0
 
     # We omit the 0.5 in the density average since Trixi.jl always multiplies the non-conservative flux with 0.5
-    if noncons == 1
+    if nonconservative_term == 1
         rho_ll, v1_ll, v2_ll, p_ll, phi_ll = cons2prim(u_ll, equations)
         e_ll = exp(phi_ll / RT)
 
@@ -544,7 +544,7 @@ end
         else #if orientation == 2
             return SVector(f0, f0, flux, f0, f0)
         end
-    else #if noncons == 2
+    else #if nonconservative_term == 2
         flux = 1
 
         f0 = zero(eltype(u_ll))
@@ -568,7 +568,7 @@ end
     RT = 1.0
 
     # We omit the 0.5 in the density average since Trixi.jl always multiplies the non-conservative flux with 0.5
-    if noncons == 1
+    if nonconservative_term == 1
         inv_e_ll = exp(-phi_ll / RT)
         inv_e_rr = exp(-phi_rr / RT)
 
@@ -580,7 +580,7 @@ end
         else #if orientation == 2
             return SVector(f0, f0, flux, f0, f0)
         end
-    else #if noncons == 2
+    else #if nonconservative_term == 2
         flux = p_rr - p_ll
 
         f0 = zero(eltype(u_ll))
