@@ -22,8 +22,10 @@ initial_condition = initial_condition_constant
 volume_flux = (flux_kennedy_gruber, flux_nonconservative_chandrashekar_isothermal)
 surface_flux = (flux_kennedy_gruber, flux_nonconservative_chandrashekar_isothermal)
 
-surface_flux = (FluxHydrostaticReconstruction(flux_kennedy_gruber, hydrostatic_reconstruction), 
-                FluxHydrostaticreconstruction(flux_nonconservative_chandrashekar_isothermal, hydrostatic_reconstruction))
+surface_flux = (FluxHydrostaticReconstruction(flux_kennedy_gruber,
+                                              hydrostatic_reconstruction),
+                FluxHydrostaticReconstruction(flux_nonconservative_chandrashekar_isothermal,
+                                              hydrostatic_reconstruction))
 
 polydeg = 3
 basis = LobattoLegendreBasis(polydeg)

@@ -991,10 +991,17 @@ end
 # "A well-balanced Runge-Kutta discontinuous Galerkin method for the Euler equations in isothermal 
 # hydrostatic state under gravitational field"
 # [DOI:10.1016/j.camwa.2022.05.025](https://doi.org/10.1016/j.camwa.2022.05.025)
-@inline function hydrostatic_reconstruction(u_ll, u_rr, equations::CompressibleEulerEquationsWithGravityNoPressure2D)
+@inline function hydrostatic_reconstruction(u_ll, u_rr,
+                                            equations::CompressibleEulerEquationsWithGravityNoPressure2D)
     # Unpack left and right states
-    rho_ll, rho_v_ll, rho_e_ll, phi_ll = u_ll
-    rho_rr, rho_v_rr, rho_e_rr, phi_rr = u_rr
+    rho_ll, v1_ll, v2_ll, p_ll, phi_ll = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr, phi_rr = cons2prim(u_rr, equations)
+
+    rho_e_ll = u_ll[4]
+    rho_e_rr = u_rr[4]
+
+    psi_ll = p_ll / rho_ll * log(rho_ll)
+    psi_rr = p_rr / rho_rr * log(rho_rr)
 
     # Compute equilibrium potential (# TODO: For general case we need to add phi_num - phi_exact))
     psi_eq_ll = psi_ll # phi_ll - phi_exact_ll
@@ -1006,15 +1013,13 @@ end
     # Compute equlibrium state
     rho_eq_ll = exp(psi_eq_ll / (RT0)) # How do I get T0?   # Replace RT0 with R*T0 once available
     rho_eq_rr = exp(psi_eq_rr / (RT0))
-    p_eq_ll = RT0*rho_eq_ll
-    p_eq_rr = RT0*rho_eq_rr
-    rho_v_eq_ll = 0.0
-    rho_v_eq_rr = 0.0
-    rho_e_eq_ll = p_eq_ll / (gamma - 1) + rho_eq_ll * phi_ll
-    rho_e_eq_rr = p_eq_rr / (gamma - 1) + rho_eq_rr * phi_rr
+    p_eq_ll = RT0 * rho_eq_ll
+    p_eq_rr = RT0 * rho_eq_rr
+    rho_e_eq_ll = p_eq_ll / (equations.gamma - 1) + rho_eq_ll * phi_ll
+    rho_e_eq_rr = p_eq_rr / (equations.gamma - 1) + rho_eq_rr * phi_rr
 
-    u_eq_ll = (rho_eq_ll, rho_v_eq_ll, rho_e_eq_ll, phi_ll)
-    u_eq_rr = (rho_eq_rr, rho_v_eq_rr, rho_e_eq_rr, phi_rr)
+    u_eq_ll = SVector(rho_eq_ll, 0.0, 0.0, rho_e_eq_ll, phi_ll)
+    u_eq_rr = SVector(rho_eq_rr, 0.0, 0.0, rho_e_eq_rr, phi_rr)
 
     # Compute residual contribution
     u_res_ll = u_ll - u_eq_ll
@@ -1030,15 +1035,13 @@ end
     # Compute reconstructed equilibrium state
     rho_eq_ll = exp(psi_eq_ll / (RT0)) # How do I get T0?   # Replace RT0 with R*T0 once available
     rho_eq_rr = exp(psi_eq_rr / (RT0))
-    p_eq_ll = RT0*rho_eq_ll
-    p_eq_rr = RT0*rho_eq_rr
-    rho_v_eq_ll = 0.0
-    rho_v_eq_rr = 0.0
-    rho_e_eq_ll = p_eq_ll / (gamma - 1) + rho_eq_ll * phi_ll
-    rho_e_eq_rr = p_eq_rr / (gamma - 1) + rho_eq_rr * phi_rr
+    p_eq_ll = RT0 * rho_eq_ll
+    p_eq_rr = RT0 * rho_eq_rr
+    rho_e_eq_ll = p_eq_ll / (equations.gamma - 1) + rho_eq_ll * phi_ll
+    rho_e_eq_rr = p_eq_rr / (equations.gamma - 1) + rho_eq_rr * phi_rr
 
-    u_eq_ll = SVector(rho_eq_ll, rho_v_eq_ll, rho_e_eq_ll, phi_ll)
-    u_eq_rr = SVector(rho_eq_rr, rho_v_eq_rr, rho_e_eq_rr, phi_rr)
+    u_eq_ll = SVector(rho_eq_ll, 0.0, 0.0, rho_e_eq_ll, phi_ll)
+    u_eq_rr = SVector(rho_eq_rr, 0.0, 0.0, rho_e_eq_rr, phi_rr)
 
     # Compute reconstructed state
     u_star_ll = u_eq_ll + u_res_ll
@@ -1046,5 +1049,4 @@ end
 
     return u_star_ll, u_star_rr
 end
-
 end # @muladd
