@@ -36,7 +36,7 @@ end
 # Convert to another set of variables using a solution_variables function
 function convert_variables(u, solution_variables, mesh::DGMultiMesh,
                            equations::AbstractCovariantEquations, dg, cache)
-    (; aux_values) = cache
+    (; aux_values) = cache.auxiliary_container
     # Extract the number of solution variables to be output 
     # (may be different than the number of conservative variables) 
     n_vars = length(Trixi.varnames(solution_variables, equations))
@@ -76,7 +76,7 @@ end
 @inline function cons2prim_and_vorticity(u, mesh::DGMultiMesh,
                                          equations::AbstractCovariantEquations{2},
                                          dg::DGMulti, cache, i)
-    (; aux_values) = cache
+    (; aux_values) = cache.auxiliary_container
     u_node = u[:, i]
     aux_node = aux_values[i]
     element = (i - 1) ÷ nnodes(dg) + 1
