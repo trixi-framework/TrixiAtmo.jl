@@ -34,7 +34,7 @@ function Trixi.integrate(func::Func, u,
 
     integral = zero(func(u_values[1], equations))
     total_volume = zero(sum(rd.wq))
-    for element in Trixi.eachelement(dg, cache)
+    for element in Trixi.eachelement(mesh, dg, cache)
         weights = area_element.(aux_quad_values[:, element], equations) .* rd.wq
         integral += sum(weights .* func.(u_values[:, element], equations))
         total_volume += sum(weights)
