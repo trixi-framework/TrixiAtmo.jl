@@ -35,6 +35,7 @@ volume_integral = VolumeIntegralSubcellLimiting(limiter_idp;
                                                 volume_flux_dg = volume_flux,
                                                 volume_flux_fv = surface_flux)
 #volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
+volume_integral = VolumeIntegralPureLGLFiniteVolume(volume_flux_fv = surface_flux)
 
 solver = DGSEM(basis, surface_flux, volume_integral)
 
@@ -83,7 +84,7 @@ callbacks = CallbackSet(summary_callback,
 ###############################################################################
 # run the simulation
 
-stage_callbacks = (SubcellLimiterIDPCorrection(),)
+stage_callbacks = () #SubcellLimiterIDPCorrection(),
 
 sol = Trixi.solve(ode, Trixi.SimpleSSPRK33(stage_callbacks = stage_callbacks);
                   dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
