@@ -965,6 +965,14 @@ end
     return SVector(diss[1], diss[2], diss[3], diss[4], zero(eltype(u_ll)))
 end
 
+# State validation for Newton-bisection method of subcell IDP limiting
+@inline function Base.isvalid(u, equations::CompressibleEulerEquationsWithGravityNoPressure2D)
+    if u[1] <= 0 || pressure(u, equations) <= 0
+        return false
+    end
+    return true
+end
+
 #######################################################################
 # Hydrostatic reconstruction
 
