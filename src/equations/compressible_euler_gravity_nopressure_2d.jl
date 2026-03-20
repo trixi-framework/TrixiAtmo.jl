@@ -966,7 +966,8 @@ end
 end
 
 # State validation for Newton-bisection method of subcell IDP limiting
-@inline function Base.isvalid(u, equations::CompressibleEulerEquationsWithGravityNoPressure2D)
+@inline function Base.isvalid(u,
+                              equations::CompressibleEulerEquationsWithGravityNoPressure2D)
     if u[1] <= 0 || pressure(u, equations) <= 0
         return false
     end
@@ -1056,5 +1057,28 @@ end
     u_star_rr = u_eq_rr + u_res_rr
 
     return u_star_ll, u_star_rr
+end
+
+# Get outer state for the min/max limiters
+@inline function Trixi.get_boundary_outer_state(u_inner, t,
+                                                boundary_condition::typeof(boundary_condition_slip_wall),
+                                                orientation, boundary_index,
+                                                mesh::TreeMesh{2},
+                                                equations::CompressibleEulerEquationsWithGravityNoPressure2D,
+                                                dg, cache, indices...)
+    if orientation == 1
+        #if boundary_index == 1 # Element is on the right, boundary on the left
+        return SVector(u_inner[1],
+                       u_inner[2] - 2 * u_inner[2],
+                       u_inner[3],
+                       u_inner[4],
+                       u_inner[5])
+    else
+        return SVector(u_inner[1],
+                       u_inner[2],
+                       u_inner[3] - 2 * u_inner[3],
+                       u_inner[4],
+                       u_inner[5])
+    end
 end
 end # @muladd
