@@ -234,7 +234,8 @@ function Trixi.calc_interface_flux!(surface_flux_values,
                                     mesh::P4estMesh{2},
                                     nonconservative_terms,
                                     equations::AbstractCovariantEquations{2},
-                                    surface_integral, dg::DG, cache)
+                                    surface_integral,
+                                    dg::DGSEM{<:LobattoLegendreBasis}, cache)
     (; neighbor_ids, node_indices) = cache.interfaces
     index_range = eachnode(dg)
     index_end = last(index_range)
@@ -294,7 +295,8 @@ end
 @inline function Trixi.calc_interface_flux!(surface_flux_values, mesh::P4estMesh{2},
                                             nonconservative_terms::False,
                                             equations::AbstractCovariantEquations{2},
-                                            surface_integral, dg::DG, cache,
+                                            surface_integral,
+                                            dg::DGSEM{<:LobattoLegendreBasis}, cache,
                                             interface_index,
                                             primary_node_index,
                                             primary_direction_index,
@@ -355,7 +357,8 @@ end
 @inline function Trixi.calc_interface_flux!(surface_flux_values, mesh::P4estMesh{2},
                                             nonconservative_terms::True,
                                             equations::AbstractCovariantEquations{2},
-                                            surface_integral, dg::DG, cache,
+                                            surface_integral,
+                                            dg::DGSEM{<:LobattoLegendreBasis}, cache,
                                             interface_index,
                                             primary_node_index,
                                             primary_direction_index,
