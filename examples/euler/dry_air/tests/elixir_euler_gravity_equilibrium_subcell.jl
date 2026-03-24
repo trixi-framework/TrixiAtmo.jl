@@ -20,9 +20,9 @@ end
 initial_condition = initial_condition_constant
 
 volume_flux = (flux_kennedy_gruber, flux_nonconservative_chandrashekar_isothermal)
-surface_flux = (flux_kennedy_gruber, flux_nonconservative_chandrashekar_isothermal)
 
-surface_flux = (FluxHydrostaticReconstruction(FluxPlusDissipation(flux_kennedy_gruber, DissipationLocalLaxFriedrichs()),
+surface_flux = (FluxHydrostaticReconstruction(FluxPlusDissipation(flux_kennedy_gruber,
+                                                                  DissipationLocalLaxFriedrichs()),
                                               hydrostatic_reconstruction),
                 FluxHydrostaticReconstruction(flux_nonconservative_chandrashekar_isothermal,
                                               hydrostatic_reconstruction))

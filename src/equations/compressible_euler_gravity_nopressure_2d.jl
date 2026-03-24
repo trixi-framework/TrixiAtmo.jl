@@ -501,6 +501,26 @@ Trixi.n_nonconservative_terms(::FluxNonConservativeChandrashekarIsothermal) = 2
 const flux_nonconservative_chandrashekar_isothermal = FluxNonConservativeChandrashekarIsothermal()
 
 @inline function (noncons_flux::FluxNonConservativeChandrashekarIsothermal)(u_ll, u_rr,
+                                                                            normal_direction::AbstractVector,
+                                                                            equations::CompressibleEulerEquationsWithGravityNoPressure2D)
+    rho_ll, _, _, p_ll, phi_ll = cons2prim(u_ll, equations)
+    _, _, _, p_rr, phi_rr = cons2prim(u_rr, equations)
+
+    # TODO: we assume R*T constant... Read from aux vars
+    RT = 1.0 # p_ll / rho_ll
+
+    e_ll = exp(phi_ll / RT)
+    e_rr = exp(phi_rr / RT)
+
+    # We omit the 0.5 in the density average since Trixi.jl always multiplies the non-conservative flux with 0.5
+    noncons = -rho_ll * RT * e_ll * (1 / e_rr - 1 / e_ll) + (p_rr - p_ll)
+
+    f0 = zero(eltype(u_ll))
+    return SVector(f0, noncons * normal_direction[1], noncons * normal_direction[2], f0,
+                   f0)
+end
+
+@inline function (noncons_flux::FluxNonConservativeChandrashekarIsothermal)(u_ll, u_rr,
                                                                             orientation::Integer,
                                                                             equations::CompressibleEulerEquationsWithGravityNoPressure2D)
     rho_ll, _, _, p_ll, phi_ll = cons2prim(u_ll, equations)
