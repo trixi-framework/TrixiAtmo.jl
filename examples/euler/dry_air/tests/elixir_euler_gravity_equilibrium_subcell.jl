@@ -22,20 +22,21 @@ initial_condition = initial_condition_constant
 volume_flux = (flux_kennedy_gruber, flux_nonconservative_chandrashekar_isothermal)
 surface_flux = (flux_kennedy_gruber, flux_nonconservative_chandrashekar_isothermal)
 
-surface_flux = (FluxHydrostaticReconstruction(flux_kennedy_gruber,
+surface_flux = (FluxHydrostaticReconstruction(FluxPlusDissipation(flux_kennedy_gruber, DissipationLocalLaxFriedrichs()),
                                               hydrostatic_reconstruction),
                 FluxHydrostaticReconstruction(flux_nonconservative_chandrashekar_isothermal,
                                               hydrostatic_reconstruction))
 
-polydeg = 3
+polydeg = 0
 basis = LobattoLegendreBasis(polydeg)
 limiter_idp = SubcellLimiterIDP(equations, basis;
                                 positivity_variables_cons = ["rho"],)
-volume_integral = VolumeIntegralSubcellLimiting(limiter_idp;
-                                                volume_flux_dg = volume_flux,
-                                                volume_flux_fv = surface_flux)
-#volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
-volume_integral = VolumeIntegralPureLGLFiniteVolume(volume_flux_fv = surface_flux)
+#  volume_integral = VolumeIntegralSubcellLimiting(limiter_idp;
+#                                                  volume_flux_dg = volume_flux,
+#                                                  volume_flux_fv = surface_flux)
+#
+volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
+#volume_integral = VolumeIntegralPureLGLFiniteVolume(volume_flux_fv = surface_flux)
 
 solver = DGSEM(basis, surface_flux, volume_integral)
 
@@ -62,14 +63,14 @@ ode = semidiscretize(semi, tspan)
 
 summary_callback = SummaryCallback()
 
-analysis_interval = 100
+analysis_interval = 10000
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
                                      analysis_polydeg = polydeg,
                                      save_analysis = true)
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
-save_solution = SaveSolutionCallback(interval = 10,
+save_solution = SaveSolutionCallback(dt = 10,
                                      save_initial_solution = true,
                                      save_final_solution = true,
                                      solution_variables = cons2prim) #extra_node_variables = (:limiting_coefficient,)
