@@ -29,6 +29,33 @@ function Trixi.create_cache(mesh::P4estMesh, equations::AbstractEquations, dg::D
     return cache
 end
 
+function Trixi.create_cache(mesh::P4estMesh, equations::AbstractEquations, dg::DG, ::Any,
+                            aux_field,
+                            ::Type{uEltype}) where {uEltype <: Real}
+    # Make sure to balance the `p4est` before creating any containers
+    # in case someone has tampered with the `p4est` after creating the mesh
+    Trixi.balance!(mesh)
+
+    elements = Trixi.init_elements(mesh, equations, dg.basis, uEltype)
+    interfaces = Trixi.init_interfaces(mesh, equations, dg.basis, elements)
+    boundaries = Trixi.init_boundaries(mesh, equations, dg.basis, elements)
+    mortars = Trixi.init_mortars(mesh, equations, dg.basis, elements)
+    
+    cache = (; elements, interfaces, boundaries, mortars)
+
+    # Add specialized parts of the cache required to compute the volume integral etc.
+    cache = (; cache...,
+             Trixi.create_cache(mesh, equations, dg.volume_integral, dg, cache, uEltype)...)
+    cache = (; cache..., Trixi.create_cache(mesh, equations, dg.mortar, uEltype)...) 
+
+    # Add specialized parts of the cache for auxiliary node variables
+    cache = (; cache...,
+             create_cache_aux(mesh, equations,
+                                    have_aux_node_vars(equations),
+                                    dg, cache, aux_field)...)
+    return cache
+end
+
 # If there are auxiliary variables, initialize them
 function create_cache_aux(mesh, equations, have_aux_node_vars::Trixi.True, dg, cache, aux_field)
     aux_vars = init_aux_vars(mesh, equations, dg, cache, aux_field)
@@ -38,6 +65,23 @@ end
 # Do nothing if there are no auxiliary variables
 function create_cache_aux(mesh, equations, have_aux_node_vars::Trixi.False, dg, cache, aux_field)
     return NamedTuple()
+end
+
+# Return the auxiliary variables at a given surface node index
+@inline function get_aux_surface_node_vars(aux_surface_node_vars, equations, ::DG,
+                                           indices...)
+    aux_vars_ll = SVector(ntuple(@inline(v->aux_surface_node_vars[1, v, indices...]),
+                                 Val(n_aux_node_vars(equations))))
+    aux_vars_rr = SVector(ntuple(@inline(v->aux_surface_node_vars[2, v, indices...]),
+                                 Val(n_aux_node_vars(equations))))
+    return aux_vars_ll, aux_vars_rr
+end
+
+# Return the auxiliary variables at a given volume node index
+@inline function get_aux_node_vars(aux_node_vars, equations, ::DG,
+                                   indices...)
+    return SVector(ntuple(@inline(v->aux_node_vars[v, indices...]),
+                          Val(n_aux_node_vars(equations))))
 end
 
 include("containers_2d_manifold_in_3d_cartesian.jl")

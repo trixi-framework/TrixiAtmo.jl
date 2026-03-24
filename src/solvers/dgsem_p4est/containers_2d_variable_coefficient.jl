@@ -260,70 +260,71 @@ function init_aux_mortar_node_vars!(
     return nothing
 end
 
-function Trixi.init_elements(
-    mesh::P4estMesh{2,2,RealT},
-    equations::AbstractVariableCoefficientEquations, #VariableCoefficientAdvectionEquation2D,
-    basis,
-    metric_terms,
-    ::Type{uEltype},
-) where {RealT<:Real,uEltype<:Real}
-    nelements = Trixi.ncells(mesh)
+#function Trixi.init_elements(
+#    mesh::P4estMesh{NDIMS, NDIMS, RealT},
+#    equations::AbstractVariableCoefficientEquations, #VariableCoefficientAdvectionEquation2D,
+#    basis,
+#    ::Type{uEltype},
+#) where {RealT<:Real,uEltype<:Real}
+#    nelements = Trixi.ncells(mesh)
+#
+#    _node_coordinates = Vector{RealT}(undef, 2 * nnodes(basis)^2 * nelements)
+#    node_coordinates = unsafe_wrap(
+#        Array,
+#        pointer(_node_coordinates),
+#        (2, ntuple(_ -> nnodes(basis), 2)..., nelements),
+#    )
+#
+#    _jacobian_matrix = Vector{RealT}(undef, 2^2 * nnodes(basis)^2 * nelements)
+#    jacobian_matrix = unsafe_wrap(
+#        Array,
+#        pointer(_jacobian_matrix),
+#        (2, 2, ntuple(_ -> nnodes(basis), 2)..., nelements),
+#    )
+#
+#    _contravariant_vectors = similar(_jacobian_matrix)
+#    contravariant_vectors =
+#        unsafe_wrap(Array, pointer(_contravariant_vectors), size(jacobian_matrix))
+#
+#    _inverse_jacobian = Vector{RealT}(undef, nnodes(basis)^2 * nelements)
+#    inverse_jacobian = unsafe_wrap(
+#        Array,
+#        pointer(_inverse_jacobian),
+#        (ntuple(_ -> nnodes(basis), 2)..., nelements),
+#    )
+#
+#    _surface_flux_values = Vector{uEltype}(
+#        undef,
+#        nvariables(equations) * nnodes(basis)^(2 - 1) * (2 * 2) * nelements,
+#    )
+#    surface_flux_values = unsafe_wrap(
+#        Array,
+#        pointer(_surface_flux_values),
+#        (
+#            nvariables(equations),
+#            ntuple(_ -> nnodes(basis), 2 - 1)...,
+#            2 * 2,
+#            nelements,
+#        ),
+#    )
+#
+#    elements = Trixi.P4estElementContainer(
+#        node_coordinates,
+#        jacobian_matrix,
+#        contravariant_vectors,
+#        inverse_jacobian,
+#        surface_flux_values,
+#        _node_coordinates,
+#        _jacobian_matrix,
+#        _contravariant_vectors,
+#        _inverse_jacobian,
+#        _surface_flux_values,
+#    )
+#
+#    Trixi.init_elements!(elements, mesh, basis)
+#    return elements
+#
+#end 
 
-    _node_coordinates = Vector{RealT}(undef, 2 * nnodes(basis)^2 * nelements)
-    node_coordinates = unsafe_wrap(
-        Array,
-        pointer(_node_coordinates),
-        (2, ntuple(_ -> nnodes(basis), 2)..., nelements),
-    )
-
-    _jacobian_matrix = Vector{RealT}(undef, 2^2 * nnodes(basis)^2 * nelements)
-    jacobian_matrix = unsafe_wrap(
-        Array,
-        pointer(_jacobian_matrix),
-        (2, 2, ntuple(_ -> nnodes(basis), 2)..., nelements),
-    )
-
-    _contravariant_vectors = similar(_jacobian_matrix)
-    contravariant_vectors =
-        unsafe_wrap(Array, pointer(_contravariant_vectors), size(jacobian_matrix))
-
-    _inverse_jacobian = Vector{RealT}(undef, nnodes(basis)^2 * nelements)
-    inverse_jacobian = unsafe_wrap(
-        Array,
-        pointer(_inverse_jacobian),
-        (ntuple(_ -> nnodes(basis), 2)..., nelements),
-    )
-
-    _surface_flux_values = Vector{uEltype}(
-        undef,
-        nvariables(equations) * nnodes(basis)^(2 - 1) * (2 * 2) * nelements,
-    )
-    surface_flux_values = unsafe_wrap(
-        Array,
-        pointer(_surface_flux_values),
-        (
-            nvariables(equations),
-            ntuple(_ -> nnodes(basis), 2 - 1)...,
-            2 * 2,
-            nelements,
-        ),
-    )
-
-    elements = Trixi.P4estElementContainer{2,RealT,uEltype,2 + 1,2 + 2,2 + 3}(
-        node_coordinates,
-        jacobian_matrix,
-        contravariant_vectors,
-        inverse_jacobian,
-        surface_flux_values,
-        _node_coordinates,
-        _jacobian_matrix,
-        _contravariant_vectors,
-        _inverse_jacobian,
-        _surface_flux_values,
-    )
-
-    Trixi.init_elements!(elements, mesh, basis)
-    return elements
 
 end #muladd
-end

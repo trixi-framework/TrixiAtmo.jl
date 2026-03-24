@@ -28,10 +28,13 @@ function Trixi.SemidiscretizationHyperbolic(mesh::P4estMesh{2},
                                             RealT = real(solver), uEltype = RealT,
                                             initial_cache = NamedTuple(),
                                             aux_field = nothing)
-        cache = (; Trixi.create_cache(mesh, equations, solver, RealT, nothing, aux_field, uEltype)...,
+        cache = (; Trixi.create_cache(mesh, equations, solver, RealT, aux_field, uEltype)...,
                 initial_cache...)
+        
         _boundary_conditions = Trixi.digest_boundary_conditions(boundary_conditions, mesh, solver, cache)
 
+        performance_counter = Trixi.PerformanceCounter()
+        
         SemidiscretizationHyperbolic{typeof(mesh), typeof(equations),
                                      typeof(initial_condition),
                                      typeof(_boundary_conditions), typeof(source_terms),
@@ -39,5 +42,6 @@ function Trixi.SemidiscretizationHyperbolic(mesh::P4estMesh{2},
                                      initial_condition,
                                      _boundary_conditions,
                                      source_terms, solver,
-                                     cache)
+                                     cache,
+                                     performance_counter)
 end

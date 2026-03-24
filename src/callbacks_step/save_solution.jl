@@ -7,7 +7,8 @@ function Trixi.save_solution_file(u, time, dt, timestep,
                             element_variables = Dict{Symbol, Any}(),
                             node_variables = Dict{Symbol, Any}();
                             system = "")
-    @unpack output_directory, solution_variables, reference_solution = solution_callback
+    #@unpack output_directory, solution_variables, reference_solution = solution_callback
+    @unpack output_directory, solution_variables = solution_callback
     (; aux_node_vars) = cache.aux_vars
     # Filename based on current time step
     if isempty(system)
@@ -21,12 +22,12 @@ function Trixi.save_solution_file(u, time, dt, timestep,
     converted_variables, n_vars = convert_variables(u, aux_node_vars, equations, solution_variables)
 
     # Subtract reference solution
-    if !isnothing(reference_solution)
-        data = converted_variables - reference_solution
-    else
-        data = converted_variables
-    end
-
+    #if !isnothing(reference_solution)
+    #    data = converted_variables - reference_solution
+    #else
+    #    data = converted_variables
+    #end
+    data = converted_variables
     # Open file (clobber existing content)
     h5open(filename, "w") do file
         # Add context information as attributes

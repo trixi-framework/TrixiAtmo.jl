@@ -54,7 +54,9 @@ export CompressibleMoistEulerEquations2D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity2D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity3D,
        CompressibleEulerEnergyEquationsWithGravity2D,
-       CompressibleEulerEnergyEquationsWithGravity3D
+       CompressibleEulerEnergyEquationsWithGravity3D,
+       VariableCoefficientAdvectionEquation2D, PerturbationEulerEquations2DAuxVars
+
 
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
@@ -72,7 +74,7 @@ export flux_nonconservative_zeros, flux_nonconservative_ec,
 
 export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!
 
-export cons2prim_and_vorticity, contravariant2global
+export cons2prim_and_vorticity, contravariant2global, cons2prim, cons2aux, cons2prim_and_aux
 
 export P4estMeshCubedSphere2D, P4estMeshQuadIcosahedron2D, MetricTermsCrossProduct,
        MetricTermsInvariantCurl, MetricTermsCovariantSphere, ChristoffelSymbolsAutodiff,
@@ -87,6 +89,8 @@ export initial_condition_gaussian, initial_condition_geostrophic_balance,
        initial_condition_rossby_haurwitz, initial_condition_isolated_mountain,
        initial_condition_unsteady_solid_body_rotation,
        initial_condition_barotropic_instability
+
+export BoundaryConditionDirichletAux, boundary_condition_slip_wall_aux
 
 export bottom_topography_isolated_mountain, bottom_topography_unsteady_solid_body_rotation
 

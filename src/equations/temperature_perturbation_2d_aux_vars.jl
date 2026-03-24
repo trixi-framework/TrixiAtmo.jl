@@ -22,10 +22,10 @@ varnames(::typeof(cons2aux), ::PerturbationEulerEquations2DAuxVars) = ("rho_mean
 
 @inline function Trixi.cons2prim(u, aux, equations::PerturbationEulerEquations2DAuxVars)  
     rho_prime, rho_v1, rho_v2, rhoe_prime = u
-    rho_mean, rhoe_mean = aux 
+    rho_mean, rhoe_mean = aux
     
     rho = rho_prime + rho_mean
-    rho_e = rhoe_prime + rhoe_mean 
+    rho_e = rhoe_prime + rhoe_mean
 
     v1 = rho_v1 / rho
     v2 = rho_v2 / rho
@@ -183,6 +183,32 @@ end
     return abs(v1) + c, abs(v2) + c
 end
 
+
+@inline function max_abs_speed(u_ll, u_rr, aux_ll, aux_rr,
+                               normal_direction::AbstractVector,
+                               equations::PerturbationEulerEquations2DAuxVars)
+
+    rho_ll, v1_ll, v2_ll, p_ll = cons2primtotal(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr = cons2primtotal(u_rr, aux_rr, equations)
+
+    # Calculate normal velocities and sound speeds
+    # left
+    v_ll = (v1_ll * normal_direction[1]
+            +
+            v2_ll * normal_direction[2])
+    c_ll = sqrt(equations.gamma * p_ll / rho_ll)
+    # right
+    v_rr = (v1_rr * normal_direction[1]
+            +
+            v2_rr * normal_direction[2])
+    c_rr = sqrt(equations.gamma * p_rr / rho_rr)
+
+    norm_ = norm(normal_direction)
+    return max(abs(v_ll) + c_ll * norm_,
+               abs(v_rr) + c_rr * norm_)
+end
+
+
 @inline function boundary_condition_slip_wall_aux(u_inner, aux_inner, normal_direction::AbstractVector, 
                                                 x, t, surface_flux_function, 
                                                 equations::PerturbationEulerEquations2DAuxVars)
@@ -190,12 +216,10 @@ end
     # Normalize the vector without using `normalize` since we need to multiply by the `norm_` later
     normal = normal_direction / norm_
 
-    u_inner_total = cons2constotal(u_inner, aux_inner, equations)
-    # rotate the internal solution state
-    u_local = Trixi.rotate_to_x(u_inner_total, normal, equations)
-
-    # compute the primitive variables
-    rho_local, v_normal, v_tangent, p_local = cons2prim(u_local, equations::CompressibleEulerEquations2D)
+    rho, v1, v2, p = cons2primtotal(u_inner, aux_inner, equations)
+    # rotate velocities
+    v_normal  = v1 * normal[1] + v2 * normal[2] # wall normal
+    v_tangent = -v1 * normal[2] + v2 * normal[1]# wall tangent
 
     # Get the solution of the pressure Riemann problem
     # See Section 6.3.3 of
@@ -203,17 +227,17 @@ end
     # Riemann Solvers and Numerical Methods for Fluid Dynamics: A Practical Introduction
     # [DOI: 10.1007/b79761](https://doi.org/10.1007/b79761)
     if v_normal <= 0
-        sound_speed = sqrt(equations.gamma * p_local / rho_local) # local sound speed
-        p_star = p_local *
+        sound_speed = sqrt(equations.gamma * p / rho) # local sound speed
+        p_star = p *
                  (1 + 0.5f0 * (equations.gamma - 1) * v_normal / sound_speed)^(2 *
                                                                                equations.gamma *
                                                                                equations.inv_gamma_minus_one)
     else # v_normal > 0
-        A = 2 / ((equations.gamma + 1) * rho_local)
-        B = p_local * (equations.gamma - 1) / (equations.gamma + 1)
-        p_star = p_local +
+        A = 2 / ((equations.gamma + 1) * rho)
+        B = p * (equations.gamma - 1) / (equations.gamma + 1)
+        p_star = p +
                  0.5f0 * v_normal / A *
-                 (v_normal + sqrt(v_normal^2 + 4 * A * (p_local + B)))
+                 (v_normal + sqrt(v_normal^2 + 4 * A * (p + B)))
     end
 
     # For the slip wall we directly set the flux as the normal velocity is zero

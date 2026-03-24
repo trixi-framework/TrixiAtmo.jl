@@ -88,7 +88,7 @@ end
 
 
 # Source terms   
-@inline function source_terms(u, x, t, equations::PerturbationEulerEquations2DAuxVars)
+@inline function source_terms(u, aux, x, t, equations::PerturbationEulerEquations2DAuxVars)
     g = 9.81
     rho_prime = u[1]
     return SVector(zero(eltype(u)), zero(eltype(u)), -g * rho_prime, zero(eltype(u)))
@@ -104,12 +104,12 @@ coordinates_min = (0.0, 0.0)
 coordinates_max = (300_000.0, 10_000.0)
 
 cells_per_dimension = (300, 10)
-mesh = P4estMesh(cells_per_dimension; polydeg = 2, coordinates_min, coordinates_max)
+mesh = P4estMesh(cells_per_dimension; polydeg = 2, coordinates_min, coordinates_max,
+                 periodicity = (true, false))
 
-boundary_conditions = (x_neg = boundary_condition_periodic,
-                       x_pos = boundary_condition_periodic,
-                       y_neg = boundary_condition_slip_wall_aux,
-                       y_pos = boundary_condition_slip_wall_aux)
+boundary_conditions = Dict(:y_neg => boundary_condition_slip_wall_aux,
+                       :y_pos => boundary_condition_slip_wall_aux)
+
               
 initial_condition = initial_condition_gravity_wave
 
