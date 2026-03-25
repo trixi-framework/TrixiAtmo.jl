@@ -66,50 +66,22 @@ function DGMultiMeshTriIcosahedron2D(dg::DGMulti{NDIMS, <:Tri}, radius;
     end
 
     md = StartUpDG.MeshData(Vxyz, EToV, dg.basis)
-    md = spherify_meshdata!(md, dg, EToV, Vxyz, radius)
+    md = project_onto_sphere!(md, dg, radius)
     boundary_faces = StartUpDG.tag_boundary_faces(md, is_on_boundary)
     return DGMultiMesh(dg, Trixi.GeometricTermsType(Trixi.Curved(), dg), md, boundary_faces)
 end
 
-function spherify_meshdata!(md::MeshData, dg::DGMulti{NDIMS}, EToV, Vxyz,
-                            radius) where {NDIMS}
-    rd = dg.basis
-    (; xyz, xyzq, xyzf) = md
-    for e in 1:size(EToV, 1)
-        v1, v2, v3 = ntuple(n -> SVector(ntuple(d -> Vxyz[d][EToV[e, n]], 3)), 3)
-        for j in 1:size(rd.rst[1], 1)
-            r, s = rd.rst[1][j], rd.rst[2][j]
-            # Bilinear mapping from reference square to physical space
-            x_node = local_mapping(r, s, v1, v2, v3, radius)
-
-            for n in 1:3
-                xyz[n][j, e] = x_node[n]
-            end
-        end
-
-        for j in 1:size(rd.rstq[1], 1)
-            r, s = rd.rstq[1][j], rd.rstq[2][j]
-            # Bilinear mapping from reference square to physical space
-            x_node = local_mapping(r, s, v1, v2, v3, radius)
-
-            for n in 1:3
-                xyzq[n][j, e] = x_node[n]
-            end
-        end
-
-        for j in 1:size(rd.rstf[1], 1)
-            r, s = rd.rstf[1][j], rd.rstf[2][j]
-            # Bilinear mapping from reference square to physical space
-            x_node = local_mapping(r, s, v1, v2, v3, radius)
-
-            for n in 1:3
-                xyzf[n][j, e] = x_node[n]
-            end
-        end
-    end
-    md = @set md.xyz = xyz
-    md = @set md.xyzq = xyzq
-    md = @set md.xyzf = xyzf
+function project_onto_sphere!(md::MeshData, dg::DGMulti{NDIMS}, radius) where {NDIMS}
+    x, y, z = md.xyz
+    norms = sqrt.(x.^2 + y.^2 + z.^2)
+    xyz = ntuple(n -> md.xyz[n] ./ norms .* radius, 3)
+    xq, yq, zq = md.xyzq
+    norms_q = sqrt.(xq.^2 + yq.^2 + zq.^2)
+    xyzq = ntuple(n -> md.xyzq[n] ./ norms_q .* radius, 3)
+    xf, yf, zf = md.xyzf
+    norms_f = sqrt.(xf.^2 + yf.^2 + zf.^2)
+    xyzf = ntuple(n -> md.xyzf[n] ./ norms_f .* radius, 3)
+    md = setproperties(md, xyz = xyz, xyzq = xyzq, xyzf = xyzf)
     return md
 end
 

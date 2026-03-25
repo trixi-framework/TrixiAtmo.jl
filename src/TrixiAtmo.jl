@@ -21,7 +21,7 @@ using LoopVectorization: @turbo
 using QuadGK: quadgk
 using ForwardDiff: derivative
 using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
-using Setfield
+using Setfield: setproperties
 
 @reexport using StaticArrays: SVector, SMatrix
 @reexport import Trixi: waterheight, varnames, cons2cons, cons2prim,
