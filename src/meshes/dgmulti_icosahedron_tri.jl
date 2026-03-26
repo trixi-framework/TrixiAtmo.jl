@@ -1,6 +1,23 @@
-function DGMultiMeshTriIcosahedron2D(dg::DGMulti{NDIMS, <:Tri}, radius;
-                                     initial_refinement = 3,
-                                     is_on_boundary = nothing) where {NDIMS}
+"""
+    DGMultiMeshTriIcosahedron2D(trees_per_face_dimension, radius;
+                               polydeg, RealT=Float64,
+                               initial_refinement_level=0, unsaved_changes=true,
+                               p4est_partition_allow_for_coarsening=true)
+
+Build a triangle-based icosahedral mesh as a 2D `DGMultiMesh` with 20 unrefined triangular faces. The mesh
+is then refined uniformly to the specified `initial_refinement_level`, yielding a total of `20 * 4^initial_refinement_level` triangles.
+
+The mesh will have no boundaries.
+
+# Arguments
+- `dg::DGMulti{NDIMS, <:Tri}`: the DGMulti discretization to use for the mesh.
+- `radius::Integer`: the radius of the sphere.
+- `initial_refinement_level::Integer`: refine the mesh uniformly to this level before the
+  simulation starts.
+"""
+function DGMultiMeshTriIcosahedron2D(dg::DGMulti{2, <:Tri}, radius;
+                                     initial_refinement_level = 3,
+                                     is_on_boundary = nothing)
     NDIMS_AMBIENT = 3
 
     vertex_coordinates = calc_node_coordinates_icosahedron_vertices(radius)
@@ -13,9 +30,10 @@ function DGMultiMeshTriIcosahedron2D(dg::DGMulti{NDIMS, <:Tri}, radius;
         EToV[i, :] = icosahedron_triangle_vertices_idx_map[i]
     end
 
-    for j in 1:initial_refinement
+    for j in 1:initial_refinement_level
         EToV_old = EToV
         Vxyz_old = ntuple(n -> copy(Vxyz[n]), NDIMS_AMBIENT)
+        # We need to keep track of the old vertex indices and edge indices to avoid creating duplicate vertices when refining the mesh.
         old_to_new = Dict{Int, Int}()
         edge_to_new = Dict{Tuple{Int, Int}, Int}()
         EToV = zeros(Int, (size(EToV_old, 1) * 4, 3))
