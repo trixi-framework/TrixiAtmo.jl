@@ -32,7 +32,7 @@ using Setfield
                         flux, flux_ec, flux_chandrashekar, flux_wintermeyer_etal,
                         flux_fjordholm_etal, flux_nonconservative_wintermeyer_etal,
                         flux_nonconservative_fjordholm_etal, FluxLMARS, flux_shima_etal,
-                        flux_ranocha, flux_kennedy_gruber
+                        flux_ranocha, flux_kennedy_gruber, trixi_backend
 
 using Trixi: ln_mean, stolarsky_mean, inv_ln_mean
 
