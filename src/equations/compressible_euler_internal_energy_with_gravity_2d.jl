@@ -1,5 +1,43 @@
+# By default, Julia/LLVM does not use fused multiply-add operations (FMAs).
+# Since these FMAs can increase the performance of many numerical algorithms,
+# we need to opt-in explicitly.
+# See https://ranocha.de/blog/Optimizing_EC_Trixi for further details.
 @muladd begin
 #! format: noindent
+
+@doc raw""" 
+CompressibleEulerInternalEnergyEquationsWithGravity2D(; c_p, c_v, gravity) 
+
+The compressible Euler equations with gravity
+math
+\frac{\partial}{\partial t}
+\begin{pmatrix}
+\rho \\ \rho v_1 \\ \rho v_2 \\ \rho e_{\text{internal}}
+\end{pmatrix}
++
+\frac{\partial}{\partial x}
+\begin{pmatrix}
+ \rho v_1 \\ \rho v_1^2 + p \\ \rho v_1 v_2 \\ (\rho e_{\text{internal}} +p) v_1
+\end{pmatrix}
++
+\frac{\partial}{\partial y}
+\begin{pmatrix}
+\rho v_2 \\ \rho v_1 v_2 \\ \rho v_2^2 + p \\ (\rho e_{\text{internal}} +p) v_2
+\end{pmatrix}
++
+\begin{pmatrix}
+0 \\ 0 \\ 0 \\ - v_1 \frac{\partial p}{\partial x} - v_2 \frac{\partial p}{\partial y}
+\end{pmatrix}
+=
+\begin{pmatrix}
+0 \\ - \rho \frac{\partial}{\partial x} \phi \\ - \rho \frac{\partial}{\partial y} \phi \\
+\end{pmatrix}
+for an ideal gas with ratio of specific heats gamma in two space dimensions. Here, `\rho is the density, v_1, v_2 are the velocities, e_{\text{internal}} is the specific internal energy, phi is the gravitational potential, and
+math
+p = (\gamma - 1) \rho e_internal
+the pressure. 
+"""
+
 struct CompressibleEulerInternalEnergyEquationsWithGravity2D{RealT <: Real} <:
        AbstractCompressibleEulerEquations{2, 5}
     p_0::RealT # reference pressure in Pa
@@ -43,7 +81,7 @@ have_nonconservative_terms(::CompressibleEulerInternalEnergyEquationsWithGravity
     # normalize the outward pointing direction
     normal = normal_direction / norm(normal_direction)
     surface_flux_function, nonconservative_flux_function = surface_flux_functions
-    # compute the normal velocity
+    # compute the normal momentum
     u_normal = normal[1] * u_inner[2] + normal[2] * u_inner[3]
 
     # create the "external" boundary solution state
@@ -146,7 +184,6 @@ Entropy stable two-point flux by
     c_ll = sqrt(equations.gamma * p_ll / rho_ll)
     c_rr = sqrt(equations.gamma * p_rr / rho_rr)
     a = 0.5f0 * (c_ll + c_rr)
-    a = 340.0
     norm_ = norm(normal_direction)
     v1_avg = 0.5f0 * (v1_ll + v1_rr)
     v2_avg = 0.5f0 * (v2_ll + v2_rr)
@@ -196,7 +233,6 @@ Entropy stable two-point flux by
     c_ll = sqrt(equations.gamma * p_ll / rho_ll)
     c_rr = sqrt(equations.gamma * p_rr / rho_rr)
     a = 0.5f0 * (c_ll + c_rr)
-    a = 340.0
     norm_ = norm(normal_direction)
     rho_avg = 0.5f0 * (rho_ll + rho_rr)
     v_interface = 0.5f0 * (v_dot_n_ll + v_dot_n_rr) -
