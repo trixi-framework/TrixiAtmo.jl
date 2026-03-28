@@ -62,9 +62,6 @@ equations = CompressibleEulerInternalEnergyEquationsWithGravity2D(c_p = 1004,
                                                                   c_v = 717,
                                                                   gravity = 9.81)
 
-# We have an isothermal background state with T0 = 250 K.
-# The reference speed of sound can be computed as:
-# cs = sqrt(gamma * R * T0)
 surface_flux = (flux_conservative_es, flux_nonconservative_es)
 volume_flux = (flux_conservative_artiano_ranocha, flux_nonconservative_artiano_ranocha)
 polydeg = 3
