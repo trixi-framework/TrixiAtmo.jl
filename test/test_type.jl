@@ -580,4 +580,47 @@ end
                                              equations)) == RealT
     end
 end
+
+@timed_testset "Compressible Euler Internal Energy With Gravity 2D" begin
+    for RealT in (Float32, Float64)
+        equations = @inferred CompressibleEulerInternalEnergyEquationsWithGravity2D(c_p = RealT(1004),
+                                                                                    c_v = RealT(717),
+                                                                                    gravity = RealT(9.81))
+
+        x = SVector(zero(RealT))
+        t = zero(RealT)
+        u = u_ll = u_rr = u_inner = cons = SVector(one(RealT), one(RealT), one(RealT),
+                                                   RealT(2), one(RealT))
+
+        normal_direction = SVector(one(RealT), one(RealT))
+
+        @test eltype(@inferred flux_nonconservative_artiano_ranocha(u_ll, u_rr,
+                                                                    normal_direction,
+                                                                    equations)) ==
+              RealT
+        @test eltype(@inferred flux_conservative_artiano_ranocha(u_ll, u_rr,
+                                                                 normal_direction,
+                                                                 equations)) ==
+              RealT
+        @test eltype(@inferred flux_nonconservative_es(u_ll, u_rr,
+                                                       normal_direction,
+                                                       equations)) ==
+              RealT
+        @test eltype(@inferred flux_conservative_es(u_ll, u_rr,
+                                                    normal_direction,
+                                                    equations)) ==
+              RealT
+
+        @test eltype(@inferred cons2prim(u, equations)) == RealT
+        @test eltype(@inferred prim2cons(u, equations)) == RealT
+        @test eltype(@inferred cons2entropy(u, equations)) == RealT
+        @test typeof(@inferred pressure(u, equations)) == RealT
+        @test typeof(@inferred entropy(cons, equations)) == RealT
+        @test eltype(@inferred Trixi.max_abs_speeds(u, equations)) == RealT
+        @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, normal_direction,
+                                                   equations)) == RealT
+        @test typeof(@inferred max_abs_speed(u_ll, u_rr, normal_direction,
+                                             equations)) == RealT
+    end
+end
 end

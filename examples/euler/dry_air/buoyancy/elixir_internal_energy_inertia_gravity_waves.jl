@@ -83,7 +83,7 @@ mesh = P4estMesh(trees_per_dimension, polydeg = polydeg,
 initial_condition = initial_condition_gravity_waves
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     boundary_conditions = boundary_conditions)
-tspan = (0.0, 10.0)
+tspan = (0.0, 1800.0)
 ode = semidiscretize(semi, tspan)
 
 summary_callback = SummaryCallback()
