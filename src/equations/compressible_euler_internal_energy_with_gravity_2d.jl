@@ -250,7 +250,7 @@ end
     rho, v1, v2, p, phi = prim
     rho_v1 = rho * v1
     rho_v2 = rho * v2
-    rho_e_internal = p / (equations.gamma - 1)
+    rho_e_internal = p * equations.inv_gamma_minus_one
     return SVector(rho, rho_v1, rho_v2, rho_e_internal, phi)
 end
 
@@ -281,7 +281,7 @@ end
 
 @inline function entropy(cons,
                          equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
-    p = (equations.gamma - 1) * cons[4]
+    p = pressure(cons, equations)
     # Thermodynamic entropy
     s = log(p) - equations.gamma * log(cons[1])
     S = -s * cons[1] / (equations.gamma - 1)
