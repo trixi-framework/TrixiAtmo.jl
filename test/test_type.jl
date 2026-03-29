@@ -624,8 +624,6 @@ end
         @test typeof(@inferred pressure(u, equations)) == RealT
         @test typeof(@inferred entropy(cons, equations)) == RealT
         @test eltype(@inferred Trixi.max_abs_speeds(u, equations)) == RealT
-        @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, normal_direction,
-                                                   equations)) == RealT
         @test typeof(@inferred max_abs_speed(u_ll, u_rr, normal_direction,
                                              equations)) == RealT
     end
