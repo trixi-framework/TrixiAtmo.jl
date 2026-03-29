@@ -9,7 +9,7 @@
 CompressibleEulerInternalEnergyEquationsWithGravity2D(; c_p, c_v, gravity) 
 
 The compressible Euler equations with gravity
-math
+```math
 \frac{\partial}{\partial t}
 \begin{pmatrix}
 \rho \\ \rho v_1 \\ \rho v_2 \\ \rho e_{\text{internal}}
@@ -32,6 +32,7 @@ math
 \begin{pmatrix}
 0 \\ - \rho \frac{\partial}{\partial x} \phi \\ - \rho \frac{\partial}{\partial y} \phi \\
 \end{pmatrix}
+```
 for an ideal gas with ratio of specific heats gamma in two space dimensions. Here, `\rho is the density, v_1, v_2 are the velocities, e_{\text{internal}} is the specific internal energy, phi is the gravitational potential, and
 math
 p = (\gamma - 1) \rho e_internal
