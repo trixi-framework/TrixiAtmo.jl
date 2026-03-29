@@ -78,9 +78,12 @@ end
 # Weak-form kernel for 3D equations solved in 2D manifolds
 @inline function Trixi.weak_form_kernel!(du, u,
                                          element,
-                                         mesh::Union{StructuredMesh{2},
-                                                     UnstructuredMesh2D,
-                                                     P4estMesh{2}, T8codeMesh{2}},
+                                         ::Type{<:Union{StructuredMesh{2},
+                                                        StructuredMeshView{2},
+                                                        UnstructuredMesh2D,
+                                                        P4estMesh{2},
+                                                        P4estMeshView{2},
+                                                        T8codeMesh{2}}},
                                          nonconservative_terms::False,
                                          equations::AbstractEquations{3},
                                          dg::DGSEM, cache, alpha = true)

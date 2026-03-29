@@ -96,7 +96,7 @@ end
 
 # Weak form kernel which uses contravariant flux components, passing the geometric 
 # information contained in the auxiliary variables to the flux function
-@inline function Trixi.weak_form_kernel!(du, u, element, mesh::P4estMesh{2},
+@inline function Trixi.weak_form_kernel!(du, u, element, ::Type{<:P4estMesh{2}},
                                          nonconservative_terms::False,
                                          equations::AbstractCovariantEquations{2},
                                          dg::DGSEM, cache, alpha = true)
