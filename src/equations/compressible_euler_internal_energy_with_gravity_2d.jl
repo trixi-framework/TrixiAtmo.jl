@@ -104,7 +104,7 @@ Entropy conserving, total energy conserving and kinetic energy preserving two-po
 -  Marco Artiano, Hendrik Ranocha (2026)
    On Affordable High-Order Entropy-Conservative/Stable and 
    Well-Balanced Methods for Nonconservative Hyperbolic Systems
-   (https://arxiv.org/abs/2603.18978)
+   [DOI: 10.48550/arXiv.2603.18978](https://arxiv.org/abs/2603.18978)
 """
 @inline function flux_conservative_artiano_ranocha(u_ll, u_rr,
                                                    normal_direction::AbstractVector,
@@ -138,8 +138,7 @@ Entropy conserving, total energy conserving and kinetic energy preserving two-po
 -  Marco Artiano, Hendrik Ranocha (2026)
    On Affordable High-Order Entropy-Conservative/Stable and 
    Well-Balanced Methods for Nonconservative Hyperbolic Systems
-   (https://arxiv.org/abs/2603.18978)
-"""
+[DOI: 10.48550/arXiv.2603.18978](https://arxiv.org/abs/2603.18978)"""
 @inline function flux_nonconservative_artiano_ranocha(u_ll, u_rr,
                                                       normal_direction::AbstractVector,
                                                       equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
@@ -168,7 +167,7 @@ Entropy stable two-point flux by
 -  Marco Artiano, Hendrik Ranocha (2026)
    On Affordable High-Order Entropy-Conservative/Stable and 
    Well-Balanced Methods for Nonconservative Hyperbolic Systems
-   (https://arxiv.org/abs/2603.18978)
+   [DOI: 10.48550/arXiv.2603.18978](https://arxiv.org/abs/2603.18978)
 """
 @inline function flux_conservative_es(u_ll, u_rr, normal_direction::AbstractVector,
                                       equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
@@ -218,7 +217,7 @@ Entropy stable two-point flux by
 -  Marco Artiano, Hendrik Ranocha (2026)
    On Affordable High-Order Entropy-Conservative/Stable and 
    Well-Balanced Methods for Nonconservative Hyperbolic Systems
-   (https://arxiv.org/abs/2603.18978)
+   [DOI: 10.48550/arXiv.2603.18978](https://arxiv.org/abs/2603.18978)
 """
 @inline function flux_nonconservative_es(u_ll, u_rr, normal_direction::AbstractVector,
                                          equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)

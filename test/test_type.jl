@@ -586,12 +586,12 @@ end
         equations = @inferred CompressibleEulerInternalEnergyEquationsWithGravity2D(c_p = RealT(1004),
                                                                                     c_v = RealT(717),
                                                                                     gravity = RealT(9.81))
-
         x = SVector(zero(RealT))
         t = zero(RealT)
         u = u_ll = u_rr = u_inner = cons = SVector(one(RealT), one(RealT), one(RealT),
                                                    RealT(2), one(RealT))
-
+        surface_flux_functions = (flux_conservative_artiano_ranocha,
+                                  flux_nonconservative_artiano_ranocha)
         normal_direction = SVector(one(RealT), one(RealT))
 
         @test eltype(@inferred flux_nonconservative_artiano_ranocha(u_ll, u_rr,
@@ -613,7 +613,7 @@ end
         @test eltype(@inferred boundary_condition_slip_wall(u_inner,
                                                             normal_direction,
                                                             x, t,
-                                                            surface_flux_function,
+                                                            surface_flux_functions,
                                                             equations)) ==
               SVector{5, RealT}
         @test eltype(varnames(cons2prim, equations)) == String
