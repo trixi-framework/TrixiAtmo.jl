@@ -81,7 +81,8 @@ function Trixi.calc_volume_integral!(du, u,
     end
 end
 
-function Trixi.calc_interface_flux!(cache, surface_integral::SurfaceIntegralWeakForm,
+function Trixi.calc_interface_flux!(cache,
+                                    surface_integral::SurfaceIntegralWeakForm,
                                     mesh::DGMultiMesh,
                                     have_nonconservative_terms::False,
                                     equations::AbstractCovariantEquations{NDIMS},
