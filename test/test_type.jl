@@ -610,8 +610,15 @@ end
                                                     normal_direction,
                                                     equations)) ==
               RealT
-
+        @test eltype(@inferred boundary_condition_slip_wall(u_inner,
+                                                            normal_direction,
+                                                            x, t,
+                                                            surface_flux_function,
+                                                            equations)) ==
+              SVector{5, RealT}
+        @test eltype(varnames(cons2prim, equations)) == String
         @test eltype(@inferred cons2prim(u, equations)) == RealT
+        @test eltype(@inferred cons2cons(u, equations)) == RealT
         @test eltype(@inferred prim2cons(u, equations)) == RealT
         @test eltype(@inferred cons2entropy(u, equations)) == RealT
         @test typeof(@inferred pressure(u, equations)) == RealT
