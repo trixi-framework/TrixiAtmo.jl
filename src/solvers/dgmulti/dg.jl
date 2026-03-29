@@ -15,8 +15,6 @@ function Trixi.create_cache(mesh::DGMultiMesh{NDIMS}, equations::AbstractCovaria
     nvars = nvariables(equations)
     naux = n_aux_node_vars(equations)
 
-    # We are duplicating the contents of solution_container in the top-level cache, but 
-    # note that no actual data is being copied here, just references to the same arrays.
     u_values = Trixi.allocate_nested_array(uEltype, nvars, size(md.xq), dg)
     u_face_values = Trixi.allocate_nested_array(uEltype, nvars, size(md.xf), dg)
     flux_face_values = Trixi.allocate_nested_array(uEltype, nvars, size(md.xf), dg)
@@ -25,7 +23,6 @@ function Trixi.create_cache(mesh::DGMultiMesh{NDIMS}, equations::AbstractCovaria
     solution_container = (; u_values, u_face_values, flux_face_values,
                           local_values_threaded)
 
-    # To parallel the solution container, we create an auxiliary container.
     aux_values = Trixi.allocate_nested_array(uEltype, naux, size(md.x), dg)
     aux_quad_values = Trixi.allocate_nested_array(uEltype, naux, size(md.xq), dg)
     aux_face_values = Trixi.allocate_nested_array(uEltype, naux, size(md.xf), dg)
@@ -57,12 +54,8 @@ function Trixi.create_cache(mesh::DGMultiMesh{NDIMS}, equations::AbstractCovaria
     rotated_flux_threaded = [Trixi.allocate_nested_array(uEltype, nvars, (rd.Nq,), dg)
                              for _ in 1:Threads.maxthreadid()]
 
-    # For backwards compatibility with older DGMulti code, the solution is included in the 
-    # top-level cache. TODO: remove once DGMulti refactor is complete and stable.
     cache = (; md, weak_differentiation_matrices, lift_scalings, invJ, dxidxhatj,
-             solution_container, u_values, u_face_values, flux_face_values,
-             auxiliary_container, local_values_threaded, flux_threaded,
-             rotated_flux_threaded)
+             solution_container, auxiliary_container, flux_threaded, rotated_flux_threaded)
     return cache
 end
 
