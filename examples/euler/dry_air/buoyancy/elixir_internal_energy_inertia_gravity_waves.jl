@@ -63,7 +63,7 @@ equations = CompressibleEulerInternalEnergyEquationsWithGravity2D(c_p = 1004,
                                                                   gravity = 9.81)
 
 surface_flux = (flux_conservative_es, flux_nonconservative_es)
-volume_flux = (flux_conservative_artiano_ranocha, flux_nonconservative_artiano_ranocha)
+volume_flux = (flux_conservative_etec, flux_nonconservative_etec)
 polydeg = 3
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))

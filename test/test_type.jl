@@ -590,15 +590,15 @@ end
         t = zero(RealT)
         u = u_ll = u_rr = u_inner = cons = SVector(one(RealT), one(RealT), one(RealT),
                                                    RealT(2), one(RealT))
-        surface_flux_functions = (flux_conservative_artiano_ranocha,
-                                  flux_nonconservative_artiano_ranocha)
+        surface_flux_functions = (flux_conservative_etec,
+                                  flux_nonconservative_etec)
         normal_direction = SVector(one(RealT), one(RealT))
 
-        @test eltype(@inferred flux_nonconservative_artiano_ranocha(u_ll, u_rr,
+        @test eltype(@inferred flux_nonconservative_etec(u_ll, u_rr,
                                                                     normal_direction,
                                                                     equations)) ==
               RealT
-        @test eltype(@inferred flux_conservative_artiano_ranocha(u_ll, u_rr,
+        @test eltype(@inferred flux_conservative_etec(u_ll, u_rr,
                                                                  normal_direction,
                                                                  equations)) ==
               RealT
