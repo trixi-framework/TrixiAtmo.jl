@@ -74,7 +74,7 @@ export flux_nonconservative_zeros, flux_nonconservative_ec,
        flux_nonconservative_artiano_etal,
        flux_nonconservative_waruszewski_etal, flux_zero,
        flux_ec_rain, flux_LMARS, flux_nonconservative_es, flux_conservative_es,
-       flux_conservative_artiano_ranocha, flux_nonconservative_artiano_ranocha
+       flux_conservative_etec, flux_nonconservative_etec
 
 export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!
 
