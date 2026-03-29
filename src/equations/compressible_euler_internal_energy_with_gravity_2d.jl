@@ -100,7 +100,7 @@ end
 """
 	flux_conservative_artiano_ranocha(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
 
-Entropy conserving, total and kinetic energy preserving two-point flux by
+Entropy conserving, total energy conserving and kinetic energy preserving two-point flux by
 -  Marco Artiano, Hendrik Ranocha (2026)
    On Affordable High-Order Entropy-Conservative/Stable and 
    Well-Balanced Methods for Nonconservative Hyperbolic Systems
@@ -134,7 +134,7 @@ end
 """
 	flux_nonconservative_artiano_ranocha(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
 
-Entropy conserving, total and kinetic energy preserving two-point flux by
+Entropy conserving, total energy conserving and kinetic energy preserving two-point flux by
 -  Marco Artiano, Hendrik Ranocha (2026)
    On Affordable High-Order Entropy-Conservative/Stable and 
    Well-Balanced Methods for Nonconservative Hyperbolic Systems
