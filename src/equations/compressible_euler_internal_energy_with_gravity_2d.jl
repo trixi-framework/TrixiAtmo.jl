@@ -104,8 +104,8 @@ Entropy conserving, total energy conserving and kinetic energy preserving two-po
    [DOI: 10.48550/arXiv.2603.18978](https://arxiv.org/abs/2603.18978)
 """
 @inline function flux_conservative_etec(u_ll, u_rr,
-                                                   normal_direction::AbstractVector,
-                                                   equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
+                                        normal_direction::AbstractVector,
+                                        equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
     # Unpack left and right state
     rho_ll, v1_ll, v2_ll, p_ll, phi_ll = cons2prim(u_ll, equations)
     rho_rr, v1_rr, v2_rr, p_rr, phi_rr = cons2prim(u_rr, equations)
@@ -138,8 +138,8 @@ Nonconservative part of the entropy conserving, total energy conserving and kine
   [DOI: 10.48550/arXiv.2603.18978](https://arxiv.org/abs/2603.18978)
 """
 @inline function flux_nonconservative_etec(u_ll, u_rr,
-                                                      normal_direction::AbstractVector,
-                                                      equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
+                                           normal_direction::AbstractVector,
+                                           equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
 
     # Unpack left and right state
     rho_ll, v1_ll, v2_ll, p_ll, phi_ll = cons2prim(u_ll, equations)

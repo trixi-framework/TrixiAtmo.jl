@@ -595,12 +595,12 @@ end
         normal_direction = SVector(one(RealT), one(RealT))
 
         @test eltype(@inferred flux_nonconservative_etec(u_ll, u_rr,
-                                                                    normal_direction,
-                                                                    equations)) ==
+                                                         normal_direction,
+                                                         equations)) ==
               RealT
         @test eltype(@inferred flux_conservative_etec(u_ll, u_rr,
-                                                                 normal_direction,
-                                                                 equations)) ==
+                                                      normal_direction,
+                                                      equations)) ==
               RealT
         @test eltype(@inferred flux_nonconservative_es(u_ll, u_rr,
                                                        normal_direction,
