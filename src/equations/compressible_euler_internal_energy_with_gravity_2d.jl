@@ -33,12 +33,8 @@ The compressible Euler equations with gravity
 0 \\ - \rho \frac{\partial}{\partial x} \phi \\ - \rho \frac{\partial}{\partial y} \phi \\
 \end{pmatrix}
 ```
-for an ideal gas with ratio of specific heats gamma in two space dimensions. Here, `\rho is the density, v_1, v_2 are the velocities, e_{\text{internal}} is the specific internal energy, phi is the gravitational potential, and
-math
-p = (\gamma - 1) \rho e_internal
-the pressure. 
+for an ideal gas with ratio of specific heats gamma in two space dimensions. Here, ``\rho`` is the density, ``v_1, v_2`` are the velocities, ``e_{\text{internal}}`` is the specific internal energy, ``\phi`` is the gravitational potential, and
 """
-
 struct CompressibleEulerInternalEnergyEquationsWithGravity2D{RealT <: Real} <:
        AbstractCompressibleEulerEquations{2, 5}
     p_0::RealT # reference pressure in Pa
@@ -135,11 +131,12 @@ end
 """
 	flux_nonconservative_artiano_ranocha(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
 
-Entropy conserving, total energy conserving and kinetic energy preserving two-point flux by
+Nonconservative part of the entropy conserving, total energy conserving and kinetic energy preserving two-point flux by
 -  Marco Artiano, Hendrik Ranocha (2026)
    On Affordable High-Order Entropy-Conservative/Stable and 
    Well-Balanced Methods for Nonconservative Hyperbolic Systems
-[DOI: 10.48550/arXiv.2603.18978](https://arxiv.org/abs/2603.18978)"""
+  [DOI: 10.48550/arXiv.2603.18978](https://arxiv.org/abs/2603.18978)
+"""
 @inline function flux_nonconservative_artiano_ranocha(u_ll, u_rr,
                                                       normal_direction::AbstractVector,
                                                       equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
@@ -214,7 +211,7 @@ end
 """
 	flux_nonconservative_artiano_ranocha(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
 
-Entropy stable two-point flux by
+Nonconservative part of the entropy stable two-point flux by
 -  Marco Artiano, Hendrik Ranocha (2026)
    On Affordable High-Order Entropy-Conservative/Stable and 
    Well-Balanced Methods for Nonconservative Hyperbolic Systems
