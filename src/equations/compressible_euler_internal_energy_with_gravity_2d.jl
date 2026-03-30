@@ -72,7 +72,7 @@ varnames(::typeof(cons2prim),
                                                             "v2",
                                                             "p", "phi")
 
-have_nonconservative_terms(::CompressibleEulerInternalEnergyEquationsWithGravity2D) = Trixi.True()
+have_nonconservative_terms(::CompressibleEulerInternalEnergyEquationsWithGravity2D) = True()
 
 @inline function boundary_condition_slip_wall(u_inner,
                                               normal_direction::AbstractVector,
