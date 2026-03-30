@@ -616,6 +616,8 @@ end
                                                             surface_flux_functions,
                                                             equations)) ==
               SVector{5, RealT}
+        @test @inferred Trixi.have_nonconservative_terms(equations) === Trixi.True()
+        @test eltype(varnames(cons2cons, equations)) == String
         @test eltype(varnames(cons2prim, equations)) == String
         @test eltype(@inferred cons2prim(u, equations)) == RealT
         @test eltype(@inferred cons2cons(u, equations)) == RealT
