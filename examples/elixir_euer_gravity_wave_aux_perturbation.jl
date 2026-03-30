@@ -1,5 +1,7 @@
 using OrdinaryDiffEq, Trixi
+using TrixiAtmo: cons2temppert
 using TrixiAtmo
+
 
 ##############################################################################################
 
@@ -42,16 +44,16 @@ equations = PerturbationEulerEquations2DAuxVars(1.4)
     v1, v2 = 20.0, 0.0
 
     # energy: total and background  
-    E = c_v * theta * exner + 0.5 * (v1^2 + v2^2)
-    E_mean = c_v * theta_mean * exner + 0.5 * (v1^2 + v2^2) 
-
+    e = c_v * theta * exner + 0.5 * (v1^2 + v2^2)
+    e_mean = c_v * theta_mean * exner + 0.5 * (v1^2 + v2^2) #v1_mean and v2_mean, but is identical here
+    e_prime = e - e_mean
 
     # conservative variables 
-    rhoE_prime = rho * E - rho_mean * E_mean
     rho_v1 = rho * v1 
-    rho_v2 = rho * v2 
+    rho_v2 = rho * v2
+    rhoe_prime = rho * e_prime
 
-    return SVector(rho_prime, rho_v1, rho_v2, rhoE_prime)
+    return SVector(rho_prime, rho_v1, rho_v2, rhoe_prime)
 end
 
 
@@ -80,10 +82,13 @@ end
     # density
     rho_mean = p_0 / (R * theta_mean) * exner ^ (c_v / R)
  
-    v1 = 20.0
-    v2 = 0.0
-    E_mean = c_v * theta_mean * exner + 0.5 * (v1^2 + v2^2) 
-    return SVector(rho_mean, rho_mean * E_mean)
+    # velocity 
+    v1_mean, v2_mean = 20.0, 0.0
+
+    # energy  
+    e_mean = c_v * theta_mean * exner + 0.5 * (v1_mean^2 + v2_mean^2) 
+
+    return SVector(rho_mean, v1_mean, v2_mean, e_mean)
 end 
 
 
@@ -137,7 +142,7 @@ ode = semidiscretize(semi, tspan)
 summary_callback = SummaryCallback()
 
 analysis_interval = 100
-solution_variables = cons2prim
+solution_variables = cons2temppert
 
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval)
 
