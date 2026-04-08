@@ -421,4 +421,5 @@ include("shallow_water_3d.jl")
 include("reference_data.jl")
 include("variable_coefficient_2d_aux_vars.jl")
 include("temperature_perturbation_2d_aux_vars.jl")
+include("compressible_euler_2d_paula.jl")
 end # @muladd

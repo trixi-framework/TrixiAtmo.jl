@@ -1,6 +1,6 @@
 using OrdinaryDiffEq
 using Trixi
-using TrixiAtmo: cons2pot
+using TrixiAtmo: cons2pot, compute_reference_state
 
 
 #Inertia-gravity waves test case 
@@ -117,12 +117,12 @@ boundary_conditions = (x_neg = boundary_condition_periodic,
 polydeg = 4
 basis = LobattoLegendreBasis(polydeg)
 
-surface_flux = FluxLMARS(340.0) 
+surface_flux = flux_lax_friedrichs #FluxLMARS(340.0)
 
-volume_flux = flux_kennedy_gruber
-volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
+volume_flux = VolumeIntegralWeakForm #VolumeIntegralFluxDifferencing(flux_kennedy_gruber)
+#volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
-solver = DGSEM(basis, surface_flux, volume_integral)
+solver = DGSEM(basis, surface_flux)#, volume_integral)
  
 coordinates_min = (0.0, 0.0)
 coordinates_max = (300_000.0, 10_000.0)

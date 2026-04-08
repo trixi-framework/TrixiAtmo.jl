@@ -121,7 +121,46 @@ end
     theta_prime = theta - theta_mean
     return SVector(rho, v1, v2, theta_prime)
 end 
-varnames(::typeof(cons2temppert), ::PerturbationEulerEquations2DAuxVars) = ("rho", "v1", "v2", "theta")
+varnames(::typeof(cons2temppert), ::PerturbationEulerEquations2DAuxVars) = ("rho", "v1", "v2", "theta_prime")
+
+@inline function cons2all(u, aux, equations::PerturbationEulerEquations2DAuxVars) #for solution variables like cons2temppert and background state 
+    rho, rho_v1, rho_v2, rho_e = cons2constotal(u, aux, equations)
+    rho_mean, v1_mean, v2_mean, e_mean = aux
+
+    e = rho_e / rho #    e = c_v * theta * exner + 0.5 * (v1^2 + v2^2)
+    v1 = rho_v1 / rho 
+    v2 = rho_v2 / rho 
+
+        # constants 
+    g = 9.81 
+    c_p = 1004.0 
+    c_v = 717.0
+
+    theta_c = 0.01 
+    h_c = 10_000.0
+    a_c = 5_000.0
+    x_c = 100_000.0 
+    theta_0 = 300.0 # constant of integration 
+    bvfrequency = 0.01 # Brunt-Väisälä frequency
+    p_0 = 100_000.0  # reference pressure
+    R = c_p - c_v
+
+
+    # exner pressure 
+
+    T = (e - 0.5 * (v1^2 + v2^2)) / c_v
+    p = R * T * rho 
+    exner = (p / p_0) ^ (R/c_p)
+
+    theta = (e - 0.5 * (v1^2 + v2^2)) / (c_v * exner)
+
+    theta_mean = p_0 / (R * rho_mean) * exner ^ (c_v / R)
+    theta_prime = theta - theta_mean
+    return SVector(rho, v1, v2, theta_prime, rho_mean, v1_mean, v2_mean, e_mean, theta_mean)
+end 
+
+varnames(::typeof(cons2all), ::PerturbationEulerEquations2DAuxVars) = ("rho", "v1", "v2", "theta_prime", "rho_mean", "v1_mean", "v2_mean", "e_mean", "theta_mean")
+
 
 @inline function Trixi.flux(u, aux, orientation::Integer, equations::PerturbationEulerEquations2DAuxVars)
     # perturbated and background values 
@@ -199,18 +238,13 @@ end
     v_ll = (v1_ll * normal_direction[1]
             +
             v2_ll * normal_direction[2])
-    
-    if p_ll < 0 || rho_ll < 0
-        println("L; p, rho:", p_ll, rho_ll)
-    end
+
     c_ll = sqrt(equations.gamma * p_ll / rho_ll)
     # right
     v_rr = (v1_rr * normal_direction[1]
             +
             v2_rr * normal_direction[2])
-    if p_rr < 0 || rho_rr < 0
-        println("r; p, rho:", p_rr, rho_rr)
-    end
+
     c_rr = sqrt(equations.gamma * p_rr / rho_rr)    
 
     return max(abs(v_ll), abs(v_rr)) + max(c_ll, c_rr) * norm(normal_direction)
@@ -238,12 +272,12 @@ end
             +
             v2_ll * normal_direction[2])
 
-    if !(rho_ll > 0 && p_ll > 0 && rho_rr > 0 && p_rr > 0)
-        @show u_ll aux_ll rho_ll p_ll
-        @show u_rr aux_rr rho_rr p_rr
-        error("nonphysical interface state")
+    if equations.gamma * p_ll / rho_ll <= 0
+        @show p_ll, rho_ll
+    elseif equations.gamma * p_rr / rho_rr <= 0
+        @show p_rr, rho_rr
     end
-    
+
     c_ll = sqrt(equations.gamma * p_ll / rho_ll)
     # right
     v_rr = (v1_rr * normal_direction[1]
@@ -257,7 +291,7 @@ end
 end
 
 
-@inline function boundary_condition_slip_wall_aux(u_inner, aux_inner, normal_direction::AbstractVector, 
+@inline function boundary_condition_slip_wall_toro_aux(u_inner, aux_inner, normal_direction::AbstractVector, 
                                                 x, t, surface_flux_function, 
                                                 equations::PerturbationEulerEquations2DAuxVars)
     norm_ = norm(normal_direction)
@@ -299,7 +333,36 @@ end
                    0) * norm_
 end
 
+@inline function boundary_condition_slip_wall_aux(u_inner, aux_inner,
+                                              normal_direction::AbstractVector,
+                                              x, t,
+                                              surface_flux_function,
+                                              equations::PerturbationEulerEquations2DAuxVars)
+    # normalize the outward pointing direction
+    normal = normal_direction / norm(normal_direction)
+    
+    # compute the normal velocity
+    u_normal = normal[1] * u_inner[2] + normal[2] * u_inner[3]
 
+    # create the "external" boundary solution state
+    u_boundary = SVector(u_inner[1],
+                         u_inner[2] - 2 * u_normal * normal[1],
+                         u_inner[3] - 2 * u_normal * normal[2],
+                         u_inner[4])
+
+    # compute the normal background velocity
+    aux_normal = normal[1] * aux_inner[2] + normal[2] * aux_inner[3]
+
+    # create the "external" boundary solution for background state
+    aux_boundary = SVector(aux_inner[1],
+                         aux_inner[2] - 2 * aux_normal * normal[1],
+                         aux_inner[3] - 2 * aux_normal * normal[2],
+                         aux_inner[4])
+
+    # calculate the boundary flux
+    flux = surface_flux_function(u_inner, u_boundary, aux_inner, aux_boundary, normal_direction, equations)
+    return flux
+end
 
 
     

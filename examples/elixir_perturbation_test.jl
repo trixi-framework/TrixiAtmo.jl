@@ -10,6 +10,7 @@ equations = PerturbationEulerEquations2DAuxVars(1004.0 / 717.0)
 # initial condition with perturbation
 @inline function initial_condition_gravity_wave(x, t, equations)
     # constants 
+    rho_mean, v1_mean, v2_mean, e_mean = background_state(x)
     g = 9.81 
     c_p = 1004.0 
     c_v = 717.0
@@ -36,7 +37,6 @@ equations = PerturbationEulerEquations2DAuxVars(1004.0 / 717.0)
 
 
     # density: background, total and perturbation
-    rho_mean = p_0 / (R * theta_mean) * exner ^ (c_v / R) 
     rho = p_0 / (R * (theta_mean + theta_prime)) * exner ^ (c_v /R) 
     rho_prime = rho - rho_mean
 
@@ -45,7 +45,6 @@ equations = PerturbationEulerEquations2DAuxVars(1004.0 / 717.0)
 
     # energy: total and background  
     e = c_v * theta * exner + 0.5 * (v1^2 + v2^2)
-    e_mean = c_v * theta_mean * exner + 0.5 * (v1^2 + v2^2) #v1_mean and v2_mean, but is identical here
     e_prime = e - e_mean
 
     # conservative variables 
@@ -57,37 +56,13 @@ equations = PerturbationEulerEquations2DAuxVars(1004.0 / 717.0)
 end
 
 
+
 # auxiliary field with background state
 @inline function background_state(x)
-    g = 9.81 
-    c_p = 1004.0 
-    c_v = 717.0
-
-    # Exner pressure from hydrostatic balance for x[2]
-    theta_0 = 300.0 # constant of integration 
-    bvfrequency = 0.01 # Brunt-Väisälä frequency
-
-    exner = 1 +
-            g^2 / (c_p * theta_0 * bvfrequency^2) *
-            (exp(-bvfrequency^2 / g * x[2]) - 1)
-
-    # potential temperature
-    theta_mean = theta_0 * exp(bvfrequency^2 / g * x[2])
-
-
-    # pressure
-    p_0 = 100_000.0  # reference pressure
-    R = c_p - c_v    # gas constant (dry air)
-
-    # density
-    rho_mean = p_0 / (R * theta_mean) * exner ^ (c_v / R)
- 
-    # velocity 
-    v1_mean, v2_mean = 20.0, 0.0
-
-    # energy  
-    e_mean = c_v * theta_mean * exner + 0.5 * (v1_mean^2 + v2_mean^2) 
-
+    rho_mean = 0 
+    v1_mean = 0
+    v2_mean = 0
+    e_mean = 0
     return SVector(rho_mean, v1_mean, v2_mean, e_mean)
 end 
 
@@ -95,9 +70,9 @@ end
 # Source terms   
 @inline function source_terms(u, aux, x, t, equations::PerturbationEulerEquations2DAuxVars)
     g = 9.81
-    rho_prime = u[1]
+    rho = u[1]
     rho_v2 = u[3]
-    return SVector(zero(eltype(u)), zero(eltype(u)), -g * rho_prime, -g * rho_v2)
+    return SVector(zero(eltype(u)), zero(eltype(u)), -g * rho, -g * rho_v2)
 end
 
 
@@ -143,7 +118,7 @@ ode = semidiscretize(semi, tspan)
 summary_callback = SummaryCallback()
 
 analysis_interval = 100
-solution_variables = cons2all
+solution_variables = cons2temppert
 
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval)
 
