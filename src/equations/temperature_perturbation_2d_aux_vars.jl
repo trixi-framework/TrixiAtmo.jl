@@ -106,18 +106,16 @@ end
     p_0 = 100_000.0  # reference pressure
     R = c_p - c_v
 
+    rho_mean, v1_mean, v2_mean, e_mean = aux
+    eint_mean = e_mean - 0.5 * (v1_mean^2 + v2_mean^2)
+    p_mean = (equations.gamma - 1) * rho_mean * eint_mean
+    exner_mean = (p_mean / p_0)^(R / c_p)
+    theta_mean = eint_mean / (c_v * exner_mean)
 
-    # exner pressure 
-
-    T = (e - 0.5 * (v1^2 + v2^2)) / c_v
-    p = R * T * rho 
-    exner = (p / p_0) ^ (R/c_p)
-
-    theta = (e - 0.5 * (v1^2 + v2^2)) / (c_v * exner)
-
-    rho_mean = aux[1]
-
-    theta_mean = p_0 / (R * rho_mean) * exner ^ (c_v / R)
+    eint = e - 0.5 * (v1^2 + v2^2)
+    p = (equations.gamma - 1) * rho * eint
+    exner = (p / p_0)^(R / c_p)
+    theta = eint / (c_v * exner)
     theta_prime = theta - theta_mean
     return SVector(rho, v1, v2, theta_prime)
 end 
@@ -156,10 +154,10 @@ varnames(::typeof(cons2temppert), ::PerturbationEulerEquations2DAuxVars) = ("rho
 
     theta_mean = p_0 / (R * rho_mean) * exner ^ (c_v / R)
     theta_prime = theta - theta_mean
-    return SVector(rho, v1, v2, theta_prime, rho_mean, v1_mean, v2_mean, e_mean, theta_mean)
+    return SVector(rho, v1, v2, theta_prime, rho_mean, v1_mean, v2_mean, e_mean, theta_mean, theta)
 end 
 
-varnames(::typeof(cons2all), ::PerturbationEulerEquations2DAuxVars) = ("rho", "v1", "v2", "theta_prime", "rho_mean", "v1_mean", "v2_mean", "e_mean", "theta_mean")
+varnames(::typeof(cons2all), ::PerturbationEulerEquations2DAuxVars) = ("rho", "v1", "v2", "theta_prime", "rho_mean", "v1_mean", "v2_mean", "e_mean", "theta_mean", "theta_total")
 
 
 @inline function Trixi.flux(u, aux, orientation::Integer, equations::PerturbationEulerEquations2DAuxVars)
