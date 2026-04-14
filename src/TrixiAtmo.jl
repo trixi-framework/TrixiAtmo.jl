@@ -15,12 +15,13 @@ using Printf: @sprintf
 using Static: True, False
 using StrideArrays: PtrArray
 using StaticArrayInterface: static_size
-using LinearAlgebra: cross, norm, dot, det
+using LinearAlgebra: Diagonal, I, cross, norm, dot, det, diagm
 using Reexport: @reexport
 using LoopVectorization: @turbo
 using QuadGK: quadgk
 using ForwardDiff: derivative
 using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
+using Setfield
 
 @reexport using StaticArrays: SVector, SMatrix
 @reexport import Trixi: waterheight, varnames, cons2cons, cons2prim,
@@ -31,9 +32,12 @@ using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
                         flux, flux_ec, flux_chandrashekar, flux_wintermeyer_etal,
                         flux_fjordholm_etal, flux_nonconservative_wintermeyer_etal,
                         flux_nonconservative_fjordholm_etal, FluxLMARS, flux_shima_etal,
-                        flux_ranocha, flux_kennedy_gruber
+                        flux_ranocha, flux_kennedy_gruber, trixi_backend
 
 using Trixi: ln_mean, stolarsky_mean, inv_ln_mean
+
+# DGMulti Solvers
+using StartUpDG: MeshData, RefElemData
 
 include("auxiliary/auxiliary.jl")
 include("equations/equations.jl")
@@ -54,7 +58,8 @@ export CompressibleMoistEulerEquations2D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity2D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity3D,
        CompressibleEulerEnergyEquationsWithGravity2D,
-       CompressibleEulerEnergyEquationsWithGravity3D
+       CompressibleEulerEnergyEquationsWithGravity3D,
+       CompressibleEulerInternalEnergyEquationsWithGravity2D
 
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
@@ -68,7 +73,8 @@ export flux_nonconservative_zeros, flux_nonconservative_ec,
        flux_tec, flux_etec, flux_nonconservative_souza_etal,
        flux_nonconservative_artiano_etal,
        flux_nonconservative_waruszewski_etal, flux_zero,
-       flux_ec_rain, flux_LMARS
+       flux_ec_rain, flux_LMARS, flux_nonconservative_es, flux_conservative_es,
+       flux_conservative_etec, flux_nonconservative_etec
 
 export flux_kennedy_gruber_souza_etal_turbo
 
@@ -76,9 +82,9 @@ export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!
 
 export cons2prim_and_vorticity, contravariant2global
 
-export P4estMeshCubedSphere2D, P4estMeshQuadIcosahedron2D, MetricTermsCrossProduct,
-       MetricTermsInvariantCurl, MetricTermsCovariantSphere, ChristoffelSymbolsAutodiff,
-       ChristoffelSymbolsCollocationDerivative
+export P4estMeshCubedSphere2D, P4estMeshQuadIcosahedron2D, DGMultiMeshTriIcosahedron2D,
+       MetricTermsCrossProduct, MetricTermsInvariantCurl, MetricTermsCovariantSphere,
+       ChristoffelSymbolsAutodiff, ChristoffelSymbolsCollocationDerivative
 
 export EARTH_RADIUS, EARTH_GRAVITATIONAL_ACCELERATION,
        EARTH_ROTATION_RATE, SECONDS_PER_DAY

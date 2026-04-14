@@ -109,14 +109,20 @@ const TRIXI_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
     end
 
     @time if TRIXI_TEST == "all" || TRIXI_TEST == "euler_energy_2d"
-        @testset verbose=true showtiming=true "Euler internal energy 2D tests" begin
+        @testset verbose=true showtiming=true "Euler internal plus kinetic energy 2D tests" begin
             include("test_2d_euler_energy.jl")
         end
     end
 
     @time if TRIXI_TEST == "all" || TRIXI_TEST == "euler_energy_3d"
-        @testset verbose=true showtiming=true "Euler internal energy 3D tests" begin
+        @testset verbose=true showtiming=true "Euler internal plus kinetic energy 3D tests" begin
             include("test_3d_euler_energy.jl")
+        end
+    end
+
+    @time if TRIXI_TEST == "all" || TRIXI_TEST == "euler_internal energy_2d"
+        @testset verbose=true showtiming=true "Euler internal energy 2D tests" begin
+            include("test_2d_euler_internal_energy.jl")
         end
     end
 end
