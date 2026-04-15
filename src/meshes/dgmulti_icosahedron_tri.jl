@@ -91,13 +91,13 @@ end
 
 function project_onto_sphere!(md::MeshData, dg::DGMulti{NDIMS}, radius) where {NDIMS}
     x, y, z = md.xyz
-    norms = sqrt.(x.^2 + y.^2 + z.^2)
+    norms = sqrt.(x .^ 2 + y .^ 2 + z .^ 2)
     xyz = ntuple(n -> md.xyz[n] ./ norms .* radius, 3)
     xq, yq, zq = md.xyzq
-    norms_q = sqrt.(xq.^2 + yq.^2 + zq.^2)
+    norms_q = sqrt.(xq .^ 2 + yq .^ 2 + zq .^ 2)
     xyzq = ntuple(n -> md.xyzq[n] ./ norms_q .* radius, 3)
     xf, yf, zf = md.xyzf
-    norms_f = sqrt.(xf.^2 + yf.^2 + zf.^2)
+    norms_f = sqrt.(xf .^ 2 + yf .^ 2 + zf .^ 2)
     xyzf = ntuple(n -> md.xyzf[n] ./ norms_f .* radius, 3)
     md = setproperties(md, xyz = xyz, xyzq = xyzq, xyzf = xyzf)
     return md
