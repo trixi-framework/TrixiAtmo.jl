@@ -17,7 +17,7 @@ function Trixi.compute_coefficients!(::Nothing, u, initial_condition, t,
     Trixi.apply_to_each_field(Trixi.mul_by!(rd.Pq), u, u_values)
 end
 
-# uses quadrature + projection to compute source terms.
+# Calculate the source contribution, passing auxiliary variables to the source term function.
 function Trixi.calc_sources!(du, u, t, source_terms,
                              mesh, equations::AbstractCovariantEquations, dg::DGMulti,
                              cache)
@@ -77,7 +77,8 @@ function Trixi.calc_volume_integral!(du, u,
     end
 end
 
-# version for covariant equations on DGMultiMeshes
+# Calculate interface fluxes covariantly, taking care to compute the fluxes in a common
+# coordinate system to take the numerical flux.
 function Trixi.calc_interface_flux!(cache, surface_integral::SurfaceIntegralWeakForm,
                                     mesh::DGMultiMesh,
                                     have_nonconservative_terms::False,

@@ -135,19 +135,6 @@ const icosahedron_tri_vertices_idx_map = ([1, 2, 6], # Tri 1
                                           [4, 5, 6], # Tri 3
                                           [2, 4, 6]) # Tri 4
 
-# Local mapping from the reference triangle to a spherical patch based on three vertex
-# positions on the sphere, provided in Cartesian coordinates
-@inline function local_mapping(r, s, v1, v2, v3, radius)
-
-    # Construct a bilinear mapping based on the four corner vertices
-    xe = 0.5f0 * (-(r + s) * v1 +
-                  (1 + r) * v2 +
-                  (1 + s) * v3)
-
-    # Project the mapped local coordinates onto the sphere
-    return radius * xe / norm(xe)
-end
-
 function StartUpDG.geometric_factors(x, y, z, Dr, Ds; Filters = (I, I, I))
     xr, xs = Dr * x, Ds * x
     yr, ys = Dr * y, Ds * y
