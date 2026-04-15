@@ -26,8 +26,8 @@ function Trixi.integrate(func::Func, u,
                          equations::AbstractCovariantEquations,
                          dg::DGMulti, cache; normalize = true) where {Func}
     rd = dg.basis
-    md = mesh.md
-    @unpack u_values, aux_quad_values = cache
+    (; u_values) = cache.solution_container
+    (; aux_quad_values) = cache.auxiliary_container
 
     # interpolate u to quadrature points
     Trixi.apply_to_each_field(Trixi.mul_by!(rd.Vq), u_values, u)
@@ -108,7 +108,8 @@ function Trixi.analyze(::typeof(Trixi.entropy_timederivative), du, u, t,
                        dg::DGMulti, cache)
     rd = dg.basis
     md = mesh.md
-    @unpack u_values, aux_quad_values = cache
+    (; u_values) = cache.solution_container
+    (; aux_quad_values) = cache.auxiliary_container
 
     # interpolate u, du to quadrature points
     du_values = similar(u_values)
@@ -186,7 +187,8 @@ function Trixi.calc_error_norms(func, u, t, analyzer,
                                 cache_analysis) where {NDIMS, NDIMS_AMBIENT}
     rd = dg.basis
     md = mesh.md
-    @unpack u_values, aux_quad_values = cache
+    (; u_values) = cache.solution_container
+    (; aux_quad_values) = cache.auxiliary_container
 
     # interpolate u to quadrature points
     Trixi.apply_to_each_field(Trixi.mul_by!(rd.Vq), u_values, u)

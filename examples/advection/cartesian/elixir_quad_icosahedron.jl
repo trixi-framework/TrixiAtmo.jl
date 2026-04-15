@@ -47,13 +47,17 @@ end
 # with central fluxes because of the curved geometry!
 @inline function Trixi.weak_form_kernel!(du, u,
                                          element,
-                                         mesh::Union{StructuredMesh{2},
-                                                     UnstructuredMesh2D,
-                                                     P4estMesh{2}, T8codeMesh{2}},
+                                         MeshT::Type{<:Union{StructuredMesh{2},
+                                                             StructuredMeshView{2},
+                                                             UnstructuredMesh2D,
+                                                             P4estMesh{2},
+                                                             P4estMeshView{2},
+                                                             T8codeMesh{2}}},
                                          nonconservative_terms::Trixi.True,
                                          equations::Trixi.AbstractEquations{3},
                                          dg::DGSEM, cache, alpha = true)
-    Trixi.weak_form_kernel!(du, u, element, mesh, Trixi.False(), equations, dg, cache)
+    Trixi.weak_form_kernel!(du, u, element, MeshT, Trixi.False(), equations, dg, cache,
+                            alpha)
 end
 
 # Create a 2D quad-based icosahedral mesh the size of the Earth

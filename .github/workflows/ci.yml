@@ -44,7 +44,7 @@ jobs:
           version: ${{ matrix.version }}
           arch: default
           show-versioninfo: true
-      - uses: julia-actions/cache@v2
+      - uses: julia-actions/cache@v3
 
       - name: Run tests without coverage
         if: ${{ matrix.os != 'ubuntu-latest' }}
@@ -64,7 +64,7 @@ jobs:
 
       - name: Upload coverage data (Codecov)
         if: ${{ matrix.os == 'ubuntu-latest' }}
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           files: lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
