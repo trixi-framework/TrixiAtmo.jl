@@ -32,7 +32,7 @@ using Setfield
                         flux, flux_ec, flux_chandrashekar, flux_wintermeyer_etal,
                         flux_fjordholm_etal, flux_nonconservative_wintermeyer_etal,
                         flux_nonconservative_fjordholm_etal, FluxLMARS, flux_shima_etal,
-                        flux_ranocha, flux_kennedy_gruber
+                        flux_ranocha, flux_kennedy_gruber, trixi_backend
 
 using Trixi: ln_mean, stolarsky_mean, inv_ln_mean
 
@@ -58,7 +58,8 @@ export CompressibleMoistEulerEquations2D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity2D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity3D,
        CompressibleEulerEnergyEquationsWithGravity2D,
-       CompressibleEulerEnergyEquationsWithGravity3D
+       CompressibleEulerEnergyEquationsWithGravity3D,
+       CompressibleEulerInternalEnergyEquationsWithGravity2D
 
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
@@ -72,7 +73,8 @@ export flux_nonconservative_zeros, flux_nonconservative_ec,
        flux_tec, flux_etec, flux_nonconservative_souza_etal,
        flux_nonconservative_artiano_etal,
        flux_nonconservative_waruszewski_etal, flux_zero,
-       flux_ec_rain, flux_LMARS
+       flux_ec_rain, flux_LMARS, flux_nonconservative_es, flux_conservative_es,
+       flux_conservative_etec, flux_nonconservative_etec
 
 export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!
 

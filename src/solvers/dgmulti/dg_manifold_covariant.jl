@@ -5,7 +5,8 @@ function Trixi.compute_coefficients!(::Nothing, u, initial_condition, t,
                                      dg::DGMulti, cache)
     md = mesh.md
     rd = dg.basis
-    @unpack u_values, aux_quad_values = cache
+    (; u_values) = cache.solution_container
+    (; aux_quad_values) = cache.auxiliary_container
     # evaluate the initial condition at quadrature points
     Trixi.@threaded for i in Trixi.each_quad_node_global(mesh, dg, cache)
         x_node = SVector(getindex.(md.xyzq, i))
@@ -24,7 +25,8 @@ function Trixi.calc_sources!(du, u, t, source_terms,
     rd = dg.basis
     md = mesh.md
     @unpack Pq = rd
-    @unpack u_values, aux_quad_values, local_values_threaded = cache
+    (; u_values, local_values_threaded) = cache.solution_container
+    (; aux_quad_values) = cache.auxiliary_container
     Trixi.@threaded for e in Trixi.eachelement(mesh, dg, cache)
         source_values = local_values_threaded[Threads.threadid()]
 
@@ -56,7 +58,9 @@ function Trixi.calc_volume_integral!(du, u,
                                      cache) where {NDIMS_AMBIENT, NDIMS}
     rd = dg.basis
     md = mesh.md
-    (; weak_differentiation_matrices, u_values, aux_quad_values, local_values_threaded) = cache
+    (; weak_differentiation_matrices) = cache
+    (; u_values, local_values_threaded) = cache.solution_container
+    (; aux_quad_values) = cache.auxiliary_container
 
     # interpolate to quadrature points
     Trixi.apply_to_each_field(Trixi.mul_by!(rd.Vq), u_values, u)
@@ -77,7 +81,8 @@ function Trixi.calc_volume_integral!(du, u,
     end
 end
 
-function Trixi.calc_interface_flux!(cache, surface_integral::SurfaceIntegralWeakForm,
+function Trixi.calc_interface_flux!(cache,
+                                    surface_integral::SurfaceIntegralWeakForm,
                                     mesh::DGMultiMesh,
                                     have_nonconservative_terms::False,
                                     equations::AbstractCovariantEquations{NDIMS},
@@ -88,7 +93,8 @@ function Trixi.calc_interface_flux!(cache, surface_integral::SurfaceIntegralWeak
     rd = dg.basis
     @unpack mapM, mapP, Jf = md
     @unpack nrstJ, Nfq = rd
-    @unpack u_face_values, flux_face_values, aux_face_values = cache
+    (; u_face_values, flux_face_values) = cache.solution_container
+    (; aux_face_values) = cache.auxiliary_container
     Trixi.@threaded for face_node_index in Trixi.each_face_node_global(mesh, dg, cache)
 
         # inner (idM -> minus) and outer (idP -> plus) indices

@@ -214,7 +214,7 @@ end
 @inline function calc_vorticity_node(u, equations::AbstractEquations,
                                      dg::DGMulti, cache, i, element)
     rd = dg.basis
-    (; aux_values) = cache
+    (; aux_values) = cache.auxiliary_container
     Dr, Ds = rd.Drst
 
     dv2dxi1 = dv1dxi2 = zero(eltype(u))
