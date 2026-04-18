@@ -26,7 +26,8 @@ varnames(::typeof(cons2aux), ::PerturbationEulerEquations2DAuxVars) = ("rho_mean
     
     rho = rho_prime + rho_mean
     
-    v1 = rho_v1 / rho
+    #total velocities
+    v1 = rho_v1 / rho 
     v2 = rho_v2 / rho
 
     e_prime = rhoe_prime / rho
@@ -154,10 +155,12 @@ varnames(::typeof(cons2temppert), ::PerturbationEulerEquations2DAuxVars) = ("rho
 
     theta_mean = p_0 / (R * rho_mean) * exner ^ (c_v / R)
     theta_prime = theta - theta_mean
-    return SVector(rho, v1, v2, theta_prime, rho_mean, v1_mean, v2_mean, e_mean, theta_mean, theta)
+    rho_prime = rho - rho_mean
+    v1_prime = v1 - v1_mean
+    return SVector(rho, v1, v2, theta_prime, rho_mean, v1_mean, v2_mean, e_mean, theta_mean, theta, rho_prime, v1_prime)
 end 
 
-varnames(::typeof(cons2all), ::PerturbationEulerEquations2DAuxVars) = ("rho", "v1", "v2", "theta_prime", "rho_mean", "v1_mean", "v2_mean", "e_mean", "theta_mean", "theta_total")
+varnames(::typeof(cons2all), ::PerturbationEulerEquations2DAuxVars) = ("rho", "v1", "v2", "theta_prime", "rho_mean", "v1_mean", "v2_mean", "e_mean", "theta_mean", "theta_total", "rho_prime", "v1_prime")
 
 
 @inline function Trixi.flux(u, aux, orientation::Integer, equations::PerturbationEulerEquations2DAuxVars)

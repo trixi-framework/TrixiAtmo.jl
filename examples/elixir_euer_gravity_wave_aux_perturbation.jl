@@ -24,12 +24,12 @@ equations = PerturbationEulerEquations2DAuxVars(1004.0 / 717.0)
     R = c_p - c_v
 
 
-    # exner pressure 
+    # exner pressure from hydrostatic balance
     exner = 1 + g^2 / (c_p * theta_0 * bvfrequency^2) *
             (exp(-bvfrequency^2 / g * x[2]) - 1)
 
     # potential temperature: perturbated, background and total 
-    theta_prime = theta_c * sin(pi * x[2] / h_c) /
+    theta_prime = theta_c * (sin(pi * x[2] / h_c)) /
                                       (1 + ((x[1] - x_c) / a_c)^2)
     theta_mean = theta_0 * exp(bvfrequency^2 / g * x[2])
     theta = theta_prime + theta_mean
@@ -37,10 +37,10 @@ equations = PerturbationEulerEquations2DAuxVars(1004.0 / 717.0)
 
     # density: background, total and perturbation
     rho_mean = p_0 / (R * theta_mean) * exner ^ (c_v / R) 
-    rho = p_0 / (R * (theta_mean + theta_prime)) * exner ^ (c_v /R) 
+    rho = p_0 / (R * theta) * exner ^ (c_v /R) 
     rho_prime = rho - rho_mean
 
-    # velocity 
+    # total velocities  
     v1, v2 = 20.0, 0.0
 
     # energy: total and background  
@@ -66,6 +66,9 @@ end
     # Exner pressure from hydrostatic balance for x[2]
     theta_0 = 300.0 # constant of integration 
     bvfrequency = 0.01 # Brunt-Väisälä frequency
+    # pressure
+    p_0 = 100_000.0  # reference pressure
+    R = c_p - c_v    # gas constant (dry air)
 
     exner = 1 +
             g^2 / (c_p * theta_0 * bvfrequency^2) *
@@ -73,11 +76,6 @@ end
 
     # potential temperature
     theta_mean = theta_0 * exp(bvfrequency^2 / g * x[2])
-
-
-    # pressure
-    p_0 = 100_000.0  # reference pressure
-    R = c_p - c_v    # gas constant (dry air)
 
     # density
     rho_mean = p_0 / (R * theta_mean) * exner ^ (c_v / R)
@@ -105,7 +103,7 @@ end
 ##############################################################################################
 # semidiscretization 
 
-polydeg = 4 
+polydeg = 5
 coordinates_min = (0.0, 0.0)
 coordinates_max = (300_000.0, 10_000.0)
 
@@ -155,7 +153,7 @@ save_solution = SaveSolutionCallback(interval = analysis_interval,
                                      output_directory = "out",
                                      solution_variables = solution_variables)
 
-stepsize_callback = StepsizeCallback(cfl = 1.0)
+stepsize_callback = StepsizeCallback(cfl = 0.1)
 
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,

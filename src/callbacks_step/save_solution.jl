@@ -157,15 +157,15 @@ function SaveSolutionCallbackRef(; interval::Integer = 0,
     if isnothing(dt)
         # Save every `interval` (accepted) time steps
         # The first one is the condition, the second the affect!
-        return DiscreteCallback(solution_callback, solution_callback,
+        return Trixi.DiscreteCallback(solution_callback, solution_callback,
                                 save_positions = (false, false),
-                                initialize = initialize_save_cb!)
+                                initialize = Trixi.initialize_save_cb!)
     else
         # Add a `tstop` every `dt`, and save the final solution.
-        return PeriodicCallback(solution_callback, dt,
+        return Trixi.PeriodicCallback(solution_callback, dt,
                                 save_positions = (false, false),
-                                initialize = initialize_save_cb!,
-                                final_affect = save_final_solution)
+                                initialize = Trixi.initialize_save_cb!,
+                                final_affect = Trixi.save_final_solution)
     end
 end
 

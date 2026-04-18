@@ -100,4 +100,6 @@ export examples_dir
 
 export compute_reference_state
 
+export SaveSolutionCallbackRef
+
 end # module TrixiAtmo

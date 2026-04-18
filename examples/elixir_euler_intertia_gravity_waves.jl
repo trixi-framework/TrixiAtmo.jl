@@ -1,6 +1,6 @@
 using OrdinaryDiffEq
 using Trixi
-using TrixiAtmo: cons2pot, compute_reference_state
+using TrixiAtmo: cons2pot, compute_reference_state, SaveSolutionCallbackRef
 
 
 #Inertia-gravity waves test case 
@@ -154,7 +154,7 @@ alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
 background_state = compute_reference_state(hydrostatic_background, semi, cons2pot)
 
-save_solution = SaveSolutionCallback(interval = analysis_interval,
+save_solution = SaveSolutionCallbackRef(interval = analysis_interval,
                                      save_initial_solution = true,
                                      save_final_solution = true,
                                      output_directory = "out",
