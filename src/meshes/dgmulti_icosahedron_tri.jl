@@ -16,8 +16,7 @@ The mesh will have no boundaries.
   simulation starts.
 """
 function DGMultiMeshTriIcosahedron2D(dg::DGMulti{2, <:Tri}, radius;
-                                     initial_refinement_level = 3,
-                                     is_on_boundary = nothing)
+                                     initial_refinement_level = 3)
     NDIMS_AMBIENT = 3
 
     vertex_coordinates = calc_node_coordinates_icosahedron_vertices(radius)
@@ -85,7 +84,7 @@ function DGMultiMeshTriIcosahedron2D(dg::DGMulti{2, <:Tri}, radius;
 
     md = StartUpDG.MeshData(Vxyz, EToV, dg.basis)
     md = project_onto_sphere!(md, dg, radius)
-    boundary_faces = StartUpDG.tag_boundary_faces(md, is_on_boundary)
+    boundary_faces = StartUpDG.tag_boundary_faces(md, nothing) # no boundaries on a sphere
     return DGMultiMesh(dg, Trixi.GeometricTermsType(Trixi.Curved(), dg), md, boundary_faces)
 end
 
