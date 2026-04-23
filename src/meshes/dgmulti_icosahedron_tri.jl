@@ -1,8 +1,9 @@
+@muladd begin
+#! format: noindent
+
 """
-    DGMultiMeshTriIcosahedron2D(trees_per_face_dimension, radius;
-                               polydeg, RealT=Float64,
-                               initial_refinement_level=0, unsaved_changes=true,
-                               p4est_partition_allow_for_coarsening=true)
+    DGMultiMeshTriIcosahedron2D(dg::DGMulti{2, <:Tri}, radius;
+                                initial_refinement_level = 0)
 
 Build a triangle-based icosahedral mesh as a 2D `DGMultiMesh` with 20 unrefined triangular faces. The mesh
 is then refined uniformly to the specified `initial_refinement_level`, yielding a total of `20 * 4^initial_refinement_level` triangles.
@@ -16,7 +17,7 @@ The mesh will have no boundaries.
   simulation starts.
 """
 function DGMultiMeshTriIcosahedron2D(dg::DGMulti{2, <:Tri}, radius;
-                                     initial_refinement_level = 3)
+                                     initial_refinement_level = 0)
     NDIMS_AMBIENT = 3
 
     vertex_coordinates = calc_node_coordinates_icosahedron_vertices(radius)
@@ -218,3 +219,4 @@ function StartUpDG.MeshData(VX, VY, VZ, EToV, rd::RefElemData{2};
 
     return md
 end
+end # @muladd
