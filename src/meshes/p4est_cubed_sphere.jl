@@ -16,7 +16,7 @@ The mesh will have no boundaries.
 # Arguments
 - `trees_per_face_dimension::Integer`: the number of trees in the two local dimensions of
                                        each face.
-- `radius::Integer`: the radius of the sphere.
+- `radius::RealT`: the radius of the sphere.
 - `polydeg::Integer`: polynomial degree used to store the geometry of the mesh.
                       The mapping will be approximated by an interpolation polynomial
                       of the specified degree for each tree.

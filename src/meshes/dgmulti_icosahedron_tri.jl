@@ -12,7 +12,7 @@ The mesh will have no boundaries.
 
 # Arguments
 - `dg::DGMulti{NDIMS, <:Tri}`: the DGMulti discretization to use for the mesh.
-- `radius::Integer`: the radius of the sphere.
+- `radius::RealT`: the radius of the sphere.
 - `initial_refinement_level::Integer`: refine the mesh uniformly to this level before the
   simulation starts.
 """
