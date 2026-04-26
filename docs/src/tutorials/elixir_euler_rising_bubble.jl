@@ -2,6 +2,12 @@
 #
 # This tutorial sets up a warm rising-bubble test case in `TrixiAtmo.jl`.
 #
+# The setup follows the warm-bubble benchmark described by Bryan and Fritsch,
+# which includes both dry and moist atmospheric variants:
+#
+# Bryan, G. H., and Fritsch, J. M. (2002). A benchmark simulation for moist
+# nonhydrostatic numerical models. Monthly Weather Review, 130(12), 2917-2928.
+#
 # The setup is based on a standard atmospheric benchmark where a localized warm
 # perturbation is placed in a background atmosphere. Since the perturbation is
 # warmer than the air around it, it should rise as the solution evolves.
@@ -25,7 +31,7 @@
 using OrdinaryDiffEqLowStorageRK
 using Trixi
 using TrixiAtmo
-using TrixiAtmo: source_terms_geopotential, cons2drypot
+using TrixiAtmo: cons2drypot
 
 # ## Governing equations
 #
@@ -35,8 +41,8 @@ using TrixiAtmo: source_terms_geopotential, cons2drypot
 
 c_pd = 1004 # specific heat at constant pressure for dry air
 c_vd = 717  # specific heat at constant volume for dry air
-c_pv = 1885 # specific heat at constant pressure for moist air
-c_vv = 1424 # specific heat at constant volume for moist air
+c_pv = 1885 # specific heat at constant pressure for water vapor
+c_vv = 1424 # specific heat at constant volume for water vapor
 
 equations = CompressibleMoistEulerEquations2D(c_pd = c_pd, c_vd = c_vd,
                                               c_pv = c_pv, c_vv = c_vv,
@@ -46,7 +52,7 @@ equations
 
 # ## Initial condition: warm bubble
 #
-# This follows the warm bubble setup from Wicker and Skamarock (1998).
+# This follows the warm bubble setup from Bryan and Fritsch (2002).
 #
 # The background potential temperature is
 # $\theta_{ref} = 300$ K, and a localized perturbation is added inside a bubble
@@ -63,6 +69,10 @@ equations
 # temperature.
 #
 # The moisture variables are initialized to zero.
+#
+# For reusable examples, this initial condition could be moved to the equations
+# source file. Here we keep it local so that the tutorial is self contained and
+# readers can see exactly how the warm bubble state is constructed.
 
 function initial_condition_warm_bubble(x, t, equations::CompressibleMoistEulerEquations2D)
     @unpack p_0, kappa, g, c_pd, c_vd, R_d, R_v = equations
@@ -102,15 +112,42 @@ initial_condition = initial_condition_warm_bubble
 
 # ## Boundary conditions and source term
 #
-# The mesh below is periodic in the horizontal direction. At the bottom and top
-# boundaries we use slip-wall boundary conditions.
+# The mesh is periodic in the horizontal direction. Therefore, no boundary
+# condition is needed in the x-direction. The vertical direction is not periodic,
+# so we prescribe slip-wall boundary conditions at the bottom and top boundaries.
 #
-# Gravity is added through `source_terms_geopotential`.
+# This must match the mesh periodicity setting below:
+#
+#   periodicity = (true, false)
+#
+# where the first entry corresponds to the horizontal x-direction and the second
+# entry corresponds to the vertical z-direction.
 
 boundary_conditions = (; y_neg = boundary_condition_slip_wall,
                        y_pos = boundary_condition_slip_wall)
 
-source_term = source_terms_geopotential
+# Gravity acts in the vertical direction. For the conservative variables
+#
+#   u = (rho, rho_v1, rho_v2, rho_E, rho_qv, rho_qc),
+#
+# the gravitational source contributes to the vertical momentum equation and
+# to the total energy equation through the vertical velocity.
+
+function source_terms_gravity(u, x, t, equations::CompressibleMoistEulerEquations2D)
+    @unpack g = equations
+
+    rho = u[1]
+    rho_v2 = u[3]
+
+    return SVector(zero(eltype(u)),
+                   zero(eltype(u)),
+                   -g * rho,
+                   -g * rho_v2,
+                   zero(eltype(u)),
+                   zero(eltype(u)))
+end
+
+source_term = source_terms_gravity
 
 # ## DG discretization
 #
@@ -137,16 +174,21 @@ solver
 #
 # We use a `P4estMesh` with horizontal periodicity and non-periodic vertical
 # boundaries.
+#
+# The initial coarse p4est mesh has 2 x 2 macro cells. During construction, each
+# macro cell is uniformly refined `initial_refinement_level` times, so the actual
+# computational mesh is much finer than the initial 2 x 2 layout.
 
 coordinates_min = (0.0, -5000.0)
 coordinates_max = (20000.0, 15000.0)
 
 trees_per_dimension = (2, 2)
+initial_refinement_level = 4
 
 mesh = P4estMesh(trees_per_dimension, polydeg = 1,
                  coordinates_min = coordinates_min,
                  coordinates_max = coordinates_max,
-                 initial_refinement_level = 5,
+                 initial_refinement_level = initial_refinement_level,
                  periodicity = (true, false))
 
 mesh
@@ -164,9 +206,12 @@ semi
 
 # ## Time interval and ODE problem
 #
-# The problem is evolved on the time interval `tspan = (0.0, 1000.0)`.
+# The problem is evolved on the shortened time interval `tspan = (0.0, 400.0)`
+# so that the tutorial remains inexpensive to run. For a longer benchmark-style
+# simulation, increase the final time to `1000.0` and optionally increase
+# `initial_refinement_level`.
 
-tspan = (0.0, 1000.0)
+tspan = (0.0, 400.0)
 ode = semidiscretize(semi, tspan)
 
 # ## Callbacks and diagnostics
@@ -186,6 +231,9 @@ summary_callback = SummaryCallback()
 analysis_interval = 1000
 solution_variables = cons2drypot
 
+# The entropy conservation error is a standard diagnostic for entropy-conservative
+# or entropy-stable discretizations. It is useful here because the volume flux is
+# the Chandrashekar flux in flux-differencing form.
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
                                      extra_analysis_errors = (:entropy_conservation_error,))
 
@@ -196,7 +244,10 @@ save_solution = SaveSolutionCallback(interval = 1000,
                                      save_final_solution = true,
                                      solution_variables = solution_variables)
 
-stepsize_callback = StepsizeCallback(cfl = 0.2)
+# The time step is selected dynamically from a CFL condition. A moderate CFL
+# number keeps the tutorial run stable while avoiding an unnecessarily small
+# time step.
+stepsize_callback = StepsizeCallback(cfl = 0.5)
 
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,
@@ -208,18 +259,16 @@ callbacks
 
 # ## Run the simulation
 #
-# The full simulation can be run with:
-#
-# ```julia
-# sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
-#             maxiters = 1.0e7,
-#             dt = 1.0,
-#             save_everystep = false,
-#             callback = callbacks)
-# ```
-#
-# The value `dt = 1.0` is only a placeholder here. In practice, the actual time
-# step is adjusted by `StepsizeCallback`.
+# We now run the simulation. The value `dt = 1.0` is only an initial time-step
+# guess; the actual time step is adjusted by `StepsizeCallback`.
+
+sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
+            maxiters = 1.0e7,
+            dt = 1.0,
+            save_everystep = false,
+            callback = callbacks)
+
+summary_callback()
 
 # ## Expected behavior
 #
