@@ -1,6 +1,7 @@
 using Documenter
 using DocumenterInterLinks
 using TrixiAtmo
+using Literate
 
 # Fix for https://github.com/trixi-framework/Trixi.jl/issues/668
 if (get(ENV, "CI", nothing) != "true") &&
@@ -83,6 +84,21 @@ readme_text = replace(readme_text,
                       r"<!--.*-->" => "")    # remove comments
 write(joinpath(@__DIR__, "src", "index.md"), readme_text)
 
+tutorial_list = [
+    "elixir_euler_rising_bubble.jl",
+]
+
+tutorial_pages = [
+    "Introduction" => "tutorials/introduction.md",
+    "Rising bubble (moist Euler + gravity)" => "tutorials/elixir_euler_rising_bubble.md",
+]
+
+tutorial_dir = joinpath(@__DIR__, "src", "tutorials")
+
+for tutorial in tutorial_list
+    Literate.markdown(joinpath(tutorial_dir, tutorial), tutorial_dir)
+end
+
 makedocs(;
          modules = [TrixiAtmo],
          repo = Remotes.GitHub("trixi-framework", "TrixiAtmo.jl"),
@@ -93,6 +109,7 @@ makedocs(;
                                   edit_link = "main",
                                   assets = String[],),
          pages = ["Home" => "index.md",
+            "Tutorials" => tutorial_pages,
              "Reference" => "reference.md",
              "Authors" => "authors.md",
              "Contributing" => "contributing.md",
