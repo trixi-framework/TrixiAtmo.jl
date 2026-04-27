@@ -86,7 +86,8 @@ function DGMultiMeshTriIcosahedron2D(dg::DGMulti{2, <:Tri}, radius;
     md = StartUpDG.MeshData(Vxyz, EToV, dg.basis)
     md = project_onto_sphere!(md, dg, radius)
     boundary_faces = StartUpDG.tag_boundary_faces(md, nothing) # no boundaries on a sphere
-    return DGMultiMesh(dg, Trixi.GeometricTermsType(Trixi.Curved(), dg), md, boundary_faces)
+    return DGMultiMesh(dg, Trixi.GeometricTermsType(Trixi.Curved(), dg), md,
+                       boundary_faces)
 end
 
 function project_onto_sphere!(md::MeshData, dg::DGMulti{NDIMS}, radius) where {NDIMS}
