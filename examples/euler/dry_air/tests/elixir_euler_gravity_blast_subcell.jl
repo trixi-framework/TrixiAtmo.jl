@@ -26,31 +26,31 @@ function initial_condition_constant(x, t,
 
     p = r > r0 ? p : p + p0_inner
 
-    prim = SVector(rho, v1, v2, p, x[2])
+    prim = SVector(rho, v1, v2, p, x[2], 1.0)
     return prim2cons(prim, equations)
 end
 
-@inline function Trixi.get_boundary_outer_state(u_inner, t,
-                                                boundary_condition::typeof(boundary_condition_slip_wall),
-                                                orientation, boundary_index,
-                                                mesh::TreeMesh{2},
-                                                equations::CompressibleEulerEquationsWithGravityNoPressure2D,
-                                                dg, cache, indices...)
-    if orientation == 1
-        #if boundary_index == 1 # Element is on the right, boundary on the left
-        return SVector(u_inner[1],
-                       u_inner[2] - 2 * u_inner[2],
-                       u_inner[3],
-                       u_inner[4],
-                       u_inner[5])
-    else
-        return SVector(u_inner[1],
-                       u_inner[2],
-                       u_inner[3] - 2 * u_inner[3],
-                       u_inner[4],
-                       u_inner[5])
-    end
-end
+# @inline function Trixi.get_boundary_outer_state(u_inner, t,
+#                                                 boundary_condition::typeof(boundary_condition_slip_wall),
+#                                                 orientation, boundary_index,
+#                                                 mesh::TreeMesh{2},
+#                                                 equations::CompressibleEulerEquationsWithGravityNoPressure2D,
+#                                                 dg, cache, indices...)
+#     if orientation == 1
+#         #if boundary_index == 1 # Element is on the right, boundary on the left
+#         return SVector(u_inner[1],
+#                        u_inner[2] - 2 * u_inner[2],
+#                        u_inner[3],
+#                        u_inner[4],
+#                        u_inner[5])
+#     else
+#         return SVector(u_inner[1],
+#                        u_inner[2],
+#                        u_inner[3] - 2 * u_inner[3],
+#                        u_inner[4],
+#                        u_inner[5])
+#     end
+# end
 
 # See Section 2.3 of the reference below for a discussion of robust
 # subsonic inflow/outflow boundary conditions.
@@ -62,27 +62,14 @@ end
                                              direction, x, t,
                                              surface_flux_function,
                                              equations::CompressibleEulerEquationsWithGravityNoPressure2D)
-    rho_loc, v1_loc, v2_loc, p_loc, phi_loc = cons2prim(u_inner, equations)
-
-    # For subsonic boundary: Take pressure from initial condition
-    p_out = pressure(initial_condition_constant(x, t, equations), equations)
-
-    prim = SVector(rho_loc, v1_loc, v2_loc, p_out, phi_loc)
-    u_surface = prim2cons(prim, equations)
+    u_surface, normal_direction = get_outer_state_and_normal(u_inner, orientation,
+                                                             direction, x, t, equations)
 
     flux_conservative, flux_nonconservative = surface_flux_function
-
-    # get the appropriate normal vector from the orientation
-    if orientation == 1
-        normal_direction = SVector(one(eltype(u_inner)), zero(eltype(u_inner)))
-    else # orientation == 2
-        normal_direction = SVector(zero(eltype(u_inner)), one(eltype(u_inner)))
-    end
-
     if isodd(direction)
-        return -flux_conservative.numerical_flux(u_inner, u_surface, -normal_direction,
+        return -flux_conservative.numerical_flux(u_inner, u_surface, normal_direction,
                                                  equations),
-               -flux_nonconservative.numerical_flux(u_inner, u_surface, -normal_direction,
+               -flux_nonconservative.numerical_flux(u_inner, u_surface, normal_direction,
                                                     equations)
     else
         return flux_conservative.numerical_flux(u_inner, u_surface, normal_direction,
@@ -94,19 +81,62 @@ end
 
 @inline function Trixi.get_boundary_outer_state(u_inner, t,
                                                 boundary_condition::typeof(boundary_condition_subsonic),
-                                                orientation, boundary_index,
+                                                orientation, direction,
                                                 mesh::TreeMesh{2},
                                                 equations::CompressibleEulerEquationsWithGravityNoPressure2D,
                                                 dg, cache, indices...)
-    rho_loc, v1_loc, v2_loc, p_loc, phi_loc = cons2prim(u_inner, equations)
     x = Trixi.get_node_coords(cache.elements.node_coordinates, equations, dg, indices...)
 
-    # For subsonic boundary: Take pressure from initial condition
-    p_out = pressure(initial_condition_constant(x, t, equations), equations)
-
-    prim = SVector(rho_loc, v1_loc, v2_loc, p_out, phi_loc)
-    u_surface = prim2cons(prim, equations)
+    u_surface, normal_direction = get_outer_state_and_normal(u_inner, orientation,
+                                                             direction, x, t, equations)
     return u_surface
+end
+
+@inline function get_outer_state_and_normal(u_inner, orientation::Integer,
+                                            direction, x, t,
+                                            equations::CompressibleEulerEquationsWithGravityNoPressure2D)
+    rho_loc, v1_loc, v2_loc, p_loc, phi_loc, aux_loc = cons2prim(u_inner, equations)
+
+    # get the appropriate normal vector from the orientation
+    if orientation == 1
+        normal_direction = SVector(one(eltype(u_inner)), zero(eltype(u_inner)))
+    else # orientation == 2
+        normal_direction = SVector(zero(eltype(u_inner)), one(eltype(u_inner)))
+    end
+
+    # Flip the normal vector if necessary
+    if isodd(direction)
+        normal_direction = -normal_direction
+    end
+
+    # Outer state
+    rho_out, v1_out, v2_out, p_out, phi_out, aux_out = cons2prim(initial_condition_constant(x,
+                                                                                            t,
+                                                                                            equations),
+                                                                 equations)
+
+    # Impose outflow... No inflow allowed
+    v_normal = (v1_loc * normal_direction[1] + v2_loc * normal_direction[2]) /
+               sqrt(equations.gamma * p_loc / rho_loc)
+    if v_normal <= -1
+        # Supersonic inflow (state from outside).. do nothing
+    elseif v_normal < 0
+        # Subsonic inflow (state from outside, except for pressure)
+        p_out = p_loc
+    elseif v_normal < 1
+        # Subsonic outflow (state from inside, except for pressure)
+        rho_out = rho_loc
+        v1_out = v1_loc
+        v2_out = v2_loc
+    else # v_normal >= 1
+        # supersonic outflow (state from inside)
+        return u_inner, normal_direction
+    end
+
+    # Get outer state
+    prim = SVector(rho_out, v1_out, v2_out, p_out, phi_loc, aux_loc)
+    u_surface = prim2cons(prim, equations)
+    return u_surface, normal_direction
 end
 
 initial_condition = initial_condition_constant

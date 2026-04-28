@@ -43,7 +43,7 @@ References:
 - Waruszewski, M., Kozdon, J. E., Wilcox, L. C., Gibson, T. H., & Giraldo, F. X. (2022). Entropy stable discontinuous Galerkin methods for balance laws in non-conservative form: Applications to the Euler equations with gravity. Journal of Computational Physics, 468, 111507. https://doi.org/10.1016/j.jcp.2022.111507.
 """
 struct CompressibleEulerEquationsWithGravityNoPressure2D{RealT <: Real} <:
-       Trixi.AbstractCompressibleEulerEquations{2, 5}
+       Trixi.AbstractCompressibleEulerEquations{2, 6}
     gamma::RealT               # ratio of specific heats
     inv_gamma_minus_one::RealT # = inv(gamma - 1); can be used to write slow divisions as fast multiplications
 
@@ -54,16 +54,20 @@ struct CompressibleEulerEquationsWithGravityNoPressure2D{RealT <: Real} <:
 end
 
 Trixi.have_nonconservative_terms(::CompressibleEulerEquationsWithGravityNoPressure2D) = True()
+
+# The auxiliary variable is used to store the mean temperature of the element for isothermal-equilibrium-preserving discretizations
 Trixi.varnames(::typeof(cons2cons), ::CompressibleEulerEquationsWithGravityNoPressure2D) = ("rho",
                                                                                             "rho_v1",
                                                                                             "rho_v2",
                                                                                             "rho_etot",
-                                                                                            "phi")
+                                                                                            "phi",
+                                                                                            "aux")
 Trixi.varnames(::typeof(cons2prim), ::CompressibleEulerEquationsWithGravityNoPressure2D) = ("rho",
                                                                                             "v1",
                                                                                             "v2",
                                                                                             "p",
-                                                                                            "phi")
+                                                                                            "phi",
+                                                                                            "aux")
 
 """
     boundary_condition_slip_wall(u_inner, normal_direction, x, t, surface_flux_function,
@@ -135,10 +139,12 @@ Should be used together with [`UnstructuredMesh2D`](@ref).
                     zero(eltype(u_inner)),
                     zero(eltype(u_inner)),
                     zero(eltype(u_inner)),
+                    zero(eltype(u_inner)),
                     zero(eltype(u_inner))) * norm_,
             SVector(zero(eltype(u_inner)),
                     noncons * normal[1],
                     noncons * normal[2],
+                    zero(eltype(u_inner)),
                     zero(eltype(u_inner)),
                     zero(eltype(u_inner))) * norm_)
 end
@@ -194,7 +200,7 @@ end
 # Calculate 2D flux for a single point
 @inline function Trixi.flux(u, orientation::Integer,
                             equations::CompressibleEulerEquationsWithGravityNoPressure2D)
-    rho, rho_v1, rho_v2, rho_etot, phi = u
+    rho, rho_v1, rho_v2, rho_etot, phi, _ = u
     v1 = rho_v1 / rho
     v2 = rho_v2 / rho
     p = (equations.gamma - 1) *
@@ -210,7 +216,7 @@ end
         f3 = rho_v2 * v2
         f4 = (rho_etot + p) * v2
     end
-    return SVector(f1, f2, f3, f4, zero(eltype(u)))
+    return SVector(f1, f2, f3, f4, zero(eltype(u)), zero(eltype(u)))
 end
 
 # Calculate 2D flux for a single point in the normal direction
@@ -226,7 +232,7 @@ end
     f2 = rho_v_normal * v1
     f3 = rho_v_normal * v2
     f4 = (rho_etot + p) * v_normal
-    return SVector(f1, f2, f3, f4, zero(eltype(u)))
+    return SVector(f1, f2, f3, f4, zero(eltype(u)), zero(eltype(u)))
 end
 
 """
@@ -248,8 +254,8 @@ The modification is in the energy flux to guarantee pressure equilibrium and was
 @inline function Trixi.flux_shima_etal(u_ll, u_rr, orientation::Integer,
                                        equations::CompressibleEulerEquationsWithGravityNoPressure2D)
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, p_ll, phi_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr, phi_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, p_ll, phi_ll, _ = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr, phi_rr, _ = cons2prim(u_rr, equations)
 
     # Average each factor of products in flux
     rho_avg = 0.5f0 * (rho_ll + rho_rr)
@@ -276,14 +282,14 @@ The modification is in the energy flux to guarantee pressure equilibrium and was
              f1 * phi_avg
     end
 
-    return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
+    return SVector(f1, f2, f3, f4, zero(eltype(u_ll)), zero(eltype(u_ll)))
 end
 
 @inline function Trixi.flux_shima_etal(u_ll, u_rr, normal_direction::AbstractVector,
                                        equations::CompressibleEulerEquationsWithGravityNoPressure2D)
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, p_ll, phi_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr, phi_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, p_ll, phi_ll, _ = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr, phi_rr, _ = cons2prim(u_rr, equations)
     v_dot_n_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2]
     v_dot_n_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2]
 
@@ -304,7 +310,7 @@ end
           p_avg * v_dot_n_avg * equations.inv_gamma_minus_one
           + 0.5f0 * (p_ll * v_dot_n_rr + p_rr * v_dot_n_ll)) + f1 * phi_avg
 
-    return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
+    return SVector(f1, f2, f3, f4, zero(eltype(u_ll)), zero(eltype(u_ll)))
 end
 
 """
@@ -345,7 +351,7 @@ Kinetic energy preserving two-point flux by
         f4 = (rho_avg * etot_avg + p_avg) * v2_avg
     end
 
-    return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
+    return SVector(f1, f2, f3, f4, zero(eltype(u_ll)), zero(eltype(u_ll)))
 end
 
 @inline function Trixi.flux_kennedy_gruber(u_ll, u_rr, normal_direction::AbstractVector,
@@ -370,7 +376,7 @@ end
     f3 = f1 * v2_avg
     f4 = f1 * etot_avg + p_avg * v_dot_n_avg
 
-    return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
+    return SVector(f1, f2, f3, f4, zero(eltype(u_ll)), zero(eltype(u_ll)))
 end
 
 """
@@ -391,8 +397,8 @@ See also
 @inline function Trixi.flux_ranocha(u_ll, u_rr, orientation::Integer,
                                     equations::CompressibleEulerEquationsWithGravityNoPressure2D)
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, p_ll, phi_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr, phi_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, p_ll, phi_ll, _ = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr, phi_rr, _ = cons2prim(u_rr, equations)
 
     # Compute the necessary mean values
     rho_mean = ln_mean(rho_ll, rho_rr)
@@ -423,14 +429,14 @@ See also
              0.5f0 * (p_ll * v2_rr + p_rr * v2_ll) + f1 * phi_avg
     end
 
-    return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
+    return SVector(f1, f2, f3, f4, zero(eltype(u_ll)), zero(eltype(u_ll)))
 end
 
 @inline function Trixi.flux_ranocha(u_ll, u_rr, normal_direction::AbstractVector,
                                     equations::CompressibleEulerEquationsWithGravityNoPressure2D)
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, p_ll, phi_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr, phi_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, p_ll, phi_ll, _ = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr, phi_rr, _ = cons2prim(u_rr, equations)
     v_dot_n_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2]
     v_dot_n_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2]
 
@@ -455,14 +461,14 @@ end
           0.5f0 * (p_ll * v_dot_n_rr + p_rr * v_dot_n_ll)
           + f1 * phi_avg)
 
-    return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
+    return SVector(f1, f2, f3, f4, zero(eltype(u_ll)), zero(eltype(u_ll)))
 end
 
 function flux_nonconservative_waruszewski_etal(u_ll, u_rr,
                                                normal_direction::AbstractVector,
                                                equations::CompressibleEulerEquationsWithGravityNoPressure2D)
-    rho_ll, _, _, p_ll, phi_ll = cons2prim(u_ll, equations)
-    rho_rr, _, _, p_rr, phi_rr = cons2prim(u_rr, equations)
+    rho_ll, _, _, p_ll, phi_ll, _ = cons2prim(u_ll, equations)
+    rho_rr, _, _, p_rr, phi_rr, _ = cons2prim(u_rr, equations)
 
     # We omit the 0.5 in the density average since Trixi.jl always multiplies the non-conservative flux with 0.5
     p_jump = (p_rr - p_ll)
@@ -470,13 +476,13 @@ function flux_nonconservative_waruszewski_etal(u_ll, u_rr,
 
     f0 = zero(eltype(u_ll))
     return SVector(f0, noncons * normal_direction[1], noncons * normal_direction[2],
-                   f0, f0)
+                   f0, f0, f0)
 end
 
 function flux_nonconservative_waruszewski_etal(u_ll, u_rr, orientation::Integer,
                                                equations::CompressibleEulerEquationsWithGravityNoPressure2D)
-    rho_ll, _, _, p_ll, phi_ll = cons2prim(u_ll, equations)
-    rho_rr, _, _, p_rr, phi_rr = cons2prim(u_rr, equations)
+    rho_ll, _, _, p_ll, phi_ll, _ = cons2prim(u_ll, equations)
+    rho_rr, _, _, p_rr, phi_rr, _ = cons2prim(u_rr, equations)
 
     # We omit the 0.5 in the density average since Trixi.jl always multiplies the non-conservative flux with 0.5
     p_jump = (p_rr - p_ll)
@@ -484,9 +490,9 @@ function flux_nonconservative_waruszewski_etal(u_ll, u_rr, orientation::Integer,
 
     f0 = zero(eltype(u_ll))
     if orientation == 1
-        return SVector(f0, noncons, f0, f0, f0)
+        return SVector(f0, noncons, f0, f0, f0, f0)
     else #if orientation == 2
-        return SVector(f0, f0, noncons, f0, f0)
+        return SVector(f0, f0, noncons, f0, f0, f0)
     end
 end
 
@@ -503,8 +509,8 @@ const flux_nonconservative_chandrashekar_isothermal = FluxNonConservativeChandra
 @inline function (noncons_flux::FluxNonConservativeChandrashekarIsothermal)(u_ll, u_rr,
                                                                             normal_direction::AbstractVector,
                                                                             equations::CompressibleEulerEquationsWithGravityNoPressure2D)
-    rho_ll, _, _, p_ll, phi_ll = cons2prim(u_ll, equations)
-    _, _, _, p_rr, phi_rr = cons2prim(u_rr, equations)
+    rho_ll, _, _, p_ll, phi_ll, _ = cons2prim(u_ll, equations)
+    _, _, _, p_rr, phi_rr, _ = cons2prim(u_rr, equations)
 
     # TODO: we assume R*T constant... Read from aux vars
     RT = 1.0 # p_ll / rho_ll
@@ -517,14 +523,14 @@ const flux_nonconservative_chandrashekar_isothermal = FluxNonConservativeChandra
 
     f0 = zero(eltype(u_ll))
     return SVector(f0, noncons * normal_direction[1], noncons * normal_direction[2], f0,
-                   f0)
+                   f0, f0)
 end
 
 @inline function (noncons_flux::FluxNonConservativeChandrashekarIsothermal)(u_ll, u_rr,
                                                                             orientation::Integer,
                                                                             equations::CompressibleEulerEquationsWithGravityNoPressure2D)
-    rho_ll, _, _, p_ll, phi_ll = cons2prim(u_ll, equations)
-    _, _, _, p_rr, phi_rr = cons2prim(u_rr, equations)
+    rho_ll, _, _, p_ll, phi_ll, _ = cons2prim(u_ll, equations)
+    _, _, _, p_rr, phi_rr, _ = cons2prim(u_rr, equations)
 
     # TODO: we assume R*T constant... Read from aux vars
     RT = 1.0 # p_ll / rho_ll
@@ -537,9 +543,9 @@ end
 
     f0 = zero(eltype(u_ll))
     if orientation == 1
-        return SVector(f0, noncons, f0, f0, f0)
+        return SVector(f0, noncons, f0, f0, f0, f0)
     else #if orientation == 2
-        return SVector(f0, f0, noncons, f0, f0)
+        return SVector(f0, f0, noncons, f0, f0, f0)
     end
 end
 
@@ -553,25 +559,25 @@ end
 
     # We omit the 0.5 in the density average since Trixi.jl always multiplies the non-conservative flux with 0.5
     if nonconservative_term == 1
-        rho_ll, v1_ll, v2_ll, p_ll, phi_ll = cons2prim(u_ll, equations)
+        rho_ll, v1_ll, v2_ll, p_ll, phi_ll, _ = cons2prim(u_ll, equations)
         e_ll = exp(phi_ll / RT)
 
         flux = -rho_ll * RT * e_ll
 
         f0 = zero(eltype(u_ll))
         if orientation == 1
-            return SVector(f0, flux, f0, f0, f0)
+            return SVector(f0, flux, f0, f0, f0, f0)
         else #if orientation == 2
-            return SVector(f0, f0, flux, f0, f0)
+            return SVector(f0, f0, flux, f0, f0, f0)
         end
     else #if nonconservative_term == 2
         flux = 1
 
         f0 = zero(eltype(u_ll))
         if orientation == 1
-            return SVector(f0, flux, f0, f0, f0)
+            return SVector(f0, flux, f0, f0, f0, f0)
         else #if orientation == 2
-            return SVector(f0, f0, flux, f0, f0)
+            return SVector(f0, f0, flux, f0, f0, f0)
         end
     end
 end
@@ -581,8 +587,8 @@ end
                                                                equations::CompressibleEulerEquationsWithGravityNoPressure2D,
                                                                nonconservative_type::Trixi.NonConservativeJump,
                                                                nonconservative_term::Integer)
-    rho_ll, v1_ll, v2_ll, p_ll, phi_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr, phi_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, p_ll, phi_ll, _ = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr, phi_rr, _ = cons2prim(u_rr, equations)
 
     # TODO: we assume R*T constant... Read from aux vars
     RT = 1.0
@@ -596,18 +602,18 @@ end
 
         f0 = zero(eltype(u_ll))
         if orientation == 1
-            return SVector(f0, flux, f0, f0, f0)
+            return SVector(f0, flux, f0, f0, f0, f0)
         else #if orientation == 2
-            return SVector(f0, f0, flux, f0, f0)
+            return SVector(f0, f0, flux, f0, f0, f0)
         end
     else #if nonconservative_term == 2
         flux = p_rr - p_ll
 
         f0 = zero(eltype(u_ll))
         if orientation == 1
-            return SVector(f0, flux, f0, f0, f0)
+            return SVector(f0, flux, f0, f0, f0, f0)
         else #if orientation == 2
-            return SVector(f0, f0, flux, f0, f0)
+            return SVector(f0, f0, flux, f0, f0, f0)
         end
     end
 end
@@ -663,8 +669,8 @@ References:
     else # orientation == 2
         f3 = f3 + p
     end
-
-    return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
+    f0 = zero(eltype(u_ll))
+    return SVector(f1, f2, f3, f4, f0, f0)
 end
 
 # We add the "upwinding" pressure terms here, but not the average pressure terms as in CompressibleEulerEquationsWithGravity2D
@@ -696,11 +702,11 @@ end
         f1, f2, f3, f4, _ = u_rr * v
         f4 = f4 + p_rr * v
     end
-
+    f0 = zero(eltype(u_ll))
     return SVector(f1,
                    f2 + p * normal_direction[1],
                    f3 + p * normal_direction[2],
-                   f4, zero(eltype(u_ll)))
+                   f4, f0, f0)
 end
 
 # Calculate maximum wave speed for local Lax-Friedrichs-type dissipation as the
@@ -798,7 +804,8 @@ end
                    c * u[2] + s * u[3],
                    -s * u[2] + c * u[3],
                    u[4],
-                   u[5])
+                   u[5],
+                   u[6])
 end
 
 # Called inside `FluxRotated` in `numerical_fluxes.jl` so the direction
@@ -821,7 +828,8 @@ end
                    c * u[2] - s * u[3],
                    s * u[2] + c * u[3],
                    u[4],
-                   u[5])
+                   u[5],
+                   u[6])
 end
 
 @inline function Trixi.max_abs_speeds(u,
@@ -835,20 +843,20 @@ end
 # Convert conservative variables to primitive
 @inline function Trixi.cons2prim(u,
                                  equations::CompressibleEulerEquationsWithGravityNoPressure2D)
-    rho, rho_v1, rho_v2, rho_etot, phi = u
+    rho, rho_v1, rho_v2, rho_etot, phi, aux = u
 
     v1 = rho_v1 / rho
     v2 = rho_v2 / rho
     p = (equations.gamma - 1) *
         (rho_etot - 0.5f0 * (rho_v1 * v1 + rho_v2 * v2) - rho * phi)
 
-    return SVector(rho, v1, v2, p, phi)
+    return SVector(rho, v1, v2, p, phi, aux)
 end
 
 # Convert conservative variables to entropy (see, e.g., Waruszewski et al. (2022))
 @inline function Trixi.cons2entropy(u,
                                     equations::CompressibleEulerEquationsWithGravityNoPressure2D)
-    rho, rho_v1, rho_v2, rho_etot, phi = u
+    rho, rho_v1, rho_v2, rho_etot, phi, aux = u
 
     v1 = rho_v1 / rho
     v2 = rho_v2 / rho
@@ -863,7 +871,7 @@ end
     w3 = rho_p * v2
     w4 = -rho_p
 
-    return SVector(w1, w2, w3, w4, phi)
+    return SVector(w1, w2, w3, w4, phi, aux)
 end
 
 @inline function Trixi.entropy2cons(w,
@@ -875,6 +883,7 @@ end
     # instead of `-rho * s / (gamma - 1)`
     V1, V2, V3, V5, _ = w .* (gamma - 1)
     phi = w[5]
+    aux = w[6]
 
     # s = specific entropy
     s = gamma - V1 + (V2^2 + V3^2) / (2 * V5) - V5 * phi
@@ -886,18 +895,18 @@ end
     rho_v1 = rho_iota * V2
     rho_v2 = rho_iota * V3
     rho_etot = rho_iota * (1 - (V2^2 + V3^2) / (2 * V5)) + rho * phi
-    return SVector(rho, rho_v1, rho_v2, rho_etot, phi)
+    return SVector(rho, rho_v1, rho_v2, rho_etot, phi, aux)
 end
 
 # Convert primitive to conservative variables
 @inline function Trixi.prim2cons(prim,
                                  equations::CompressibleEulerEquationsWithGravityNoPressure2D)
-    rho, v1, v2, p, phi = prim
+    rho, v1, v2, p, phi, aux = prim
     rho_v1 = rho * v1
     rho_v2 = rho * v2
     rho_etot = p * equations.inv_gamma_minus_one + 0.5f0 * (rho_v1 * v1 + rho_v2 * v2) +
                rho * phi
-    return SVector(rho, rho_v1, rho_v2, rho_etot, phi)
+    return SVector(rho, rho_v1, rho_v2, rho_etot, phi, aux)
 end
 
 @inline function Trixi.density(u,
@@ -908,7 +917,7 @@ end
 
 @inline function Trixi.pressure(u,
                                 equations::CompressibleEulerEquationsWithGravityNoPressure2D)
-    rho, rho_v1, rho_v2, rho_etot, phi = u
+    rho, rho_v1, rho_v2, rho_etot, phi, _ = u
     p = (equations.gamma - 1) *
         (rho_etot - 0.5f0 * (rho_v1^2 + rho_v2^2) / rho - rho * phi)
     return p
@@ -916,7 +925,7 @@ end
 
 @inline function Trixi.density_pressure(u,
                                         equations::CompressibleEulerEquationsWithGravityNoPressure2D)
-    rho, rho_v1, rho_v2, rho_etot, phi = u
+    rho, rho_v1, rho_v2, rho_etot, phi, _ = u
     rho_times_p = (equations.gamma - 1) *
                   (rho * rho_etot - 0.5f0 * (rho_v1^2 + rho_v2^2) - rho^2 * phi)
     return rho_times_p
@@ -982,7 +991,8 @@ end
     λ = dissipation.max_abs_speed(u_ll, u_rr, orientation_or_normal_direction,
                                   equations)
     diss = -0.5f0 * λ * (u_rr - u_ll)
-    return SVector(diss[1], diss[2], diss[3], diss[4], zero(eltype(u_ll)))
+    f0 = zero(eltype(u_ll))
+    return SVector(diss[1], diss[2], diss[3], diss[4], f0, f0)
 end
 
 # State validation for Newton-bisection method of subcell IDP limiting
@@ -1024,8 +1034,8 @@ end
                                             equations::Union{CompressibleEulerEquationsWithGravityNoPressure2D,
                                                              CompressibleEulerEquationsWithGravity2D})
     # Unpack left and right states
-    rho_ll, v1_ll, v2_ll, p_ll, phi_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr, phi_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, p_ll, phi_ll, aux_ll = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr, phi_rr, aux_rr = cons2prim(u_rr, equations)
 
     rho_e_ll = u_ll[4]
     rho_e_rr = u_rr[4]
@@ -1048,8 +1058,8 @@ end
     rho_e_eq_ll = p_eq_ll / (equations.gamma - 1) + rho_eq_ll * phi_ll
     rho_e_eq_rr = p_eq_rr / (equations.gamma - 1) + rho_eq_rr * phi_rr
 
-    u_eq_ll = SVector(rho_eq_ll, 0.0, 0.0, rho_e_eq_ll, phi_ll)
-    u_eq_rr = SVector(rho_eq_rr, 0.0, 0.0, rho_e_eq_rr, phi_rr)
+    u_eq_ll = SVector(rho_eq_ll, 0.0, 0.0, rho_e_eq_ll, phi_ll, aux_ll)
+    u_eq_rr = SVector(rho_eq_rr, 0.0, 0.0, rho_e_eq_rr, phi_rr, aux_rr)
 
     # Compute residual contribution
     u_res_ll = u_ll - u_eq_ll
@@ -1070,8 +1080,8 @@ end
     rho_e_eq_ll = p_eq_ll / (equations.gamma - 1) + rho_eq_ll * phi_star
     rho_e_eq_rr = p_eq_rr / (equations.gamma - 1) + rho_eq_rr * phi_star
 
-    u_eq_ll = SVector(rho_eq_ll, 0.0, 0.0, rho_e_eq_ll, phi_star)
-    u_eq_rr = SVector(rho_eq_rr, 0.0, 0.0, rho_e_eq_rr, phi_star)
+    u_eq_ll = SVector(rho_eq_ll, 0.0, 0.0, rho_e_eq_ll, phi_star, aux_ll)
+    u_eq_rr = SVector(rho_eq_rr, 0.0, 0.0, rho_e_eq_rr, phi_star, aux_rr)
 
     # Compute reconstructed state
     u_star_ll = u_eq_ll + u_res_ll
@@ -1093,13 +1103,15 @@ end
                        u_inner[2] - 2 * u_inner[2],
                        u_inner[3],
                        u_inner[4],
-                       u_inner[5])
+                       u_inner[5],
+                       u_inner[6])
     else
         return SVector(u_inner[1],
                        u_inner[2],
                        u_inner[3] - 2 * u_inner[3],
                        u_inner[4],
-                       u_inner[5])
+                       u_inner[5],
+                       u_inner[6])
     end
 end
 end # @muladd

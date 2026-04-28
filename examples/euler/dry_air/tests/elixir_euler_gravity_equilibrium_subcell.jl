@@ -13,7 +13,7 @@ function initial_condition_constant(x, t,
     v1 = 0.0
     v2 = 0.0
     p = exp(-x[2])
-    prim = SVector(rho, v1, v2, p, x[2])
+    prim = SVector(rho, v1, v2, p, x[2], 1.0)
     return prim2cons(prim, equations)
 end
 
