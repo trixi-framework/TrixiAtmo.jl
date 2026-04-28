@@ -10,24 +10,26 @@ function Trixi.rhs!(du, u, t,
                     equations::AbstractCovariantEquations{2},
                     boundary_conditions, source_terms::Source,
                     dg::DG, cache) where {Source}
+    backend = trixi_backend(u)
+
     # Reset du
     Trixi.@trixi_timeit Trixi.timer() "reset ∂u/∂t" Trixi.set_zero!(du, dg, cache)
 
     # Calculate volume integral
     Trixi.@trixi_timeit Trixi.timer() "volume integral" begin
-        Trixi.calc_volume_integral!(du, u, mesh,
+        Trixi.calc_volume_integral!(backend, du, u, mesh,
                                     Trixi.have_nonconservative_terms(equations),
                                     equations, dg.volume_integral, dg, cache)
     end
 
     # Prolong solution to interfaces
     Trixi.@trixi_timeit Trixi.timer() "prolong2interfaces" begin
-        Trixi.prolong2interfaces!(cache, u, mesh, equations, dg)
+        Trixi.prolong2interfaces!(backend, cache, u, mesh, equations, dg)
     end
 
     # Calculate interface fluxes
     Trixi.@trixi_timeit Trixi.timer() "interface flux" begin
-        Trixi.calc_interface_flux!(cache.elements.surface_flux_values, mesh,
+        Trixi.calc_interface_flux!(backend, cache.elements.surface_flux_values, mesh,
                                    Trixi.have_nonconservative_terms(equations),
                                    equations, dg.surface_integral, dg, cache)
     end
@@ -48,12 +50,14 @@ function Trixi.rhs!(du, u, t,
 
     # Calculate surface integrals
     Trixi.@trixi_timeit Trixi.timer() "surface integral" begin
-        Trixi.calc_surface_integral!(du, u, mesh, equations, dg.surface_integral, dg,
+        Trixi.calc_surface_integral!(backend, du, u, mesh, equations,
+                                     dg.surface_integral, dg,
                                      cache)
     end
 
     # Apply Jacobian from mapping to reference element
-    Trixi.@trixi_timeit Trixi.timer() "Jacobian" Trixi.apply_jacobian!(du, mesh,
+    Trixi.@trixi_timeit Trixi.timer() "Jacobian" Trixi.apply_jacobian!(backend, du,
+                                                                       mesh,
                                                                        equations, dg,
                                                                        cache)
 
@@ -92,7 +96,7 @@ end
 
 # Weak form kernel which uses contravariant flux components, passing the geometric 
 # information contained in the auxiliary variables to the flux function
-@inline function Trixi.weak_form_kernel!(du, u, element, mesh::P4estMesh{2},
+@inline function Trixi.weak_form_kernel!(du, u, element, ::Type{<:P4estMesh{2}},
                                          nonconservative_terms::False,
                                          equations::AbstractCovariantEquations{2},
                                          dg::DGSEM, cache, alpha = true)
@@ -126,7 +130,7 @@ end
 
 # Flux differencing kernel which uses contravariant flux components, passing the geometric 
 # information contained in the auxiliary variables to the flux function
-@inline function Trixi.flux_differencing_kernel!(du, u, element, mesh::P4estMesh{2},
+@inline function Trixi.flux_differencing_kernel!(du, u, element, ::Type{<:P4estMesh{2}},
                                                  nonconservative_terms::False,
                                                  equations::AbstractCovariantEquations{2},
                                                  volume_flux, dg::DGSEM, cache,
@@ -180,7 +184,8 @@ end
 # Non-conservative flux differencing kernel which uses contravariant flux components, 
 # passing the geometric information contained in the auxiliary variables to the flux 
 # function
-@inline function Trixi.flux_differencing_kernel!(du, u, element, mesh::P4estMesh{2},
+@inline function Trixi.flux_differencing_kernel!(du, u, element,
+                                                 MeshT::Type{<:P4estMesh{2}},
                                                  nonconservative_terms::True,
                                                  equations::AbstractCovariantEquations{2},
                                                  volume_flux, dg::DGSEM, cache,
@@ -190,7 +195,7 @@ end
     symmetric_flux, nonconservative_flux = volume_flux
 
     # Apply the symmetric flux as usual
-    Trixi.flux_differencing_kernel!(du, u, element, mesh, False(), equations,
+    Trixi.flux_differencing_kernel!(du, u, element, MeshT, False(), equations,
                                     symmetric_flux, dg, cache, alpha)
 
     for j in eachnode(dg), i in eachnode(dg)
@@ -230,11 +235,12 @@ end
 # Calculate the interface flux directly in the local coordinate system. This function 
 # differs from the standard approach in Trixi.jl in that one does not need to pass the 
 # normal vector to the pointwise flux calculation.
-function Trixi.calc_interface_flux!(surface_flux_values,
+function Trixi.calc_interface_flux!(backend::Nothing, surface_flux_values,
                                     mesh::P4estMesh{2},
                                     nonconservative_terms,
                                     equations::AbstractCovariantEquations{2},
-                                    surface_integral, dg::DG, cache)
+                                    surface_integral,
+                                    dg::DGSEM{<:LobattoLegendreBasis}, cache)
     (; neighbor_ids, node_indices) = cache.interfaces
     index_range = eachnode(dg)
     index_end = last(index_range)
@@ -294,7 +300,8 @@ end
 @inline function Trixi.calc_interface_flux!(surface_flux_values, mesh::P4estMesh{2},
                                             nonconservative_terms::False,
                                             equations::AbstractCovariantEquations{2},
-                                            surface_integral, dg::DG, cache,
+                                            surface_integral,
+                                            dg::DGSEM{<:LobattoLegendreBasis}, cache,
                                             interface_index,
                                             primary_node_index,
                                             primary_direction_index,
@@ -355,7 +362,8 @@ end
 @inline function Trixi.calc_interface_flux!(surface_flux_values, mesh::P4estMesh{2},
                                             nonconservative_terms::True,
                                             equations::AbstractCovariantEquations{2},
-                                            surface_integral, dg::DG, cache,
+                                            surface_integral,
+                                            dg::DGSEM{<:LobattoLegendreBasis}, cache,
                                             interface_index,
                                             primary_node_index,
                                             primary_direction_index,
@@ -449,7 +457,7 @@ function Trixi.calc_sources!(du, u, t, source_terms::Nothing,
 end
 
 # Apply the exact Jacobian stored in auxiliary variables
-function Trixi.apply_jacobian!(du, mesh::P4estMesh{2},
+function Trixi.apply_jacobian!(backend::Nothing, du, mesh::P4estMesh{2},
                                equations::AbstractCovariantEquations{2},
                                dg::DG, cache)
     (; aux_node_vars) = cache.auxiliary_variables

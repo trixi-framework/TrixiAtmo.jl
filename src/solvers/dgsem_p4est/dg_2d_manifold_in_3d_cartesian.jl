@@ -6,13 +6,14 @@ function Trixi.rhs!(du, u, t,
                     equations::AbstractEquations{3},
                     boundary_conditions, source_terms::Source,
                     dg::DG, cache) where {Source}
+    backend = trixi_backend(u)
 
     # Reset du
     Trixi.@trixi_timeit Trixi.timer() "reset ∂u/∂t" Trixi.set_zero!(du, dg, cache)
 
     # Calculate volume integral
     Trixi.@trixi_timeit Trixi.timer() "volume integral" begin
-        Trixi.calc_volume_integral!(du, u, mesh,
+        Trixi.calc_volume_integral!(backend, du, u, mesh,
                                     Trixi.have_nonconservative_terms(equations),
                                     equations,
                                     dg.volume_integral, dg, cache)
@@ -20,12 +21,12 @@ function Trixi.rhs!(du, u, t,
 
     # Prolong solution to interfaces
     Trixi.@trixi_timeit Trixi.timer() "prolong2interfaces" begin
-        Trixi.prolong2interfaces!(cache, u, mesh, equations, dg)
+        Trixi.prolong2interfaces!(backend, cache, u, mesh, equations, dg)
     end
 
     # Calculate interface fluxes
     Trixi.@trixi_timeit Trixi.timer() "interface flux" begin
-        Trixi.calc_interface_flux!(cache.elements.surface_flux_values, mesh,
+        Trixi.calc_interface_flux!(backend, cache.elements.surface_flux_values, mesh,
                                    Trixi.have_nonconservative_terms(equations),
                                    equations,
                                    dg.surface_integral, dg, cache)
@@ -56,12 +57,13 @@ function Trixi.rhs!(du, u, t,
 
     # Calculate surface integrals
     Trixi.@trixi_timeit Trixi.timer() "surface integral" begin
-        Trixi.calc_surface_integral!(du, u, mesh, equations,
+        Trixi.calc_surface_integral!(backend, du, u, mesh, equations,
                                      dg.surface_integral, dg, cache)
     end
 
     # Apply Jacobian from mapping to reference element
-    Trixi.@trixi_timeit Trixi.timer() "Jacobian" Trixi.apply_jacobian!(du, mesh,
+    Trixi.@trixi_timeit Trixi.timer() "Jacobian" Trixi.apply_jacobian!(backend, du,
+                                                                       mesh,
                                                                        equations,
                                                                        dg, cache)
 
@@ -76,9 +78,12 @@ end
 # Weak-form kernel for 3D equations solved in 2D manifolds
 @inline function Trixi.weak_form_kernel!(du, u,
                                          element,
-                                         mesh::Union{StructuredMesh{2},
-                                                     UnstructuredMesh2D,
-                                                     P4estMesh{2}, T8codeMesh{2}},
+                                         ::Type{<:Union{StructuredMesh{2},
+                                                        StructuredMeshView{2},
+                                                        UnstructuredMesh2D,
+                                                        P4estMesh{2},
+                                                        P4estMeshView{2},
+                                                        T8codeMesh{2}}},
                                          nonconservative_terms::False,
                                          equations::AbstractEquations{3},
                                          dg::DGSEM, cache, alpha = true)

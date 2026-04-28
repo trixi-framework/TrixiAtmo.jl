@@ -15,13 +15,18 @@ function Trixi.create_cache(mesh::DGMultiMesh{NDIMS}, equations::AbstractCovaria
     nvars = nvariables(equations)
     naux = n_aux_node_vars(equations)
 
-    # storage for volume quadrature values, face quadrature values, flux values
     u_values = Trixi.allocate_nested_array(uEltype, nvars, size(md.xq), dg)
     u_face_values = Trixi.allocate_nested_array(uEltype, nvars, size(md.xf), dg)
     flux_face_values = Trixi.allocate_nested_array(uEltype, nvars, size(md.xf), dg)
+    local_values_threaded = [Trixi.allocate_nested_array(uEltype, nvars, (rd.Nq,), dg)
+                             for _ in 1:Threads.maxthreadid()]
+    solution_container = (; u_values, u_face_values, flux_face_values,
+                          local_values_threaded)
+
     aux_values = Trixi.allocate_nested_array(uEltype, naux, size(md.x), dg)
     aux_quad_values = Trixi.allocate_nested_array(uEltype, naux, size(md.xq), dg)
     aux_face_values = Trixi.allocate_nested_array(uEltype, naux, size(md.xf), dg)
+    auxiliary_container = (; aux_values, aux_quad_values, aux_face_values)
 
     if typeof(rd.approximation_type) <:
        Union{SBP, Trixi.AbstractNonperiodicDerivativeOperator}
@@ -29,10 +34,6 @@ function Trixi.create_cache(mesh::DGMultiMesh{NDIMS}, equations::AbstractCovaria
     else
         lift_scalings = nothing
     end
-
-    # local storage for volume integral and source computations
-    local_values_threaded = [Trixi.allocate_nested_array(uEltype, nvars, (rd.Nq,), dg)
-                             for _ in 1:Threads.nthreads()]
 
     # For curved meshes, we interpolate geometric terms from nodal points to quadrature points.
     # For affine meshes, we just access one element of this interpolated data.
@@ -49,14 +50,12 @@ function Trixi.create_cache(mesh::DGMultiMesh{NDIMS}, equations::AbstractCovaria
 
     # for scaling by curved geometric terms (not used by affine DGMultiMesh)
     flux_threaded = [[Trixi.allocate_nested_array(uEltype, nvars, (rd.Nq,), dg)
-                      for _ in 1:NDIMS] for _ in 1:Threads.nthreads()]
+                      for _ in 1:NDIMS] for _ in 1:Threads.maxthreadid()]
     rotated_flux_threaded = [Trixi.allocate_nested_array(uEltype, nvars, (rd.Nq,), dg)
-                             for _ in 1:Threads.nthreads()]
+                             for _ in 1:Threads.maxthreadid()]
 
     cache = (; md, weak_differentiation_matrices, lift_scalings, invJ, dxidxhatj,
-             u_values, u_face_values, flux_face_values,
-             aux_values, aux_quad_values, aux_face_values,
-             local_values_threaded, flux_threaded, rotated_flux_threaded)
+             solution_container, auxiliary_container, flux_threaded, rotated_flux_threaded)
     return cache
 end
 
