@@ -586,6 +586,34 @@ end
     end
 end
 
+@inline function flux_nonconservative_chandrashekar_isothermal(u_ll,
+                                                               normal_direction::AbstractVector,
+                                                               equations::CompressibleEulerEquationsWithGravityNoPressure2D,
+                                                               nonconservative_type::Trixi.NonConservativeLocal,
+                                                               nonconservative_term::Integer)
+    rho_ll, _, _, p_ll, phi_ll, RT_ll = cons2prim(u_ll, equations)
+
+    f0 = zero(eltype(u_ll))
+
+    if nonconservative_term == 1
+        # We use the mean element temperature on the left to keep the iso-thermal correction
+        # completely element-local, as in:
+        # - Chandrashekar, P., & Zenk, M. (2017). Well-balanced nodal discontinuous Galerkin method for Euler 
+        #   equations with gravity. Journal of Scientific Computing, 71(3), 1062-1093.
+        RT = RT_ll
+
+        e_ll = exp(phi_ll / RT)
+
+        # We omit the 0.5 in the density average since Trixi.jl always multiplies the non-conservative flux with 0.5
+        noncons = -rho_ll * RT * e_ll
+    else # nonconservative_term == 2
+        noncons = one(eltype(u_ll))
+    end
+
+    return SVector(f0, noncons * normal_direction[1], noncons * normal_direction[2], f0,
+                   f0, f0)
+end
+
 @inline function flux_nonconservative_chandrashekar_isothermal(u_ll, u_rr,
                                                                orientation::Integer,
                                                                equations::CompressibleEulerEquationsWithGravityNoPressure2D,
@@ -623,6 +651,36 @@ end
             return SVector(f0, f0, flux, f0, f0, f0)
         end
     end
+end
+
+@inline function flux_nonconservative_chandrashekar_isothermal(u_ll, u_rr,
+                                                               normal_direction::AbstractVector,
+                                                               equations::CompressibleEulerEquationsWithGravityNoPressure2D,
+                                                               nonconservative_type::Trixi.NonConservativeJump,
+                                                               nonconservative_term::Integer)
+    rho_ll, _, _, p_ll, phi_ll, RT_ll = cons2prim(u_ll, equations)
+    _, _, _, p_rr, phi_rr, _ = cons2prim(u_rr, equations)
+
+    f0 = zero(eltype(u_ll))
+
+    if nonconservative_term == 1
+        # We use the mean element temperature on the left to keep the iso-thermal correction
+        # completely element-local, as in:
+        # - Chandrashekar, P., & Zenk, M. (2017). Well-balanced nodal discontinuous Galerkin method for Euler 
+        #   equations with gravity. Journal of Scientific Computing, 71(3), 1062-1093.
+        RT = RT_ll
+
+        e_ll = exp(phi_ll / RT)
+        e_rr = exp(phi_rr / RT)
+
+        # We omit the 0.5 in the density average since Trixi.jl always multiplies the non-conservative flux with 0.5
+        noncons = (1 / e_rr - 1 / e_ll)
+
+    else # nonconservative_term == 2
+        noncons = (p_rr - p_ll)
+    end
+
+    return SVector(f0, noncons, noncons, f0, f0, f0)
 end
 
 """
@@ -1123,5 +1181,22 @@ end
                        u_inner[5],
                        u_inner[6])
     end
+end
+
+@inline function Trixi.get_boundary_outer_state(u_inner, t,
+                                                boundary_condition::typeof(boundary_condition_slip_wall),
+                                                normal_direction::AbstractVector,
+                                                mesh::P4estMesh{2},
+                                                equations::CompressibleEulerEquationsWithGravityNoPressure2D,
+                                                dg, cache, indices...)
+    factor = (normal_direction[1] * u_inner[2] + normal_direction[2] * u_inner[3])
+    u_normal = (factor / sum(normal_direction .^ 2)) * normal_direction
+
+    return SVector(u_inner[1],
+                   u_inner[2] - 2 * u_normal[1],
+                   u_inner[3] - 2 * u_normal[2],
+                   u_inner[4],
+                   u_inner[5],
+                   u_inner[6])
 end
 end # @muladd
