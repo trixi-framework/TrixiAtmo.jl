@@ -509,11 +509,14 @@ const flux_nonconservative_chandrashekar_isothermal = FluxNonConservativeChandra
 @inline function (noncons_flux::FluxNonConservativeChandrashekarIsothermal)(u_ll, u_rr,
                                                                             normal_direction::AbstractVector,
                                                                             equations::CompressibleEulerEquationsWithGravityNoPressure2D)
-    rho_ll, _, _, p_ll, phi_ll, _ = cons2prim(u_ll, equations)
+    rho_ll, _, _, p_ll, phi_ll, RT_ll = cons2prim(u_ll, equations)
     _, _, _, p_rr, phi_rr, _ = cons2prim(u_rr, equations)
 
-    # TODO: we assume R*T constant... Read from aux vars
-    RT = 1.0 # p_ll / rho_ll
+    # We use the mean element temperature on the left to keep the iso-thermal correction
+    # completely element-local, as in:
+    # - Chandrashekar, P., & Zenk, M. (2017). Well-balanced nodal discontinuous Galerkin method for Euler 
+    #   equations with gravity. Journal of Scientific Computing, 71(3), 1062-1093.
+    RT = RT_ll
 
     e_ll = exp(phi_ll / RT)
     e_rr = exp(phi_rr / RT)
@@ -529,11 +532,14 @@ end
 @inline function (noncons_flux::FluxNonConservativeChandrashekarIsothermal)(u_ll, u_rr,
                                                                             orientation::Integer,
                                                                             equations::CompressibleEulerEquationsWithGravityNoPressure2D)
-    rho_ll, _, _, p_ll, phi_ll, _ = cons2prim(u_ll, equations)
+    rho_ll, _, _, p_ll, phi_ll, RT_ll = cons2prim(u_ll, equations)
     _, _, _, p_rr, phi_rr, _ = cons2prim(u_rr, equations)
 
-    # TODO: we assume R*T constant... Read from aux vars
-    RT = 1.0 # p_ll / rho_ll
+    # We use the mean element temperature on the left to keep the iso-thermal correction
+    # completely element-local, as in:
+    # - Chandrashekar, P., & Zenk, M. (2017). Well-balanced nodal discontinuous Galerkin method for Euler 
+    #   equations with gravity. Journal of Scientific Computing, 71(3), 1062-1093.
+    RT = RT_ll
 
     e_ll = exp(phi_ll / RT)
     e_rr = exp(phi_rr / RT)
@@ -554,15 +560,13 @@ end
                                                                equations::CompressibleEulerEquationsWithGravityNoPressure2D,
                                                                nonconservative_type::Trixi.NonConservativeLocal,
                                                                nonconservative_term::Integer)
-    # TODO: we assume R*T constant... Read from aux vars
-    RT = 1.0
 
     # We omit the 0.5 in the density average since Trixi.jl always multiplies the non-conservative flux with 0.5
     if nonconservative_term == 1
-        rho_ll, v1_ll, v2_ll, p_ll, phi_ll, _ = cons2prim(u_ll, equations)
-        e_ll = exp(phi_ll / RT)
+        rho_ll, v1_ll, v2_ll, p_ll, phi_ll, RT_ll = cons2prim(u_ll, equations)
+        e_ll = exp(phi_ll / RT_ll)
 
-        flux = -rho_ll * RT * e_ll
+        flux = -rho_ll * RT_ll * e_ll
 
         f0 = zero(eltype(u_ll))
         if orientation == 1
@@ -587,11 +591,14 @@ end
                                                                equations::CompressibleEulerEquationsWithGravityNoPressure2D,
                                                                nonconservative_type::Trixi.NonConservativeJump,
                                                                nonconservative_term::Integer)
-    rho_ll, v1_ll, v2_ll, p_ll, phi_ll, _ = cons2prim(u_ll, equations)
+    rho_ll, v1_ll, v2_ll, p_ll, phi_ll, RT_ll = cons2prim(u_ll, equations)
     rho_rr, v1_rr, v2_rr, p_rr, phi_rr, _ = cons2prim(u_rr, equations)
 
-    # TODO: we assume R*T constant... Read from aux vars
-    RT = 1.0
+    # We use the mean element temperature on the left to keep the iso-thermal correction
+    # completely element-local, as in:
+    # - Chandrashekar, P., & Zenk, M. (2017). Well-balanced nodal discontinuous Galerkin method for Euler 
+    #   equations with gravity. Journal of Scientific Computing, 71(3), 1062-1093.
+    RT = RT_ll
 
     # We omit the 0.5 in the density average since Trixi.jl always multiplies the non-conservative flux with 0.5
     if nonconservative_term == 1
@@ -1034,8 +1041,8 @@ end
                                             equations::Union{CompressibleEulerEquationsWithGravityNoPressure2D,
                                                              CompressibleEulerEquationsWithGravity2D})
     # Unpack left and right states
-    rho_ll, v1_ll, v2_ll, p_ll, phi_ll, aux_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr, phi_rr, aux_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, p_ll, phi_ll, RT_ll = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr, phi_rr, RT_rr = cons2prim(u_rr, equations)
 
     rho_e_ll = u_ll[4]
     rho_e_rr = u_rr[4]
@@ -1047,19 +1054,22 @@ end
     psi_eq_ll = psi_ll # phi_ll - phi_exact_ll
     psi_eq_rr = psi_rr # phi_rr - phi_exact_rr
 
-    # Set RT0 to 1 for now.
-    RT0 = 1
+    # We use the mean element temperature on the left to keep the iso-thermal correction
+    # completely element-local, as in:
+    # - Chandrashekar, P., & Zenk, M. (2017). Well-balanced nodal discontinuous Galerkin method for Euler 
+    #   equations with gravity. Journal of Scientific Computing, 71(3), 1062-1093.
+    RT0 = RT_ll
 
     # Compute equlibrium state
-    rho_eq_ll = exp(psi_eq_ll / (RT0)) # How do I get T0?   # Replace RT0 with R*T0 once available
+    rho_eq_ll = exp(psi_eq_ll / (RT0))
     rho_eq_rr = exp(psi_eq_rr / (RT0))
     p_eq_ll = RT0 * rho_eq_ll
     p_eq_rr = RT0 * rho_eq_rr
     rho_e_eq_ll = p_eq_ll / (equations.gamma - 1) + rho_eq_ll * phi_ll
     rho_e_eq_rr = p_eq_rr / (equations.gamma - 1) + rho_eq_rr * phi_rr
 
-    u_eq_ll = SVector(rho_eq_ll, 0.0, 0.0, rho_e_eq_ll, phi_ll, aux_ll)
-    u_eq_rr = SVector(rho_eq_rr, 0.0, 0.0, rho_e_eq_rr, phi_rr, aux_rr)
+    u_eq_ll = SVector(rho_eq_ll, 0.0, 0.0, rho_e_eq_ll, phi_ll, RT_ll)
+    u_eq_rr = SVector(rho_eq_rr, 0.0, 0.0, rho_e_eq_rr, phi_rr, RT_rr)
 
     # Compute residual contribution
     u_res_ll = u_ll - u_eq_ll
@@ -1073,15 +1083,15 @@ end
     psi_eq_rr = psi_rr + phi_rr - phi_star
 
     # Compute reconstructed equilibrium state
-    rho_eq_ll = exp(psi_eq_ll / (RT0)) # Replace RT0 with R*T0 once available
+    rho_eq_ll = exp(psi_eq_ll / (RT0))
     rho_eq_rr = exp(psi_eq_rr / (RT0))
     p_eq_ll = RT0 * rho_eq_ll
     p_eq_rr = RT0 * rho_eq_rr
     rho_e_eq_ll = p_eq_ll / (equations.gamma - 1) + rho_eq_ll * phi_star
     rho_e_eq_rr = p_eq_rr / (equations.gamma - 1) + rho_eq_rr * phi_star
 
-    u_eq_ll = SVector(rho_eq_ll, 0.0, 0.0, rho_e_eq_ll, phi_star, aux_ll)
-    u_eq_rr = SVector(rho_eq_rr, 0.0, 0.0, rho_e_eq_rr, phi_star, aux_rr)
+    u_eq_ll = SVector(rho_eq_ll, 0.0, 0.0, rho_e_eq_ll, phi_star, RT_ll)
+    u_eq_rr = SVector(rho_eq_rr, 0.0, 0.0, rho_e_eq_rr, phi_star, RT_rr)
 
     # Compute reconstructed state
     u_star_ll = u_eq_ll + u_res_ll
