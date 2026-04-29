@@ -59,6 +59,7 @@ export CompressibleMoistEulerEquations2D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity3D,
        CompressibleEulerEnergyEquationsWithGravity2D,
        CompressibleEulerEnergyEquationsWithGravity3D,
+       CompressibleEulerEquationsWithGravity2D
        CompressibleEulerInternalEnergyEquationsWithGravity2D
 
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
@@ -66,6 +67,8 @@ export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 export NonlinearSolveDG
 
 export flux_chandrashekar, FluxLMARS
+
+export flux_nonconservative_waruszewski
 
 export flux_nonconservative_zeros, flux_nonconservative_ec,
        flux_nonconservative_surface_simplified, source_terms_geometric_coriolis,

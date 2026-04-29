@@ -69,6 +69,10 @@ const TRIXI_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
         end
     end
 
+    @time if TRIXI_TEST == "all" || TRIXI_TEST == "euler_gravity"
+        include("test_2d_euler_gravity.jl")
+    end
+
     @time if TRIXI_TEST == "all" || TRIXI_TEST == "spherical_advection"
         @testset verbose=true showtiming=true "Spherical advection tests" begin
             include("test_spherical_advection.jl")
