@@ -355,4 +355,5 @@ include("shallow_water_3d.jl")
 include("reference_data.jl")
 include("compressible_euler_gravity_2d.jl")
 include("compressible_euler_gravity_nopressure_2d.jl")
+include("compressible_euler_gravity_nopressure_3d.jl")
 end # @muladd
