@@ -105,4 +105,6 @@ export AtmosphereLayers, AtmosphereLayersRainyBubble
 
 export examples_dir
 
+export MeanTemperatureCallback
+
 end # module TrixiAtmo
