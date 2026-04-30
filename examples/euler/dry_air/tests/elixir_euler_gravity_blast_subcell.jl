@@ -146,9 +146,9 @@ surface_flux = (flux_kennedy_gruber, flux_nonconservative_chandrashekar_isotherm
 
 surface_flux = (FluxHydrostaticReconstruction(FluxPlusDissipation(flux_kennedy_gruber,
                                                                   DissipationLocalLaxFriedrichs()),
-                                              hydrostatic_reconstruction),
+                                              hydrostatic_reconstruction_isothermal),
                 FluxHydrostaticReconstruction(flux_nonconservative_chandrashekar_isothermal,
-                                              hydrostatic_reconstruction))
+                                              hydrostatic_reconstruction_isothermal))
 
 polydeg = 3
 basis = LobattoLegendreBasis(polydeg)

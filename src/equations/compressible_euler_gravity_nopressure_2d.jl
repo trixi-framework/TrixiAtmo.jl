@@ -1090,12 +1090,12 @@ end
                           equations)
 end
 
-# Hydrostatic reconstruction from the paper:
+# Hydrostatic reconstruction for the isothermal equilibrium from the paper:
 # Ziming Chen, Yingjuan Zhang, Gang Li, Shouguo Qian (2022)
 # "A well-balanced Runge-Kutta discontinuous Galerkin method for the Euler equations in isothermal 
 # hydrostatic state under gravitational field"
 # [DOI:10.1016/j.camwa.2022.05.025](https://doi.org/10.1016/j.camwa.2022.05.025)
-@inline function hydrostatic_reconstruction(u_ll, u_rr,
+@inline function hydrostatic_reconstruction_isothermal(u_ll, u_rr,
                                             equations::Union{CompressibleEulerEquationsWithGravityNoPressure2D,
                                                              CompressibleEulerEquationsWithGravity2D})
     # Unpack left and right states

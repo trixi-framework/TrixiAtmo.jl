@@ -69,7 +69,7 @@ export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 export NonlinearSolveDG
 
 export flux_chandrashekar, FluxLMARS, FluxHydrostaticReconstruction,
-       hydrostatic_reconstruction
+       hydrostatic_reconstruction_isothermal
 
 export flux_nonconservative_waruszewski, flux_nonconservative_chandrashekar_isothermal
 
