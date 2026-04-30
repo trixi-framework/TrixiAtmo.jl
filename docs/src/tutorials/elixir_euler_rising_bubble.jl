@@ -28,16 +28,23 @@
 # We start by loading the time integrator, the core `Trixi.jl` tools, and the
 # atmospheric extensions from `TrixiAtmo.jl`.
 
-using OrdinaryDiffEqLowStorageRK
-using Trixi
-using TrixiAtmo
-using TrixiAtmo: cons2drypot
+# ```julia
+# using OrdinaryDiffEqLowStorageRK
+# using Trixi
+# using TrixiAtmo
+# using TrixiAtmo: cons2drypot
+# ```
+
+using OrdinaryDiffEqLowStorageRK # hide
+using Trixi # hide
+using TrixiAtmo # hide
+using TrixiAtmo: cons2drypot # hide
 
 # ## Governing equations
 #
 # Here we use the two-dimensional compressible moist Euler equations with
-# gravity. The parameters below specify the thermodynamic constants for dry air
-# and water vapor.
+# gravity. The parameters below specify the specific heat values in
+# $\mathrm{J}\,\mathrm{kg}^{-1}\,\mathrm{K}^{-1}$ for dry air and water vapor.
 
 c_pd = 1004 # specific heat at constant pressure for dry air
 c_vd = 717  # specific heat at constant volume for dry air
@@ -55,12 +62,14 @@ equations
 # This follows the warm bubble setup from Bryan and Fritsch (2002).
 #
 # The background potential temperature is
-# $\theta_{ref} = 300$ K, and a localized perturbation is added inside a bubble
-# centered at $(x_c, z_c) = (10000, 2000)$ with radius $r_c = 2000$.
+# $\theta_{ref} = 300\,\mathrm{K}$, and a localized perturbation is added inside
+# a bubble centered at $(x_c, z_c) = (10000\,\mathrm{m}, 2000\,\mathrm{m})$
+# with radius $r_c = 2000\,\mathrm{m}$.
 #
 # Inside the bubble, the perturbation is
 #
-# $$\Delta \theta = 2 \cos^2\!\left(\frac{\pi}{2}\frac{r}{r_c}\right),$$
+# $$\Delta \theta = 2\,\mathrm{K}
+# \cos^2\!\left(\frac{\pi}{2}\frac{r}{r_c}\right),$$
 #
 # and outside the bubble it is zero.
 #
@@ -169,8 +178,8 @@ solver
 #
 # The computational domain is
 #
-# - $x \in [0, 20000]$
-# - $z \in [-5000, 15000]$
+# - $x \in [0, 20000]\,\mathrm{m}$
+# - $z \in [-5000, 15000]\,\mathrm{m}$
 #
 # We use a `P4estMesh` with horizontal periodicity and non-periodic vertical
 # boundaries.
