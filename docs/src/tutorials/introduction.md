@@ -17,7 +17,7 @@ It is helpful to be familiar with the basic `Trixi.jl` workflow, including:
 - time integration
 - callbacks
 
-For general background, see the main `Trixi.jl` documentation.
+For general background, see the [main Trixi.jl documentation](https://trixi-framework.github.io/TrixiDocumentation/stable/).
 
 ## Available tutorials
 
