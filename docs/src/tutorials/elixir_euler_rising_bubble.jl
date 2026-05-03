@@ -126,8 +126,10 @@ initial_condition = initial_condition_warm_bubble
 # so we prescribe slip-wall boundary conditions at the bottom and top boundaries.
 #
 # This must match the mesh periodicity setting below:
-#
-#   periodicity = (true, false)
+# 
+# ```julia
+# periodicity = (true, false)
+# ```
 #
 # where the first entry corresponds to the horizontal x-direction and the second
 # entry corresponds to the vertical z-direction.
