@@ -178,8 +178,9 @@ solver
 #
 # The computational domain is
 #
-# - $x \in [0, 20000]\,\mathrm{m}$
-# - $z \in [-5000, 15000]\,\mathrm{m}$
+#```math 
+#   x \in [0, 20000]\,\mathrm{m}, \quad z \in [-5000, 15000]\,\mathrm{m}
+#```
 #
 # We use a `P4estMesh` with horizontal periodicity and non-periodic vertical
 # boundaries.
