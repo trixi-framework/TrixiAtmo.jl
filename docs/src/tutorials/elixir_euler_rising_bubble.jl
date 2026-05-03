@@ -138,9 +138,9 @@ boundary_conditions = (; y_neg = boundary_condition_slip_wall,
                        y_pos = boundary_condition_slip_wall)
 
 # Gravity acts in the vertical direction. For the conservative variables
-#
-#   u = (rho, rho_v1, rho_v2, rho_E, rho_qv, rho_qc),
-#
+#```math
+#   \mathbf{u} = \left( \rho, \rho v_1, \rho v_2, \rho E, \rho q_v, \rho q_l \right)^\mathrm{T},
+#```
 # the gravitational source contributes to the vertical momentum equation and
 # to the total energy equation through the vertical velocity.
 
