@@ -85,12 +85,12 @@ readme_text = replace(readme_text,
 write(joinpath(@__DIR__, "src", "index.md"), readme_text)
 
 tutorial_list = [
-    "elixir_euler_rising_bubble.jl",
+    "elixir_euler_rising_bubble.jl"
 ]
 
 tutorial_pages = [
     "Introduction" => "tutorials/introduction.md",
-    "Rising bubble (moist Euler + gravity)" => "tutorials/elixir_euler_rising_bubble.md",
+    "Rising bubble Dry Euler With Gravity" => "tutorials/elixir_euler_rising_bubble.md"
 ]
 
 tutorial_dir = joinpath(@__DIR__, "src", "tutorials")
@@ -109,7 +109,7 @@ makedocs(;
                                   edit_link = "main",
                                   assets = String[],),
          pages = ["Home" => "index.md",
-            "Tutorials" => tutorial_pages,
+             "Tutorials" => tutorial_pages,
              "Reference" => "reference.md",
              "Authors" => "authors.md",
              "Contributing" => "contributing.md",

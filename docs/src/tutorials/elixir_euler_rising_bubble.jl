@@ -1,4 +1,4 @@
-# # Rising bubble (moist Euler + gravity)
+# # Rising bubble with dry Euler and gravity
 #
 # This tutorial sets up a warm rising-bubble test case in `TrixiAtmo.jl`.
 #
@@ -138,9 +138,9 @@ boundary_conditions = (; y_neg = boundary_condition_slip_wall,
                        y_pos = boundary_condition_slip_wall)
 
 # Gravity acts in the vertical direction. For the conservative variables
-#```math
+# ```math
 #   \mathbf{u} = \left( \rho, \rho v_1, \rho v_2, \rho E, \rho q_v, \rho q_l \right)^\mathrm{T},
-#```
+# ```
 # the gravitational source contributes to the vertical momentum equation and
 # to the total energy equation through the vertical velocity.
 
@@ -180,9 +180,9 @@ solver
 #
 # The computational domain is
 #
-#```math 
+# ```math 
 #   x \in [0, 20000]\,\mathrm{m}, \quad z \in [-5000, 15000]\,\mathrm{m}
-#```
+# ```
 #
 # We use a `P4estMesh` with horizontal periodicity and non-periodic vertical
 # boundaries.
