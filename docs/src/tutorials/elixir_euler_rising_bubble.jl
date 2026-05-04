@@ -1,4 +1,4 @@
-# # Rising bubble with dry Euler and gravity
+# # Rising bubble (dry Euler with gravity)
 #
 # This tutorial sets up a warm rising-bubble test case in `TrixiAtmo.jl`.
 #
