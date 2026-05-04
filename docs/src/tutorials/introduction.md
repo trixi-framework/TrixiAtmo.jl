@@ -21,7 +21,7 @@ For general background, see the [main Trixi.jl documentation](https://trixi-fram
 
 ## Available tutorials
 
-- [Rising bubble with dry Euler and gravity](elixir_euler_rising_bubble.md)
+- [Rising bubble (dry Euler with gravity)](elixir_euler_rising_bubble.md)
 
 ## Planned tutorials
 
