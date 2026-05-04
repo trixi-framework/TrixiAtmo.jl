@@ -83,9 +83,10 @@ TrixiAtmo.jl is maintained by the
 It was initiated by
 [Andrés Rueda-Ramírez](https://andres.rueda-ramirez.com)
 (Polytechnic University of Madrid (UPM), Spain),
-[Benedict Geihe](https://www.mi.uni-koeln.de/NumSim/), and
+[Benedict Geihe](https://www.mi.uni-koeln.de/NumSim/)
+(University of Cologne, Germany), and
 [Tristan Montoya](https://tjbmontoya.com/)
-(University of Cologne, Germany).
+(University of Saskatchewan, Canada).
 The full list of contributors can be found in [AUTHORS.md](AUTHORS.md).
 
 ## License and contributing
