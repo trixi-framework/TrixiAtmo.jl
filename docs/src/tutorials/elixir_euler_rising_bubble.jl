@@ -7,6 +7,7 @@
 #
 # Bryan, G. H., and Fritsch, J. M. (2002). A benchmark simulation for moist
 # nonhydrostatic numerical models. Monthly Weather Review, 130(12), 2917-2928.
+# [DOI: 10.1175/1520-0493(2002)130<2917:ABSFMN>2.0.CO;2](https://doi.org/10.1175/1520-0493(2002)130%3C2917:ABSFMN%3E2.0.CO;2)
 #
 # The setup is based on a standard atmospheric benchmark where a localized warm
 # perturbation is placed in a background atmosphere. Since the perturbation is
