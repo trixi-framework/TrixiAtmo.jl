@@ -51,6 +51,42 @@ function update_mean_temperature!(u, mesh::Trixi.AbstractMesh{2}, equations, sol
     return nothing
 end
 
+# This function computes the mean temperature R*T in each element and stores it in the last variable
+# of the solution vector
+# TODO: Setup 3D test case to validate this function
+function update_mean_temperature!(u, mesh::Trixi.AbstractMesh{3}, equations, solver, cache)
+    @unpack weights = solver.basis
+    @unpack inverse_jacobian = cache.elements
+
+    Trixi.@threaded for element in eachelement(solver, cache)
+        # compute the element local mean temperature
+        RT_mean = zero(eltype(u))
+        total_volume = zero(eltype(u))
+        for k in eachnode(solver), j in eachnode(solver), i in eachnode(solver)
+            volume_jacobian = abs(inv(Trixi.get_inverse_jacobian(inverse_jacobian,
+                                                                    mesh,
+                                                                    i, j, k, element)))
+            u_node = get_node_vars(u, equations, solver, i, j, k, element)
+            p_node = pressure(u_node, equations)
+            rho_node = u_node[1]
+            RT_node = p_node / rho_node
+
+            RT_mean += RT_node * weights[i] * weights[j] * weights[k] * volume_jacobian
+             
+            total_volume += weights[i] * weights[j] * weights[k] * volume_jacobian
+        end
+        # normalize with the total volume
+        RT_mean = RT_mean / total_volume
+
+        # Update the solution vector
+        for k in eachnode(solver), j in eachnode(solver), i in eachnode(solver)
+            u[end,i,j,k,element] = RT_mean
+        end
+    end
+
+    return nothing
+end
+
 """
     MeanTemperatureCallback()
 
