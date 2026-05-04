@@ -90,7 +90,7 @@ tutorial_list = [
 
 tutorial_pages = [
     "Introduction" => "tutorials/introduction.md",
-    "Rising bubble Dry Euler With Gravity" => "tutorials/elixir_euler_rising_bubble.md"
+    "Rising bubble (dry Euler with gravity)" => "tutorials/elixir_euler_rising_bubble.md"
 ]
 
 tutorial_dir = joinpath(@__DIR__, "src", "tutorials")
