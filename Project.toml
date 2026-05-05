@@ -1,7 +1,7 @@
 name = "TrixiAtmo"
 uuid = "c9ed1054-d170-44a9-8ee2-d5566f5d1389"
 authors = ["Benedict Geihe <bgeihe@uni-koeln.de>", "Tristan Montoya <montoya.tristan@gmail.com>", "Hendrik Ranocha <hendrik.ranocha@uni-mainz.de>", "Andrés Rueda-Ramírez <aruedara@uni-koeln.de>", "Michael Schlottke-Lakemper <michael@sloede.com>"]
-version = "0.1.8-DEV"
+version = "0.1.8"
 
 [deps]
 Accessors = "7d9f7c33-5ae7-4f3b-8dc6-eff91059b697"
