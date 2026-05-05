@@ -1,4 +1,5 @@
 using Trixi: connectivity_cubed_sphere, new_p4est
+
 abstract type AdaptVerticalGrid end
 
 struct GalChen <: AdaptVerticalGrid end
@@ -8,24 +9,25 @@ struct Sleve{RealT} <: AdaptVerticalGrid
     s::RealT
 end
 
-@inline function (adapt_galchen::GalChen)(zRef, zs, H)
-        z = zRef + (H - zRef) * zs / H
-	return z
-    end
+@inline function (adapt_galchen::GalChen)(z_reference, z_topography, H)
+    z = z_reference + (H - z_reference) * z_topography / H
+    return z
+end
 
-    @inline function (adapt_sleve::Sleve)(zRef, zs, H)
+@inline function (adapt_sleve::Sleve)(z_reference, z_topography, H)
     (; s, etaH) = Sleve
-        eta = zRef / H
-        if eta <= etaH
-            z      = eta * H + zs * sinh((etaH - eta) / s / etaH) / sinh(one(zRef) / s)
-        else
-            z      = eta * H
-        end
-        return z
+    eta = z_reference / H
+    if eta <= etaH
+        z = eta * H +
+            z_topography * sinh((etaH - eta) / s / etaH) / sinh(one(z_reference) / s)
+    else
+        z = eta * H
     end
+    return z
+end
 
 """
-    P4estMeshCubedSphere(trees_per_face_dimension, layers, inner_radius, thickness;
+    P4estMeshCubedSphereTopography(trees_per_face_dimension, layers, inner_radius, thickness;
                          polydeg, RealT=Float64,
                          initial_refinement_level=0, unsaved_changes=true,
                          p4est_partition_allow_for_coarsening=true)
@@ -52,10 +54,13 @@ The mesh will have two boundaries, `:inside` and `:outside`.
                                                 independent of domain partitioning. Should be `false` for static meshes
                                                 to permit more fine-grained partitioning.
 """
-function P4estMeshCubedSphereHorography(trees_per_face_dimension, layers, inner_radius, thickness;
-                              polydeg, RealT = Float64,
-                              initial_refinement_level = 0, unsaved_changes = true,
-			      p4est_partition_allow_for_coarsening = true, horography = nothing, delta_horography = nothing, adapt_vertical_grid = GalChen())
+function P4estMeshCubedSphereTopography(trees_per_face_dimension, layers, inner_radius,
+                                        thickness;
+                                        polydeg, RealT = Float64,
+                                        initial_refinement_level = 0,
+                                        unsaved_changes = true,
+                                        p4est_partition_allow_for_coarsening = true,
+                                        initial_topography, adapt_vertical_grid = GalChen())
     connectivity = connectivity_cubed_sphere(trees_per_face_dimension, layers)
 
     n_trees = 6 * trees_per_face_dimension^2 * layers
@@ -68,7 +73,8 @@ function P4estMeshCubedSphereHorography(trees_per_face_dimension, layers, inner_
                                             n_trees)
     calc_tree_node_coordinates!(tree_node_coordinates, nodes,
                                 trees_per_face_dimension, layers,
-                                inner_radius, thickness, horography, delta_horography, adapt_vertical_grid)
+                                inner_radius, thickness, initial_topography,
+                                adapt_vertical_grid)
 
     p4est = new_p4est(connectivity, initial_refinement_level)
 
@@ -81,49 +87,35 @@ function P4estMeshCubedSphereHorography(trees_per_face_dimension, layers, inner_
                         p4est_partition_allow_for_coarsening)
 end
 
-function horography_height(x_cart, y_cart, z_cart, horography, delta_horography)
-    RealT = eltype(x_cart)
-    r = sqrt(x_cart^2 + y_cart^2 + z_cart^2)
-    lat = asin(z_cart / r)          
-    phi = atan(y_cart, x_cart)     
-
-    i = round(Int, (phi + pi) / delta_horography + 1)
-    j = round(Int, (lat + 0.5 * pi) / delta_horography + 1)
-
-    i = clamp(i, 1, size(horography, 1))
-    j = clamp(j, 1, size(horography, 2))
-
-    return Float64(horography[i, j])
-end
-
-function cubed_sphere_mapping_topo(xi, eta, zeta, inner_radius, thickness, direction,
-                                   horography, delta_horography, adapt_vertical_grid)
+function cubed_sphere_mapping_topography(xi, eta, zeta, inner_radius, thickness, direction,
+                                         initial_topography, adapt_vertical_grid)
     alpha = xi * pi / 4
-    beta  = eta * pi / 4
+    beta = eta * pi / 4
 
     x = tan(alpha)
     y = tan(beta)
 
     cube_coordinates = (SVector(-1, -x, y),
-                        SVector( 1,  x, y),
-                        SVector( x, -1, y),
-                        SVector(-x,  1, y),
-                        SVector(-x,  y, -1),
-                        SVector( x,  y,  1))
+                        SVector(1, x, y),
+                        SVector(x, -1, y),
+                        SVector(-x, 1, y),
+                        SVector(-x, y, -1),
+                        SVector(x, y, 1))
 
     r = sqrt(1 + x^2 + y^2)
 
     unit_pt = cube_coordinates[direction] / r
-    zs = horography_height(unit_pt[1], unit_pt[2], unit_pt[3], horography, delta_horography)
+    z_topography = initial_topography(unit_pt[1], unit_pt[2], unit_pt[3])
 
-    zRef = thickness * 0.5 * (zeta + 1)         
-    z = adapt_vertical_grid(zRef, zs, thickness)
+    z_reference = thickness * 0.5 * (zeta + 1)
+    z = adapt_vertical_grid(z_reference, z_topography, thickness)
     return (inner_radius + z) / r * cube_coordinates[direction]
 end
 
 function calc_tree_node_coordinates!(node_coordinates::AbstractArray{<:Any, 5},
                                      nodes, trees_per_face_dimension, layers,
-                                     inner_radius, thickness, horography, delta_horography, adapt_vertical_grid)
+                                     inner_radius, thickness, initial_topography,
+                                     adapt_vertical_grid)
     n_cells_x = n_cells_y = trees_per_face_dimension
     n_cells_z = layers
 
@@ -142,12 +134,23 @@ function calc_tree_node_coordinates!(node_coordinates::AbstractArray{<:Any, 5},
             z_offset = -1 + (cell_z - 1) * dz + dz / 2
 
             for k in eachindex(nodes), j in eachindex(nodes), i in eachindex(nodes)
-                node_coordinates[:, i, j, k, tree] .= cubed_sphere_mapping_topo(
-                    x_offset + dx / 2 * nodes[i],
-                    y_offset + dy / 2 * nodes[j],
-                    z_offset + dz / 2 * nodes[k],
-                    inner_radius, thickness, direction,
-                    horography, delta_horography, adapt_vertical_grid)
+                node_coordinates[:, i, j, k, tree] .= cubed_sphere_mapping_topography(x_offset +
+                                                                                      dx /
+                                                                                      2 *
+                                                                                      nodes[i],
+                                                                                      y_offset +
+                                                                                      dy /
+                                                                                      2 *
+                                                                                      nodes[j],
+                                                                                      z_offset +
+                                                                                      dz /
+                                                                                      2 *
+                                                                                      nodes[k],
+                                                                                      inner_radius,
+                                                                                      thickness,
+                                                                                      direction,
+                                                                                      initial_topography,
+                                                                                      adapt_vertical_grid)
             end
         end
     end

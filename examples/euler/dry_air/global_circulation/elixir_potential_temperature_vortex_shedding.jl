@@ -211,45 +211,26 @@ solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
 
 trees_per_cube_face = (8, 4)
 
-filename = "src/meshes/ETOPO_2022_v1_60s_N90W180_bed.nc"
-topo = ncread(filename, "z")
+function initial_topography_gaussian(x, y, z)
+    h_0 = 2000
+    d = 12500
+    lambda_c = pi
+    phi_c = -20 * pi / 180
 
-function makepositive(x)
-    if x >= 0
-        return x
-    else
-        return zero(typeof(x))
-    end
-end
+    r_earth = sqrt(x^2 + y^2 + z^2)
+    lat = asin(z / r_earth)
+    lon = atan(y, x)
 
-topo = makepositive.(topo)
-# Add extra column and row for periodicity
-topo = [topo; topo[1:1, :]]
-topo = [topo topo[:, 1:1]]
+    dist = r_earth * acos(clamp(sin(phi_c) * sin(lat) +
+                      cos(phi_c) * cos(lat) * cos(lon - lambda_c), -1, 1))
 
-function initial_topography_earth(x_cart, y_cart, z_cart, earth_topography)
-    RealT = eltype(x_cart)
-    delta_topography = (60.0 / 3600) * (2 * pi) / 360 # 60 seconds in radians
-    r = sqrt(x_cart^2 + y_cart^2 + z_cart^2)
-    lat = asin(z_cart / r)
-    phi = atan(y_cart, x_cart)
-
-    i = round(Int, (phi + pi) / delta_topography + 1)
-    j = round(Int, (lat + 0.5 * pi) / delta_topography + 1)
-
-    i = clamp(i, 1, size(earth_topography, 1))
-    j = clamp(j, 1, size(earth_topography, 2))
-
-    return RealT(earth_topography[i, j])
+    return h_0 * exp(-(dist / d)^2)
 end
 
 mesh = TrixiAtmo.P4estMeshCubedSphereTopography(trees_per_cube_face..., EARTH_RADIUS, 30000,
                                                 polydeg = polydeg,
                                                 initial_refinement_level = 0,
-                                                initial_topography = (x, y, z) -> initial_topography_earth(x,
-                                                                                                           y,
-                                                                                                           z,
-                                                                                                           topo),
+                                                initial_topography = initial_topography_gaussian,
                                                 adapt_vertical_grid = TrixiAtmo.GalChen())
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
