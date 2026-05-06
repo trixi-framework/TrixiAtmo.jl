@@ -210,4 +210,31 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
+@trixi_testset "elixir_potential_temperature_vortex_shedding" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
+                                 "elixir_potential_temperature_vortex_shedding.jl"),
+                        l2=[
+                            2.496983981196748e12,
+                            8.709311184559809e14,
+                            8.708527613659252e14,
+                            1.0364047379154301e15,
+                            1.5716246388841625e10,
+                            4.804110544770574
+                        ],
+                        linf=[
+                            2.6402826399432e13,
+                            3.77696630836204e15,
+                            3.6352451849496805e15,
+                            5.624197001818547e15,
+                            1.6198347751471875e11,
+                            16.685684057418257
+                        ],
+                        rtol=1e-9,
+                        tspan=(0.0, 0.0001 * SECONDS_PER_DAY),
+                        trees_per_cube_face=(2, 2))
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+end
+
 end

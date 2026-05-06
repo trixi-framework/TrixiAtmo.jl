@@ -113,8 +113,8 @@ semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
 
 ###############################################################################
 # ODE solvers, callbacks etc.
-T = 0.01 # 10 days
-tspan = (0.0, T * SECONDS_PER_DAY) # time in seconds for 10 days
+T = 1.0 # 20 small earth days
+tspan = (0.0, T * SECONDS_PER_DAY) # time in seconds for 1 standard earth day
 
 ode = semidiscretize(semi, tspan)
 
