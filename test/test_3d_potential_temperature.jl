@@ -214,24 +214,51 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
                                  "elixir_potential_temperature_vortex_shedding.jl"),
                         l2=[
-                            2.496983981196748e12,
-                            8.709311184559809e14,
-                            8.708527613659252e14,
-                            1.0364047379154301e15,
-                            1.5716246388841625e10,
-                            4.804110544770574
+                            0.00011127272731957073,
+                            0.036136807950192446,
+                            0.036132932940041926,
+                            0.047765679229021134,
+                            0.03287203491711795,
+                            5.112500661735035
                         ],
                         linf=[
-                            2.6402826399432e13,
-                            3.77696630836204e15,
-                            3.6352451849496805e15,
-                            5.624197001818547e15,
-                            1.6198347751471875e11,
-                            16.685684057418257
+                            0.0011895976218974091,
+                            0.16161469307155263,
+                            0.15524551919165414,
+                            0.25696936007842397,
+                            0.34356951757109755,
+                            42.337304272491956
                         ],
                         rtol=1e-9,
                         tspan=(0.0, 0.0001 * SECONDS_PER_DAY),
                         trees_per_cube_face=(2, 2))
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+end
+
+@trixi_testset "elixir_potential_temperature_vortex_shedding with Sleve" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
+                                 "elixir_potential_temperature_vortex_shedding.jl"),
+                        l2=[
+                            0.00011127562057264662,
+                            0.03613675415332188,
+                            0.03613293640311338,
+                            0.04776567584661323,
+                            0.03287272064361882,
+                            5.114726513677777
+                        ],
+                        linf=[
+                            0.001189598854849594,
+                            0.1613051140325089,
+                            0.15524552078160023,
+                            0.25697003550490627,
+                            0.3435698663628841,
+                            42.337304272491956
+                        ],
+                        rtol=1e-9,
+                        tspan=(0.0, 0.0001 * SECONDS_PER_DAY),
+                        trees_per_cube_face=(2, 2), adapt_vertical_grid=Sleve(0.7, 0.8))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)

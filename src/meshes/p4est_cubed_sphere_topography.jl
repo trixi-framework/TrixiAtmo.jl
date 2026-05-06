@@ -37,9 +37,9 @@ struct Sleve{RealT} <: SmoothVerticalCoordinate
 end
 
 @inline function (adapt_sleve::Sleve)(z_reference, z_topography, H)
-    (; s, eta_H) = Sleve
+    @unpack s, eta_H = adapt_sleve
     eta = z_reference / H
-    if eta <= etaH
+    if eta <= eta_H
         z = eta * H +
             z_topography * sinh((eta_H - eta) / s / eta_H) / sinh(one(z_reference) / s)
     else
@@ -80,7 +80,7 @@ end
     P4estMeshCubedSphereTopography(trees_per_face_dimension, layers, inner_radius, thickness;
                          polydeg, RealT=Float64,
                          initial_refinement_level=0, unsaved_changes=true,
-                         p4est_partition_allow_for_coarsening=true)
+                         p4est_partition_allow_for_coarsening=true, initial_topography, adapt_vertical_grid)
 
 Build a "Cubed Sphere" mesh as `P4estMesh` with
 `6 * trees_per_face_dimension^2 * layers` trees.
