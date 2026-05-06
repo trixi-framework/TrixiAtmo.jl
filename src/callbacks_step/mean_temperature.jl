@@ -94,5 +94,6 @@ end
     of the solution vector.
 """
 function MeanTemperatureCallback()
-    return Trixi.DiscreteCallback(mean_temperature_callback, mean_temperature_callback)
+    return Trixi.DiscreteCallback(mean_temperature_callback, mean_temperature_callback, 
+                                  save_positions = (false, false))
 end
