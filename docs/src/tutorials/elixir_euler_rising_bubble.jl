@@ -74,7 +74,7 @@ equations
 #
 # and outside the bubble it is zero.
 #
-# The pressure is chosen from a hydrostatic neutral background state. Then
+# The pressure is chosen from an isentropic background state. Then
 # density and temperature are reconstructed from pressure and potential
 # temperature.
 #
