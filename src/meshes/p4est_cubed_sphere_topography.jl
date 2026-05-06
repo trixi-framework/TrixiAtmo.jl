@@ -3,7 +3,7 @@ using Trixi: connectivity_cubed_sphere, new_p4est
 abstract type SmoothVerticalCoordinate end
 
 """
-    Sleve(decay_start_fraction, decay_scale)
+    Sleve(eta_H, s)
 
 SLEVE (Smooth LEvel VErtical) coordinate transformation for terrain-following
 vertical grids in atmospheric models. Ensures that the topographic influence
