@@ -82,21 +82,22 @@ volume_flux = (flux_tec, flux_nonconservative_souza_etal)
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
 
-trees_per_cube_face = (8, 4)
+trees_per_cube_face = (16, 8)
 
 function initial_topography_gaussian(x, y, z)
     h_0 = 2000
+    h0 = 10000
     d = 12500
     lambda_c = pi
-    phi_c = -20 * pi / 180
+    phi_c = 20 * pi / 180
 
     r_earth = sqrt(x^2 + y^2 + z^2)
     lat = asin(z / r_earth)
     lon = atan(y, x)
 
+    r_earth = EARTH_RADIUS/20
     dist = r_earth * acos(clamp(sin(phi_c) * sin(lat) +
                       cos(phi_c) * cos(lat) * cos(lon - lambda_c), -1, 1))
-
     return h_0 * exp(-(dist / d)^2)
 end
 
@@ -124,7 +125,7 @@ analysis_callback = AnalysisCallback(semi, interval = analysis_interval)
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
-save_solution = SaveSolutionCallback(dt = 100, save_initial_solution = true,
+save_solution = SaveSolutionCallback(dt = 5760, save_initial_solution = true,
                                      save_final_solution = true)
 
 callbacks = CallbackSet(summary_callback,

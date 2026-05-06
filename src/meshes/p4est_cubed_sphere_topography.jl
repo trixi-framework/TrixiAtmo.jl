@@ -53,6 +53,8 @@ The mesh will have two boundaries, `:inside` and `:outside`.
 - `p4est_partition_allow_for_coarsening::Bool`: Must be `true` when using AMR to make mesh adaptivity
                                                 independent of domain partitioning. Should be `false` for static meshes
                                                 to permit more fine-grained partitioning.
+- `initial_topography`: initial topography as a function of x, y, z coordinates, that modifies the surface 			  spherical layer.
+- `adaptive_vertical_grid`: smoothing of the vertical element size in the radial direction, to gradually r			      estore the spherical shape. Two options are available: GalChen() or Sleve(etaH, s).        
 """
 function P4estMeshCubedSphereTopography(trees_per_face_dimension, layers, inner_radius,
                                         thickness;
