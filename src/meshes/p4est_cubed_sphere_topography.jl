@@ -19,8 +19,8 @@ where `η = z_reference / H` is the normalized reference height.
 
 # Arguments
 - `eta_H`: fraction of the domain height `H` above which the
-           topography influence vanishes completely. 
-	   Must be in `(0, 1)`. Typical value: `0.7`.
+           topography influence vanishes completely.
+           Must be in `(0, 1)`. Typical value: `0.7`.
 - `s`: controls the rate of decay of the topographic influence with height. 
        Smaller values produce faster decay. Typical value: `0.8`.
 
