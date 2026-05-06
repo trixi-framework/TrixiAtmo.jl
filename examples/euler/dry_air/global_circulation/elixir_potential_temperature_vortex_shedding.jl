@@ -14,21 +14,21 @@ function cartesian_to_sphere(x)
 end
 
 function initial_condition_vortex_shedding(x, t,
-                                                  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                           equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     lon, lat, r = cartesian_to_sphere(x)
-    radius_earth = EARTH_RADIUS/20
+    radius_earth = EARTH_RADIUS / 20
     # Make sure that the r is not smaller than radius_earth
     z = max(r - radius_earth, 0.0)
     R = equations.c_p - equations.c_v
-    k = R/equations.c_p
+    k = R / equations.c_p
     # Convert spherical velocity to Cartesian
     u0 = 20
-    v1 = -u0*cos(lat) * sin(lon)
+    v1 = -u0 * cos(lat) * sin(lon)
     v2 = u0 * cos(lat) * cos(lon)
     v3 = 0
     g = EARTH_GRAVITATIONAL_ACCELERATION  # g
     T = 288
-    angular_velocity = EARTH_ROTATION_RATE*20  # Ω
+    angular_velocity = EARTH_ROTATION_RATE * 20  # Ω
     r = norm(x)
     # Make sure that r is not smaller than radius_earth
     z = max(r - radius_earth, 0)
@@ -38,17 +38,19 @@ function initial_condition_vortex_shedding(x, t,
         r = -(2 * radius_earth^3) / (x[1]^2 + x[2]^2 + x[3]^2)
     end
     r = -norm(x)
-    phi = radius_earth^2 * g/ r
+    phi = radius_earth^2 * g / r
     N = 0.0182
-    p = equations.p_0 * exp(-radius_earth*N^2 * u0/(2 * g^2 * k) * ( u0/radius_earth + 2 * angular_velocity)*(sin(lat)^2-1) - N^2/(g^2*k) * phi)
-    rho = p / (R*T)
+    p = equations.p_0 * exp(-radius_earth * N^2 * u0 / (2 * g^2 * k) *
+            (u0 / radius_earth + 2 * angular_velocity) * (sin(lat)^2 - 1) -
+            N^2 / (g^2 * k) * phi)
+    rho = p / (R * T)
     return prim2cons(SVector(rho, v1, v2, v3, p, phi), equations)
 end
 
 @inline function source_terms_coriolis(u, x, t,
-                                                     equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
-    radius_earth = EARTH_RADIUS/20  # a
-    angular_velocity = EARTH_ROTATION_RATE*20  # Ω
+                                       equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+    radius_earth = EARTH_RADIUS / 20  # a
+    angular_velocity = EARTH_ROTATION_RATE * 20  # Ω
 
     r = norm(x)
     # Make sure that r is not smaller than radius_earth
@@ -84,24 +86,22 @@ solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
 
 trees_per_cube_face = (16, 8)
 
-function initial_topography_gaussian(x, y, z)
+function initial_topography_gaussian(lat, lon)
     h_0 = 2000
     h0 = 10000
     d = 12500
     lambda_c = pi
     phi_c = 20 * pi / 180
 
-    r_earth = sqrt(x^2 + y^2 + z^2)
-    lat = asin(z / r_earth)
-    lon = atan(y, x)
-
-    r_earth = EARTH_RADIUS/20
+    r_earth = EARTH_RADIUS / 20
     dist = r_earth * acos(clamp(sin(phi_c) * sin(lat) +
                       cos(phi_c) * cos(lat) * cos(lon - lambda_c), -1, 1))
+
     return h_0 * exp(-(dist / d)^2)
 end
 
-mesh = TrixiAtmo.P4estMeshCubedSphereTopography(trees_per_cube_face..., EARTH_RADIUS/20, 20000,
+mesh = TrixiAtmo.P4estMeshCubedSphereTopography(trees_per_cube_face..., EARTH_RADIUS / 20,
+                                                20000,
                                                 polydeg = polydeg,
                                                 initial_refinement_level = 0,
                                                 initial_topography = initial_topography_gaussian,

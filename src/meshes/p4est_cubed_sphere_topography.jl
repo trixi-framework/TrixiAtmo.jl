@@ -1,28 +1,78 @@
 using Trixi: connectivity_cubed_sphere, new_p4est
 
-abstract type AdaptVerticalGrid end
+abstract type SmoothVerticalCoordinate end
 
-struct GalChen <: AdaptVerticalGrid end
+"""
+    Sleve(decay_start_fraction, decay_scale)
 
-struct Sleve{RealT} <: AdaptVerticalGrid
-    etaH::RealT
-    s::RealT
-end
+SLEVE (Smooth LEvel VErtical) coordinate transformation for terrain-following
+vertical grids in atmospheric models. Ensures that the topographic influence
+decays smoothly with height, returning to flat levels well below the model top.
 
-@inline function (adapt_galchen::GalChen)(z_reference, z_topography, H)
-    z = z_reference + (H - z_reference) * z_topography / H
-    return z
+The transformed height is given by:
+- For `η ≤ η_H`:
+  `z = η·H + z_s · sinh((η_H - η) / s / η_H) / sinh(1/s)`
+- For `η > η_H`:
+  `z = η·H`
+
+where `η = z_reference / H` is the normalized reference height.
+
+# Arguments
+- `eta_H`: fraction of the domain height `H` above which the
+                          topography influence vanishes completely. Must be in
+                          `(0, 1)`. Typical value: `0.7`.
+- `s`: controls the rate of decay of the topographic influence with
+                 height. Smaller values produce faster decay. Typical value: `0.8`.
+
+# References
+- Schär, C., Leuenberger, D., Fuhrer, O., Lüthi, D., & Frei, C. (2002)
+  A new terrain-following vertical coordinate formulation for atmospheric
+  prediction models
+  Monthly Weather Review, 130(10), 2459–2480
+  [DOI: 10.1175/1520-0493(2002)130<2459:ANTFVC>2.0.CO;2](https://doi.org/10.1175/1520-0493(2002)130<2459:ANTFVC>2.0.CO;2)
+"""
+struct Sleve{RealT} <: SmoothVerticalCoordinate
+    eta_H::RealT  # fraction of H above which topography influence vanishes
+    s::RealT           # rate of decay of the topography influence with height
 end
 
 @inline function (adapt_sleve::Sleve)(z_reference, z_topography, H)
-    (; s, etaH) = Sleve
+    (; s, eta_H) = Sleve
     eta = z_reference / H
     if eta <= etaH
         z = eta * H +
-            z_topography * sinh((etaH - eta) / s / etaH) / sinh(one(z_reference) / s)
+            z_topography * sinh((eta_H - eta) / s / eta_H) / sinh(one(z_reference) / s)
     else
         z = eta * H
     end
+    return z
+end
+
+"""
+    GalChen()
+
+Gal-Chen & Somerville terrain-following vertical coordinate transformation.
+The topographic influence decays linearly with height, reaching zero at the
+top of the domain `H`.
+
+The transformed height is given by:
+  `z = z_reference + (H - z_reference) · z_s / H`
+
+which ensures:
+- At the surface (`z_reference = 0`): `z = z_s` (grid follows topography exactly)
+- At the top (`z_reference = H`): `z = H` (grid is flat, independent of topography)
+
+# References
+- Gal-Chen, T. & Somerville, R. C. J. (1975)
+  On the use of a coordinate transformation for the solution of the
+  Navier-Stokes equations
+  Journal of Computational Physics, 17(2), 209–228
+  [DOI: 10.1016/0021-9991(75)90037-6](https://doi.org/10.1016/0021-9991(75)90037-6)
+"""
+struct GalChen <: SmoothVerticalCoordinate end
+
+@inline function (adapt_galchen::GalChen)(z_reference, z_topography, H)
+    z = z_reference + (H - z_reference) * z_topography / H
     return z
 end
 
@@ -53,8 +103,8 @@ The mesh will have two boundaries, `:inside` and `:outside`.
 - `p4est_partition_allow_for_coarsening::Bool`: Must be `true` when using AMR to make mesh adaptivity
                                                 independent of domain partitioning. Should be `false` for static meshes
                                                 to permit more fine-grained partitioning.
-- `initial_topography`: initial topography as a function of x, y, z coordinates, that modifies the surface 			  spherical layer.
-- `adaptive_vertical_grid`: smoothing of the vertical element size in the radial direction, to gradually r			      estore the spherical shape. Two options are available: GalChen() or Sleve(etaH, s).        
+- `initial_topography`: initial topography as a function of x, y, z coordinates, that modifies the surface spherical layer.
+- `adaptive_vertical_grid`: smoothing of the vertical element size in the radial direction, to gradually restore the spherical shape. Two options are available: GalChen() or Sleve(etaH, s).        
 """
 function P4estMeshCubedSphereTopography(trees_per_face_dimension, layers, inner_radius,
                                         thickness;
@@ -107,7 +157,9 @@ function cubed_sphere_mapping_topography(xi, eta, zeta, inner_radius, thickness,
     r = sqrt(1 + x^2 + y^2)
 
     unit_pt = cube_coordinates[direction] / r
-    z_topography = initial_topography(unit_pt[1], unit_pt[2], unit_pt[3])
+    lat = asin(unit_pt[3] / r)
+    lon = atan(unit_pt[2], unit_pt[1])
+    z_topography = initial_topography(lat, lon)
 
     z_reference = thickness * 0.5 * (zeta + 1)
     z = adapt_vertical_grid(z_reference, z_topography, thickness)
