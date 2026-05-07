@@ -83,7 +83,7 @@ end
                          p4est_partition_allow_for_coarsening=true, initial_topography, adapt_vertical_grid)
 
 Build a "Cubed Sphere" mesh as `P4estMesh` with
-`6 * trees_per_face_dimension^2 * layers` trees.
+`6 * trees_per_face_dimension^2 * layers` trees and a given topography.
 
 The mesh will have two boundaries, `:inside` and `:outside`.
 
