@@ -61,3 +61,4 @@ end
 
 include("containers_manifold_covariant.jl")
 include("dg_manifold_covariant.jl")
+include("flux_differencing_covariant.jl")
