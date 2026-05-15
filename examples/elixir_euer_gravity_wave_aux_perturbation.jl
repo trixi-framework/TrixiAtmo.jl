@@ -14,10 +14,10 @@ equations = PerturbationEulerEquations2DAuxVars(1004.0 / 717.0)
     c_p = 1004.0 
     c_v = 717.0
 
-    theta_c = 0.01 
-    h_c = 10_000.0
-    a_c = 5_000.0
-    x_c = 100_000.0 
+    theta_c = 0.001 
+    x_c = 100_000.0 # x-coordinate of center point of the perturbated area 
+    h_c = 10_000.0 # y-coordinate
+    a_c = 5_000.0 # width 
     theta_0 = 300.0 # constant of integration 
     bvfrequency = 0.01 # Brunt-Väisälä frequency
     p_0 = 100_000.0  # reference pressure
@@ -40,20 +40,21 @@ equations = PerturbationEulerEquations2DAuxVars(1004.0 / 717.0)
     rho = p_0 / (R * theta) * exner ^ (c_v /R) 
     rho_prime = rho - rho_mean
 
-    # total velocities  
+    # total and mean velocities  
     v1, v2 = 20.0, 0.0
+    v1_mean, v2_mean = 20.0, 0.0
+
+    rhov1_prime = rho * v1 - rho_mean * v1_mean 
+    rhov2_prime = rho * v2 - rho_mean * v2_mean
+
 
     # energy: total and background  
     e = c_v * theta * exner + 0.5 * (v1^2 + v2^2)
     e_mean = c_v * theta_mean * exner + 0.5 * (v1^2 + v2^2) #v1_mean and v2_mean, but is identical here
-    e_prime = e - e_mean
 
-    # conservative variables 
-    rho_v1 = rho * v1 
-    rho_v2 = rho * v2
-    rhoe_prime = rho * e_prime
+    rhoe_prime = rho * e - rho_mean * e_mean
 
-    return SVector(rho_prime, rho_v1, rho_v2, rhoe_prime)
+    return SVector(rho_prime, rhov1_prime, rhov2_prime, rhoe_prime)
 end
 
 
@@ -86,16 +87,16 @@ end
     # energy  
     e_mean = c_v * theta_mean * exner + 0.5 * (v1_mean^2 + v2_mean^2) 
 
-    return SVector(rho_mean, v1_mean, v2_mean, e_mean)
+    return SVector(rho_mean, rho_mean*v1_mean, rho_mean*v2_mean, e_mean)
 end 
 
 
 # Source terms   
 @inline function source_terms(u, aux, x, t, equations::PerturbationEulerEquations2DAuxVars)
     g = 9.81
-    rho_prime = u[1]
-    rho_v2 = u[3]
-    return SVector(zero(eltype(u)), zero(eltype(u)), -g * rho_prime, -g * rho_v2)
+    rho = u[1] #+ aux[1]
+    rho_v2 = u[3] + aux[3]
+    return SVector(zero(eltype(u)), zero(eltype(u)), -g * rho, -g * rho_v2)
 end
 
 
@@ -103,7 +104,7 @@ end
 ##############################################################################################
 # semidiscretization 
 
-polydeg = 5
+polydeg = 4
 coordinates_min = (0.0, 0.0)
 coordinates_max = (300_000.0, 10_000.0)
 
@@ -118,7 +119,6 @@ boundary_conditions = Dict(:y_neg => boundary_condition_slip_wall_aux,
 initial_condition = initial_condition_gravity_wave
 
 basis = LobattoLegendreBasis(polydeg)
-
 
 surface_flux = flux_lax_friedrichs
 volume_integral = VolumeIntegralWeakForm()
@@ -153,7 +153,7 @@ save_solution = SaveSolutionCallback(interval = analysis_interval,
                                      output_directory = "out",
                                      solution_variables = solution_variables)
 
-stepsize_callback = StepsizeCallback(cfl = 0.1)
+stepsize_callback = StepsizeCallback(cfl = 1.0)
 
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,

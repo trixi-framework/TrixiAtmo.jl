@@ -5,73 +5,98 @@ using TrixiAtmo
 
 ##############################################################################################
 
-equations = PerturbationEulerEquations2DAuxVars(1.4)
+equations = PerturbationEulerEquations2DAuxVars(1004.0 / 717.0)
 
 # initial condition with perturbation
 @inline function initial_condition_gravity_wave(x, t, equations)
     # constants 
-    rho_mean, v1_mean, v2_mean, e_mean = background_state(x)
     g = 9.81 
     c_p = 1004.0 
     c_v = 717.0
 
     theta_c = 0.01 
-    h_c = 10_000.0
-    a_c = 5_000.0
-    x_c = 100_000.0 
+    x_c = 100_000.0 # x-coordinate of center point of the perturbated area 
+    h_c = 10_000.0 # y-coordinate
+    a_c = 5_000.0 # width 
     theta_0 = 300.0 # constant of integration 
     bvfrequency = 0.01 # Brunt-Väisälä frequency
     p_0 = 100_000.0  # reference pressure
     R = c_p - c_v
 
 
-    # exner pressure 
+    # exner pressure from hydrostatic balance
     exner = 1 + g^2 / (c_p * theta_0 * bvfrequency^2) *
             (exp(-bvfrequency^2 / g * x[2]) - 1)
 
     # potential temperature: perturbated, background and total 
-    theta_prime = theta_c * sin(pi * x[2] / h_c) /
+    theta_prime = theta_c * (sin(pi * x[2] / h_c)) /
                                       (1 + ((x[1] - x_c) / a_c)^2)
     theta_mean = theta_0 * exp(bvfrequency^2 / g * x[2])
     theta = theta_prime + theta_mean
 
 
     # density: background, total and perturbation
-    rho = p_0 / (R * (theta_mean + theta_prime)) * exner ^ (c_v /R) 
+    rho_mean = p_0 / (R * theta_mean) * exner ^ (c_v / R) 
+    rho = p_0 / (R * theta) * exner ^ (c_v /R) 
     rho_prime = rho - rho_mean
 
-    # velocity 
+    # total and mean velocities  
     v1, v2 = 20.0, 0.0
+    v1_mean, v2_mean = 20.0, 0.0
+
+    rhov1_prime = rho * v1 - rho_mean * v1_mean 
+    rhov2_prime = rho * v2 - rho_mean * v2_mean
+
 
     # energy: total and background  
     e = c_v * theta * exner + 0.5 * (v1^2 + v2^2)
-    e_prime = e - e_mean
+    e_mean = c_v * theta_mean * exner + 0.5 * (v1^2 + v2^2) #v1_mean and v2_mean, but is identical here
 
-    # conservative variables 
-    rho_v1 = rho * v1
-    rho_v2 = rho * v2
-    rhoe_prime = rho * e_prime
+    rhoe_prime = rho * e - rho_mean * e_mean
 
-    return SVector(rho_prime, rho_v1, rho_v2, rhoe_prime)
+    return SVector(rho_prime, rhov1_prime, rhov2_prime, rhoe_prime)
 end
-
 
 
 # auxiliary field with background state
 @inline function background_state(x)
-    rho_mean = 0.0001 
-    v1_mean = 0.0001
-    v2_mean = 0.0001
-    e_mean = 0.0001
-    return SVector(rho_mean, v1_mean, v2_mean, e_mean)
+    g = 9.81 
+    c_p = 1004.0 
+    c_v = 717.0
+
+    # Exner pressure from hydrostatic balance for x[2]
+    theta_0 = 300.0 # constant of integration 
+    bvfrequency = 0.01 # Brunt-Väisälä frequency
+    # pressure
+    p_0 = 100_000.0  # reference pressure
+    R = c_p - c_v    # gas constant (dry air)
+
+    exner = 1 +
+            g^2 / (c_p * theta_0 * bvfrequency^2) *
+            (exp(-bvfrequency^2 / g * x[2]) - 1)
+
+    # potential temperature
+    theta_mean = theta_0 * exp(bvfrequency^2 / g * x[2])
+
+    # density
+    rho_mean = p_0 / (R * theta_mean) * exner ^ (c_v / R)
+ 
+    # velocity 
+    v1_mean, v2_mean = 20.0, 0.0
+
+    # energy  
+    e_mean = c_v * theta_mean * exner + 0.5 * (v1_mean^2 + v2_mean^2) 
+
+    return SVector(rho_mean, rho_mean*v1_mean, rho_mean*v2_mean, e_mean)
 end 
 
 
 # Source terms   
 @inline function source_terms(u, aux, x, t, equations::PerturbationEulerEquations2DAuxVars)
     g = 9.81
-    rho = u[1]
-    return SVector(zero(eltype(u)), zero(eltype(u)), -g * rho_prime, -g * rho_v2)
+    rho = u[1] #+ aux[1]
+    rho_v2 = u[3] + aux[3]
+    return SVector(zero(eltype(u)), zero(eltype(u)), -g * rho, -g * rho_v2)
 end
 
 
@@ -80,8 +105,8 @@ end
 # semidiscretization 
 
 polydeg = 3
-coordinates_min = (0.0, 0.0)
-coordinates_max = (300_000.0, 10_000.0)
+coordinates_min = (0.0, -10_000.0)
+coordinates_max = (300_000.0, 20_000.0)
 
 cells_per_dimension = (300, 10)
 mesh = P4estMesh(cells_per_dimension; polydeg = 2, coordinates_min, coordinates_max,
@@ -110,14 +135,14 @@ semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
 ###############################################################################
 # ODE solvers, callbacks etc.
 
-tspan = (0.0, 3000.0)  # 3000 seconds final time
+tspan = (0.0, 1000.0)  # 3000 seconds final time
 
 ode = semidiscretize(semi, tspan)
 
 summary_callback = SummaryCallback()
 
 analysis_interval = 100
-solution_variables = cons2temppert
+solution_variables = cons2all
 
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval)
 

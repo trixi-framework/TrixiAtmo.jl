@@ -67,9 +67,9 @@ boundary_conditions_dirichlet_hohq = Dict(:left => BoundaryConditionDirichletAux
                                      :bottom => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
                                      :top => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain), #boundary_condition_slip_wall,
                                      :bottom_left => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain), 
-                                     :bottom_right => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
-                                     :bottom_left_connection => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
-                                     :bottom_right_connection => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain))
+                                     :bottom_right => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain))
+                                     #:bottom_left_connection => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
+                                     #:bottom_right_connection => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain))
 
 # the velocity is passed as auxiliary_field into the cache
 semi_hohq = SemidiscretizationHyperbolic(mesh_hohq,
@@ -109,7 +109,7 @@ save_solution = SaveSolutionCallback(interval = 10,
 
 stepsize_callback = StepsizeCallback(cfl = 0.1)
 
-visualization = VisualizationCallback(interval = 100)
+#visualization = VisualizationCallback(interval = 100)
 
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,

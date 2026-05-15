@@ -14,24 +14,27 @@ end
 
 @inline n_aux_node_vars(::PerturbationEulerEquations2DAuxVars{}) = 4
 
-varnames(::typeof(cons2cons), ::PerturbationEulerEquations2DAuxVars) = ("rho_prime", "rho_v1", "rho_v2", "rhoe_prime")
-varnames(::typeof(cons2prim), ::PerturbationEulerEquations2DAuxVars) = ("rho_prime", "v1", "v2", "p_prime")
+varnames(::typeof(cons2cons), ::PerturbationEulerEquations2DAuxVars) = ("rho_prime", "rhov1_prime", "rhov2_prime", "rhoe_prime")
+varnames(::typeof(cons2prim), ::PerturbationEulerEquations2DAuxVars) = ("rho_prime", "rhov1_mean", "rhov2_mean", "p_prime")
 varnames(::typeof(cons2aux), ::PerturbationEulerEquations2DAuxVars) = ("rho_mean", "v1_mean", "v2_mean", "e_mean")
 
 
 
 @inline function Trixi.cons2prim(u, aux, equations::PerturbationEulerEquations2DAuxVars)  
-    rho_prime, rho_v1, rho_v2, rhoe_prime = u
-    rho_mean, v1_mean, v2_mean, e_mean = aux
+    rho_prime, rhov1_prime, rhov2_prime, rhoe_prime = u
+    rho_mean, rhov1_mean, rhov2_mean, e_mean = aux
     
     rho = rho_prime + rho_mean
     
     #total velocities
-    v1 = rho_v1 / rho 
-    v2 = rho_v2 / rho
+    v1 = (rhov1_prime + rhov1_mean) / rho 
+    v2 = (rhov2_prime + rhov2_mean) / rho 
 
-    e_prime = rhoe_prime / rho
-    e = e_prime + e_mean
+    v1_mean = rhov1_mean / rho_mean
+    v2_mean = rhov2_mean / rho_mean
+
+    #total energy
+    e = (rhoe_prime + rho_mean * e_mean) / rho
 
     p = (equations.gamma - 1) * rho * (e - 0.5f0  * (v1^2 + v2^2))
     p_mean = (equations.gamma - 1) * rho_mean * (e_mean - 0.5f0  * (v1_mean^2 + v2_mean^2))
@@ -41,28 +44,33 @@ varnames(::typeof(cons2aux), ::PerturbationEulerEquations2DAuxVars) = ("rho_mean
 end
 
 @inline function cons2primtotal(u, aux, equations::PerturbationEulerEquations2DAuxVars)
-    rho_prime, rho_v1, rho_v2, rhoe_prime = u
-    rho_mean, v1_mean, v2_mean, e_mean = aux
+    rho_prime, rhov1_prime, rhov2_prime, rhoe_prime = u
+    rho_mean, rhov1_mean, rhov2_mean, e_mean = aux
     
     rho = rho_prime + rho_mean
     
-    v1 = rho_v1 / rho
-    v2 = rho_v2 / rho
+    #total velocities
+    v1 = (rhov1_prime + rhov1_mean) / rho 
+    v2 = (rhov2_prime + rhov2_mean) / rho 
 
-    e_prime = rhoe_prime / rho
-    e = e_prime + e_mean
+    #total energy
+    e = (rhoe_prime + rho_mean * e_mean) / rho
 
     p = (equations.gamma - 1) * rho * (e - 0.5f0  * (v1^2 + v2^2))
     return SVector(rho, v1, v2, p)
 end 
 
 @inline function cons2constotal(u, aux, equations::PerturbationEulerEquations2DAuxVars)
-    rho_prime, rho_v1, rho_v2, rhoe_prime = u
-    rho_mean, v1_mean, v2_mean, e_mean = aux
+    rho_prime, rhov1_prime, rhov2_prime, rhoe_prime = u
+    rho_mean, rhov1_mean, rhov2_mean, e_mean = aux
+
 
     rho = rho_prime + rho_mean
 
-    rho_e = rhoe_prime + (rho * e_mean)
+    rho_v1 = rhov1_prime + rhov1_mean
+    rho_v2 = rhov2_prime + rhov2_mean
+
+    rho_e = rhoe_prime + (rho_mean * e_mean)
     return SVector(rho, rho_v1, rho_v2, rho_e)
 end 
 
@@ -87,89 +95,67 @@ end
     return SVector(w1, w2, w3, w4)
 end
 
-@inline function cons2temppert(u, aux, equations::PerturbationEulerEquations2DAuxVars)
-    rho, rho_v1, rho_v2, rho_e = cons2constotal(u, aux, equations)
-    e = rho_e / rho #    e = c_v * theta * exner + 0.5 * (v1^2 + v2^2)
-    v1 = rho_v1 / rho 
-    v2 = rho_v2 / rho 
 
-        # constants 
-    g = 9.81 
+@inline function cons2temppert(u, aux, equations::PerturbationEulerEquations2DAuxVars)
+    rho, v1, v2, p = cons2primtotal(u, aux, equations)
+    rho_prime, v1, v2, p_prime = cons2prim(u, aux, equations)
+    rho_mean = aux[1]
+    p_mean = p - p_prime
+
+    p_0 = 100_000.0  # reference pressure    
     c_p = 1004.0 
     c_v = 717.0
-
-    theta_c = 0.01 
-    h_c = 10_000.0
-    a_c = 5_000.0
-    x_c = 100_000.0 
-    theta_0 = 300.0 # constant of integration 
-    bvfrequency = 0.01 # Brunt-Väisälä frequency
-    p_0 = 100_000.0  # reference pressure
     R = c_p - c_v
 
-    rho_mean, v1_mean, v2_mean, e_mean = aux
-    eint_mean = e_mean - 0.5 * (v1_mean^2 + v2_mean^2)
-    p_mean = (equations.gamma - 1) * rho_mean * eint_mean
-    exner_mean = (p_mean / p_0)^(R / c_p)
-    theta_mean = eint_mean / (c_v * exner_mean)
+    exner = (p/p_0)^(R / c_p)
+    T = p / (rho * R)
+    theta = T / exner 
 
-    eint = e - 0.5 * (v1^2 + v2^2)
-    p = (equations.gamma - 1) * rho * eint
-    exner = (p / p_0)^(R / c_p)
-    theta = eint / (c_v * exner)
+    exner_mean = (p_mean/p_0)^(R / c_p)
+    T_mean = p_mean / (rho_mean * R)
+    theta_mean = T_mean / exner_mean
+
     theta_prime = theta - theta_mean
     return SVector(rho, v1, v2, theta_prime)
 end 
+
+
 varnames(::typeof(cons2temppert), ::PerturbationEulerEquations2DAuxVars) = ("rho", "v1", "v2", "theta_prime")
 
 @inline function cons2all(u, aux, equations::PerturbationEulerEquations2DAuxVars) #for solution variables like cons2temppert and background state 
-    rho, rho_v1, rho_v2, rho_e = cons2constotal(u, aux, equations)
-    rho_mean, v1_mean, v2_mean, e_mean = aux
+    rho, v1, v2, p = cons2primtotal(u, aux, equations)
+    p_prime = cons2prim(u, aux, equations)[4]
+    rho_mean = aux[1]
+    p_mean = p - p_prime
 
-    e = rho_e / rho #    e = c_v * theta * exner + 0.5 * (v1^2 + v2^2)
-    v1 = rho_v1 / rho 
-    v2 = rho_v2 / rho 
-
-        # constants 
-    g = 9.81 
+    p_0 = 100_000.0  # reference pressure    
     c_p = 1004.0 
     c_v = 717.0
-
-    theta_c = 0.01 
-    h_c = 10_000.0
-    a_c = 5_000.0
-    x_c = 100_000.0 
-    theta_0 = 300.0 # constant of integration 
-    bvfrequency = 0.01 # Brunt-Väisälä frequency
-    p_0 = 100_000.0  # reference pressure
     R = c_p - c_v
 
+    exner = (p/p_0)^(R / c_p)
+    T = p / (rho * R)
+    theta = T / exner 
 
-    # exner pressure 
+    exner_mean = (p_mean/p_0)^(R / c_p)
+    T_mean = p_mean / (rho_mean * R)
+    theta_mean = T_mean / exner_mean
 
-    T = (e - 0.5 * (v1^2 + v2^2)) / c_v
-    p = R * T * rho 
-    exner = (p / p_0) ^ (R/c_p)
-
-    theta = (e - 0.5 * (v1^2 + v2^2)) / (c_v * exner)
-
-    theta_mean = p_0 / (R * rho_mean) * exner ^ (c_v / R)
     theta_prime = theta - theta_mean
-    rho_prime = rho - rho_mean
-    v1_prime = v1 - v1_mean
-    return SVector(rho, v1, v2, theta_prime, rho_mean, v1_mean, v2_mean, e_mean, theta_mean, theta, rho_prime, v1_prime)
+    exner_prime = exner - exner_mean
+    return SVector(rho, v1, v2, theta_prime, exner_prime)
 end 
 
-varnames(::typeof(cons2all), ::PerturbationEulerEquations2DAuxVars) = ("rho", "v1", "v2", "theta_prime", "rho_mean", "v1_mean", "v2_mean", "e_mean", "theta_mean", "theta_total", "rho_prime", "v1_prime")
+varnames(::typeof(cons2all), ::PerturbationEulerEquations2DAuxVars) = ("rho", "v1", "v2", "theta_prime", "exner")
 
 
 @inline function Trixi.flux(u, aux, orientation::Integer, equations::PerturbationEulerEquations2DAuxVars)
     # perturbated and background values 
     rho_prime, v1, v2, p_prime = cons2prim(u, aux, equations)      
-    rho_mean, v1_mean, v2_mean, e_mean = aux
+    rho_mean, rhov1_mean, rhov2_mean, e_mean = aux
     # total 
     rho = rho_prime + rho_mean
-    rho_e = u[4] + (rho * e_mean)
+    rho_e = u[4] + (rho_mean * e_mean)
     p = (equations.gamma - 1) * (rho_e - 0.5f0 * rho * (v1^2 + v2^2))
     
     if orientation == 1
@@ -190,10 +176,10 @@ end
        equations::PerturbationEulerEquations2DAuxVars)
     # perturbated and background values 
     rho_prime, v1, v2, p_prime = cons2prim(u, aux, equations)      
-    rho_mean, v1_mean, v2_mean, e_mean = aux
+    rho_mean, rhov1_mean, rhov2_mean, e_mean = aux
     # total 
     rho = rho_prime + rho_mean
-    rho_e = u[4] + (rho * e_mean)
+    rho_e = u[4] + (rho_mean * e_mean)
 
     p = (equations.gamma - 1) * (rho_e - 0.5f0 * rho * (v1^2 + v2^2))
     
@@ -300,7 +286,10 @@ end
     normal = normal_direction / norm_
 
     rho, v1, v2, p = cons2primtotal(u_inner, aux_inner, equations)
-    rho_mean, v1_mean, v2_mean, e_mean = aux_inner
+    rho_mean, rhov1_mean, rhov2_mean, e_mean = aux_inner
+    v1_mean = rhov1_mean / rho_mean
+    v2_mean = rhov2_mean / rho_mean
+
     p_mean = (equations.gamma - 1) * rho_mean * (e_mean - 0.5f0  * (v1_mean^2 + v2_mean^2))
 
 
@@ -365,7 +354,36 @@ end
     return flux
 end
 
+@inline function boundary_condition_slip_wall_aux_old(u_inner, aux_inner,
+                                              normal_direction::AbstractVector,
+                                              x, t,
+                                              surface_flux_function,
+                                              equations::PerturbationEulerEquations2DAuxVars)
+    # normalize the outward pointing direction
+    normal = normal_direction / norm(normal_direction)
+    
+    # compute the normal velocity
+    u_normal = normal[1] * u_inner[2] + normal[2] * u_inner[3]
 
+    # create the "external" boundary solution state
+    u_boundary = SVector(u_inner[1],
+                         u_inner[2] - 2 * u_normal * normal[1],
+                         u_inner[3] - 2 * u_normal * normal[2],
+                         u_inner[4])
+
+    # compute the normal background velocity
+    aux_normal = normal[1] * aux_inner[2] + normal[2] * aux_inner[3]
+
+    # create the "external" boundary solution for background state
+    aux_boundary = SVector(aux_inner[1],
+                         aux_inner[2] - 2 * aux_normal * normal[1],
+                         aux_inner[3] - 2 * aux_normal * normal[2],
+                         aux_inner[4])
+
+    # calculate the boundary flux
+    flux = surface_flux_function(u_inner, u_boundary, aux_inner, aux_boundary, normal_direction, equations)
+    return flux
+end
     
 
 end

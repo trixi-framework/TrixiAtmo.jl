@@ -34,7 +34,7 @@ function (setup::InteriaWaveSetup)(x, t,
     theta_mean = theta_0 * exp(bvfrequency^2 / g * x[2])
 
     # perturbed potential temperature
-    theta_c = 0.01
+    theta_c = 0.001
     h_c = 10_000.0
     a_c = 5_000.0
     x_c = 100_000.0
@@ -71,37 +71,6 @@ end
 
 end
 
-# Background reference state
-function hydrostatic_background(x, t, equations::CompressibleEulerEquations2D)
-    g = 9.81
-    c_p = 1004.0f0
-    c_v = 717.0f0    
-    theta_0 = 300.0 #constant of integration 
-    bvfrequency = 0.01 #Brunt-Väisälä frequency
-
-    exner = 1 +
-            g^2 / (c_p * theta_0 * bvfrequency^2) *
-            (exp(-bvfrequency^2 / g * x[2]) - 1)
-
-    # mean potential temperature
-    theta = theta_0 * exp(bvfrequency^2 / g * x[2])
-
-    # pressure
-    p_0 = 100_000.0  # reference pressure
-    R = c_p - c_v    # gas constant (dry air)
-    #p = p_0 * exner^(c_p / R)
-
-    # temperature
-    T = theta * exner
-
-   # density
-    rho = p_0 / (R * theta) * exner ^ (c_v / R)
-
-    v1 = 20.0
-    v2 = 0.0
-    E = c_v * T + 0.5 * (v1^2 + v2^2) 
-    return SVector(rho, rho * v1, rho * v2, rho * E)
-end
 
 ###############################################################################
 # semidiscretization of the compressible Euler equations
@@ -109,27 +78,26 @@ interia_wave_setup = InteriaWaveSetup()
 
 equations = CompressibleEulerEquations2D(interia_wave_setup.gamma)
 
-boundary_conditions = (x_neg = boundary_condition_periodic,
-                       x_pos = boundary_condition_periodic,
-                       y_neg = boundary_condition_slip_wall,
-                       y_pos = boundary_condition_slip_wall)
-
 polydeg = 4
-basis = LobattoLegendreBasis(polydeg)
 
-surface_flux = flux_lax_friedrichs #FluxLMARS(340.0)
-
-volume_flux = VolumeIntegralWeakForm #VolumeIntegralFluxDifferencing(flux_kennedy_gruber)
-#volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
-
-solver = DGSEM(basis, surface_flux)#, volume_integral)
- 
 coordinates_min = (0.0, 0.0)
 coordinates_max = (300_000.0, 10_000.0)
 
 cells_per_dimension = (300, 10)
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = (true, false))
+
+boundary_conditions = (x_neg = boundary_condition_periodic,
+                       x_pos = boundary_condition_periodic,
+                       y_neg = boundary_condition_slip_wall,
+                       y_pos = boundary_condition_slip_wall)
+
+basis = LobattoLegendreBasis(polydeg)
+
+surface_flux = flux_lax_friedrichs 
+volume_integral = VolumeIntegralWeakForm()
+
+solver = DGSEM(basis, surface_flux, volume_integral)
 
 semi = SemidiscretizationHyperbolic(mesh, equations, interia_wave_setup, solver,
                                     source_terms = interia_wave_setup,
@@ -152,14 +120,11 @@ analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
-background_state = compute_reference_state(hydrostatic_background, semi, cons2pot)
-
-save_solution = SaveSolutionCallbackRef(interval = analysis_interval,
+save_solution = SaveSolutionCallback(interval = analysis_interval,
                                      save_initial_solution = true,
                                      save_final_solution = true,
                                      output_directory = "out",
-                                     solution_variables = solution_variables,
-                                     reference_solution = background_state)
+                                     solution_variables = solution_variables)
 
 stepsize_callback = StepsizeCallback(cfl = 1.0)
 
