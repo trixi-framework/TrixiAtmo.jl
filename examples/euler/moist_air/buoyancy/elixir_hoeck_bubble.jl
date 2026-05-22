@@ -89,8 +89,9 @@ stage_limiter! = NonlinearSolveDG(saturation_residual, saturation_residual_jacob
 
 ###############################################################################
 # run the simulation
-sol = solve(ode, CarpenterKennedy2N54(; williamson_condition = false,
-                                        stage_limiter! = stage_limiter!),
+sol = solve(ode,
+            CarpenterKennedy2N54(; williamson_condition = false,
+                                 stage_limiter! = stage_limiter!),
             maxiters = 1.0e7,
             dt = 1.0,
             save_everystep = false, callback = callbacks);
