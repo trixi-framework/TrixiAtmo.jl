@@ -105,7 +105,7 @@ end
 # Entropy time derivative for cons2entropy function which depends on auxiliary variables
 function Trixi.analyze(::typeof(Trixi.entropy_timederivative), du, u, t,
                        mesh::DGMultiMesh, equations::AbstractCovariantEquations,
-                       dg::DGMulti, cache)
+                       dg::DGMulti, cache; normalize = true)
     rd = dg.basis
     md = mesh.md
     (; u_values) = cache.solution_container
@@ -121,11 +121,17 @@ function Trixi.analyze(::typeof(Trixi.entropy_timederivative), du, u, t,
     # the L2 projection of v(u) would be equivalent to testing with v(u) due to the moment-preserving
     # property of the L2 projection.
     dS_dt = zero(eltype(first(du)))
-    for i in Base.OneTo(length(md.wJq))
-        ref_index = mod(i - 1, rd.Nq) + 1
-        node_weight = rd.wq[ref_index] * area_element(aux_quad_values[i], equations)
-        dS_dt += dot(cons2entropy(u_values[i], aux_quad_values[i], equations),
-                     du_values[i]) * node_weight
+    total_volume = zero(eltype(first(du)))
+    for element in Trixi.eachelement(mesh, dg, cache)
+        for i in 1:rd.Nq
+            node_weight = rd.wq[i] * area_element(aux_quad_values[i, element], equations)
+            dS_dt += dot(cons2entropy(u_values[i, element], aux_quad_values[i, element], equations),
+                         du_values[i, element]) * node_weight
+            total_volume += node_weight
+        end
+    end
+    if normalize
+        dS_dt = dS_dt / total_volume
     end
     return dS_dt
 end
