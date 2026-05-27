@@ -163,6 +163,6 @@ callbacks = CallbackSet(summary_callback,
 ###############################################################################
 # run the simulation
 sol = solve(ode,
-            SSPRK43(thread = Trixi.True());
+            SSPRK43(thread = Trixi.Threaded());
             maxiters = 1.0e7,
             ode_default_options()..., callback = callbacks)
