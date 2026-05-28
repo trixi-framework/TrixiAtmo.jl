@@ -1,5 +1,6 @@
 using Trixi: new_p4est, p4est_topidx_t, p8est_connectivity_new_copy,
              p8est_connectivity_is_valid
+using GilbertCurves
 
 abstract type SmoothVerticalCoordinate end
 
@@ -145,7 +146,8 @@ function connectivity_cubed_sphere(trees_per_face_dimension, layers)
     n_cells_x = n_cells_y = trees_per_face_dimension
     n_cells_z = layers
 
-    linear_indices = LinearIndices((layers, trees_per_face_dimension,
+    linear_indices = LinearIndices((layers,
+                                    trees_per_face_dimension *
                                     trees_per_face_dimension, 6))
 
     # Vertices represent the coordinates of the forest. This is used by `p4est`
@@ -209,146 +211,214 @@ function connectivity_cubed_sphere(trees_per_face_dimension, layers)
     # │ ╱                                                  │ ╱            ╱
     # │╱                                                   │╱            V
     # └────────────────────────────────────────────────────┘            z
+
+    majordim = [2, 1, 1, 1, 2, 1]
+    # Get local face indices
+    local_face_idx = zeros(Int, n_cells_x, n_cells_y, 6)
+    for direction in 1:6
+        list = gilbertindices((n_cells_x, n_cells_y), majdim = majordim[direction])
+        local_face_idx[:, :, direction] .= GilbertCurves.linearindices(list)
+    end
+
     for direction in 1:6
         for cell_z in 1:n_cells_z, cell_y in 1:n_cells_y, cell_x in 1:n_cells_x
-            tree = linear_indices[cell_z, cell_x, cell_y, direction]
+            tree = linear_indices[cell_z, local_face_idx[cell_x, cell_y, direction],
+                                  direction]
 
             # Subtract 1 because `p4est` uses zero-based indexing
             # Negative x-direction
             if cell_x > 1 # Connect to tree at the same face
-                tree_to_tree[1, tree] = linear_indices[cell_z, cell_x - 1, cell_y,
+                tree_to_tree[1, tree] = linear_indices[cell_z,
+                                                       local_face_idx[cell_x - 1, cell_y,
+                                                                      direction],
                                                        direction] - 1
                 tree_to_face[1, tree] = 1
             elseif direction == face_old_2_new[1] # This is the -x face
                 target = face_old_2_new[4]
-                tree_to_tree[1, tree] = linear_indices[cell_z, end, cell_y, target] - 1
+                tree_to_tree[1, tree] = linear_indices[cell_z,
+                                                       local_face_idx[end, cell_y, target],
+                                                       target] - 1
                 tree_to_face[1, tree] = 1
             elseif direction == face_old_2_new[2] # This is the +x face
                 target = face_old_2_new[3]
-                tree_to_tree[1, tree] = linear_indices[cell_z, end, cell_y, target] - 1
+                tree_to_tree[1, tree] = linear_indices[cell_z,
+                                                       local_face_idx[end, cell_y, target],
+                                                       target] - 1
                 tree_to_face[1, tree] = 1
             elseif direction == face_old_2_new[3] # This is the -y face
                 target = face_old_2_new[1]
-                tree_to_tree[1, tree] = linear_indices[cell_z, end, cell_y, target] - 1
+                tree_to_tree[1, tree] = linear_indices[cell_z,
+                                                       local_face_idx[end, cell_y, target],
+                                                       target] - 1
                 tree_to_face[1, tree] = 1
             elseif direction == face_old_2_new[4] # This is the +y face
                 target = face_old_2_new[2]
-                tree_to_tree[1, tree] = linear_indices[cell_z, end, cell_y, target] - 1
+                tree_to_tree[1, tree] = linear_indices[cell_z,
+                                                       local_face_idx[end, cell_y, target],
+                                                       target] - 1
                 tree_to_face[1, tree] = 1
             elseif direction == face_old_2_new[5] # This is the -z face
                 target = face_old_2_new[2]
-                tree_to_tree[1, tree] = linear_indices[cell_z, cell_y, 1, target] - 1
+                tree_to_tree[1, tree] = linear_indices[cell_z,
+                                                       local_face_idx[cell_y, 1, target],
+                                                       target] - 1
                 tree_to_face[1, tree] = 2
             else # direction == face_old_2_new[6], this is the +z face
                 target = face_old_2_new[1]
-                tree_to_tree[1, tree] = linear_indices[cell_z, end - cell_y + 1, end,
+                tree_to_tree[1, tree] = linear_indices[cell_z,
+                                                       local_face_idx[end - cell_y + 1, end,
+                                                                      target],
                                                        target] - 1
                 tree_to_face[1, tree] = 9 # first face dimensions are oppositely oriented, add 6
             end
 
             # Positive x-direction
             if cell_x < n_cells_x # Connect to tree at the same face
-                tree_to_tree[2, tree] = linear_indices[cell_z, cell_x + 1, cell_y,
+                tree_to_tree[2, tree] = linear_indices[cell_z,
+                                                       local_face_idx[cell_x + 1, cell_y,
+                                                                      direction],
                                                        direction] - 1
                 tree_to_face[2, tree] = 0
             elseif direction == face_old_2_new[1] # This is the -x face
                 target = face_old_2_new[3]
-                tree_to_tree[2, tree] = linear_indices[cell_z, 1, cell_y, target] - 1
+                tree_to_tree[2, tree] = linear_indices[cell_z,
+                                                       local_face_idx[1, cell_y, target],
+                                                       target] - 1
                 tree_to_face[2, tree] = 0
             elseif direction == face_old_2_new[2] # This is the +x face
                 target = face_old_2_new[4]
-                tree_to_tree[2, tree] = linear_indices[cell_z, 1, cell_y, target] - 1
+                tree_to_tree[2, tree] = linear_indices[cell_z,
+                                                       local_face_idx[1, cell_y, target],
+                                                       target] - 1
                 tree_to_face[2, tree] = 0
             elseif direction == face_old_2_new[3] # This is the -y face
                 target = face_old_2_new[2]
-                tree_to_tree[2, tree] = linear_indices[cell_z, 1, cell_y, target] - 1
+                tree_to_tree[2, tree] = linear_indices[cell_z,
+                                                       local_face_idx[1, cell_y, target],
+                                                       target] - 1
                 tree_to_face[2, tree] = 0
             elseif direction == face_old_2_new[4] # This is the +y face
                 target = face_old_2_new[1]
-                tree_to_tree[2, tree] = linear_indices[cell_z, 1, cell_y, target] - 1
+                tree_to_tree[2, tree] = linear_indices[cell_z,
+                                                       local_face_idx[1, cell_y, target],
+                                                       target] - 1
                 tree_to_face[2, tree] = 0
             elseif direction == face_old_2_new[5] # This is the -z face
                 target = face_old_2_new[1]
-                tree_to_tree[2, tree] = linear_indices[cell_z, end - cell_y + 1, 1,
+                tree_to_tree[2, tree] = linear_indices[cell_z,
+                                                       local_face_idx[end - cell_y + 1, 1,
+                                                                      target],
                                                        target] - 1
                 tree_to_face[2, tree] = 8 # first face dimensions are oppositely oriented, add 6
             else # direction == face_old_2_new[6, this is the +z face]
                 target = face_old_2_new[2]
-                tree_to_tree[2, tree] = linear_indices[cell_z, cell_y, end, target] - 1
+                tree_to_tree[2, tree] = linear_indices[cell_z,
+                                                       local_face_idx[cell_y, end, target],
+                                                       target] - 1
                 tree_to_face[2, tree] = 3
             end
 
             # Negative y-direction
             if cell_y > 1 # Connect to tree at the same face
-                tree_to_tree[3, tree] = linear_indices[cell_z, cell_x, cell_y - 1,
+                tree_to_tree[3, tree] = linear_indices[cell_z,
+                                                       local_face_idx[cell_x, cell_y - 1,
+                                                                      direction],
                                                        direction] - 1
                 tree_to_face[3, tree] = 3
             elseif direction == face_old_2_new[1]
                 target = face_old_2_new[5]
-                tree_to_tree[3, tree] = linear_indices[cell_z, end, end - cell_x + 1,
+                tree_to_tree[3, tree] = linear_indices[cell_z,
+                                                       local_face_idx[end, end - cell_x + 1,
+                                                                      target],
                                                        target] - 1
                 tree_to_face[3, tree] = 7 # first face dimensions are oppositely oriented, add 6
             elseif direction == face_old_2_new[2]
                 target = face_old_2_new[5]
-                tree_to_tree[3, tree] = linear_indices[cell_z, 1, cell_x, target] - 1
+                tree_to_tree[3, tree] = linear_indices[cell_z,
+                                                       local_face_idx[1, cell_x, target],
+                                                       target] - 1
                 tree_to_face[3, tree] = 0
             elseif direction == face_old_2_new[3]
                 target = face_old_2_new[5]
-                tree_to_tree[3, tree] = linear_indices[cell_z, end - cell_x + 1, 1,
+                tree_to_tree[3, tree] = linear_indices[cell_z,
+                                                       local_face_idx[end - cell_x + 1, 1,
+                                                                      target],
                                                        target] - 1
                 tree_to_face[3, tree] = 8 # first face dimensions are oppositely oriented, add 6
             elseif direction == face_old_2_new[4]
                 target = face_old_2_new[5]
-                tree_to_tree[3, tree] = linear_indices[cell_z, cell_x, end, target] - 1
+                tree_to_tree[3, tree] = linear_indices[cell_z,
+                                                       local_face_idx[cell_x, end, target],
+                                                       target] - 1
                 tree_to_face[3, tree] = 3
             elseif direction == face_old_2_new[5]
                 target = face_old_2_new[3]
-                tree_to_tree[3, tree] = linear_indices[cell_z, end - cell_x + 1, 1,
+                tree_to_tree[3, tree] = linear_indices[cell_z,
+                                                       local_face_idx[end - cell_x + 1, 1,
+                                                                      target],
                                                        target] - 1
                 tree_to_face[3, tree] = 8 # first face dimensions are oppositely oriented, add 6
             else # direction == face_old_2_new[6]
                 target = face_old_2_new[3]
-                tree_to_tree[3, tree] = linear_indices[cell_z, cell_x, end, target] - 1
+                tree_to_tree[3, tree] = linear_indices[cell_z,
+                                                       local_face_idx[cell_x, end, target],
+                                                       target] - 1
                 tree_to_face[3, tree] = 3
             end
 
             # Positive y-direction
             if cell_y < n_cells_y # Connect to tree at the same face
-                tree_to_tree[4, tree] = linear_indices[cell_z, cell_x, cell_y + 1,
+                tree_to_tree[4, tree] = linear_indices[cell_z,
+                                                       local_face_idx[cell_x, cell_y + 1,
+                                                                      direction],
                                                        direction] - 1
                 tree_to_face[4, tree] = 2
             elseif direction == face_old_2_new[1]
                 target = face_old_2_new[6]
-                tree_to_tree[4, tree] = linear_indices[cell_z, 1, end - cell_x + 1,
+                tree_to_tree[4, tree] = linear_indices[cell_z,
+                                                       local_face_idx[1, end - cell_x + 1,
+                                                                      target],
                                                        target] - 1
                 tree_to_face[4, tree] = 6 # first face dimensions are oppositely oriented, add 6
             elseif direction == face_old_2_new[2]
                 target = face_old_2_new[6]
-                tree_to_tree[4, tree] = linear_indices[cell_z, end, cell_x, target] - 1
+                tree_to_tree[4, tree] = linear_indices[cell_z,
+                                                       local_face_idx[end, cell_x, target],
+                                                       target] - 1
                 tree_to_face[4, tree] = 1
             elseif direction == face_old_2_new[3]
                 target = face_old_2_new[6]
-                tree_to_tree[4, tree] = linear_indices[cell_z, cell_x, 1, target] - 1
+                tree_to_tree[4, tree] = linear_indices[cell_z,
+                                                       local_face_idx[cell_x, 1, target],
+                                                       target] - 1
                 tree_to_face[4, tree] = 2
             elseif direction == face_old_2_new[4]
                 target = face_old_2_new[6]
-                tree_to_tree[4, tree] = linear_indices[cell_z, end - cell_x + 1, end,
+                tree_to_tree[4, tree] = linear_indices[cell_z,
+                                                       local_face_idx[end - cell_x + 1, end,
+                                                                      target],
                                                        target] - 1
                 tree_to_face[4, tree] = 9 # first face dimensions are oppositely oriented, add 6
             elseif direction == face_old_2_new[5]
                 target = face_old_2_new[4]
-                tree_to_tree[4, tree] = linear_indices[cell_z, cell_x, 1, target] - 1
+                tree_to_tree[4, tree] = linear_indices[cell_z,
+                                                       local_face_idx[cell_x, 1, target],
+                                                       target] - 1
                 tree_to_face[4, tree] = 2
             else # direction == face_old_2_new[6]
                 target = face_old_2_new[4]
-                tree_to_tree[4, tree] = linear_indices[cell_z, end - cell_x + 1, end,
+                tree_to_tree[4, tree] = linear_indices[cell_z,
+                                                       local_face_idx[end - cell_x + 1, end,
+                                                                      target],
                                                        target] - 1
                 tree_to_face[4, tree] = 9 # first face dimensions are oppositely oriented, add 6
             end
 
             # Negative z-direction
             if cell_z > 1
-                tree_to_tree[5, tree] = linear_indices[cell_z - 1, cell_x, cell_y,
+                tree_to_tree[5, tree] = linear_indices[cell_z - 1,
+                                                       local_face_idx[cell_x, cell_y,
+                                                                      direction],
                                                        direction] - 1
                 tree_to_face[5, tree] = 5
             else # Non-periodic boundary, tree and face point to themselves (zero-based indexing)
@@ -358,7 +428,9 @@ function connectivity_cubed_sphere(trees_per_face_dimension, layers)
 
             # Positive z-direction
             if cell_z < n_cells_z
-                tree_to_tree[6, tree] = linear_indices[cell_z + 1, cell_x, cell_y,
+                tree_to_tree[6, tree] = linear_indices[cell_z + 1,
+                                                       local_face_idx[cell_x, cell_y,
+                                                                      direction],
                                                        direction] - 1
                 tree_to_face[6, tree] = 4
             else # Non-periodic boundary, tree and face point to themselves (zero-based indexing)
@@ -430,15 +502,19 @@ function calc_tree_node_coordinates!(node_coordinates::AbstractArray{<:Any, 5},
     n_cells_x = n_cells_y = trees_per_face_dimension
     n_cells_z = layers
 
-    linear_indices = LinearIndices((n_cells_z, n_cells_x, n_cells_y, 6))
+    linear_indices = LinearIndices((n_cells_z, n_cells_x * n_cells_y, 6))
 
     dx = 2 / n_cells_x
     dy = 2 / n_cells_y
     dz = 2 / n_cells_z
 
+    majordim = [2, 1, 1, 1, 2, 1]
+
     for direction in 1:6
+        list = gilbertindices((n_cells_x, n_cells_y), majdim = majordim[direction])
+        local_face_idx = GilbertCurves.linearindices(list)
         for cell_z in 1:n_cells_z, cell_y in 1:n_cells_y, cell_x in 1:n_cells_x
-            tree = linear_indices[cell_z, cell_x, cell_y, direction]
+            tree = linear_indices[cell_z, local_face_idx[cell_x, cell_y], direction]
 
             x_offset = -1 + (cell_x - 1) * dx + dx / 2
             y_offset = -1 + (cell_y - 1) * dy + dy / 2
