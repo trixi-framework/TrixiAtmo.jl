@@ -13,7 +13,7 @@
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 using LinearAlgebra: norm
-using P4est
+using Trixi: p8est_t, p4est_topidx_t, p8est_quadrant_t
 
 # Define the callback function matching p4est_weight_t
 # 3D uses p8est, but the signature types match identically 
@@ -23,7 +23,7 @@ function column_weight_callback(p4est_ptr::Ptr{p8est_t},
 
     # Define how many vertical layers (elements) exist per column
     # (Alternatively, read this from a global configuration or context)
-    num_layers_per_column = 4
+    num_layers_per_column = 8
 
     # Since tree indices are 0-indexed in C/p4est:
     # If the tree ID + 1 is a multiple of the number of layers, it is the top element.
