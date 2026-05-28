@@ -127,7 +127,7 @@ function initial_topography_gaussian(lat, lon)
     return h_0 * exp(-(dist / d)^2)
 end
 
-trees_per_cube_face = (5, 4)
+trees_per_cube_face = (16, 8)
 
 mesh = P4estMeshCubedSphereTopography(trees_per_cube_face..., EARTH_RADIUS / 20,
                                       20000,
@@ -149,20 +149,18 @@ ode = semidiscretize(semi, tspan)
 
 summary_callback = SummaryCallback()
 
-analysis_interval = 10
+analysis_interval = 1000
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval)
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
 save_solution = SaveSolutionCallback(dt = 5760, save_initial_solution = true,
                                      save_final_solution = true)
-stepsize_callback = StepsizeCallback(cfl = 0.7)
 
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,
                         alive_callback,
-                        save_solution,
-                        stepsize_callback)
+                        save_solution)
 
 ###############################################################################
 # Use a Runge-Kutta method with automatic (error based) time step size control
@@ -170,6 +168,5 @@ callbacks = CallbackSet(summary_callback,
 tol = 1e-6
 sol = solve(ode,
             SSPRK43(thread = Trixi.True());
-            dt = 1.0,
-            adaptive = false, ode_default_options()...,
+            abstol = tol, reltol = tol, ode_default_options()...,
             callback = callbacks)
