@@ -175,7 +175,7 @@ end
     geometric_term = 0.5f0 * h_vcon_ll[orientation] * (Gcon_ll * vcov_rr - vcon_rr)
     pressure_term = equations.gravity * Gcon_ll[:, orientation] * h_ll *
                     (h_rr + h_s_jump)
-    
+
     # Momentum flux
     f2 = J_ll * (geometric_term[1] + pressure_term[1])
     f3 = J_ll * (geometric_term[2] + pressure_term[2])

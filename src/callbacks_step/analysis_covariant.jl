@@ -36,7 +36,9 @@ function Trixi.integrate(func::Func, u,
     total_volume = zero(sum(rd.wq))
     for element in Trixi.eachelement(mesh, dg, cache)
         weights = area_element.(aux_quad_values[:, element], equations) .* rd.wq
-        integral += sum(weights .* func.(u_values[:, element], aux_quad_values[:, element], equations))
+        integral += sum(weights .*
+                        func.(u_values[:, element], aux_quad_values[:, element],
+                              equations))
         total_volume += sum(weights)
     end
     if normalize == true
@@ -123,9 +125,11 @@ function Trixi.analyze(::typeof(Trixi.entropy_timederivative), du, u, t,
     dS_dt = zero(eltype(first(du)))
     total_volume = zero(eltype(first(du)))
     for element in Trixi.eachelement(mesh, dg, cache)
-        for i in 1:rd.Nq
-            node_weight = rd.wq[i] * area_element(aux_quad_values[i, element], equations)
-            dS_dt += dot(cons2entropy(u_values[i, element], aux_quad_values[i, element], equations),
+        for i in 1:(rd.Nq)
+            node_weight = rd.wq[i] *
+                          area_element(aux_quad_values[i, element], equations)
+            dS_dt += dot(cons2entropy(u_values[i, element], aux_quad_values[i, element],
+                                      equations),
                          du_values[i, element]) * node_weight
             total_volume += node_weight
         end
