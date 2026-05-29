@@ -165,10 +165,12 @@ function connectivity_cubed_sphere(trees_per_face_dimension, layers)
     tree_to_tree = Array{p4est_topidx_t, 2}(undef, 6, n_trees)
     tree_to_face = Array{Int8, 2}(undef, 6, n_trees)
 
-    # Illustration of the local coordinates of each face. ξ and η are the first
-    # local coordinates of each face. The third local coordinate ζ is always
+    # Illustration of the local coordinates of each face (patch) of the cubed sphere.
+    # ξ and η are the first local coordinates of each face. The third local coordinate ζ is always
     # pointing outwards, which yields a right-handed coordinate system for each face.
-    # TODO: Patch 1 needs rotation for space-filling curve
+    # Note that this numbering is made such, that contiguous faces (patches) have continuous
+    # numbering for the space-filling curve. The face numbering does not match p4est standard for
+    # a hexahedral element
     #               ┌────────────────────────────────────────────────────┐
     #              ╱│                                                   ╱│
     #             ╱ │                       ξ <───┐                    ╱ │
@@ -178,11 +180,11 @@ function connectivity_cubed_sphere(trees_per_face_dimension, layers)
     #         ╱     │                                              ╱     │
     #        ╱      │                                             ╱      │
     #       ╱       │                                            ╱       │
-    #      ╱        │                                           ╱        │
-    #     ╱         │                    1 (-z)   η            ╱         │
-    #    ╱          │                             ↑           ╱          │
-    #   ╱           │                             │          ╱           │
-    #  ╱            │                       ξ <───┘         ╱            │
+    #      ╱        │                       η <───┐             ╱        │
+    #     ╱         │                    1 (-z)   │            ╱         │
+    #    ╱          │                             ↓           ╱          │
+    #   ╱           │                             ξ          ╱           │
+    #  ╱            │                                       ╱            │
     # ┌────────────────────────────────────────────────────┐    2 (+x)   │
     # │             │                                      │             │
     # │             │                                      │      ξ      │
@@ -208,7 +210,7 @@ function connectivity_cubed_sphere(trees_per_face_dimension, layers)
     # │╱                                                   │╱            V
     # └────────────────────────────────────────────────────┘            z
 
-    majordim = [2, 1, 1, 1, 2, 1]
+    majordim = [1, 1, 1, 1, 2, 1]
     # Get local face indices
     local_face_idx = zeros(Int, n_cells_x, n_cells_y, 6)
     for direction in 1:6
@@ -254,7 +256,7 @@ function connectivity_cubed_sphere(trees_per_face_dimension, layers)
                                                        target] - 1
                 tree_to_face[1, tree] = 1
             elseif direction == 1 # This is the -z face
-                target = 2
+                target = 3
                 tree_to_tree[1, tree] = linear_indices[cell_z,
                                                        local_face_idx[cell_y, 1, target],
                                                        target] - 1
@@ -300,7 +302,7 @@ function connectivity_cubed_sphere(trees_per_face_dimension, layers)
                                                        target] - 1
                 tree_to_face[2, tree] = 0
             elseif direction == 1 # This is the -z face
-                target = 4
+                target = 5
                 tree_to_tree[2, tree] = linear_indices[cell_z,
                                                        local_face_idx[end - cell_y + 1, 1,
                                                                       target],
@@ -324,31 +326,32 @@ function connectivity_cubed_sphere(trees_per_face_dimension, layers)
             elseif direction == 4
                 target = 1
                 tree_to_tree[3, tree] = linear_indices[cell_z,
-                                                       local_face_idx[end, end - cell_x + 1,
+                                                       local_face_idx[cell_x, end,
                                                                       target],
                                                        target] - 1
-                tree_to_face[3, tree] = 7 # first face dimensions are oppositely oriented, add 6
+                tree_to_face[3, tree] = 3
             elseif direction == 2
-                target = 1
-                tree_to_tree[3, tree] = linear_indices[cell_z,
-                                                       local_face_idx[1, cell_x, target],
-                                                       target] - 1
-                tree_to_face[3, tree] = 0
-            elseif direction == 5
                 target = 1
                 tree_to_tree[3, tree] = linear_indices[cell_z,
                                                        local_face_idx[end - cell_x + 1, 1,
                                                                       target],
                                                        target] - 1
                 tree_to_face[3, tree] = 8 # first face dimensions are oppositely oriented, add 6
+            elseif direction == 5
+                target = 1
+                tree_to_tree[3, tree] = linear_indices[cell_z,
+                                                       local_face_idx[end, end - cell_x + 1,
+                                                                      target],
+                                                       target] - 1
+                tree_to_face[3, tree] = 7 # first face dimensions are oppositely oriented, add 6
             elseif direction == 3
                 target = 1
                 tree_to_tree[3, tree] = linear_indices[cell_z,
-                                                       local_face_idx[cell_x, end, target],
+                                                       local_face_idx[1, cell_x, target],
                                                        target] - 1
-                tree_to_face[3, tree] = 3
+                tree_to_face[3, tree] = 0
             elseif direction == 1
-                target = 5
+                target = 2
                 tree_to_tree[3, tree] = linear_indices[cell_z,
                                                        local_face_idx[end - cell_x + 1, 1,
                                                                       target],
@@ -396,7 +399,7 @@ function connectivity_cubed_sphere(trees_per_face_dimension, layers)
                                                        target] - 1
                 tree_to_face[4, tree] = 9 # first face dimensions are oppositely oriented, add 6
             elseif direction == 1
-                target = 3
+                target = 4
                 tree_to_tree[4, tree] = linear_indices[cell_z,
                                                        local_face_idx[cell_x, 1, target],
                                                        target] - 1
@@ -471,7 +474,7 @@ function cubed_sphere_mapping_topography(xi, eta, zeta, inner_radius, thickness,
     x = tan(alpha)
     y = tan(beta)
 
-    cube_coordinates = (SVector(-x, y, -1),
+    cube_coordinates = (SVector(-y, -x, -1),
                         SVector(1, x, y),
                         SVector(-x, 1, y),
                         SVector(-1, -x, y),
@@ -503,7 +506,7 @@ function calc_tree_node_coordinates!(node_coordinates::AbstractArray{<:Any, 5},
     dy = 2 / n_cells_y
     dz = 2 / n_cells_z
 
-    majordim = [2, 1, 1, 1, 2, 1]
+    majordim = [1, 1, 1, 1, 2, 1]
 
     for direction in 1:6
         list = gilbertindices((n_cells_x, n_cells_y), majdim = majordim[direction])
