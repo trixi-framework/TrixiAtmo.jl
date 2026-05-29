@@ -81,7 +81,7 @@ function init_auxiliary_node_variables!(aux_values, mesh::DGMultiMesh,
         end
         # Christoffel symbols of the second kind (aux_values[21:26, :, :, element])
         calc_christoffel_symbols!(aux_values, mesh, equations, metric_terms, dg,
-                                  element)
+                                  element, v1, v2, v3, radius)
     end
 
     return nothing
@@ -109,6 +109,24 @@ end
 
     return SMatrix{3, 2}(dxdxi1[1], dxdxi1[2], dxdxi1[3],
                          dxdxi2[1], dxdxi2[2], dxdxi2[3])
+end
+
+# Calculate the covariant metric tensor components G₁₁, G₁₂ (= G₂₁), and G₂₂ and return in 
+# that order as an SVector of length 3
+function calc_metric_covariant(v1, v2, v3, xi1, xi2, radius, equations)
+    A = calc_basis_covariant(v1, v2, v3, xi1, xi2, radius,
+                             equations.global_coordinate_system)
+    Gcov = A' * A
+    return SVector(Gcov[1, 1], Gcov[1, 2], Gcov[2, 2])
+end
+
+# Use ForwardDiff.jl to automatically differentiate the covariant metric tensor components 
+function calc_metric_derivatives_autodiff(v1, v2, v3, xi1, xi2, radius, equations)
+    dGdxi1 = derivative(x -> calc_metric_covariant(v1, v2, v3, x, xi2, radius,
+                                                   equations), xi1)
+    dGdxi2 = derivative(x -> calc_metric_covariant(v1, v2, v3, xi1, x, radius,
+                                                   equations), xi2)
+    return dGdxi1, dGdxi2
 end
 
 # Use the collocation derivative operator to numerically differentiate the covariant 
@@ -147,8 +165,25 @@ end
 
 function calc_christoffel_symbols!(aux_values, mesh::DGMultiMesh,
                                    equations::AbstractCovariantEquations{2, 3},
+                                   metric_terms::MetricTermsCovariantSphere{ChristoffelSymbolsAutodiff},
+                                   dg, element, v1, v2, v3, radius)
+    rd = dg.basis
+    for i in 1:Trixi.nnodes(dg)
+        # Compute metric derivatives using automatic differentiation
+        dGdxi1, dGdxi2 = calc_metric_derivatives_autodiff(v1, v2, v3, rd.rst[1][i], rd.rst[2][i], radius, equations)
+
+        aux_node = Vector(aux_values[i, element])
+        Gcon = metric_contravariant(aux_node, equations)
+        aux_node[21:26] .= calc_christoffel_symbols(dGdxi1, dGdxi2, Gcon)
+
+        aux_values[i, element] = SVector{n_aux_node_vars(equations)}(aux_node)
+    end
+end
+
+function calc_christoffel_symbols!(aux_values, mesh::DGMultiMesh,
+                                   equations::AbstractCovariantEquations{2, 3},
                                    metric_terms::MetricTermsCovariantSphere{ChristoffelSymbolsCollocationDerivative},
-                                   dg, element)
+                                   dg, element, v1, v2, v3, radius)
     for i in 1:Trixi.nnodes(dg)
         # Compute metric derivatives using collocation differentiation
         dGdxi1, dGdxi2 = calc_metric_derivatives_collocation(aux_values, equations, dg,
