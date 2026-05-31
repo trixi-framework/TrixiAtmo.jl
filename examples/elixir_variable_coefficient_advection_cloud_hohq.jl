@@ -48,7 +48,7 @@ end
 polydeg = 2
 
 # P4est HOHQ mesh 
-mesh_file = joinpath("src", "meshes", "schaer_mountain_advection.inp")
+mesh_file = joinpath("src", "real_mesh_folder", "schaer_mountain_advection_final.inp")
 mesh_hohq = P4estMesh{2}(mesh_file, polydeg = polydeg)
 
 initial_condition = initial_condition_schaer_mountain_cloud
@@ -94,14 +94,14 @@ ode = semidiscretize(semi, tspan)
 summary_callback = SummaryCallback()
 
 analysis_interval = 1000
-solution_variables = cons2prim
+solution_variables = cons2prim_and_aux
 
 analysis_callback = AnalysisCallback(semi,
                                      interval = analysis_interval)
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
-save_solution = SaveSolutionCallback(interval = 10,
+save_solution = SaveSolutionCallback(interval = 100,
                                      save_initial_solution = true,
                                      save_final_solution = true,
                                      output_directory = "out_hohq",

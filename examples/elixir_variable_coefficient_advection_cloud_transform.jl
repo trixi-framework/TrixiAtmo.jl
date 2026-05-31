@@ -121,8 +121,8 @@ end
 
 
 
-cells_per_dimension = (50,10)
-mesh_transform = P4estMesh(cells_per_dimension; polydeg=2, mapping)
+cells_per_dimension = (50,10)#(150,30) # 
+mesh_transform = P4estMesh(cells_per_dimension; polydeg=2, mapping, periodicity = false)
 
 mesh = mesh_transform
 # flux and solver 
@@ -133,10 +133,10 @@ solver = DGSEM(polydeg = polydeg,
                volume_integral = VolumeIntegralWeakForm())
                
 # boundary conditions 
-boundary_conditions_dirichlet_transform = (x_neg = BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
-                       x_pos = BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
-                       y_neg = BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
-                       y_pos = BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain))
+boundary_conditions_dirichlet_transform = Dict(:x_neg => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
+                       :y_neg => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
+                       :y_pos => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain),
+                       :x_pos => BoundaryConditionDirichletAux(initial_condition_schaer_mountain_cloud, velocity_schaer_mountain))
 
 # the velocity is passed as auxiliary_field into the cache
 
@@ -158,14 +158,14 @@ ode = semidiscretize(semi, tspan)
 summary_callback = SummaryCallback()
 
 analysis_interval = 1000
-solution_variables = cons2prim#cons2prim_and_aux
+solution_variables = cons2prim_and_aux
 
 analysis_callback = AnalysisCallback(semi,
                                      interval = analysis_interval)
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
-save_solution = SaveSolutionCallback(interval = 10,
+save_solution = SaveSolutionCallback(interval = 100,
                                      save_initial_solution = true,
                                      save_final_solution = true,
                                      output_directory = "out_transform",
@@ -173,7 +173,7 @@ save_solution = SaveSolutionCallback(interval = 10,
 
 stepsize_callback = StepsizeCallback(cfl = 0.1)
 
-visualization = VisualizationCallback(interval = 100) 
+#visualization = VisualizationCallback(interval = 100) 
 
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,

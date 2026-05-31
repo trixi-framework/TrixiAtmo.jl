@@ -71,7 +71,7 @@ function mapping(xi_, eta_)
 end
 
 # Create curved mesh with 200 x 100 elements
-cells_per_dimension = (0, 10)
+cells_per_dimension = (100, 50)
 mesh = StructuredMesh(cells_per_dimension, mapping,
                       periodicity = false)
 
