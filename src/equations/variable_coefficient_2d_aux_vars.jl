@@ -42,7 +42,7 @@ const flux_lax_friedrichs = FluxLaxFriedrichs()
                                                               aux_rr,
                                                               orientation_or_normal_direction,
                                                               equations)
-    λ = dissipation.max_abs_speed(u_ll, u_rr, aux_ll, aux_rr,
+    λ = max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr,
                                   orientation_or_normal_direction, equations)
     return -0.5f0 * λ * (u_rr - u_ll)
 end
@@ -64,7 +64,5 @@ end
 
 @inline Trixi.cons2entropy(u, equations::VariableCoefficientAdvectionEquation2D) = u 
 @inline Trixi.cons2prim(u, equations::VariableCoefficientAdvectionEquation2D) = u 
-#@inline Trixi.cons2prim(u, aux, equations::LinearVariableScalarAdvectionEquation2D) = u
-
 
 end #muladd

@@ -13,7 +13,7 @@ end
 # Convenience function to convert variables
 function Trixi.save_solution_file(u, time, dt, timestep,
                             mesh:: P4estMesh{2},
-                            equations::PerturbationEulerEquations2DAuxVars, dg::DG, cache,
+                            equations::AbstractVariableCoefficientEquations, dg::DG, cache,
                             solution_callback,
                             element_variables = Dict{Symbol, Any}(),
                             node_variables = Dict{Symbol, Any}();
@@ -87,7 +87,7 @@ function Trixi.save_solution_file(u, time, dt, timestep,
     return filename
 end
 
-function convert_variables(u, aux, equations::PerturbationEulerEquations2DAuxVars, solution_variables)
+function convert_variables(u, aux, equations::AbstractEquations, solution_variables)
     if solution_variables === Trixi.cons2cons
         data = u
         n_vars = Trixi.nvariables(equations)
