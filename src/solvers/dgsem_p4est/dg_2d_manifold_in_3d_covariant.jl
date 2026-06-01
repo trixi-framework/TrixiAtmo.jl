@@ -41,7 +41,8 @@ function Trixi.rhs!(du, u, t,
 
     # Calculate boundary fluxes
     Trixi.@trixi_timeit Trixi.timer() "boundary flux" begin
-        Trixi.calc_boundary_flux!(backend, cache, t, boundary_conditions, mesh, equations,
+        Trixi.calc_boundary_flux!(backend, cache, t, boundary_conditions, mesh,
+                                  equations,
                                   dg.surface_integral, dg)
     end
 
