@@ -19,8 +19,7 @@ equations = SplitCovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATI
 polydeg = 3
 
 volume_flux = (flux_ec, flux_nonconservative_ec)
-surface_flux = (FluxPlusDissipation(flux_ec, DissipationLocalLaxFriedrichs()),
-                flux_nonconservative_surface_simplified)
+surface_flux = (flux_ec, flux_nonconservative_surface_simplified)
 
 dg = DGMulti(polydeg = polydeg, element_type = Tri(), approximation_type = SBP(),
              surface_integral = SurfaceIntegralWeakForm(surface_flux),
