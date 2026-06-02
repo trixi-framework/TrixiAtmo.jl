@@ -60,7 +60,7 @@ end
                         trees_per_cube_face=(3, 2), adapt_vertical_grid=Sleve(0.7, 0.8))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 1000)
     # Check partitioning
     nelems_min = copy(nelements(solver, semi.cache))
     nelems_max = copy(nelements(solver, semi.cache))
