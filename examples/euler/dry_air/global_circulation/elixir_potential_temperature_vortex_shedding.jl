@@ -13,36 +13,6 @@
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 using LinearAlgebra: norm
-using Trixi: p8est_t, p4est_topidx_t, p8est_quadrant_t
-
-# Define the callback function matching p4est_weight_t
-# 3D uses p8est, but the signature types match identically 
-function column_weight_callback(p4est_ptr::Ptr{p8est_t},
-                                which_tree::p4est_topidx_t,
-                                quadrant_ptr::Ptr{p8est_quadrant_t})
-
-    # Define how many vertical layers (elements) exist per column
-    # (Alternatively, read this from a global configuration or context)
-    num_layers_per_column = 8
-
-    # Since tree indices are 0-indexed in C/p4est:
-    # If the tree ID + 1 is a multiple of the number of layers, it is the top element.
-    if (which_tree + 1) % num_layers_per_column == 0
-        return Cint(1)  # The entire weight of the column is concentrated here
-    else
-        return Cint(0)  # Rest of the elements in the column tag along for free
-    end
-end
-
-# Create a C-compatible function pointer
-c_column_weight_fn = @cfunction(column_weight_callback,
-                                Cint,
-                                (Ptr{p8est_t}, p4est_topidx_t, Ptr{p8est_quadrant_t}))
-
-function Trixi.partition!(mesh::Trixi.P4estMeshParallel{3}; weight_fn = C_NULL)
-    return p8est_partition(mesh.p4est, Int(mesh.p4est_partition_allow_for_coarsening),
-                           c_column_weight_fn)
-end
 
 function cartesian_to_sphere(x)
     r = norm(x)
@@ -134,7 +104,8 @@ mesh = P4estMeshCubedSphereTopography(trees_per_cube_face..., EARTH_RADIUS / 20,
                                       polydeg = polydeg,
                                       initial_refinement_level = 0,
                                       initial_topography = initial_topography_gaussian,
-                                      adapt_vertical_grid = GalChen())
+                                      adapt_vertical_grid = GalChen(),
+                                      keep_columns_together = true)
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_terms_coriolis,

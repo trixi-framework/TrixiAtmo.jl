@@ -1,5 +1,5 @@
-using Trixi: new_p4est, p4est_topidx_t, p8est_connectivity_new_copy,
-             p8est_connectivity_is_valid
+using Trixi: new_p4est, p4est_topidx_t, p8est_connectivity_new_copy, partition!,
+             p8est_connectivity_is_valid, p8est_t, p8est_quadrant_t, p8est_partition
 using GilbertCurves
 
 abstract type SmoothVerticalCoordinate end
@@ -82,7 +82,8 @@ end
     P4estMeshCubedSphereTopography(trees_per_face_dimension, layers, inner_radius, thickness;
                          polydeg, RealT=Float64,
                          initial_refinement_level=0, unsaved_changes=true,
-                         p4est_partition_allow_for_coarsening=true, initial_topography, adapt_vertical_grid)
+                         p4est_partition_allow_for_coarsening=true, initial_topography, 
+                         adapt_vertical_grid, keep_columns_together = false)
 
 Build a "Cubed Sphere" mesh as `P4estMesh` with
 `6 * trees_per_face_dimension^2 * layers` trees and a given topography.
@@ -106,7 +107,8 @@ The mesh will have two boundaries, `:inside` and `:outside`.
                                                 independent of domain partitioning. Should be `false` for static meshes
                                                 to permit more fine-grained partitioning.
 - `initial_topography`: initial topography as a function of x, y, z coordinates, that modifies the surface spherical layer.
-- `adaptive_vertical_grid`: smoothing of the vertical element size in the radial direction, to gradually restore the spherical shape. Two options are available: GalChen() or Sleve(etaH, s).        
+- `adaptive_vertical_grid`: smoothing of the vertical element size in the radial direction, to gradually restore the spherical shape. Two options are available: GalChen() or Sleve(etaH, s).
+- `keep_columns_together::Bool`: Keep entire columns of elements within the same rank for parallel MPI simulations.
 """
 function P4estMeshCubedSphereTopography(trees_per_face_dimension, layers, inner_radius,
                                         thickness;
@@ -114,7 +116,8 @@ function P4estMeshCubedSphereTopography(trees_per_face_dimension, layers, inner_
                                         initial_refinement_level = 0,
                                         unsaved_changes = true,
                                         p4est_partition_allow_for_coarsening = true,
-                                        initial_topography, adapt_vertical_grid = GalChen())
+                                        initial_topography, adapt_vertical_grid = GalChen(),
+                                        keep_columns_together = false)
     connectivity = connectivity_cubed_sphere(trees_per_face_dimension, layers)
 
     n_trees = 6 * trees_per_face_dimension^2 * layers
@@ -136,9 +139,121 @@ function P4estMeshCubedSphereTopography(trees_per_face_dimension, layers, inner_
     boundary_names[5, :] .= Symbol("inside")
     boundary_names[6, :] .= Symbol("outside")
 
-    return P4estMesh{3}(p4est, tree_node_coordinates, nodes,
+    # 1. Build the base concrete Trixi P4estMesh
+    mesh = P4estMesh{3}(p4est, tree_node_coordinates, nodes,
                         boundary_names, "", unsaved_changes,
                         p4est_partition_allow_for_coarsening)
+
+    # 2. Setup the context to save the number of layers and `keep_columns_together`
+    ctx = ColumnPartitionContext(Cint(layers), keep_columns_together)
+
+    # 3. Secure the context in our registry via the raw mesh pointer
+    p8est_raw_ptr = Trixi.P4est.PointerWrappers.pointer(mesh.p4est)
+    MeshContextRegistry.register!(p8est_raw_ptr, ctx)
+
+    # 4. Tie unregistering to the finalizer of the mesh object
+    finalizer(mesh) do m
+        raw_ptr = Trixi.P4est.PointerWrappers.pointer(m.p4est)
+        MeshContextRegistry.unregister!(raw_ptr)
+    end
+
+    return mesh
+end
+
+# Registry to store the number of layers and `keep_columns_together`
+module MeshContextRegistry
+using Trixi: p8est_t
+# Maps the memory address of the p4est/p8est C-pointer to its Julia context object
+const REGISTRY = Dict{UInt64, Any}()
+
+function register!(p8est_ptr::Ptr{p8est_t}, ctx)
+    REGISTRY[UInt64(p8est_ptr)] = ctx
+end
+
+function unregister!(p8est_ptr::Ptr{p8est_t})
+    delete!(REGISTRY, UInt64(p8est_ptr))
+end
+end
+
+# Context to save the number of radial layers into p4est user_pointer
+mutable struct ColumnPartitionContext
+    num_layers_per_column::Cint
+    keep_columns_together::Bool
+end
+
+"""
+    column_weight_callback(p8est_ptr::Ptr{p8est_t}, 
+                           which_tree::p4est_topidx_t, 
+                           quadrant_ptr::Ptr{p8est_quadrant_t})
+
+Custom p4est weight function that ensures that columns of elements are kept together within
+MPI ranks.
+"""
+function column_weight_callback(p8est_ptr::Ptr{p8est_t},
+                                which_tree::p4est_topidx_t,
+                                quadrant_ptr::Ptr{p8est_quadrant_t})
+
+    # We cast the raw pointer value into a UInt64 key
+    key = UInt64(p8est_ptr)
+
+    # Safety fallback: If this mesh isn't in our registry, act like a standard grid (weight 1)
+    if !haskey(MeshContextRegistry.REGISTRY, key)
+        return Cint(1)
+    end
+
+    ctx = MeshContextRegistry.REGISTRY[key]::ColumnPartitionContext
+
+    # If the mesh flag specifies regular partitioning, treat elements uniformly
+    if !ctx.keep_columns_together
+        return Cint(1)
+    end
+
+    # Execute your cubed-sphere column tracking logic
+    quad = unsafe_load(quadrant_ptr)
+    is_top_tree = ((which_tree + 1) % ctx.num_layers_per_column == 0)
+
+    P4EST_MAXLEVEL = 30
+    quad_len = 1 << (P4EST_MAXLEVEL - quad.level)
+    P4EST_LAST_OFFSET = 1 << P4EST_MAXLEVEL
+    is_absolute_top_element = (quad.z + quad_len == P4EST_LAST_OFFSET)
+
+    if is_top_tree && is_absolute_top_element
+        return Cint(1)
+    else
+        return Cint(0)
+    end
+end
+
+# 3. Use the __init__() function to generate a fresh pointer EVERY time the package loads
+function __init__()
+    # This block executes at runtime when TrixiAtmo is loaded into a session,
+    # ensuring the memory address generated matches the current Julia process state
+    c_func = @cfunction(column_weight_callback,
+                        Cint,
+                        (Ptr{p8est_t}, p4est_topidx_t, Ptr{p8est_quadrant_t}))
+
+    c_column_weight_ptr[] = Ptr{Cvoid}(c_func)
+end
+
+const c_column_weight_ptr = Ref{Ptr{Cvoid}}(C_NULL)
+
+# Override Trixi's partition! function to ensure columns are kept together within individual MPI
+# ranks if needed
+function Trixi.partition!(mesh::Trixi.P4estMeshParallel{3}; weight_fn = C_NULL)
+    p8est_raw_ptr = Trixi.P4est.PointerWrappers.pointer(mesh.p4est)
+    key = UInt64(p8est_raw_ptr)
+
+    if haskey(MeshContextRegistry.REGISTRY, key)
+        # This is your custom Cubed-Sphere mesh! Use the advanced column callback
+        return p8est_partition(mesh.p4est,
+                               Int(mesh.p4est_partition_allow_for_coarsening),
+                               c_column_weight_ptr[])
+    else
+        # Standard Trixi mesh; safely use default weights
+        return p8est_partition(mesh.p4est,
+                               Int(mesh.p4est_partition_allow_for_coarsening),
+                               weight_fn)
+    end
 end
 
 # Connectivity of a cubed-sphere where we number along a column first!
