@@ -62,12 +62,12 @@ end
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 1000)
     # Check partitioning (a total of 108 elements split into 4 partitions)
-    nelems_min = copy(nelements(solver, semi.cache))
-    nelems_max = copy(nelements(solver, semi.cache))
-    Trixi.MPI.Allreduce!(Ref(nelems_min), Base.min, Trixi.mpi_comm())[]
-    Trixi.MPI.Allreduce!(Ref(nelems_max), Base.max, Trixi.mpi_comm())[]
-    println("nelems_min: ", nelems_min)
-    println("nelems_max: ", nelems_max)
+    local_nelems = nelements(solver, semi.cache)
+
+    # Perform the parallel reductions and assign the unwrapped results back!
+    nelems_min = Trixi.MPI.Allreduce!(Ref(local_nelems), Base.min, Trixi.mpi_comm())[]
+    nelems_max = Trixi.MPI.Allreduce!(Ref(local_nelems), Base.max, Trixi.mpi_comm())[]
+
     @assert nelems_min == 26
     @assert nelems_max == 28
 end
