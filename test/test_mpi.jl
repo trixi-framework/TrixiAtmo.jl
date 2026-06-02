@@ -61,13 +61,15 @@ end
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 1000)
-    # Check partitioning
+    # Check partitioning (a total of 108 elements split into 4 partitions)
     nelems_min = copy(nelements(solver, semi.cache))
     nelems_max = copy(nelements(solver, semi.cache))
     Trixi.MPI.Allreduce!(Ref(nelems_min), Base.min, Trixi.mpi_comm())[]
     Trixi.MPI.Allreduce!(Ref(nelems_max), Base.max, Trixi.mpi_comm())[]
+    println("nelems_min: ", nelems_min)
+    println("nelems_max: ", nelems_max)
     @assert nelems_min == 26
-    @assert neleme_max == 28
+    @assert nelems_max == 28
 end
 end
 
