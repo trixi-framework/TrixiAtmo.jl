@@ -57,7 +57,7 @@ end
                         ],
                         rtol=1e-9,
                         tspan=(0.0, 0.0001 * SECONDS_PER_DAY),
-                        trees_per_cube_face=(2, 2), adapt_vertical_grid=Sleve(0.7, 0.8))
+                        trees_per_cube_face=(3, 2), adapt_vertical_grid=Sleve(0.7, 0.8))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
