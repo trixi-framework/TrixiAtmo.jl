@@ -138,6 +138,6 @@ callbacks = CallbackSet(summary_callback,
 # Enable threading of the RK method for better performance on multiple threads
 tol = 1e-6
 sol = solve(ode,
-            SSPRK43(thread = Trixi.True());
+            SSPRK43(thread = Trixi.Threaded());
             abstol = tol, reltol = tol, ode_default_options()...,
             callback = callbacks)
