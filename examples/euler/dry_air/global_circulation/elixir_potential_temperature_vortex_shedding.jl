@@ -104,7 +104,8 @@ mesh = P4estMeshCubedSphereTopography(trees_per_cube_face..., EARTH_RADIUS / 20,
                                       polydeg = polydeg,
                                       initial_refinement_level = 0,
                                       initial_topography = initial_topography_gaussian,
-                                      adapt_vertical_grid = GalChen())
+                                      adapt_vertical_grid = GalChen(),
+                                      keep_columns_together = true)
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_terms_coriolis,
