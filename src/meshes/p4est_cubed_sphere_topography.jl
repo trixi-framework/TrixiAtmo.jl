@@ -11,7 +11,7 @@ decays smoothly with height, returning to flat levels well below the model top.
 
 The transformed height is given by:
 - For `η ≤ η_H`:
-  `z = η·H + z_s · sinh((η_H - η) / s / η_H) / sinh(1/s)`
+  `z = η·H + z_s · sinh((η_H - η) / (s · η_H)) / sinh(1/s)`
 - For `η > η_H`:
   `z = η·H`
 
