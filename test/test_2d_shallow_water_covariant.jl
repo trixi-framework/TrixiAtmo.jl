@@ -103,8 +103,10 @@ end
 @trixi_testset "elixir_tri_barotropic_instability" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_tri_barotropic_instability.jl"),
-                        l2=[41.05018196765347, 0.04598801953369521, 0.03324228006147076],
-                        linf=[202.17195189961058, 0.2046503536574818, 0.14813768215260187],
+                        l2=[39.45640433491504, 0.04471194818811316,
+                            0.032035624788988415],
+                        linf=[201.06847036719773, 0.20336111986390348,
+                            0.14703586091442644],
                         polydeg=3,
                         initial_refinement_level=1,
                         tspan=(0.0, 1.0 * SECONDS_PER_DAY))
