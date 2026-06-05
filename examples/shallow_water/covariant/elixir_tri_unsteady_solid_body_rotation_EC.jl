@@ -10,8 +10,8 @@ using OrdinaryDiffEqLowStorageRK, Trixi, TrixiAtmo
 initial_condition = initial_condition_unsteady_solid_body_rotation
 
 equations = SplitCovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION,
-                                             EARTH_ROTATION_RATE,
-                                             global_coordinate_system = GlobalCartesianCoordinates())
+                                                  EARTH_ROTATION_RATE,
+                                                  global_coordinate_system = GlobalCartesianCoordinates())
 
 ###############################################################################
 # Build DG solver.

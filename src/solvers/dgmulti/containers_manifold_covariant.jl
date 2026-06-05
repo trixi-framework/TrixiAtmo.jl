@@ -170,7 +170,9 @@ function calc_christoffel_symbols!(aux_values, mesh::DGMultiMesh,
     rd = dg.basis
     for i in 1:Trixi.nnodes(dg)
         # Compute metric derivatives using automatic differentiation
-        dGdxi1, dGdxi2 = calc_metric_derivatives_autodiff(v1, v2, v3, rd.rst[1][i], rd.rst[2][i], radius, equations)
+        dGdxi1, dGdxi2 = calc_metric_derivatives_autodiff(v1, v2, v3, rd.rst[1][i],
+                                                          rd.rst[2][i], radius,
+                                                          equations)
 
         aux_node = Vector(aux_values[i, element])
         Gcon = metric_contravariant(aux_node, equations)
@@ -189,7 +191,6 @@ function calc_christoffel_symbols!(aux_values, mesh::DGMultiMesh,
         dGdxi1, dGdxi2 = calc_metric_derivatives_collocation(aux_values, equations, dg,
                                                              i, element)
 
-        
         aux_node = Vector(aux_values[i, element])
         Gcon = metric_contravariant(aux_node, equations)
         aux_node[21:26] .= calc_christoffel_symbols(dGdxi1, dGdxi2, Gcon)

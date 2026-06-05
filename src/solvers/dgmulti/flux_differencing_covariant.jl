@@ -32,7 +32,8 @@ function Trixi.create_cache(mesh::DGMultiMesh, equations::AbstractCovariantEquat
                                                                  aux_face_values))
     auxiliary_container = (; aux_values, aux_quad_values, aux_face_values)
 
-    init_auxiliary_node_variables!(aux_values, mesh, equations, dg, metric_terms, auxiliary_field)
+    init_auxiliary_node_variables!(aux_values, mesh, equations, dg, metric_terms,
+                                   auxiliary_field)
     aux_quad_values .= aux_values
     Trixi.apply_to_each_field(Trixi.mul_by!(rd.Vf), aux_face_values, aux_values)
 
