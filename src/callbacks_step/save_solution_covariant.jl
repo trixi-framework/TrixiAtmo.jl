@@ -5,8 +5,8 @@
 function convert_variables(u, solution_variables, mesh::P4estMesh{2},
                            equations::AbstractCovariantEquations{2}, dg, cache)
     (; aux_node_vars) = cache.auxiliary_variables
-    # Extract the number of solution variables to be output 
-    # (may be different than the number of conservative variables) 
+    # Extract the number of solution variables to be output
+    # (may be different than the number of conservative variables)
     n_vars = length(Trixi.varnames(solution_variables, equations))
 
     # Allocate storage for output
@@ -37,12 +37,12 @@ end
 function convert_variables(u, solution_variables, mesh::DGMultiMesh,
                            equations::AbstractCovariantEquations, dg, cache)
     (; aux_values) = cache.auxiliary_container
-    # Extract the number of solution variables to be output 
-    # (may be different than the number of conservative variables) 
+    # Extract the number of solution variables to be output
+    # (may be different than the number of conservative variables)
     n_vars = length(Trixi.varnames(solution_variables, equations))
 
     # Allocate storage for output, an Np x n_elements array of nvars arrays
-    data = map(_ -> SVector{n_vars, eltype(u)}(zeros(n_vars)), u)
+    data = map(_ -> SVector{n_vars, eltype(u)}(zeros(n_vars)), parent(u))
 
     # Loop over all nodes and convert variables, passing in auxiliary variables
     for i in Trixi.each_dof_global(mesh, dg)
@@ -58,8 +58,8 @@ function convert_variables(u, solution_variables, mesh::DGMultiMesh,
 end
 
 # Calculate the primitive variables and relative vorticity at a given node. The velocity
-# components in the global coordinate system and the bottom topography are returned, such 
-# that the outputs for CovariantShallowWaterEquations2D and ShallowWaterEquations3D are the 
+# components in the global coordinate system and the bottom topography are returned, such
+# that the outputs for CovariantShallowWaterEquations2D and ShallowWaterEquations3D are the
 # same variables, provided that GlobalCartesianCoordinates are used in the former case.
 @inline function cons2prim_and_vorticity(u, equations::AbstractCovariantEquations{2},
                                          dg::DGSEM, cache, i, j, element)
@@ -117,7 +117,7 @@ end
     return (dv2dxi1 - dv1dxi2) / area_element(aux_node, equations)
 end
 
-# Variable names for cons2prim_and_vorticity, chosen to match those from 
+# Variable names for cons2prim_and_vorticity, chosen to match those from
 # ShallowWaterEquations3D
 function Trixi.varnames(::typeof(cons2prim_and_vorticity),
                         equations::AbstractCovariantShallowWaterEquations2D)
