@@ -3,6 +3,13 @@ function Trixi.create_cache(mesh::DGMultiMesh{NDIMS}, equations::AbstractCovaria
                             dg::Trixi.DGMultiWeakForm,
                             RealT, metric_terms, auxiliary_field,
                             uEltype) where {NDIMS}
+    if auxiliary_field != nothing && typeof(equations) <: CovariantShallowWaterEquations2D
+        error("
+            Currently, bottom topography in the shallow water equations is implemented as a
+            nonconservative flux term. The weak-form solver in Trixi only handles conservative fluxes,
+            so please use the flux-differencing solver instead.
+        ")
+    end
     rd = dg.basis
     md = mesh.md
 
