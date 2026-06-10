@@ -103,10 +103,17 @@ end
 @trixi_testset "elixir_tri_barotropic_instability" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_tri_barotropic_instability.jl"),
-                        l2=[39.45640433491504, 0.04471194818811316,
-                            0.032035624788988415],
-                        linf=[201.06847036719773, 0.20336111986390348,
-                            0.14703586091442644],
+                        l2=[
+                            41.05018196765383,
+                            0.045988019533695516,
+                            0.033242280061470814
+                        ],
+                        linf=[
+                            202.17195189961603,
+                            0.20465035365748313,
+                            0.14813768215259907
+                        ],
+                        metric_terms=MetricTermsCovariantSphere(christoffel_symbols=ChristoffelSymbolsCollocationDerivative()),
                         polydeg=3,
                         initial_refinement_level=1,
                         tspan=(0.0, 1.0 * SECONDS_PER_DAY))
