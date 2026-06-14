@@ -7,26 +7,28 @@ using OrdinaryDiffEqLowStorageRK, Trixi, TrixiAtmo
 ###############################################################################
 # Spatial discretization
 
-initial_condition = initial_condition_barotropic_instability
+initial_condition = initial_condition_unsteady_solid_body_rotation
 
-equations = CovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION,
-                                             EARTH_ROTATION_RATE,
-                                             global_coordinate_system = GlobalCartesianCoordinates())
+equations = SplitCovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION,
+                                                  EARTH_ROTATION_RATE,
+                                                  global_coordinate_system = GlobalCartesianCoordinates())
 
 ###############################################################################
 # Build DG solver.
 
-polydeg = 4
+polydeg = 3
 
-dg = DGMulti(element_type = Tri(),
-             approximation_type = Polynomial(),
-             surface_flux = flux_lax_friedrichs,
-             polydeg = polydeg)
+volume_flux = (flux_ec, flux_nonconservative_ec)
+surface_flux = (flux_ec, flux_nonconservative_surface_simplified)
+
+dg = DGMulti(polydeg = polydeg, element_type = Tri(), approximation_type = SBP(),
+             surface_integral = SurfaceIntegralWeakForm(surface_flux),
+             volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
 
 ###############################################################################
 # Build mesh.
 
-initial_refinement_level = 4
+initial_refinement_level = 3
 
 mesh = DGMultiMeshTriIcosahedron2D(dg, EARTH_RADIUS;
                                    initial_refinement_level = initial_refinement_level)
@@ -35,16 +37,16 @@ mesh = DGMultiMeshTriIcosahedron2D(dg, EARTH_RADIUS;
 initial_condition_transformed = transform_initial_condition(initial_condition, equations)
 
 # A semidiscretization collects data structures and functions for the spatial discretization
-metric_terms = MetricTermsCovariantSphere(christoffel_symbols = ChristoffelSymbolsAutodiff())
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, dg,
-                                    metric_terms = metric_terms,
-                                    source_terms = source_terms_geometric_coriolis)
+                                    metric_terms = MetricTermsCovariantSphere(),
+                                    source_terms = source_terms_geometric_coriolis,
+                                    auxiliary_field = bottom_topography_unsteady_solid_body_rotation)
 
 ###############################################################################
 # ODE solvers, callbacks etc.
 
 # Create ODE problem with time span from 0 to T
-tspan = (0.0, 12.0 * SECONDS_PER_DAY)
+tspan = (0.0, 15.0 * SECONDS_PER_DAY)
 ode = semidiscretize(semi, tspan)
 
 # At the beginning of the main loop, the SummaryCallback prints a summary of the simulation 
@@ -56,6 +58,7 @@ summary_callback = SummaryCallback()
 analysis_callback = AnalysisCallback(semi, interval = 100,
                                      save_analysis = true,
                                      extra_analysis_errors = (:conservation_error,),
+                                     extra_analysis_integrals = (entropy,),
                                      uEltype = real(dg))
 
 # The SaveSolutionCallback allows to save the solution to a file in regular intervals
@@ -63,7 +66,7 @@ save_solution = SaveSolutionCallback(interval = 300,
                                      solution_variables = cons2prim_and_vorticity)
 
 # The StepsizeCallback handles the re-calculation of the maximum Δt after each time step
-stepsize_callback = StepsizeCallback(cfl = 0.7)
+stepsize_callback = StepsizeCallback(cfl = 0.4)
 
 # Create a CallbackSet to collect all callbacks such that they can be passed to the ODE 
 # solver

@@ -3,6 +3,13 @@ function Trixi.create_cache(mesh::DGMultiMesh{NDIMS}, equations::AbstractCovaria
                             dg::Trixi.DGMultiWeakForm,
                             RealT, metric_terms, auxiliary_field,
                             uEltype) where {NDIMS}
+    if auxiliary_field != nothing && typeof(equations) <: CovariantShallowWaterEquations2D
+        error("
+            Currently, bottom topography in the shallow water equations is implemented as a
+            nonconservative flux term. The weak-form solver in Trixi only handles conservative fluxes,
+            so please use the flux-differencing solver instead.
+        ")
+    end
     rd = dg.basis
     md = mesh.md
 
@@ -39,7 +46,8 @@ function Trixi.create_cache(mesh::DGMultiMesh{NDIMS}, equations::AbstractCovaria
     # For affine meshes, we just access one element of this interpolated data.
     dxidxhatj = map(x -> rd.Vq * x, md.rstxyzJ)
 
-    init_auxiliary_node_variables!(aux_values, mesh, equations, dg, auxiliary_field)
+    init_auxiliary_node_variables!(aux_values, mesh, equations, dg, metric_terms,
+                                   auxiliary_field)
 
     # Interpolate auxiliary variables to quadrature and face points
     Trixi.apply_to_each_field(Trixi.mul_by!(rd.Vq), aux_quad_values, aux_values)
@@ -61,3 +69,4 @@ end
 
 include("containers_manifold_covariant.jl")
 include("dg_manifold_covariant.jl")
+include("flux_differencing_covariant.jl")
