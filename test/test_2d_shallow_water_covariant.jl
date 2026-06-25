@@ -100,4 +100,47 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
+@trixi_testset "elixir_tri_barotropic_instability" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_tri_barotropic_instability.jl"),
+                        l2=[
+                            41.05018196765383,
+                            0.045988019533695516,
+                            0.033242280061470814
+                        ],
+                        linf=[
+                            202.17195189961603,
+                            0.20465035365748313,
+                            0.14813768215259907
+                        ],
+                        metric_terms=MetricTermsCovariantSphere(christoffel_symbols = ChristoffelSymbolsCollocationDerivative()),
+                        polydeg=3,
+                        initial_refinement_level=1,
+                        tspan=(0.0, 1.0 * SECONDS_PER_DAY))
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+end
+
+@trixi_testset "elixir_tri_unsteady_solid_body_rotation_EC" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_tri_unsteady_solid_body_rotation_EC.jl"),
+                        l2=[
+                            6.040588371552571,
+                            0.0032869884499344493,
+                            0.003164369678296242
+                        ],
+                        linf=[
+                            91.67268565646464,
+                            0.03297358425566477,
+                            0.03687701586924365
+                        ],
+                        polydeg=3,
+                        initial_refinement_level=1,
+                        tspan=(0.0, 1.0 * SECONDS_PER_DAY))
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+end
+
 end # module

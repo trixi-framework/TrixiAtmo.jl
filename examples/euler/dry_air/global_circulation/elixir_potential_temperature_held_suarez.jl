@@ -115,8 +115,8 @@ equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 10
 
 initial_condition = initial_condition_isothermal
 
-boundary_conditions = Dict(:inside => boundary_condition_slip_wall,
-                           :outside => boundary_condition_slip_wall)
+boundary_conditions = (; inside = boundary_condition_slip_wall,
+                       outside = boundary_condition_slip_wall)
 
 polydeg = 4
 surface_flux = (FluxLMARS(340), flux_zero)
@@ -165,6 +165,6 @@ callbacks = CallbackSet(summary_callback,
 # Use a Runge-Kutta method with automatic (error based) time step size control
 # Enable threading of the RK method for better performance on multiple threads
 sol = solve(ode,
-            RDPK3SpFSAL49(thread = Trixi.True());
+            RDPK3SpFSAL49(; thread = Trixi.Threaded());
             abstol = 1.0e-5, reltol = 1.0e-5, ode_default_options()...,
             callback = callbacks);

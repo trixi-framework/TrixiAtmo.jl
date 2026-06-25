@@ -50,7 +50,7 @@ polydeg = 3
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
 
-boundary_conditions = (x_neg = boundary_condition_periodic,
+boundary_conditions = (; x_neg = boundary_condition_periodic,
                        x_pos = boundary_condition_periodic,
                        y_neg = boundary_condition_slip_wall,
                        y_pos = boundary_condition_slip_wall)
@@ -84,7 +84,7 @@ callbacks = CallbackSet(summary_callback,
                         stepsize_callback)
 
 sol = solve(ode,
-            SSPRK43(thread = Trixi.True());
+            SSPRK43(thread = Trixi.Threaded());
             maxiters = 1.0e7,
             dt = 1e-1, # solve needs some value here but it will be overwritten by the stepsize_callback
             save_everystep = false, callback = callbacks, adaptive = false)

@@ -1,5 +1,5 @@
 ###############################################################################
-# Entropy-conservative DGSEM for the shallow water equations in covariant form 
+# Entropy-conservative DGSEM for the shallow water equations in covariant form
 # on the cubed sphere: Unsteady solid-body rotation (Example 3, Läuter et al.,
 # 2005)
 ###############################################################################
@@ -25,7 +25,7 @@ equations = SplitCovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATI
                                                   EARTH_ROTATION_RATE,
                                                   global_coordinate_system = GlobalCartesianCoordinates())
 
-# Use entropy-conservative two-point fluxes for volume and surface terms, with the surface 
+# Use entropy-conservative two-point fluxes for volume and surface terms, with the surface
 # flux simplified due to the continuous bottom topography
 volume_flux = (flux_ec, flux_nonconservative_ec)
 surface_flux = (flux_ec, flux_nonconservative_surface_simplified)
@@ -37,11 +37,12 @@ solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
 # Transform the initial condition to the proper set of conservative variables
 initial_condition_transformed = transform_initial_condition(initial_condition, equations)
 
-# A semidiscretization collects data structures and functions for the spatial 
-# discretization. Here, we pass in the additional keyword argument "auxiliary_field" to 
+# A semidiscretization collects data structures and functions for the spatial
+# discretization. Here, we pass in the additional keyword argument "auxiliary_field" to
 # specify the bottom topography.
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver,
                                     source_terms = source_terms_geometric_coriolis,
+                                    boundary_conditions = boundary_condition_periodic,
                                     auxiliary_field = bottom_topography_unsteady_solid_body_rotation)
 
 ###############################################################################
@@ -50,7 +51,7 @@ semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transform
 # Create ODE problem with time span from 0 to T
 ode = semidiscretize(semi, tspan)
 
-# At the beginning of the main loop, the SummaryCallback prints a summary of the simulation 
+# At the beginning of the main loop, the SummaryCallback prints a summary of the simulation
 # setup and resets the timers
 summary_callback = SummaryCallback()
 
@@ -68,7 +69,7 @@ save_solution = SaveSolutionCallback(dt = (tspan[2] - tspan[1]) / n_saves,
 # The StepsizeCallback handles the re-calculation of the maximum Δt after each time step
 stepsize_callback = StepsizeCallback(cfl = 0.4)
 
-# Create a CallbackSet to collect all callbacks such that they can be passed to the ODE 
+# Create a CallbackSet to collect all callbacks such that they can be passed to the ODE
 # solver
 callbacks = CallbackSet(summary_callback, analysis_callback, save_solution,
                         stepsize_callback)
@@ -76,7 +77,7 @@ callbacks = CallbackSet(summary_callback, analysis_callback, save_solution,
 ###############################################################################
 # run the simulation
 
-# OrdinaryDiffEq's `solve` method evolves the solution in time and executes the passed 
+# OrdinaryDiffEq's `solve` method evolves the solution in time and executes the passed
 # callbacks
 sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
             dt = 100.0, save_everystep = false, callback = callbacks)

@@ -8,6 +8,7 @@ See also: [trixi-framework/TrixiAtmo.jl](https://github.com/trixi-framework/Trix
 """
 module TrixiAtmo
 
+using Accessors: setproperties
 using Reexport: @reexport
 using Trixi
 using MuladdMacro: @muladd
@@ -15,7 +16,7 @@ using Printf: @sprintf
 using Static: True, False, StaticInt
 using StrideArrays: PtrArray
 using StaticArrayInterface: static_size
-using LinearAlgebra: cross, norm, dot, det
+using LinearAlgebra: Diagonal, I, cross, norm, dot, det, diagm
 using Reexport: @reexport
 using LoopVectorization: @turbo
 using QuadGK: quadgk
@@ -32,9 +33,12 @@ using SpecialFunctions: gamma
                         flux, flux_ec, flux_chandrashekar, flux_wintermeyer_etal,
                         flux_fjordholm_etal, flux_nonconservative_wintermeyer_etal,
                         flux_nonconservative_fjordholm_etal, FluxLMARS, flux_shima_etal,
-                        flux_ranocha, flux_kennedy_gruber, flux_lax_friedrichs
+                        flux_ranocha, flux_kennedy_gruber, trixi_backend
 
 using Trixi: ln_mean, stolarsky_mean, inv_ln_mean
+
+# DGMulti Solvers
+using StartUpDG: MeshData, RefElemData
 
 include("auxiliary/auxiliary.jl")
 include("parametrization/parametrization.jl")
@@ -63,7 +67,11 @@ export CompressibleMoistEulerEquations2D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity3D,
        CompressibleEulerEnergyEquationsWithGravity2D,
        CompressibleEulerEnergyEquationsWithGravity3D,
+<<<<<<< HEAD
        CompressibleEulerAtmo
+=======
+       CompressibleEulerInternalEnergyEquationsWithGravity2D
+>>>>>>> main
 
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
@@ -76,15 +84,16 @@ export flux_nonconservative_zeros, flux_nonconservative_ec,
        flux_tec, flux_etec, flux_nonconservative_souza_etal,
        flux_nonconservative_artiano_etal,
        flux_nonconservative_waruszewski_etal, flux_zero,
-       flux_ec_rain, flux_LMARS
+       flux_ec_rain, flux_LMARS, flux_nonconservative_es, flux_conservative_es,
+       flux_conservative_etec, flux_nonconservative_etec
 
 export clean_solution_lagrange_multiplier!
 
 export cons2prim_and_vorticity, contravariant2global
 
-export P4estMeshCubedSphere2D, P4estMeshQuadIcosahedron2D, MetricTermsCrossProduct,
-       MetricTermsInvariantCurl, MetricTermsCovariantSphere, ChristoffelSymbolsAutodiff,
-       ChristoffelSymbolsCollocationDerivative
+export P4estMeshCubedSphere2D, P4estMeshQuadIcosahedron2D, DGMultiMeshTriIcosahedron2D,
+       MetricTermsCrossProduct, MetricTermsInvariantCurl, MetricTermsCovariantSphere,
+       ChristoffelSymbolsAutodiff, ChristoffelSymbolsCollocationDerivative
 
 export EARTH_RADIUS, EARTH_GRAVITATIONAL_ACCELERATION,
        EARTH_ROTATION_RATE, SECONDS_PER_DAY
@@ -110,6 +119,8 @@ export source_terms_geometric_coriolis,
 export bottom_topography_isolated_mountain, bottom_topography_unsteady_solid_body_rotation
 
 export AtmosphereLayers, AtmosphereLayersRainyBubble
+
+export P4estMeshCubedSphereTopography, GalChen, Sleve
 
 export examples_dir
 

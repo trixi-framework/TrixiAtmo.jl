@@ -6,12 +6,16 @@ Together, they form "The TrixiAtmo.jl Authors" as mentioned in the [LICENSE.md](
 file.
 
 * Marco Artiano
+* Philipp Baasch
 * Arpit Babbar
+* Daniel Döhring
+* Gregor Gassner
 * Benedict Geihe
 * Fabian Höck
 * Oswald Knoth
-* Andrés Rueda-Ramírez
+* Joshua Lampert
 * Tristan Montoya
 * Hendrik Ranocha
+* Andrés Rueda-Ramírez
 * Michael Schlottke-Lakemper
 * Andrew Winters

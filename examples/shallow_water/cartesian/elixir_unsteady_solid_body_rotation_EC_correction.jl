@@ -58,7 +58,8 @@ mesh = P4estMeshCubedSphere2D(cells_per_dimension[1], EARTH_RADIUS, polydeg = po
 # A semidiscretization collects data structures and functions for the spatial discretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver,
                                     metric_terms = MetricTermsInvariantCurl(),
-                                    source_terms = source_terms_entropy_correction)
+                                    source_terms = source_terms_entropy_correction,
+                                    boundary_conditions = boundary_condition_periodic)
 
 ###############################################################################
 # ODE solvers, callbacks etc.

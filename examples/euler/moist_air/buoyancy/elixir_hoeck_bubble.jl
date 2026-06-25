@@ -28,7 +28,7 @@ end
 
 equations = CompressibleRainyEulerEquations2D()
 
-boundary_conditions = (x_neg = boundary_condition_periodic,
+boundary_conditions = (; x_neg = boundary_condition_periodic,
                        x_pos = boundary_condition_periodic,
                        y_neg = boundary_condition_slip_wall,
                        y_pos = boundary_condition_slip_wall)
@@ -89,7 +89,9 @@ stage_limiter! = NonlinearSolveDG(saturation_residual, saturation_residual_jacob
 
 ###############################################################################
 # run the simulation
-sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false, stage_limiter!),
+sol = solve(ode,
+            CarpenterKennedy2N54(; williamson_condition = false,
+                                 stage_limiter! = stage_limiter!),
             maxiters = 1.0e7,
             dt = 1.0,
             save_everystep = false, callback = callbacks);

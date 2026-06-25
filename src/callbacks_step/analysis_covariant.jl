@@ -7,7 +7,8 @@ function Trixi.integrate(func::Func, u,
                          mesh::Union{TreeMesh{2}, StructuredMesh{2},
                                      StructuredMeshView{2},
                                      UnstructuredMesh2D, P4estMesh{2}, T8codeMesh{2}},
-                         equations::AbstractCovariantEquations{2}, dg::DG,
+                         equations::AbstractCovariantEquations{2},
+                         dg::Union{DGSEM, FDSBP},
                          cache; normalize = true) where {Func}
     (; aux_node_vars) = cache.auxiliary_variables
 
@@ -18,6 +19,32 @@ function Trixi.integrate(func::Func, u,
         aux_local = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
         return func(u_local, aux_local, equations)
     end
+end
+
+function Trixi.integrate(func::Func, u,
+                         mesh::DGMultiMesh,
+                         equations::AbstractCovariantEquations,
+                         dg::DGMulti, cache; normalize = true) where {Func}
+    rd = dg.basis
+    (; u_values) = cache.solution_container
+    (; aux_quad_values) = cache.auxiliary_container
+
+    # interpolate u to quadrature points
+    Trixi.apply_to_each_field(Trixi.mul_by!(rd.Vq), u_values, u)
+
+    integral = zero(func(u_values[1], aux_quad_values[1], equations))
+    total_volume = zero(sum(rd.wq))
+    for element in Trixi.eachelement(mesh, dg, cache)
+        weights = area_element.(aux_quad_values[:, element], equations) .* rd.wq
+        integral += sum(weights .*
+                        func.(u_values[:, element], aux_quad_values[:, element],
+                              equations))
+        total_volume += sum(weights)
+    end
+    if normalize == true
+        integral /= total_volume
+    end
+    return integral
 end
 
 # For the covariant form, we want to integrate using the exact area element 
@@ -59,8 +86,8 @@ end
 
 # Entropy time derivative for cons2entropy function which depends on auxiliary variables
 function Trixi.analyze(::typeof(Trixi.entropy_timederivative), du, u, t,
-                       mesh::P4estMesh{2},
-                       equations::AbstractCovariantEquations{2}, dg::DG, cache)
+                       mesh::P4estMesh{2}, equations::AbstractCovariantEquations{2},
+                       dg::Union{DGSEM, FDSBP}, cache)
     (; aux_node_vars) = cache.auxiliary_variables
 
     # Calculate ∫(∂S/∂u ⋅ ∂u/∂t)dΩ
@@ -75,6 +102,42 @@ function Trixi.analyze(::typeof(Trixi.entropy_timederivative), du, u, t,
         # and auxiliary variables
         dot(cons2entropy(u_node, aux_node, equations), du_node)
     end
+end
+
+# Entropy time derivative for cons2entropy function which depends on auxiliary variables
+function Trixi.analyze(::typeof(Trixi.entropy_timederivative), du, u, t,
+                       mesh::DGMultiMesh, equations::AbstractCovariantEquations,
+                       dg::DGMulti, cache; normalize = true)
+    rd = dg.basis
+    md = mesh.md
+    (; u_values) = cache.solution_container
+    (; aux_quad_values) = cache.auxiliary_container
+
+    # interpolate u, du to quadrature points
+    du_values = similar(u_values)
+    Trixi.apply_to_each_field(Trixi.mul_by!(rd.Vq), du_values, du)
+    Trixi.apply_to_each_field(Trixi.mul_by!(rd.Vq), u_values, u)
+
+    # compute ∫v(u) * du/dt = ∫dS/dt. We can directly compute v(u) instead of computing the entropy
+    # projection here, since the RHS will be projected to polynomials of degree N and testing with
+    # the L2 projection of v(u) would be equivalent to testing with v(u) due to the moment-preserving
+    # property of the L2 projection.
+    dS_dt = zero(eltype(first(du)))
+    total_volume = zero(eltype(first(du)))
+    for element in Trixi.eachelement(mesh, dg, cache)
+        for i in 1:(rd.Nq)
+            node_weight = rd.wq[i] *
+                          area_element(aux_quad_values[i, element], equations)
+            dS_dt += dot(cons2entropy(u_values[i, element], aux_quad_values[i, element],
+                                      equations),
+                         du_values[i, element]) * node_weight
+            total_volume += node_weight
+        end
+    end
+    if normalize
+        dS_dt = dS_dt / total_volume
+    end
+    return dS_dt
 end
 
 # L2 and Linf error calculation for the covariant form
@@ -123,5 +186,36 @@ function Trixi.calc_error_norms(func, u, t, analyzer, mesh::P4estMesh{2},
     l2_error = @. sqrt(l2_error / total_volume)
 
     return l2_error, linf_error
+end
+
+# L2 and Linf error calculation for the covariant form
+function Trixi.calc_error_norms(func, u, t, analyzer,
+                                mesh::DGMultiMesh{NDIMS_AMBIENT},
+                                equations::AbstractCovariantEquations,
+                                initial_condition,
+                                dg::DGMulti{NDIMS}, cache,
+                                cache_analysis) where {NDIMS, NDIMS_AMBIENT}
+    rd = dg.basis
+    md = mesh.md
+    (; u_values) = cache.solution_container
+    (; aux_quad_values) = cache.auxiliary_container
+
+    # interpolate u to quadrature points
+    Trixi.apply_to_each_field(Trixi.mul_by!(rd.Vq), u_values, u)
+
+    component_l2_errors = zero(eltype(u_values))
+    component_linf_errors = zero(eltype(u_values))
+    total_volume = zero(eltype(u_values[1]))
+    for i in Trixi.each_quad_node_global(mesh, dg, cache)
+        u_exact = initial_condition(SVector(getindex.(md.xyzq, i)), t,
+                                    aux_quad_values[i], equations)
+        error_at_node = func(u_values[i], equations) - func(u_exact, equations)
+        ref_index = mod(i - 1, rd.Nq) + 1
+        node_weight = rd.wq[ref_index] * area_element(aux_quad_values[i], equations)
+        component_l2_errors += node_weight * error_at_node .^ 2
+        component_linf_errors = max.(component_linf_errors, abs.(error_at_node))
+        total_volume += node_weight
+    end
+    return sqrt.(component_l2_errors ./ total_volume), component_linf_errors
 end
 end # @muladd

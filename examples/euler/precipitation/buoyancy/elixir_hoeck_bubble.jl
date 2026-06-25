@@ -26,7 +26,7 @@ end
 ###############################################################################
 # semidiscretization of the compressible rainy Euler equations
 
-boundary_conditions = (x_neg = boundary_condition_periodic,
+boundary_conditions = (; x_neg = boundary_condition_periodic,
                        x_pos = boundary_condition_periodic,
                        y_neg = boundary_condition_simple_slip_wall,
                        y_pos = boundary_condition_simple_slip_wall)
@@ -79,5 +79,5 @@ stage_limiter! = NonlinearSolveDG(saturation_residual, saturation_residual_jacob
 
 ###############################################################################
 # run the simulation
-sol = solve(ode, SSPRK43(stage_limiter!); ode_default_options()...,
+sol = solve(ode, SSPRK43(; stage_limiter! = stage_limiter!); ode_default_options()...,
             maxiters = 1.0e7, save_everystep = false, callback = callbacks);

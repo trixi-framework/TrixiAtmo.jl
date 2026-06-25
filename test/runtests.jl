@@ -6,7 +6,7 @@ using MPI: mpiexec
 #
 # We could do the same once we have a lot of tests
 const TRIXI_TEST = get(ENV, "TRIXI_TEST", "all")
-const TRIXI_MPI_NPROCS = clamp(Sys.CPU_THREADS, 2, 3)
+const TRIXI_MPI_NPROCS = 4
 const TRIXI_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
 
 @time @testset verbose=true showtiming=true "TrixiAtmo.jl tests" begin
@@ -75,13 +75,15 @@ const TRIXI_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
         end
     end
 
-    @time if TRIXI_TEST == "all" || TRIXI_TEST == "shallow_water_3d"
+    @time if TRIXI_TEST == "all" || TRIXI_TEST == "shallow_water_3d" ||
+             TRIXI_TEST == "upstream"
         @testset verbose=true showtiming=true "Spherical SWE Cartesian tests" begin
             include("test_3d_shallow_water.jl")
         end
     end
 
-    @time if TRIXI_TEST == "all" || TRIXI_TEST == "shallow_water_2d_covariant"
+    @time if TRIXI_TEST == "all" || TRIXI_TEST == "shallow_water_2d_covariant" ||
+             TRIXI_TEST == "upstream"
         @testset verbose=true showtiming=true "Spherical SWE covariant tests" begin
             include("test_2d_shallow_water_covariant.jl")
         end
@@ -93,7 +95,8 @@ const TRIXI_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
         end
     end
 
-    @time if TRIXI_TEST == "all" || TRIXI_TEST == "euler_potential_temperature_2d"
+    @time if TRIXI_TEST == "all" || TRIXI_TEST == "euler_potential_temperature_2d" ||
+             TRIXI_TEST == "upstream"
         @testset verbose=true showtiming=true "Euler potential temperature 2D tests" begin
             include("test_2d_potential_temperature.jl")
         end
@@ -106,14 +109,20 @@ const TRIXI_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
     end
 
     @time if TRIXI_TEST == "all" || TRIXI_TEST == "euler_energy_2d"
-        @testset verbose=true showtiming=true "Euler internal energy 2D tests" begin
+        @testset verbose=true showtiming=true "Euler internal plus kinetic energy 2D tests" begin
             include("test_2d_euler_energy.jl")
         end
     end
 
     @time if TRIXI_TEST == "all" || TRIXI_TEST == "euler_energy_3d"
-        @testset verbose=true showtiming=true "Euler internal energy 3D tests" begin
+        @testset verbose=true showtiming=true "Euler internal plus kinetic energy 3D tests" begin
             include("test_3d_euler_energy.jl")
+        end
+    end
+
+    @time if TRIXI_TEST == "all" || TRIXI_TEST == "euler_internal energy_2d"
+        @testset verbose=true showtiming=true "Euler internal energy 2D tests" begin
+            include("test_2d_euler_internal_energy.jl")
         end
     end
 end

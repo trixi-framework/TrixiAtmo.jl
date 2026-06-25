@@ -200,8 +200,8 @@ equations = CompressibleEulerEnergyEquationsWithGravity3D(c_p = 1004,
 
 initial_condition = initial_condition_baroclinic_instability
 
-boundary_conditions = Dict(:inside => boundary_condition_slip_wall,
-                           :outside => boundary_condition_slip_wall)
+boundary_conditions = (; inside = boundary_condition_slip_wall,
+                       outside = boundary_condition_slip_wall)
 
 polydeg = 5
 surface_flux = (FluxLMARS(340), flux_zero)
@@ -244,6 +244,6 @@ callbacks = CallbackSet(summary_callback,
 # Enable threading of the RK method for better performance on multiple threads
 tol = 1e-6
 sol = solve(ode,
-            SSPRK43(thread = Trixi.True());
+            SSPRK43(thread = Trixi.Threaded());
             abstol = tol, reltol = tol, ode_default_options()...,
             callback = callbacks)

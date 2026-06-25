@@ -104,10 +104,10 @@ linear_hydrostatic_setup = HydrostaticSetup(alpha, xr_B, equations)
 
 boundary = BoundaryConditionDirichlet(linear_hydrostatic_setup)
 
-boundary_conditions = Dict(:x_neg => boundary,
-                           :x_pos => boundary,
-                           :y_neg => boundary_condition_slip_wall,
-                           :y_pos => boundary)
+boundary_conditions = (; x_neg = boundary,
+                       x_pos = boundary,
+                       y_neg = boundary_condition_slip_wall,
+                       y_pos = boundary)
 
 # We have an isothermal background state with T0 = 250 K.
 # The reference speed of sound can be computed as:
@@ -163,6 +163,6 @@ callbacks = CallbackSet(summary_callback,
 ###############################################################################
 # run the simulation
 sol = solve(ode,
-            SSPRK43(thread = Trixi.True());
+            SSPRK43(thread = Trixi.Threaded());
             maxiters = 1.0e7,
             ode_default_options()..., callback = callbacks)

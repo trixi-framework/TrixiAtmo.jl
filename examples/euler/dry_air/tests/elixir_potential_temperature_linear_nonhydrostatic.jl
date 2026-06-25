@@ -101,10 +101,10 @@ linear_hydrostatic_setup = NonHydrostaticSetup(alpha, xr_B)
 
 boundary = BoundaryConditionDirichlet(linear_hydrostatic_setup)
 
-boundary_conditions = Dict(:x_neg => boundary,
-                           :x_pos => boundary,
-                           :y_neg => boundary_condition_slip_wall,
-                           :y_pos => boundary)
+boundary_conditions = (; x_neg = boundary,
+                       x_pos = boundary,
+                       y_neg = boundary_condition_slip_wall,
+                       y_pos = boundary)
 polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
 surface_flux = (FluxLMARS(340.0), flux_zero)
@@ -154,5 +154,5 @@ callbacks = CallbackSet(summary_callback,
 ###############################################################################
 # run the simulation
 sol = solve(ode,
-            SSPRK43(thread = Trixi.True());
+            SSPRK43(thread = Trixi.Threaded());
             maxiters = 1.0e7, ode_default_options()..., callback = callbacks)

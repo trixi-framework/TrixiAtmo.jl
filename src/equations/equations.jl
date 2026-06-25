@@ -350,6 +350,7 @@ include("compressible_euler_potential_temperature_gravity_2d.jl")
 include("compressible_euler_potential_temperature_gravity_3d.jl")
 include("compressible_euler_energy_with_gravity_2d.jl")
 include("compressible_euler_energy_with_gravity_3d.jl")
+include("compressible_euler_internal_energy_with_gravity_2d.jl")
 include("compressible_euler/compressible_euler_abstract.jl")
 include("shallow_water_3d.jl")
 end # @muladd
