@@ -1,47 +1,43 @@
-# References:
-# - André Robert (1993)
-#   Bubble Convection Experiments with a Semi-implicit Formulation of the Euler Equations
-#   Journal of the Atmospheric Sciences, Volume 50: Issue 13
-#   https://doi.org/10.1175/1520-0469(1993)050%3C1865:BCEWAS%3E2.0.CO;2
-
 using OrdinaryDiffEqSSPRK
-using Trixi, TrixiAtmo
-using TrixiAtmo: initial_condition_dry_air_warm_bubble_generator, 
+using Trixi
+using TrixiAtmo: IdealGas,
+                 initial_condition_dry_air_warm_bubble_generator, 
                  source_terms_gravity_cartZ_generator
 using Plots
+
+
+###############################################################################
+# Parameters
 
 RealType = Float64
 n_dim = 2
 
+# override to match parameters in Trixi.jl
 parameters = Parameters{RealType}(;
-    earth_gravitational_acceleration = 9.81
+    earth_gravitational_acceleration = EARTH_GRAVITATIONAL_ACCELERATION,
+    c_dry_air_const_pressure = 1004.0,
+    c_dry_air_const_volume = 717.0
 )
+
+
+###############################################################################
+# Thermodynamics
+
 td_single = IdealGas(; parameters)
 td_potT = PotentialTemperature(td_single)
 
-microphysics = MicrophysicsRelaxation{RealType}()
 
-equations = CompressibleEulerAtmo{n_dim}(; parameters = parameters,
+###############################################################################
+# Equations
+
+equations = CompressibleEulerAtmo(; n_dims = 2,
+ parameters = parameters,
                                            thermodynamic_state = td_single,
-                                           thermodynamic_equation = td_potT,
-                                           microphysics = microphysics)
-#surface_flux = flux_lax_friedrichs
-surface_flux = FluxLMARS(340)
-#volume_flux = flux_tec
-polydeg = 3
-solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux)
-               #volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
+                                           thermodynamic_equation = td_potT)
 
-boundary_conditions = (x_neg = boundary_condition_periodic,
-                       x_pos = boundary_condition_periodic,
-                       y_neg = boundary_condition_slip_wall,
-                       y_pos = boundary_condition_slip_wall)
 
-coordinates_min = (0.0, 0.0)
-coordinates_max = (1000.0, 1500.0)
-cells_per_dimension = (16, 16)
-mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
-                      periodicity = (true, false))
+###############################################################################
+# Initial and boundary conditions
 
 initial_condition_reference = initial_condition_dry_air_warm_bubble_generator(
     parameters;
@@ -51,15 +47,48 @@ initial_condition_reference = initial_condition_dry_air_warm_bubble_generator(
 )
 initial_condition = transform_initial_condition(initial_condition_reference, equations)
 
+boundary_conditions = (; y_neg = boundary_condition_slip_wall,
+                         y_pos = boundary_condition_slip_wall)
+
+                         
+###############################################################################
+# Source terms
+
 source_terms_gravity_reference = source_terms_gravity_cartZ_generator(equations)
 source_terms_gravity = transform_source_terms(source_terms_gravity_reference, equations)
 
+
+###############################################################################
+# Solver
+
+surface_flux = FluxLMARS(340)
+volume_flux = flux_tec
+polydeg = 3
+solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
+               volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
+
+
+###############################################################################
+# Mesh
+
+coordinates_min = (0.0, 0.0)
+coordinates_max = (1000.0, 1500.0)
+cells_per_dimension = (64, 64)
+mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
+                      periodicity = (true, false))
+
+
+###############################################################################
+# Semidiscretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_terms_gravity,
                                     boundary_conditions = boundary_conditions)
-
 tspan = (0.0, 10)
 ode = semidiscretize(semi, tspan)
+
+
+###############################################################################
+# Callbacks
 
 summary_callback = SummaryCallback()
 
@@ -84,5 +113,5 @@ callbacks = CallbackSet(summary_callback,
                         alive_callback)
 
 sol = solve(ode,
-            SSPRK43(thread = Trixi.True());
+            SSPRK43(thread = Trixi.Threaded());
             maxiters = 1.0e7, ode_default_options()..., callback = callbacks)
