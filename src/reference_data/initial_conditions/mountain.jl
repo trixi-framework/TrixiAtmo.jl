@@ -15,8 +15,8 @@ function initial_condition_rainy_mountain_generator(
     g    = parameters.earth_gravitational_acceleration
     c_pd = parameters.c_dry_air_const_pressure
     c_vd = parameters.c_dry_air_const_volume
-    c_pv = parameters.c_vapour_const_pressure
-    c_vv = parameters.c_vapour_const_volume
+    c_pv = parameters.c_vapor_const_pressure
+    c_vv = parameters.c_vapor_const_volume
     p_0  = parameters.ref_pressure
     eps  = parameters.tol_eps
     
@@ -43,7 +43,7 @@ function initial_condition_rainy_mountain_generator(
         #    RH = RH * (1.0 + 2 * inv(pi) * atan((zm - x[2]) / 500))
         #end
 
-        e_s = saturation_vapour_pressure(T, equations, equations.microphysics)
+        e_s = saturation_vapor_pressure(T, equations, equations.microphysics)
         p_v = RH * e_s
         rho_v = p_v / (R_v * T)
 

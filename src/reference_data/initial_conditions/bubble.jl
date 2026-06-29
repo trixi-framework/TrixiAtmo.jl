@@ -29,7 +29,7 @@ function initial_condition_dry_air_warm_bubble_generator(
     c_p = parameters.c_dry_air_const_pressure
     c_v = parameters.c_dry_air_const_volume
 
-    function initial_condtion(x, t, equations)
+    function initial_condition(x, t, equations)
         # distance of current x to center of perturbation
         r = sqrt((x[1] - perturbation_center_x)^2 + (x[2] - perturbation_center_z)^2)
 
@@ -67,8 +67,8 @@ end
 function moist_state(y, dz, y0, r_t0, theta_e0, parameters::Parameters{RealType}) where {RealType}
     c_pd = parameters.c_dry_air_const_pressure
     c_vd = parameters.c_dry_air_const_volume
-    c_pv = parameters.c_vapour_const_pressure
-    c_vv = parameters.c_vapour_const_volume
+    c_pv = parameters.c_vapor_const_pressure
+    c_vv = parameters.c_vapor_const_volume
     c_pl = parameters.c_liquid_water
     p_0  = parameters.ref_pressure
     g = parameters.earth_gravitational_acceleration
@@ -126,8 +126,8 @@ function AtmosphereLayerData(parameters::Parameters{RealType};
 
     c_pd = parameters.c_dry_air_const_pressure
     c_vd = parameters.c_dry_air_const_volume
-    c_pv = parameters.c_vapour_const_pressure
-    c_vv = parameters.c_vapour_const_volume
+    c_pv = parameters.c_vapor_const_pressure
+    c_vv = parameters.c_vapor_const_volume
     c_pl = parameters.c_liquid_water
     p0  = parameters.ref_pressure
     R_d = c_pd - c_vd
@@ -188,8 +188,8 @@ function initial_condition_bryan_fritsch_bubble_generator(
 
     c_pd = parameters.c_dry_air_const_pressure
     c_vd = parameters.c_dry_air_const_volume
-    c_pv = parameters.c_vapour_const_pressure
-    c_vv = parameters.c_vapour_const_volume
+    c_pv = parameters.c_vapor_const_pressure
+    c_vv = parameters.c_vapor_const_volume
     c_pl = parameters.c_liquid_water
     p_0  = parameters.ref_pressure
     L_00 = parameters.ref_latent_heat_vaporization  # RealType(2.5008e6)

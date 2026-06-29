@@ -40,12 +40,12 @@ end
            (rho_rain / rho_water)^(0.125f0)
 end
 
-@inline function saturation_vapour_pressure(temperature,
+@inline function saturation_vapor_pressure(temperature,
                                             parameters,
                                             ::MicrophysicsRelaxation)
     c_l = parameters.c_liquid_water
-    c_pv = parameters.c_vapour_const_pressure
-    c_vv = parameters.c_vapour_const_volume
+    c_pv = parameters.c_vapor_const_pressure
+    c_vv = parameters.c_vapor_const_volume
     R_v = c_pv - c_vv
 
     ref_s_p = parameters.ref_saturation_pressure
@@ -58,12 +58,12 @@ end
 end
 
 # This source term models the phase chance between could water and vapor.
-@inline function phase_change_vapour_liquid(u, equations,
+@inline function phase_change_vapor_liquid(u, equations,
                                             microphysics::MicrophysicsRelaxation)
     @unpack saturation_factor = microphysics
 
-    c_pv = equations.parameters.c_vapour_const_pressure
-    c_vv = equations.parameters.c_vapour_const_volume
+    c_pv = equations.parameters.c_vapor_const_pressure
+    c_vv = equations.parameters.c_vapor_const_volume
     R_v = c_pv - c_vv
     
     rho_d, rho_v = vars_gas(u, equations)
@@ -71,7 +71,7 @@ end
     T = temperature(u, equations)
 
     # saturation vapor pressure
-    p_vs = saturation_vapour_pressure(T, equations.parameters, microphysics)
+    p_vs = saturation_vapor_pressure(T, equations.parameters, microphysics)
 
     # saturation density of vapor 
     rho_star_qv = p_vs / (R_v * T)

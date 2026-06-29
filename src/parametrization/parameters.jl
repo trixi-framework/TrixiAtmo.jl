@@ -17,8 +17,8 @@ abstract type AbstractParameters end
     # Specific heat capacities
     c_dry_air_const_pressure::RealType         = RealType(1004.5)    # Specific heat of dry air at constant pressure
     c_dry_air_const_volume::RealType           = RealType(717.5)     # Specific heat of dry air at constant volume
-    c_vapour_const_pressure:: RealType         = RealType(1859.5)    # Specific heat of vapour at constant pressure
-    c_vapour_const_volume:: RealType           = RealType(1397.5)    # Specific heat of vapour at constant volume
+    c_vapor_const_pressure:: RealType          = RealType(1859.5)    # Specific heat of vapor at constant pressure
+    c_vapor_const_volume:: RealType            = RealType(1397.5)    # Specific heat of vapor at constant volume
     c_liquid_water:: RealType                  = RealType(4181.0)    # Specific heat of water
 
     # Reference values
