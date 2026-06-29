@@ -69,11 +69,8 @@ export CompressibleMoistEulerEquations2D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity3D,
        CompressibleEulerEnergyEquationsWithGravity2D,
        CompressibleEulerEnergyEquationsWithGravity3D,
-<<<<<<< HEAD
+       CompressibleEulerInternalEnergyEquationsWithGravity2D,
        CompressibleEulerAtmo
-=======
-       CompressibleEulerInternalEnergyEquationsWithGravity2D
->>>>>>> main
 
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
