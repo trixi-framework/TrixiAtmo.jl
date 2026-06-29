@@ -42,6 +42,7 @@ using StartUpDG: MeshData, RefElemData
 
 include("auxiliary/auxiliary.jl")
 include("parametrization/parametrization.jl")
+include("thermodynamics/thermodynamics.jl")
 include("equations/equations.jl")
 include("reference_data/reference_data.jl")
 include("meshes/meshes.jl")
@@ -51,7 +52,8 @@ include("callbacks_step/callbacks_step.jl")
 include("callbacks_stage/callbacks_stage.jl")
 
 export Parameters,
-       IdealGas, IdealGasesAndLiquids,
+       DryAir, WaterVapor, CloudWater, RainWater,
+       IdealGas, Mixture,
        TotalEnergy, PotentialTemperature,
        MicrophysicsRelaxation
 
