@@ -26,132 +26,108 @@ varnames_precip(::Union{typeof(cons2cons), typeof(cons2prim)},
     return RealType
 end
 
-############################################################################################
-# IdealGas
-############################################################################################
-
-struct IdealGas{RealType} <: AbstractThermodynamicState{RealType, 1, 0, 0}
-    cv::RealType
-    cp::RealType
-    gas_constant::RealType
-    gamma::RealType
-    p_ref::RealType
-
-    function IdealGas(; parameters::Parameters{RealType}) where {RealType}
-        cv = parameters.c_dry_air_const_volume
-        cp = parameters.c_dry_air_const_pressure
-        R = cp - cv
-        gamma = cp / cv
-        p_ref = parameters.ref_pressure
-        return new{RealType}(cv, cp, R, gamma, p_ref)
-    end
-end
-
-@inline function gamma_total(rho_gas, rho_condens, td_state::IdealGas)
-    return td_state.gamma
-end
-
-varnames_gas(::Union{typeof(cons2cons), typeof(cons2prim)},
-             ::IdealGas) = ("", )
 
 
 ############################################################################################
-# IdealGasesAndLiquids
+# Mixture
 ############################################################################################
 
 @doc raw"""
-
-This designed to be in line with CompressibleEulerAtmo
-
-Select how many of the following predefined species will be used:
-
-Gaseous species (n_gas)
-1. dry air
-2. vapor 
-
-Condensed species (n_condens)
-1. cloud water
-
-Precipitating species (n_precip)
-1. rain
-
+    Mixture
 """
-struct IdealGasesAndLiquids{ParametersType, NGAS, NCONDENS, NPRECIP, RealType} <:
+struct Mixture{ParametersType, NGAS, NCONDENS, NPRECIP, RealType} <:
     AbstractThermodynamicState{RealType, NGAS, NCONDENS, NPRECIP}
+    
+    #gas_names::GasNames
+    #condens_names::CondensNames
+    #precip_names::PrecipNames
 
     parameters::ParametersType
     cv_gas::SVector{NGAS, RealType}
     cp_gas::SVector{NGAS, RealType}
-    gas_constant::SVector{NGAS, RealType}
+    R_gas::SVector{NGAS, RealType}
+    gamma_gas::SVector{NGAS, RealType}
     c_condens::SVector{NCONDENS, RealType}
+
     latent_heat::RealType # TODO size?
+    p_ref::RealType
 
     varnames_gas::SVector{NGAS, String}
     varnames_liquid::SVector{NCONDENS, String}
     varnames_precip::SVector{NPRECIP, String}
 
-    function IdealGasesAndLiquids(;
+    function Mixture(;
         parameters::Parameters{RealType},
-        n_gas = 1, n_condens = 0, n_precip = 0) where {RealType}
+        gases::Tuple = (DryAir(parameters),),
+        condensates::Tuple = (),
+        precipitates::Tuple = ()) where {RealType}
 
-        @assert n_gas <=2 "Only up to 2 gaseous species supported"
-        @assert n_condens <=1 "Only up to 1 condensed species supported"
-        @assert n_precip <=1  "Only up to 1 precipitating species supported"
+        n_gas = length(gases)
+        n_condens = length(condensates)
+        n_precip = length(precipitates)
 
-        cv_gas_params = [:c_dry_air_const_volume, :c_vapour_const_volume]
-        cp_gas_params = [:c_dry_air_const_pressure, :c_vapour_const_pressure]
-        c_condens_param = [:c_liquid_water]
-        latent_heat = [:ref_latent_heat_vaporization]
+        cv_gas = SVector{n_gas}(gas.cv for gas in gases)
+        cp_gas = SVector{n_gas}(gas.cp for gas in gases)
+        R_gas = SVector{n_gas}(gas.R for gas in gases)
+        gamma_gas = SVector{n_gas}(gas.gamma for gas in gases)
+        
+        c_condens = SVector{n_condens}(condens.c for condens in condensates)
+        
+        # TODO ?
+        latent_heat = parameters.ref_latent_heat_vaporization
 
-        cv_gas = SVector{n_gas}(getproperty(parameters, cv_gas_params[i]) for i in 1:n_gas)
-        cp_gas = SVector{n_gas}(getproperty(parameters, cp_gas_params[i]) for i in 1:n_gas)
-        c_condens = SVector{n_condens}(getproperty(parameters, c_condens_param[i])
-                                        for i in 1:n_condens)
-        latent_heat = getproperty(parameters, latent_heat[1])
+        p_ref = parameters.ref_pressure
 
-        gas_constant = cp_gas .- cv_gas
-
-        varnames_gas = SVector{n_gas}(["_dry", "_vapor"][1:n_gas])
-        varnames_condens = SVector{n_condens}(["_cloud"][1:n_condens])
-        varnames_precip = SVector{n_precip}(["_rain"][1:n_precip])
+        varnames_gas = SVector{n_gas}(gas.varname for gas in gases)
+        varnames_condens = SVector{n_condens}(condens.varname for condens in condensates)
+        varnames_precip = SVector{n_precip}(precip.varname for precip in precipitates)
 
         return new{typeof(parameters), n_gas, n_condens, n_precip, RealType}(
-            parameters, cv_gas, cp_gas, gas_constant, c_condens, latent_heat,
+            parameters, cv_gas, cp_gas, R_gas, gamma_gas, c_condens, latent_heat, p_ref,
             varnames_gas, varnames_condens, varnames_precip)
     end
 end
 
 varnames_gas(::Union{typeof(cons2cons), typeof(cons2prim)},
-             td_state::IdealGasesAndLiquids) = td_state.varnames_gas
+             td_state::Mixture) = td_state.varnames_gas
 
 varnames_liquid(::Union{typeof(cons2cons), typeof(cons2prim)},
-                td_state::IdealGasesAndLiquids) = td_state.varnames_liquid
+                td_state::Mixture) = td_state.varnames_liquid
 
 varnames_precip(::Union{typeof(cons2cons), typeof(cons2prim)},
-                td_state::IdealGasesAndLiquids) = td_state.varnames_precip
+                td_state::Mixture) = td_state.varnames_precip
+
+n_gas(::Mixture{ParametersType, NGAS}) where {ParametersType, NGAS} = NGAS
 
 # used in equation of state: p = rho R T    
 # pressure is sum of partial pressures, usually of dry air and water vapor
 # neglects condensed phases (nearly no volume, but mass)
-@inline function R_total(rho_gas, td_state::IdealGasesAndLiquids)
+@inline function rho_R_total(rho_gas, td_state::Mixture)
+    @unpack R_gas = td_state
+    return dot(rho_gas, td_state.R_gas)
+end
+@inline function R_total(rho_gas, td_state::Mixture)
     rho_total = sum(rho_gas)
-    return dot(rho_gas, td_state.gas_constant) / rho_total
+    return rho_R_total(rho_gas, td_state) / rho_total
 end
 
 # used in internal energy
-@inline function cv_total(rho_gas, rho_condens, td_state::IdealGasesAndLiquids)
+# TODO: this includes condensates
+@inline function rho_cv_total(rho_gas, rho_condens, td_state::Mixture)
     @unpack cv_gas, c_condens = td_state
+    return dot(rho_gas, cv_gas) + dot(rho_condens, c_condens)
+end
+@inline function cv_total(rho_gas, rho_condens, td_state::Mixture)
     rho_total = sum(rho_gas) + sum(rho_condens)
-    return (dot(rho_gas, cv_gas) + dot(rho_condens, c_condens)) / rho_total
+    return rho_cv_total(rho_gas, rho_condens, td_state) / rho_total
 end
 
-@inline function gamma_total(rho_gas, rho_condens,
-    td_state::IdealGasesAndLiquids{RealType, NGAS}) where {RealType, NGAS}
-
+@inline function gamma_total(rho_gas, rho_condens, td_state::Mixture)
     return R_total(rho_gas, td_state) /
            cv_total(rho_gas, rho_condens, td_state) + 1
 end
 
+#=
 @inline function entropies_gas(densities, T,
     td_state::IdealGasesAndLiquids{RealType, NGAS}) where {RealType, NGAS}
 
@@ -180,4 +156,21 @@ end
 
     return latent ./ T
 end
+=#
+
+
+############################################################################################
+# IdealGas (special case)
+############################################################################################
+
+const IdealGas{RealType} = Mixture{Parameters, 1, 0, 0, RealType}
+IdealGas(;parameters) = Mixture(;parameters)
+
+@inline function gamma_total(rho_gas, rho_condens, td_state::IdealGas)
+    return td_state.gamma
+end
+
+varnames_gas(::Union{typeof(cons2cons), typeof(cons2prim)},
+             ::IdealGas) = ("", )
+
 end # @muladd
