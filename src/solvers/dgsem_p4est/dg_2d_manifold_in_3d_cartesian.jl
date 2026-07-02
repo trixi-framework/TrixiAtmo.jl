@@ -1,7 +1,7 @@
 @muladd begin
 #! format: noindent
 
-function Trixi.rhs!(du, u, t,
+function Trixi.rhs!(backend::Nothing, du, u, t,
                     mesh::Union{P4estMesh{2}, T8codeMesh{2}},
                     equations::AbstractEquations{3},
                     boundary_conditions, source_terms::Source,
