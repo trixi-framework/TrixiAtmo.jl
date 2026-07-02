@@ -69,6 +69,11 @@ jobs:
           files: lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
 
+      # Workaround for https://github.com/coverallsapp/github-action/issues/264
+      - name: Trust Coveralls Homebrew tap (Homebrew 6 requirement)
+        if: runner.os == 'macOS'
+        run: brew trust coverallsapp/coveralls
+
       - name: Upload coverage data (Coveralls)
         if: ${{ matrix.os == 'ubuntu-latest' }}
         uses: coverallsapp/github-action@v2
