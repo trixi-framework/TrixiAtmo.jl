@@ -57,7 +57,7 @@ source_terms_gravity = transform_source_terms(source_terms_gravity_reference, eq
 surface_flux = FluxLMARS(340)
 volume_flux = flux_tec
 polydeg = 3
-solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux)
+solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
 
 ###############################################################################

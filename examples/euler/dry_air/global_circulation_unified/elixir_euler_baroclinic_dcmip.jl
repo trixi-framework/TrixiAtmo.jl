@@ -1,8 +1,8 @@
 using OrdinaryDiffEqLowStorageRK
 using Trixi
-using TrixiAtmo: initial_condition_dry_air_warm_bubble_generator, source_terms_gravity_cartZ_generator
+using TrixiAtmo: initial_condition_dry_air_warm_bubble_generator,
+                 source_terms_gravity_cartZ_generator
 using Plots
-
 
 ###############################################################################
 # Parameters
@@ -13,13 +13,11 @@ n_passive = 1
 earth_scale = 0.1
 
 parameters = Parameters{RealType}(;
-   earth_gravitational_acceleration = 9.80616,       # g
-   c_dry_air_const_pressure = 1004.5,                # cp
-   c_dry_air_const_volume = 717.5,                   # cv
-   earth_rotation_rate = 7.29212e-5 * earth_scale,   # omegaEarth (s^-1)
-   tol_eps = 1e-5,                                   # dxepsilon !TODO!
-)
-
+                                  earth_gravitational_acceleration = 9.80616,       # g
+                                  c_dry_air_const_pressure = 1004.5,                # cp
+                                  c_dry_air_const_volume = 717.5,                   # cv
+                                  earth_rotation_rate = 7.29212e-5 * earth_scale,   # omegaEarth (s^-1)
+                                  tol_eps = 1e-5,)
 
 ###############################################################################
 # Thermodynamics
@@ -29,33 +27,27 @@ td_potT = TotalEnergy(td_single)
 
 microphysics = MicrophysicsRelaxation{RealType}()
 
-
 ###############################################################################
 # Equations
 
 equations = CompressibleEulerAtmo(;
-   n_dim = n_dim,
-   parameters = parameters,
-   thermodynamic_state = td_single,
-   thermodynamic_equation = td_potT,
-   microphysics = microphysics
-)
-
+                                  n_dim = n_dim,
+                                  parameters = parameters,
+                                  thermodynamic_state = td_single,
+                                  thermodynamic_equation = td_potT,
+                                  microphysics = microphysics)
 
 ###############################################################################
 # Initial and boundary conditions
 
-initial_condition_reference = initial_condition_baroclinic_instability_generator(
-    parameters;
-    perturbation_stream_function = False(),
-    earth_scaling_factor = earth_scale
-)
+initial_condition_reference = initial_condition_baroclinic_instability_generator(parameters;
+                                                                                 perturbation_stream_function = False(),
+                                                                                 earth_scaling_factor = earth_scale)
 
 initial_condition = transform_initial_condition(initial_condition_reference, equations)
 
-boundary_conditions = (;y_neg = boundary_condition_slip_wall,
-                        y_pos = boundary_condition_slip_wall)
-
+boundary_conditions = (; y_neg = boundary_condition_slip_wall,
+                       y_pos = boundary_condition_slip_wall)
 
 ###############################################################################
 # Source terms
@@ -66,8 +58,7 @@ source_terms_coriolis_reference = source_terms_coriolis_generator(equations)
 
 source_terms_gravity = transform_source_terms_sum((source_terms_gravity_reference,
                                                    source_terms_coriolis_reference),
-                                                   equations)
-
+                                                  equations)
 
 ###############################################################################
 # Solver
@@ -87,7 +78,6 @@ trees_per_dimension = (8, 8)
 mesh = P4estMesh(trees_per_dimension, polydeg = 3,
                  coordinates_min = coordinates_min, coordinates_max = coordinates_max,
                  periodicity = (true, false), initial_refinement_level = 2)
-
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_terms_gravity,

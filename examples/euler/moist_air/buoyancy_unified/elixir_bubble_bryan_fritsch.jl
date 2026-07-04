@@ -3,7 +3,6 @@ using OrdinaryDiffEqSSPRK
 using TrixiAtmo
 using Plots
 
-
 ###############################################################################
 # Parameters
 
@@ -12,7 +11,6 @@ n_dim = 2
 n_condens = 0
 
 parameters = Parameters{RealType}()
-
 
 ###############################################################################
 # Thermodynamics
@@ -25,45 +23,39 @@ td_state = TrixiAtmo.IdealGas(; parameters)
 td_equation = PotentialTemperature(td_state)
 #td_equation = TotalEnergy(td_state)
 
-
 ###############################################################################
 # Microphysics
 
 microphysics = MicrophysicsRelaxation{RealType}(;
-    saturation_factor = 0.0)
-    #saturation_factor = 1.0)
-
+                                                saturation_factor = 0.0)
+#saturation_factor = 1.0)
 
 ###############################################################################
 # Equations
 
 equations = CompressibleEulerAtmo{n_dim}(; parameters = parameters,
-                                        thermodynamic_state = td_state,
-                                        thermodynamic_equation = td_equation,
-                                        microphysics = microphysics)
-
+                                         thermodynamic_state = td_state,
+                                         thermodynamic_equation = td_equation,
+                                         microphysics = microphysics)
 
 ###############################################################################
 # Initial and boundary conditions
 
-initial_condition_reference = initial_condition_bryan_fritsch_bubble_generator(
-    parameters;
-    moist = (n_condens != 0),
-    perturbation_center_x = 10000.0,
-    perturbation_center_z = 2000.0,
-    perturbation_radius = 2000.0
-)
+initial_condition_reference = initial_condition_bryan_fritsch_bubble_generator(parameters;
+                                                                               moist = (n_condens !=
+                                                                                        0),
+                                                                               perturbation_center_x = 10000.0,
+                                                                               perturbation_center_z = 2000.0,
+                                                                               perturbation_radius = 2000.0)
 initial_condition = transform_initial_condition(initial_condition_reference, equations)
-
 
 ###############################################################################
 # Boundary conditions
 
 boundary_conditions = (; x_neg = boundary_condition_slip_wall,
-                         x_pos = boundary_condition_slip_wall,
-                         y_neg = boundary_condition_slip_wall,
-                         y_pos = boundary_condition_slip_wall)
-
+                       x_pos = boundary_condition_slip_wall,
+                       y_neg = boundary_condition_slip_wall,
+                       y_pos = boundary_condition_slip_wall)
 
 ###############################################################################
 # Source terms
@@ -79,7 +71,6 @@ else
                                               equations)
 end
 
-
 ###############################################################################
 # Mesh
 
@@ -90,7 +81,6 @@ cells_per_dimension = (32, 16)
 
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = false)
-
 
 ###############################################################################
 # Solver
@@ -106,7 +96,6 @@ solver = DGSEM(polydeg, surface_flux) #, volume_integral)
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_terms,
                                     boundary_conditions = boundary_conditions)
-
 
 ###############################################################################
 # ODE solvers, callbacks etc.
@@ -140,7 +129,6 @@ callbacks = CallbackSet(summary_callback,
                         #save_solution,
                         #stepsize_callback,
                         visualization)
-                        
 
 sol = solve(ode,
             #CarpenterKennedy2N54(williamson_condition = false); dt = 0.1,
