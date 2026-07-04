@@ -1,10 +1,8 @@
 # Kunz / Wassermann 2D
 #
-function initial_condition_rainy_mountain_generator(
-        parameters::Parameters{RealType};
-        mean_flow_velocity = RealType(10),
-        relative_humidity  = RealType(0.95)
-    ) where RealType
+function initial_condition_rainy_mountain_generator(parameters::Parameters{RealType};
+                                                    mean_flow_velocity = RealType(10),
+                                                    relative_humidity = RealType(0.95)) where {RealType}
 
     # Test case parameters (currently fixed)
     N = RealType(1.1e-2)     # Brunt-Väisälä frequency, constant dry static stability
@@ -12,24 +10,23 @@ function initial_condition_rainy_mountain_generator(
     T_s = RealType(283.15)   # not T_ref!
 
     # Physical parameters (taken from TrixiAtmo parameters)
-    g    = parameters.earth_gravitational_acceleration
+    g = parameters.earth_gravitational_acceleration
     c_pd = parameters.c_dry_air_const_pressure
     c_vd = parameters.c_dry_air_const_volume
     c_pv = parameters.c_vapor_const_pressure
     c_vv = parameters.c_vapor_const_volume
-    p_0  = parameters.ref_pressure
-    eps  = parameters.tol_eps
-    
-    R_d  = c_pd - c_vd
-    R_v  = c_pv - c_vv
+    p_0 = parameters.ref_pressure
+    eps = parameters.tol_eps
 
+    R_d = c_pd - c_vd
+    R_v = c_pv - c_vv
 
     function initial_condition(x, t, equations)
         # Exner pressure, solves hydrostatic equation for x[2]
         exner = 1 + g^2 / (c_pd * T_s * N^2) * (exp(-N^2 / g * x[2]) - 1)
-        
+
         # pressure
-        p_d = p_0 * exner^(c_pd/ R_d)
+        p_d = p_0 * exner^(c_pd / R_d)
 
         # temperature
         potential_temperature = T_s * exp(N^2 / g * x[2])

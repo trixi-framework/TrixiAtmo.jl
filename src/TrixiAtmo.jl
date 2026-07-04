@@ -107,10 +107,12 @@ export initial_condition_gaussian, initial_condition_geostrophic_balance,
 export initial_condition_bryan_fritsch_bubble_generator,
        initial_condition_rainy_mountain_generator
 
+export boundary_condition_slip_wall_simple
+
 export source_terms_geometric_coriolis,
        source_terms_coriolis,
        source_terms_lagrange_multiplier,
-       source_terms_coriolis_lagrange_multiplier,       
+       source_terms_coriolis_lagrange_multiplier,
        source_terms_gravity_cartZ_generator,
        source_terms_phase_change_generator,
        source_terms_rayleigh_damping_generator

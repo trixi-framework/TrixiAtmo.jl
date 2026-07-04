@@ -19,7 +19,6 @@ function cartesian_to_spherical_coordinates(cartesian_coord)
     return SVector(phi, theta, r)
 end
 
-
 """
     spherical_to_cartesian_velocities(spherical_coord, spherical_velocities)
 
@@ -34,9 +33,9 @@ function spherical_to_cartesian_velocities(spherical_coord, spherical_velocities
     phi, theta, _ = spherical_coord
     u, v, w = spherical_velocities
 
-    v1 = cos(theta)*cos(phi) * w -sin(theta)*cos(phi) * v -sin(phi) * u
-    v2 = cos(theta)*sin(phi) * w -sin(theta)*sin(phi) * v +cos(phi) * u
-    v3 = sin(theta)          * w +cos(theta)          * v 
+    v1 = cos(theta) * cos(phi) * w - sin(theta) * cos(phi) * v - sin(phi) * u
+    v2 = cos(theta) * sin(phi) * w - sin(theta) * sin(phi) * v + cos(phi) * u
+    v3 = sin(theta) * w + cos(theta) * v
 
     return SVector(v1, v2, v3)
 end

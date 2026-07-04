@@ -1,7 +1,6 @@
 @muladd begin
 #! format: noindent
 
-
 ############################################################################################
 # AbstractSpecies
 ############################################################################################
@@ -10,7 +9,6 @@ abstract type AbstractSpecies{RealType} end
 abstract type AbstractGas{RealType} <: AbstractSpecies{RealType} end
 abstract type AbstractLiquid{RealType} <: AbstractSpecies{RealType} end
 abstract type AbstractPrecipitation{RealType} <: AbstractSpecies{RealType} end
-
 
 ############################################################################################
 # Gases
@@ -54,7 +52,6 @@ struct WaterVapor{RealType} <: AbstractGas{RealType}
     end
 end
 
-
 ############################################################################################
 # Condensates
 ############################################################################################
@@ -72,7 +69,6 @@ struct CloudWater{RealType} <: AbstractLiquid{RealType}
     end
 end
 
-
 ############################################################################################
 # Precipitates
 ############################################################################################
@@ -89,5 +85,4 @@ struct RainWater{RealType} <: AbstractPrecipitation{RealType}
         return new{RealType}(c, "rain")
     end
 end
-
 end # @muladd

@@ -8,25 +8,20 @@
 abstract type AbstractThermodynamicState{RealType, NGAS, NCONDENS, NPRECIP} end
 
 varnames_gas(::Union{typeof(cons2cons), typeof(cons2prim)},
-             ::AbstractThermodynamicState{RealType, NGAS, NCONDENS, NPRECIP}) where
-             {RealType, NGAS, NCONDENS, NPRECIP} =
-    ntuple(i -> "gas_$i", Val(NGAS))
+::AbstractThermodynamicState{RealType, NGAS, NCONDENS, NPRECIP}) where
+{RealType, NGAS, NCONDENS, NPRECIP} = ntuple(i -> "gas_$i", Val(NGAS))
 
 varnames_liquid(::Union{typeof(cons2cons), typeof(cons2prim)},
-                ::AbstractThermodynamicState{RealType, NGAS, NCONDENS, NPRECIP}) where
-                {RealType, NGAS, NCONDENS, NPRECIP} =
-    ntuple(i -> "liquid_$i", Val(NCONDENS))
+::AbstractThermodynamicState{RealType, NGAS, NCONDENS, NPRECIP}) where
+{RealType, NGAS, NCONDENS, NPRECIP} = ntuple(i -> "liquid_$i", Val(NCONDENS))
 
 varnames_precip(::Union{typeof(cons2cons), typeof(cons2prim)},
-                ::AbstractThermodynamicState{RealType, NGAS, NCONDENS, NPRECIP}) where
-                {RealType, NGAS, NCONDENS, NPRECIP} =
-    ntuple(i -> "precip_$i", Val(NPRECIP))
+::AbstractThermodynamicState{RealType, NGAS, NCONDENS, NPRECIP}) where
+{RealType, NGAS, NCONDENS, NPRECIP} = ntuple(i -> "precip_$i", Val(NPRECIP))
 
 @inline function Base.real(::AbstractThermodynamicState{RealType}) where {RealType}
     return RealType
 end
-
-
 
 ############################################################################################
 # Mixture
@@ -36,8 +31,8 @@ end
     Mixture
 """
 struct Mixture{ParametersType, NGAS, NCONDENS, NPRECIP, RealType} <:
-    AbstractThermodynamicState{RealType, NGAS, NCONDENS, NPRECIP}
-    
+       AbstractThermodynamicState{RealType, NGAS, NCONDENS, NPRECIP}
+
     #gas_names::GasNames
     #condens_names::CondensNames
     #precip_names::PrecipNames
@@ -57,11 +52,10 @@ struct Mixture{ParametersType, NGAS, NCONDENS, NPRECIP, RealType} <:
     varnames_precip::SVector{NPRECIP, String}
 
     function Mixture(;
-        parameters::Parameters{RealType},
-        gases::Tuple = (DryAir(parameters),),
-        condensates::Tuple = (),
-        precipitates::Tuple = ()) where {RealType}
-
+                     parameters::Parameters{RealType},
+                     gases::Tuple = (DryAir(parameters),),
+                     condensates::Tuple = (),
+                     precipitates::Tuple = ()) where {RealType}
         n_gas = length(gases)
         n_condens = length(condensates)
         n_precip = length(precipitates)
@@ -70,32 +64,41 @@ struct Mixture{ParametersType, NGAS, NCONDENS, NPRECIP, RealType} <:
         cp_gas = SVector{n_gas}(gas.cp for gas in gases)
         R_gas = SVector{n_gas}(gas.R for gas in gases)
         gamma_gas = SVector{n_gas}(gas.gamma for gas in gases)
-        
+
         c_condens = SVector{n_condens}(condens.c for condens in condensates)
-        
+
         # TODO ?
         latent_heat = parameters.ref_latent_heat_vaporization
 
         p_ref = parameters.ref_pressure
 
         varnames_gas = SVector{n_gas}(gas.varname for gas in gases)
-        varnames_condens = SVector{n_condens}(condens.varname for condens in condensates)
+        varnames_condens = SVector{n_condens}(condens.varname
+                                              for condens in condensates)
         varnames_precip = SVector{n_precip}(precip.varname for precip in precipitates)
 
-        return new{typeof(parameters), n_gas, n_condens, n_precip, RealType}(
-            parameters, cv_gas, cp_gas, R_gas, gamma_gas, c_condens, latent_heat, p_ref,
-            varnames_gas, varnames_condens, varnames_precip)
+        return new{typeof(parameters), n_gas, n_condens, n_precip, RealType}(parameters,
+                                                                             cv_gas,
+                                                                             cp_gas,
+                                                                             R_gas,
+                                                                             gamma_gas,
+                                                                             c_condens,
+                                                                             latent_heat,
+                                                                             p_ref,
+                                                                             varnames_gas,
+                                                                             varnames_condens,
+                                                                             varnames_precip)
     end
 end
 
 varnames_gas(::Union{typeof(cons2cons), typeof(cons2prim)},
-             td_state::Mixture) = td_state.varnames_gas
+td_state::Mixture) = td_state.varnames_gas
 
 varnames_liquid(::Union{typeof(cons2cons), typeof(cons2prim)},
-                td_state::Mixture) = td_state.varnames_liquid
+td_state::Mixture) = td_state.varnames_liquid
 
 varnames_precip(::Union{typeof(cons2cons), typeof(cons2prim)},
-                td_state::Mixture) = td_state.varnames_precip
+td_state::Mixture) = td_state.varnames_precip
 
 n_gas(::Mixture{ParametersType, NGAS}) where {ParametersType, NGAS} = NGAS
 
@@ -139,7 +142,7 @@ end
     T_ref = parameters.ref_temperature
     p_ref = parameters.ref_pressure
     eps = parameters.tol_eps
-    
+
     # partial pressures
     p = densities .* gas_constant .* T .+ eps
 
@@ -158,19 +161,17 @@ end
 end
 =#
 
-
 ############################################################################################
 # IdealGas (special case)
 ############################################################################################
 
 const IdealGas{RealType} = Mixture{Parameters, 1, 0, 0, RealType}
-IdealGas(;parameters) = Mixture(;parameters)
+IdealGas(; parameters) = Mixture(; parameters)
 
 @inline function gamma_total(rho_gas, rho_condens, td_state::IdealGas)
     return td_state.gamma
 end
 
 varnames_gas(::Union{typeof(cons2cons), typeof(cons2prim)},
-             ::IdealGas) = ("", )
-
+::IdealGas) = ("",)
 end # @muladd

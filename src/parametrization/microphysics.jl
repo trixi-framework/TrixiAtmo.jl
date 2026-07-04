@@ -12,14 +12,14 @@ struct MicrophysicsRelaxation{RealType <: Real} <: AbstractMicroPhysics
     velocity_rain_constant::RealType
 
     function MicrophysicsRelaxation{RealType}(;
-        saturation_factor = RealType(1)) where {RealType}
+                                              saturation_factor = RealType(1)) where {RealType}
         # COSMO model
-        cosmo_constant = (pi * 8f6)^(-0.125) * gamma(4.5f0) * 130 / 6
+        cosmo_constant = (pi * 8.0f6)^(-0.125) * gamma(4.5f0) * 130 / 6
         return new{RealType}(saturation_factor, cosmo_constant)
     end
 end
 
-@inline function velocity_rain(u, equations, 
+@inline function velocity_rain(u, equations,
                                microphysics::MicrophysicsRelaxation)
     @unpack velocity_rain_constant = microphysics
     rho_airborn = vars_airborn(u, equations)
@@ -41,8 +41,8 @@ end
 end
 
 @inline function saturation_vapor_pressure(temperature,
-                                            parameters,
-                                            ::MicrophysicsRelaxation)
+                                           parameters,
+                                           ::MicrophysicsRelaxation)
     c_l = parameters.c_liquid_water
     c_pv = parameters.c_vapor_const_pressure
     c_vv = parameters.c_vapor_const_volume
@@ -54,18 +54,19 @@ end
 
     # Clausius Clapeyron formula
     return ref_s_p * (temperature / ref_temp)^((c_pv - c_l) / R_v) *
-           exp(((ref_L - (c_pv - c_l) * ref_temp) / R_v) * (1 / ref_temp - 1 / temperature))
+           exp(((ref_L - (c_pv - c_l) * ref_temp) / R_v) *
+               (1 / ref_temp - 1 / temperature))
 end
 
 # This source term models the phase chance between could water and vapor.
 @inline function phase_change_vapor_liquid(u, equations,
-                                            microphysics::MicrophysicsRelaxation)
+                                           microphysics::MicrophysicsRelaxation)
     @unpack saturation_factor = microphysics
 
     c_pv = equations.parameters.c_vapor_const_pressure
     c_vv = equations.parameters.c_vapor_const_volume
     R_v = c_pv - c_vv
-    
+
     rho_d, rho_v = vars_gas(u, equations)
     rho = density_total(u, equations)
     T = temperature(u, equations)
