@@ -13,9 +13,13 @@
     type parameters:
     - NDIMS    dimension (2 or 3)
     - NVARS    number of total variables
+    - NGAS     number of gaseous species
+    - NCONDENS number of condensed species
+    - NPRECIP  number of precipitating species
     - NPASSIVE number of passive variables
                - not included in overall density
                - counted as part of NVARS
+    - NAUX     number of additional auxiliary variables
 
     members:
     - parameters    physical constants etc
@@ -40,107 +44,135 @@
     - rho_d        density of first species (e.g. dry air)
     - r_X          fraction w.r.t. total density of further species
 """
-struct CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE,
-                          ParametersType,
-                          ThermodynamicStateType,
-                          ThermodynamicEquationType,
-                          MicrophysicsType} <: AbstractCompressibleEulerAtmo{NDIMS, NVARS, NPASSIVE}
-
+struct CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE, NAUX,
+                             ParametersType,
+                             ThermodynamicStateType,
+                             ThermodynamicEquationType,
+                             MicrophysicsType} <:
+       AbstractCompressibleEulerAtmo{NDIMS, NVARS, NPASSIVE}
     parameters::ParametersType
     td_state::ThermodynamicStateType
     td_equation::ThermodynamicEquationType
     microphysics::MicrophysicsType
 
-    function CompressibleEulerAtmo{NDIMS}(; parameters,
-        thermodynamic_state::AbstractThermodynamicState{RealType, NGAS, NCONDENS, NPRECIP},
-        thermodynamic_equation,
-        microphysics,
-        n_vars_passive = 0) where {NDIMS, RealType, NGAS, NCONDENS, NPRECIP}
+    function CompressibleEulerAtmo(; n_dims, parameters,
+                                   thermodynamic_state::AbstractThermodynamicState{RealType,
+                                                                                   NGAS,
+                                                                                   NCONDENS,
+                                                                                   NPRECIP},
+                                   thermodynamic_equation,
+                                   microphysics = nothing,
+                                   n_vars_passive = 0,
+                                   n_vars_aux = 0,
+                                   NAUX = false) where {RealType, NGAS, NCONDENS,
+                                                        NPRECIP}
+        n_vars = NGAS + NCONDENS + NPRECIP + n_vars_passive + n_dims + 1
 
-        # gaseous components + airborn liquid components + precipitating components
-        # + passive components + momentum equations (NDIMS) + thermodynamic equation
-        n_vars = NGAS + NCONDENS + NPRECIP + n_vars_passive + NDIMS + 1
-
-        return new{NDIMS, n_vars, NGAS, NCONDENS, NPRECIP, n_vars_passive,
+        return new{n_dims, n_vars, NGAS, NCONDENS, NPRECIP, n_vars_passive, n_vars_aux,
                    typeof(parameters), typeof(thermodynamic_state),
-                   typeof(thermodynamic_equation), typeof(microphysics)}(
-                   parameters, thermodynamic_state, thermodynamic_equation, microphysics)
+                   typeof(thermodynamic_equation), typeof(microphysics)}(parameters,
+                                                                         thermodynamic_state,
+                                                                         thermodynamic_equation,
+                                                                         microphysics)
     end
 end
 
-have_nonconservative_terms(equations::CompressibleEulerAtmo) =
-    have_nonconservative_terms(equations.td_equation)
+have_nonconservative_terms(equations::CompressibleEulerAtmo) = have_nonconservative_terms(equations.td_equation)
+
+@inline have_aux_node_vars(::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE, NAUX}) where {NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE, NAUX} = static(NAUX >
+                                                                                                                                                                                  0)
+
+@inline n_aux_node_vars(::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE, true}) where {NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE, NAUX} = NAUX
+
+@inline auxvarnames(::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE, 1}) where {NDIMS, NVARS, NGAS, NCONDENS, NPRECIP} = ("geopotential",)
 
 @inline function Base.real(::CompressibleEulerAtmo)
     return Base.real(equations.td_state)
 end
 
 @inline function vars_moment(u,
-    ::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE}) where 
-    {NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE}
+                             ::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS,
+                                                     NPRECIP, NPASSIVE, NAUX}) where
+                 {NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE, NAUX}
     return u[SVector{NDIMS}(1:NDIMS)]
 end
 
+@inline function var_td(u,
+                        ::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS, NPRECIP,
+                                                NPASSIVE, NAUX}) where
+                 {NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE, NAUX}
+    return u[NDIMS + 1]
+end
+
 @inline function vars_gas(u,
-    ::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE}) where 
-    {NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE}
-    return u[SVector{NGAS}(NDIMS+2:NDIMS+1+NGAS)]
+                          ::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS, NPRECIP,
+                                                  NPASSIVE, NAUX}) where
+                 {NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE, NAUX}
+    return u[SVector{NGAS}((NDIMS + 2):(NDIMS + 1 + NGAS))]
 end
 
 @inline function var_vapor(u,
-    ::CompressibleEulerAtmo{NDIMS, NVARS, 1, NCONDENS, NPRECIP, NPASSIVE}) where 
-    {NDIMS, NVARS, NCONDENS, NPRECIP, NPASSIVE}
+                           ::CompressibleEulerAtmo{NDIMS, NVARS, 1, NCONDENS, NPRECIP,
+                                                   NPASSIVE, NAUX}) where
+                 {NDIMS, NVARS, NCONDENS, NPRECIP, NPASSIVE, NAUX}
     return 0
 end
 
 @inline function var_vapor(u,
-    ::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE}) where 
-    {NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE}
-    return u[NDIMS+3]
+                           ::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS,
+                                                   NPRECIP, NPASSIVE, NAUX}) where
+                 {NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE, NAUX}
+    return u[NDIMS + 3]
 end
 
 @inline function vars_condens(u,
-    ::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE}) where 
-    {NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE}
-    return u[SVector{NCONDENS}(NDIMS+2+NGAS:NDIMS+1+NGAS+NCONDENS)]
+                              ::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS,
+                                                      NPRECIP, NPASSIVE, NAUX}) where
+                 {NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE, NAUX}
+    return u[SVector{NCONDENS}((NDIMS + 2 + NGAS):(NDIMS + 1 + NGAS + NCONDENS))]
 end
 
 @inline function vars_airborn(u,
-    ::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE}) where 
-    {NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE}
-    return u[SVector{NGAS+NCONDENS}(NDIMS+2:NDIMS+1+NGAS+NCONDENS)]
+                              ::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS,
+                                                      NPRECIP, NPASSIVE, NAUX}) where
+                 {NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE, NAUX}
+    return u[SVector{NGAS + NCONDENS}((NDIMS + 2):(NDIMS + 1 + NGAS + NCONDENS))]
 end
 
 @inline function vars_precip(u,
-    ::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE}) where 
-    {NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE}
-    return u[SVector{NPRECIP}(NDIMS+2+NGAS+NCONDENS:NDIMS+1+NGAS+NCONDENS+NPRECIP)]
+                             ::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS,
+                                                     NPRECIP, NPASSIVE, NAUX}) where
+                 {NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE, NAUX}
+    return u[SVector{NPRECIP}((NDIMS + 2 + NGAS + NCONDENS):(NDIMS + 1 + NGAS + NCONDENS + NPRECIP))]
 end
 
 @inline function vars_passive(u,
-    ::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE}) where 
-    {NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE}
-    return u[SVector{NPASSIVE}(NVARS-NPASSIVE+1:end)]
+                              ::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS,
+                                                      NPRECIP, NPASSIVE, NAUX}) where
+                 {NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE, NAUX}
+    return u[SVector{NPASSIVE}((NVARS - NPASSIVE + 1):end)]
 end
 
 function varnames(variables::typeof(cons2cons),
-    equations::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE}) where 
-    {NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE}
+                  equations::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS,
+                                                   NPRECIP, NPASSIVE, NAUX}) where
+         {NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE, NAUX}
     return (ntuple(i -> "rho_v$i", Val(NDIMS))...,
             varname_td(variables, equations.td_equation),
-            ("rho" .* varnames_gas(variables, equations.td_state))...,
-            ("rho" .* varnames_liquid(variables, equations.td_state))...,
-            ("rho" .* varnames_precip(variables, equations.td_state))...,
+            ("rho_" .* varnames_gas(variables, equations.td_state))...,
+            ("rho_" .* varnames_liquid(variables, equations.td_state))...,
+            ("rho_" .* varnames_precip(variables, equations.td_state))...,
             ntuple(i -> "rho_chi_$i", Val(NPASSIVE))...)
 end
 
 function varnames(variables::typeof(cons2prim),
-    equations::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE}) where 
-    {NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE}
+                  equations::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS,
+                                                   NPRECIP, NPASSIVE, NAUX}) where
+         {NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE, NAUX}
     return (ntuple(i -> "v$i", Val(NDIMS))...,
             varname_td(variables, equations.td_equation),
-            (SVector{NGAS}("rho", ntuple(i -> "r_", Val(NGAS-1))...) .*
-            varnames_gas(variables, equations.td_state))...,
+            (SVector{NGAS}("rho", ntuple(i -> "r_", Val(NGAS - 1))...) .*
+             varnames_gas(variables, equations.td_state))...,
             ("r_" .* varnames_liquid(variables, equations.td_state))...,
             ("r_" .* varnames_precip(variables, equations.td_state))...,
             ntuple(i -> "chi_$i", Val(NPASSIVE))...)
@@ -151,35 +183,43 @@ end
 end
 
 @inline function velocities_precip(u,
-    equations::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, 0}) where {NDIMS, NVARS, NGAS}
+                                   equations::CompressibleEulerAtmo{NDIMS, NVARS, NGAS,
+                                                                    0}) where {NDIMS,
+                                                                               NVARS,
+                                                                               NGAS}
     return SVector{0, eltype(u)}()
 end
 
 # TODO: currently rain only
 @inline function velocities_precip(u,
-    equations::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, 1}) where {NDIMS, NVARS, NGAS}
-
+                                   equations::CompressibleEulerAtmo{NDIMS, NVARS, NGAS,
+                                                                    1}) where {NDIMS,
+                                                                               NVARS,
+                                                                               NGAS}
     return velocity_rain(u, equations, equations.microphysics)
 end
 
 # Convert full vector of primitive variables to conservative quantities
 @inline function prim2cons(prim,
-                           equations::CompressibleEulerAtmo{NDIMS, NVARS}) where {NDIMS, NVARS}
+                           equations::CompressibleEulerAtmo{NDIMS, NVARS}) where {NDIMS,
+                                                                                  NVARS}
     rho = prim2density_total(prim, equations)
-    return(SVector(ntuple(i -> rho * prim[i], Val(NDIMS))...,
-                   prim2cons_td(prim, equations, equations.td_equation, equations.td_state),
-                   prim[NDIMS+2],
-                   ntuple(i -> rho * prim[NDIMS+2+i], Val(NVARS-NDIMS-2))...))
+    return (SVector(ntuple(i -> rho * prim[i], Val(NDIMS))...,
+                    prim2cons_td(prim, equations, equations.td_equation,
+                                 equations.td_state),
+                    prim[NDIMS + 2],
+                    ntuple(i -> rho * prim[NDIMS + 2 + i], Val(NVARS - NDIMS - 2))...))
 end
 
 # Convert full vector of conservative variables to primitive quantities
 @inline function cons2prim(cons,
-                           equations::CompressibleEulerAtmo{NDIMS, NVARS}) where {NDIMS, NVARS}
+                           equations::CompressibleEulerAtmo{NDIMS, NVARS}) where {NDIMS,
+                                                                                  NVARS}
     rho = density_total(cons, equations)
-    return(SVector(ntuple(i -> cons[i] / rho, Val(NDIMS))...,
-                   pressure(cons, equations),
-                   cons[NDIMS+2],
-                   ntuple(i -> cons[NDIMS+2+i] / rho, Val(NVARS-NDIMS-2))...))
+    return (SVector(ntuple(i -> cons[i] / rho, Val(NDIMS))...,
+                    pressure(cons, equations),
+                    cons[NDIMS + 2],
+                    ntuple(i -> cons[NDIMS + 2 + i] / rho, Val(NVARS - NDIMS - 2))...))
 end
 
 # Temperature needs to be calculated depending on the thermodynamic equation
@@ -200,16 +240,15 @@ end
 # Convert conservative variables to entropy
 # TODO
 @inline function cons2entropy(cons, equations::CompressibleEulerAtmo)
-
     rho_total = density_total(cons, equations)
     rho_gas = vars_gas(cons, equations)
     rho_liquid = vars_gas(cons, equations)
     T = 270.0 # temperature(cons, equations)
-    
+
     #s_gas = entropies_gas(rho_gas, T, equations.td_state)
     #s_liquid = entropies_liquid(rho_liquid, T, equations.td_state)
-    
-  return cons
+
+    return cons
 end
 
 # Calculate 1D flux for a single point
@@ -221,7 +260,7 @@ end
 
 @inline function flux(u, normal_direction::AbstractVector,
                       equations::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS}) where
-                      {NDIMS, NVARS, NGAS, NCONDENS}
+                 {NDIMS, NVARS, NGAS, NCONDENS}
     rho_total = density_total(u, equations)
     v_normal = dot(vars_moment(u, equations), normal_direction) / rho_total
     p = pressure(u, equations)
@@ -237,12 +276,12 @@ end
     f_mass_precip1 = vars_precip(u, equations) .* v_normal
     f_mass_passive = vars_passive(u, equations) .* v_normal
 
- # TODO
+    # TODO
     #f_mom_precip, f_td_precip, f_mass_precip2 = flux_precip(u, normal_direction, equations)
 
     #ret = SVector((f_mom + f_mom_precip)..., f_td + f_td_precip,
     #                f_mass_air..., (f_mass_precip1 + f_mass_precip2)..., f_mass_passive...)
-    
+
     return SVector(f_mom..., f_td, f_mass_air..., f_mass_precip1..., f_mass_passive...)
 end
 
@@ -252,7 +291,10 @@ end
 # Coordinate Monthly Weather Review Vol. 141.7, pages 2526–2544, 2013,
 # https://journals.ametsoc.org/view/journals/mwre/141/7/mwr-d-12-00129.1.xml.
 @inline function (flux_lmars::FluxLMARS)(u_ll, u_rr, normal_direction::AbstractVector,
-                                         equations::CompressibleEulerAtmo{NDIMS, NVARS}) where {NDIMS, NVARS}
+                                         equations::CompressibleEulerAtmo{NDIMS, NVARS}) where {
+                                                                                                NDIMS,
+                                                                                                NVARS
+                                                                                                }
     a = flux_lmars.speed_of_sound
     norm_ = norm(normal_direction)
 
@@ -277,10 +319,62 @@ end
     end
 
     # additional terms in momentum equation, pad with zeros
-    f_mom = SVector((normal_direction * p_interface)...,
-                    ntuple(i->0, Val(NVARS-NDIMS))...)
+    f_mom = normal_direction * p_interface
 
-    return f + f_td + f_mom
+    return f + SVector(f_mom...,
+                       f_td,
+                       ntuple(i -> 0, Val(NVARS - NDIMS - 1))...)
+end
+
+"""
+    flux_kennedy_gruber(u_ll, u_rr, orientation_or_normal_direction,
+                        equations::CompressibleEulerEquations3D)
+
+Kinetic energy preserving two-point flux by
+- Kennedy and Gruber (2008)
+  Reduced aliasing formulations of the convective terms within the
+  Navier-Stokes equations for a compressible fluid
+  [DOI: 10.1016/j.jcp.2007.09.020](https://doi.org/10.1016/j.jcp.2007.09.020)
+"""
+@inline function flux_kennedy_gruber(u_ll, u_rr, normal_direction::AbstractVector,
+                                     equations::CompressibleEulerAtmo{NDIMS, NVARS}) where {
+                                                                                            NDIMS,
+                                                                                            NVARS
+                                                                                            }
+    rho_total_ll = density_total(u_ll, equations)
+    rho_total_rr = density_total(u_rr, equations)
+    v_ll = vars_moment(u_ll, equations) ./ rho_total_ll
+    v_rr = vars_moment(u_rr, equations) ./ rho_total_rr
+    v_dot_n_ll = dot(v_ll, normal_direction)
+    v_dot_n_rr = dot(v_rr, normal_direction)
+    p_ll = pressure(u_ll, equations)
+    p_rr = pressure(u_rr, equations)
+    td_ll = var_td(u_ll, equations) / rho_total_ll
+    td_rr = var_td(u_rr, equations) / rho_total_rr
+
+    # Average each factor of products in flux
+    rho_total_avg = 0.5f0 * (rho_total_ll + rho_total_rr)
+    v_avg = 0.5f0 .* (v_ll + v_rr)
+    v_dot_n_avg = 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
+    p_avg = 0.5f0 * (p_ll + p_rr)
+    td_avg = 0.5f0 * (td_ll + td_rr)
+
+    # Calculate fluxes depending on normal_direction
+    f_mass_air = v_dot_n_avg * 0.5f0 .* (vars_airborn(u_ll, equations) +
+                  vars_airborn(u_rr, equations))
+    f_mass_precip1 = v_dot_n_avg * 0.5f0 .* (vars_precip(u_ll, equations) +
+                      vars_precip(u_rr, equations))
+    f_mass_passive = v_dot_n_avg * 0.5f0 .* (vars_passive(u_ll, equations) +
+                      vars_passive(u_rr, equations))
+    f_mass_total = v_dot_n_avg * rho_total_avg
+
+    f_mom = f_mass_total * v_avg + normal_direction * p_avg
+
+    f_td = flux_kennedy_gruber_td(f_mass_total, td_avg, p_avg, v_dot_n_avg,
+                                  equations, equations.td_equation)
+    return SVector(f_mom...,
+                   f_td,
+                   f_mass_air..., f_mass_precip1..., f_mass_passive...)
 end
 
 """
@@ -299,7 +393,10 @@ See also
   [Proceedings of ICOSAHOM 2018](https://doi.org/10.1007/978-3-030-39647-3_42)
 """
 @inline function flux_ranocha(u_ll, u_rr, normal_direction::AbstractVector,
-                              equations::CompressibleEulerAtmo{NDIMS, NVARS}) where {NDIMS, NVARS} 
+                              equations::CompressibleEulerAtmo{NDIMS, NVARS}) where {
+                                                                                     NDIMS,
+                                                                                     NVARS
+                                                                                     }
     rho_total_ll = density_total(u_ll, equations)
     rho_total_rr = density_total(u_rr, equations)
     v_ll = vars_moment(u_ll, equations) ./ rho_total_ll
@@ -321,32 +418,36 @@ See also
     v_dot_n_avg = 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
     p_avg = 0.5f0 * (p_ll + p_rr)
     velocity_square_avg = 0.5f0 * dot(v_ll, v_rr)
-    inv_gamma_minus_one = 1 / (0.5f0 * (gamma_ll+gamma_rr) - 1)
+    inv_gamma_minus_one = 1 / (0.5f0 * (gamma_ll + gamma_rr) - 1)
 
     # Calculate fluxes depending on normal_direction
-    f_mass_air = v_dot_n_avg * ln_mean.(vars_airborn(u_ll, equations),
-                                        vars_airborn(u_rr, equations))
-    f_mass_precip1 = v_dot_n_avg * ln_mean.(vars_precip(u_ll, equations),
-                                            vars_precip(u_rr, equations))
-    f_mass_passive = v_dot_n_avg * ln_mean.(vars_passive(u_ll, equations),
-                                            vars_passive(u_rr, equations))
+    f_mass_air = v_dot_n_avg *
+                 ln_mean.(vars_airborn(u_ll, equations),
+                          vars_airborn(u_rr, equations))
+    f_mass_precip1 = v_dot_n_avg *
+                     ln_mean.(vars_precip(u_ll, equations),
+                              vars_precip(u_rr, equations))
+    f_mass_passive = v_dot_n_avg *
+                     ln_mean.(vars_passive(u_ll, equations),
+                              vars_passive(u_rr, equations))
     f_mass_total = v_dot_n_avg * rho_total_mean
-    
+
     f_mom = f_mass_total * v_avg + normal_direction * p_avg
 
     # TODO: only valid for total energy
     f_td = (f_mass_total * (velocity_square_avg + inv_rho_p_mean * inv_gamma_minus_one)
-           +
-           0.5f0 * (p_ll * v_dot_n_rr + p_rr * v_dot_n_ll))
+            +
+            0.5f0 * (p_ll * v_dot_n_rr + p_rr * v_dot_n_ll))
 
-    return SVector(f_mom..., 
+    return SVector(f_mom...,
                    f_td,
                    f_mass_air..., f_mass_precip1..., f_mass_passive...)
 end
 
 @inline function flux_precip(u, normal_direction::AbstractVector,
-    equations::CompressibleEulerAtmo{NDIMS, NVARS, NGAS, NCONDENS}) where
-                      {NDIMS, NVARS, NGAS, NCONDENS}
+                             equations::CompressibleEulerAtmo{NDIMS, NVARS, NGAS,
+                                                              NCONDENS}) where
+                 {NDIMS, NVARS, NGAS, NCONDENS}
 
     # precipitation along third direction
     # TODO this is not correct for curved geometries (earth)
@@ -358,11 +459,161 @@ end
               dot(v_precip, vars_precip(u, equations))
     f_mass_precip = vars_precip(u, equations) .* v_precip * normal_direction[NDIMS]
 
-    return SVector(ntuple(i -> 0, Val(NDIMS-1))..., f_mom_z),
-           0, 
+    return SVector(ntuple(i -> 0, Val(NDIMS - 1))..., f_mom_z),
+           0,
            f_mass_precip
 end
 
+"""
+	flux_ec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperature2D)
+
+Entropy conservative two-point flux by
+-  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
+   Structure-Preserving High-Order Methods for the Compressible Euler Equations
+   in Potential Temperature Formulation for Atmospheric Flows
+   (https://arxiv.org/abs/2509.10311)
+"""
+@inline function flux_ec(u_ll, u_rr, normal_direction::AbstractVector,
+                         equations::CompressibleEulerAtmo)
+    rho_total_ll = density_total(u_ll, equations)
+    rho_total_rr = density_total(u_rr, equations)
+    v_ll = vars_moment(u_ll, equations) ./ rho_total_ll
+    v_rr = vars_moment(u_rr, equations) ./ rho_total_rr
+    v_dot_n_ll = dot(v_ll, normal_direction)
+    v_dot_n_rr = dot(v_rr, normal_direction)
+    p_ll = pressure(u_ll, equations)
+    p_rr = pressure(u_rr, equations)
+
+    rho_theta_ll = var_td(u_ll, equations)
+    rho_theta_rr = var_td(u_rr, equations)
+
+    # Compute the necessary mean values
+    rho_mean = ln_mean(rho_total_ll, rho_total_rr)
+    v_avg = 0.5f0 .* (v_ll + v_rr)
+    v_dot_n_avg = 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
+    p_avg = 0.5f0 * (p_ll + p_rr)
+
+    # Calculate fluxes depending on normal_direction
+    f_mass_air = ln_mean.(vars_airborn(u_ll, equations),
+                          vars_airborn(u_rr, equations)) * v_dot_n_avg
+    f_mass_precip1 = ln_mean.(vars_precip(u_ll, equations),
+                              vars_precip(u_rr, equations)) * v_dot_n_avg
+    f_mass_passive = ln_mean.(vars_passive(u_ll, equations),
+                              vars_passive(u_rr, equations)) * v_dot_n_avg
+    f_mass_total = rho_mean * v_dot_n_avg
+
+    f_mom = f_mass_total * v_avg + p_avg * normal_direction
+
+    f_td = flux_ec_td(f_mass_total, rho_theta_ll, rho_theta_rr, rho_total_ll,
+                      rho_total_rr,
+                      equations, equations.td_equation)
+
+    return SVector(f_mom...,
+                   f_td,
+                   f_mass_air..., f_mass_precip1..., f_mass_passive...)
+end
+
+"""
+	flux_tec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperature2D)
+
+Total energy conservative two-point flux by
+-  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
+   Structure-Preserving High-Order Methods for the Compressible Euler Equations
+   in Potential Temperature Formulation for Atmospheric Flows
+   (https://arxiv.org/abs/2509.10311)
+"""
+@inline function flux_tec(u_ll, u_rr, normal_direction::AbstractVector,
+                          equations::CompressibleEulerAtmo)
+    rho_total_ll = density_total(u_ll, equations)
+    rho_total_rr = density_total(u_rr, equations)
+    v_ll = vars_moment(u_ll, equations) ./ rho_total_ll
+    v_rr = vars_moment(u_rr, equations) ./ rho_total_rr
+    v_dot_n_ll = dot(v_ll, normal_direction)
+    v_dot_n_rr = dot(v_rr, normal_direction)
+    p_ll = pressure(u_ll, equations)
+    p_rr = pressure(u_rr, equations)
+
+    rho_theta_ll = var_td(u_ll, equations)
+    rho_theta_rr = var_td(u_rr, equations)
+
+    # Compute the necessary mean values
+    rho_mean = ln_mean(rho_total_ll, rho_total_rr)
+    v_avg = 0.5f0 .* (v_ll + v_rr)
+    v_dot_n_avg = 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
+    p_avg = 0.5f0 * (p_ll + p_rr)
+
+    # Calculate fluxes depending on normal_direction
+    f_mass_air = ln_mean.(vars_airborn(u_ll, equations),
+                          vars_airborn(u_rr, equations)) * v_dot_n_avg
+    f_mass_precip1 = v_dot_n_avg *
+                     ln_mean.(vars_precip(u_ll, equations),
+                              vars_precip(u_rr, equations))
+    f_mass_passive = v_dot_n_avg *
+                     ln_mean.(vars_passive(u_ll, equations),
+                              vars_passive(u_rr, equations))
+    f_mass_total = v_dot_n_avg * rho_mean
+
+    f_mom = f_mass_total * v_avg + p_avg * normal_direction
+
+    f_td = flux_tec_td(rho_theta_ll, rho_theta_rr, v_dot_n_avg,
+                       equations, equations.td_equation)
+
+    return SVector(f_mom...,
+                   f_td,
+                   f_mass_air..., f_mass_precip1..., f_mass_passive...)
+end
+
+"""
+	flux_etec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperature2D)
+
+Entropy and total energy conservative two-point flux by
+-  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
+   Structure-Preserving High-Order Methods for the Compressible Euler Equations
+   in Potential Temperature Formulation for Atmospheric Flows
+   (https://arxiv.org/abs/2509.10311)
+"""
+@inline function flux_etec(u_ll, u_rr, normal_direction::AbstractVector,
+                           equations::CompressibleEulerAtmo)
+    rho_total_ll = density_total(u_ll, equations)
+    rho_total_rr = density_total(u_rr, equations)
+    v_ll = vars_moment(u_ll, equations) ./ rho_total_ll
+    v_rr = vars_moment(u_rr, equations) ./ rho_total_rr
+    v_dot_n_ll = dot(v_ll, normal_direction)
+    v_dot_n_rr = dot(v_rr, normal_direction)
+    p_ll = pressure(u_ll, equations)
+    p_rr = pressure(u_rr, equations)
+
+    rho_theta_ll = var_td(u_ll, equations)
+    rho_theta_rr = var_td(u_rr, equations)
+
+    # Compute the necessary mean values
+    v_avg = 0.5f0 .* (v_ll + v_rr)
+    v_dot_n_avg = 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
+    p_avg = 0.5f0 * (p_ll + p_rr)
+
+    # Calculate fluxes depending on normal_direction
+    f_td = flux_etec_td(rho_theta_ll, rho_theta_rr, v_dot_n_avg,
+                        equations, equations.td_equation)
+
+    f_mass_air = f_td *
+                 ln_mean.(vars_airborn(u_ll, equations) ./ rho_theta_ll,
+                          vars_airborn(u_rr, equations) ./ rho_theta_rr)
+    f_mass_precip1 = f_td *
+                     ln_mean.(vars_precip(u_ll, equations) ./ rho_theta_ll,
+                              vars_precip(u_rr, equations) ./ rho_theta_rr)
+    f_mass_passive = f_td *
+                     ln_mean.(vars_passive(u_ll, equations) ./ rho_theta_ll,
+                              vars_passive(u_rr, equations) ./ rho_theta_rr)
+
+    f_mass_total = f_td *
+                   ln_mean(rho_total_ll / rho_theta_ll, rho_total_rr / rho_theta_rr)
+
+    f_mom = f_mass_total * v_avg + p_avg * normal_direction
+
+    return SVector(f_mom...,
+                   f_td,
+                   f_mass_air..., f_mass_precip1..., f_mass_passive...)
+end
 
 # Less "cautious", i.e., less overestimating `λ_max` compared to `max_abs_speed_naive`
 @inline function max_abs_speed(u_ll, u_rr, normal_direction::AbstractVector,
@@ -377,22 +628,22 @@ end
     c_rr = speed_of_sound(u_rr, equations)
 
     # TODO: assumes z axis normal to surface
-#    v_precip_ll = sum(abs.(velocities_precip(u_ll, equations) .*
-#        normal_direction[NDIMS]))
- #   v_precip_rr = sum(abs.(velocities_precip(u_rr, equations) .*
- #       normal_direction[NDIMS]))
+    #    v_precip_ll = sum(abs.(velocities_precip(u_ll, equations) .*
+    #        normal_direction[NDIMS]))
+    #   v_precip_rr = sum(abs.(velocities_precip(u_rr, equations) .*
+    #       normal_direction[NDIMS]))
 
     norm_ = norm(normal_direction)
     #+ abs(v_precip_ll)
     #+ abs(v_precip_rr)
-    return max(abs(v_ll)  + c_ll * norm_,
-               abs(v_rr)  + c_rr * norm_)
+    return max(abs(v_ll) + c_ll * norm_,
+               abs(v_rr) + c_rr * norm_)
 end
 
 @inline function max_abs_speeds(u,
                                 equations::CompressibleEulerAtmo{NDIMS}) where {NDIMS}
     v = velocity(u, equations)
-    c = speed_of_sound(u, equations)                           
+    c = speed_of_sound(u, equations)
 
     # TODO: assumed z direction
     #v_precip_z = maximum(abs, velocities_precip(u, equations))
@@ -424,9 +675,12 @@ Details about the 1D pressure Riemann solution can be found in Section 6.3.3 of 
 Should be used together with [`UnstructuredMesh2D`](@ref), [`P4estMesh`](@ref), or [`T8codeMesh`](@ref).
 """
 @inline function boundary_condition_slip_wall(u_inner, normal_direction::AbstractVector,
-    x, t, surface_flux_function,
-    equations::CompressibleEulerAtmo{NDIMS, NVARS}) where {NDIMS, NVARS}
-
+                                              x, t, surface_flux_function,
+                                              equations::CompressibleEulerAtmo{NDIMS,
+                                                                               NVARS}) where {
+                                                                                              NDIMS,
+                                                                                              NVARS
+                                                                                              }
     rho_gas = vars_gas(u_inner, equations)
     rho_condens = vars_condens(u_inner, equations)
 
@@ -435,8 +689,9 @@ Should be used together with [`UnstructuredMesh2D`](@ref), [`P4estMesh`](@ref), 
     gamma = gamma_total(rho_gas, rho_condens, equations.td_state)
 
     # normal velocity
-    v_normal = dot(vars_moment(u_inner, equations), normal_direction) / (rho * norm(normal_direction))
-    
+    v_normal = dot(vars_moment(u_inner, equations), normal_direction) /
+               (rho * norm(normal_direction))
+
     # compute pressure
     p_local = pressure(u_inner, equations)
 
@@ -457,7 +712,7 @@ Should be used together with [`UnstructuredMesh2D`](@ref), [`P4estMesh`](@ref), 
 
     # For the slip wall we directly set the flux as the normal velocity is zero
     return SVector((normal_direction * p_star)...,
-                   ntuple(i->0, Val(NVARS-NDIMS))...)
+                   ntuple(i -> 0, Val(NVARS - NDIMS))...)
 end
 
 """
@@ -467,8 +722,8 @@ end
 Should be used together with [`TreeMesh`](@ref).
 """
 @inline function boundary_condition_slip_wall(u_inner, orientation, direction, x, t,
-    surface_flux_function, equations::CompressibleEulerAtmo{NDIMS}) where {NDIMS}
-
+                                              surface_flux_function,
+                                              equations::CompressibleEulerAtmo{NDIMS}) where {NDIMS}
     normal_direction = SVector{NDIMS}(i == orientation ? 1 : 0 for i in 1:NDIMS)
 
     # compute and return the flux using `boundary_condition_slip_wall` routine above
@@ -501,4 +756,26 @@ Should be used together with [`StructuredMesh`](@ref).
     return boundary_flux
 end
 
+@inline function boundary_condition_slip_wall_simple(u_inner, orientation, direction, x,
+                                                     t, surface_flux_function,
+                                                     equations::CompressibleEulerAtmo{NDIMS}) where {NDIMS}
+    # flip the normal component of momentum densities
+    u_mom = vars_moment(u_inner, equations)
+    u_boundary_mom = SVector{NDIMS}(i == orientation ? -u_mom[i] : u_mom[i]
+                                    for i in 1:NDIMS)
+    u_boundary = SVector(u_boundary_mom...,
+                         var_td(u_inner, equations),
+                         vars_airborn(u_inner, equations)...,
+                         vars_precip(u_inner, equations)...,
+                         vars_passive(u_inner, equations)...)
+
+    # Calculate boundary flux
+    if iseven(direction) # u_inner is "left" of boundary, u_boundary is "right" of boundary
+        flux = surface_flux_function(u_inner, u_boundary, orientation, equations)
+    else # u_boundary is "left" of boundary, u_inner is "right" of boundary
+        flux = surface_flux_function(u_boundary, u_inner, orientation, equations)
+    end
+
+    return flux
+end
 end # @muladd

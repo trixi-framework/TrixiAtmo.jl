@@ -133,6 +133,8 @@ end # @muladd
 
 # Include concrete types of equations
 include("compressible_euler_atmo.jl")
+include("compressible_euler_atmo_fluxes.jl")
+include("compressible_euler_atmo_fluxes_nonconservative.jl")
 
 # Include thermodynamic parts of equations
 include("td_abstract.jl")
