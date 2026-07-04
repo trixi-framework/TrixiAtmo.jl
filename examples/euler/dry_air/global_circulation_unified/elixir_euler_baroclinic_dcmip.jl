@@ -1,6 +1,5 @@
 using OrdinaryDiffEqLowStorageRK
 using Trixi
-using TrixiAtmo
 using TrixiAtmo: initial_condition_dry_air_warm_bubble_generator, source_terms_gravity_cartZ_generator
 using Plots
 
@@ -34,7 +33,8 @@ microphysics = MicrophysicsRelaxation{RealType}()
 ###############################################################################
 # Equations
 
-equations = CompressibleEulerAtmo{n_dim}(;
+equations = CompressibleEulerAtmo(;
+   n_dim = n_dim,
    parameters = parameters,
    thermodynamic_state = td_single,
    thermodynamic_equation = td_potT,
@@ -51,9 +51,10 @@ initial_condition_reference = initial_condition_baroclinic_instability_generator
     earth_scaling_factor = earth_scale
 )
 
-function initial_condtion_tracer(x, t, equations)
-
 initial_condition = transform_initial_condition(initial_condition_reference, equations)
+
+boundary_conditions = (;y_neg = boundary_condition_slip_wall,
+                        y_pos = boundary_condition_slip_wall)
 
 
 ###############################################################################
@@ -87,9 +88,6 @@ mesh = P4estMesh(trees_per_dimension, polydeg = 3,
                  coordinates_min = coordinates_min, coordinates_max = coordinates_max,
                  periodicity = (true, false), initial_refinement_level = 2)
 
-
-boundary_conditions = Dict(:y_neg => boundary_condition_slip_wall,
-                           :y_pos => boundary_condition_slip_wall)
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_terms_gravity,
@@ -131,7 +129,3 @@ callbacks = CallbackSet(summary_callback,
 sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false);
             dt = 0.1, # solve needs some value here but it will be overwritten by the stepsize_callback
             ode_default_options()..., callback = callbacks);
-
-
-
-
