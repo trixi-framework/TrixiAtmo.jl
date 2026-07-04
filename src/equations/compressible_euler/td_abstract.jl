@@ -5,7 +5,5 @@
 
 abstract type AbstractThermodynamicEquation end
 
-have_nonconservative_terms(::AbstractThermodynamicEquation) = Trixi.False()
-
 include("td_total_energy.jl")
 include("td_potential_temperature.jl")

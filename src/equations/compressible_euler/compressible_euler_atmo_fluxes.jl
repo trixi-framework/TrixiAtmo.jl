@@ -62,6 +62,10 @@ end
 # Lin, A Control-Volume Model of the Compressible Euler Equations with a Vertical Lagrangian
 # Coordinate Monthly Weather Review Vol. 141.7, pages 2526–2544, 2013,
 # https://journals.ametsoc.org/view/journals/mwre/141/7/mwr-d-12-00129.1.xml.
+@inline (flux_lmars::FluxLMARS)(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector, equations::CompressibleEulerAtmo) = flux_lmars(u_ll,
+                                                                                                                                             u_rr,
+                                                                                                                                             normal_direction,
+                                                                                                                                             equations)
 @inline function (flux_lmars::FluxLMARS)(u_ll, u_rr, normal_direction::AbstractVector,
                                          equations::CompressibleEulerAtmo{NDIMS, NVARS}) where {
                                                                                                 NDIMS,
@@ -164,6 +168,9 @@ See also
   the Euler Equations Using Summation-by-Parts Operators
   [Proceedings of ICOSAHOM 2018](https://doi.org/10.1007/978-3-030-39647-3_42)
 """
+@inline flux_ranocha(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector,
+equations::CompressibleEulerAtmo) = flux_ranocha(u_ll, u_rr, normal_direction,
+                                                 equations)
 @inline function flux_ranocha(u_ll, u_rr, normal_direction::AbstractVector,
                               equations::CompressibleEulerAtmo{NDIMS, NVARS}) where {
                                                                                      NDIMS,

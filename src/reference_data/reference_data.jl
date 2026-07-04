@@ -420,3 +420,4 @@ end # @muladd
 include("auxiliary.jl")
 include("initial_conditions/initial_conditions.jl")
 include("source_terms/source_terms.jl")
+include("aux_vars/aux_vars.jl")
