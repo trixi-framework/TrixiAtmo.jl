@@ -184,8 +184,8 @@ Total energy conservative two-point flux by
     v_dot_n_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2]
     v_dot_n_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2]
 
-    rho_theta_ll = last(u_ll)
-    rho_theta_rr = last(u_rr)
+    _, _, _, rho_theta_ll = u_ll
+    _, _, _, rho_theta_rr = u_rr
 
     # Compute the necessary mean values
     rho_mean = ln_mean(rho_ll, rho_rr)
