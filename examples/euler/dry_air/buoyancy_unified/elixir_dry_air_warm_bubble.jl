@@ -21,7 +21,7 @@ parameters = Parameters{RealType}(;
 # Thermodynamics
 
 td_single = IdealGas(; parameters)
-td_totE = TotalEnergy(td_single)
+td_totE = EnergyTotal(td_single)
 
 ###############################################################################
 # Equations

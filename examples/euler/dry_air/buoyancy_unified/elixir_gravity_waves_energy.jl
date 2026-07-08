@@ -44,7 +44,7 @@ parameters = Parameters{RealType}(;
 # Thermodynamics
 
 td_single = IdealGas(; parameters)
-td_totE = TotalEnergy(td_single)
+td_totE = EnergyTotal(td_single)
 
 ###############################################################################
 # Equations
@@ -107,7 +107,7 @@ ode = semidiscretize(semi, tspan)
 
 summary_callback = SummaryCallback()
 
-analysis_interval = 1000
+analysis_interval = 10000
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval)
 #                                     extra_analysis_integrals = (entropy,))
 

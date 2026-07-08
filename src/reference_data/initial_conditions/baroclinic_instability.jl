@@ -34,40 +34,39 @@ function initial_condition_baroclinic_instability_generator(parameters::Paramete
                                                             moisture = False(),
                                                             perturbation_stream_function = False(),
                                                             earth_scaling_factor = RealType(1),) where {RealType}
-
-    # Test case parameters (currently fixed)
-    T0E = RealType(310)       # temperature at equatorial surface (K)
-    T0P = RealType(240)       # temperature at polar surface (K)
-    B = RealType(2)         # jet half-width parameter
-    K = RealType(3)         # jet width parameter
-    lapse = RealType(0.005)     # lapse rate parameter
-
-    pertu0 = RealType(0.5)       # SF Perturbation wind velocity (m/s)
-    pertr = RealType(1 / 6)       # SF Perturbation radius (Earth radii)
-    pertup = RealType(1.0)       # Exp. perturbation wind velocity (m/s)
-    pertexpr = RealType(0.1)       # Exp. perturbation radius (Earth radii)
-    pertlon = RealType(pi / 9)      # Perturbation longitude
-    pertlat = RealType(2 * pi / 9)    # Perturbation latitude
-    pertz = RealType(15000)     # Perturbation height cap
-
-    moistqlat = RealType(2 * pi / 9)    # Humidity latitudinal width
-    moistqp = RealType(34000)     # Humidity vertical pressure width
-    moisttr = RealType(0.1)       # Vertical cut-off pressure for humidity
-    moistqs = RealType(1e-12)     # Humidity above cut-off
-    moistq0 = RealType(0.018)     # Maximum specific humidity
-    Mvap = RealType(0.608)     # Ratio of molar mass of dry air/water
-
     # Physical parameters (taken from TrixiAtmo parameters)
     a = parameters.earth_radius
     g = parameters.earth_gravitational_acceleration
     cp = parameters.c_dry_air_const_pressure
     p0 = parameters.ref_pressure
     omega = parameters.earth_rotation_rate
-    dxepsilon = parameters.tol_eps  # Small value for numerical derivatives
+
+    # Test case parameters (currently fixed)
+    T0E = RealType(310)                # temperature at equatorial surface (K)
+    T0P = RealType(240)                # temperature at polar surface (K)
+    B = RealType(2)                    # jet half-width parameter
+    K = RealType(3)                    # jet width parameter
+    lapse = RealType(0.005)            # lapse rate parameter
+    dxepsilon = RealType(1e-5)         # Small value for numerical derivatives
+
+    pertu0 = RealType(0.5)             # SF Perturbation wind velocity (m/s)
+    pertr = RealType(1 / 6)            # SF Perturbation radius (Earth radii)
+    pertup = RealType(1.0)             # Exp. perturbation wind velocity (m/s)
+    pertexpr = RealType(0.1)           # Exp. perturbation radius (Earth radii)
+    pertlon = RealType(pi / 9)         # Perturbation longitude
+    pertlat = RealType(2 * pi / 9)     # Perturbation latitude
+    pertz = RealType(15000)            # Perturbation height cap
+
+    moistqlat = RealType(2 * pi / 9)   # Humidity latitudinal width
+    moistqp = RealType(34000)          # Humidity vertical pressure width
+    moisttr = RealType(0.1)            # Vertical cut-off pressure for humidity
+    moistqs = RealType(1e-12)          # Humidity above cut-off
+    moistq0 = RealType(0.018)          # Maximum specific humidity
+    Mvap = RealType(0.608)             # Ratio of molar mass of dry air/water
 
     # local constants
     X = earth_scaling_factor
-    Rd = cp - cv             # Ideal gas const dry air (J kg^-1 K^1)
+    Rd = cp - cv                       # Ideal gas const dry air (J kg^-1 K^1)
     aref = a / X
     omegaref = omega * X
     T0 = 0.5f0 * (T0E + T0P)
@@ -76,7 +75,7 @@ function initial_condition_baroclinic_instability_generator(parameters::Paramete
     constC = 0.5f0 * (K + 2) * (T0E - T0P) / (T0E * T0P)
     constH = Rd * T0 / g
 
-    function initial_condtion(cart_coords, t, equations)
+    function initial_condition(cart_coords, t, equations)
         spherical_coords = cartesian_to_spherical_coordinates(cart_coords)
         spherical_u, spherical_v, T, thetav, rho, p, q = baroclinic_wave_test(spherical_coords)
         spherical_velocities = SVector(spherical_u, spherical_v, 0)
@@ -218,19 +217,17 @@ function initial_condition_baroclinic_instability_generator(parameters::Paramete
             perttaper = 1 - 3 * z^2 / pertz^2 + 2 * z^3 / pertz^3
         else
             perttaper = 0
-            endif
-
-            # Horizontal tapering of stream function
-            if greatcircler < 1
-                cospert = cos(0.5f0 * pi * greatcircler)
-            else
-                cospert = 0
-            end
-
-            return -pertu0 * pertr * perttaper * cospert^4
         end
 
-        return initial_condtion
+        # Horizontal tapering of stream function
+        if greatcircler < 1
+            cospert = cos(0.5f0 * pi * greatcircler)
+        else
+            cospert = 0
+        end
+
+        return -pertu0 * pertr * perttaper * cospert^4
     end
+    return initial_condition
 end
 end # @muladd

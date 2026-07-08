@@ -4,7 +4,7 @@
 #! format: noindent
 
 @inline function st_gravity_cartZ_td(u, ::CompressibleEulerAtmo{NDIMS},
-                                     ::TotalEnergy) where
+                                     ::EnergyTotal) where
                  {NDIMS}
     return u[NDIMS]
 end
@@ -29,7 +29,7 @@ function source_terms_gravity_cartZ_generator(equations::CompressibleEulerAtmo{N
 end
 
 @inline function st_gravity_spherical_td(u, x, equations::CompressibleEulerAtmo{3},
-                                         ::TotalEnergy)
+                                         ::EnergyTotal)
     return dot(vars_moment(u, equations), x)
 end
 
