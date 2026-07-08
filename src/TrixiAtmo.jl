@@ -54,7 +54,7 @@ include("callbacks_stage/callbacks_stage.jl")
 export Parameters,
        DryAir, WaterVapor, CloudWater, RainWater,
        IdealGas, Mixture,
-       TotalEnergy, PotentialTemperature,
+       EnergyTotal, PotentialTemperature,
        MicrophysicsRelaxation
 
 export CompressibleMoistEulerEquations2D,

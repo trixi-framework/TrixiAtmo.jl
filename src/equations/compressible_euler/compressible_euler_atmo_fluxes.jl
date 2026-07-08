@@ -112,6 +112,9 @@ Kinetic energy preserving two-point flux by
   Navier-Stokes equations for a compressible fluid
   [DOI: 10.1016/j.jcp.2007.09.020](https://doi.org/10.1016/j.jcp.2007.09.020)
 """
+@inline flux_kennedy_gruber(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector,
+equations::CompressibleEulerAtmo) = flux_kennedy_gruber(u_ll, u_rr, normal_direction,
+                                                        equations)
 @inline function flux_kennedy_gruber(u_ll, u_rr, normal_direction::AbstractVector,
                                      equations::CompressibleEulerAtmo{NDIMS, NVARS}) where {
                                                                                             NDIMS,
@@ -121,8 +124,6 @@ Kinetic energy preserving two-point flux by
     rho_total_rr = density_total(u_rr, equations)
     v_ll = vars_moment(u_ll, equations) ./ rho_total_ll
     v_rr = vars_moment(u_rr, equations) ./ rho_total_rr
-    v_dot_n_ll = dot(v_ll, normal_direction)
-    v_dot_n_rr = dot(v_rr, normal_direction)
     p_ll = pressure(u_ll, equations)
     p_rr = pressure(u_rr, equations)
     td_ll = var_td(u_ll, equations) / rho_total_ll
@@ -131,7 +132,7 @@ Kinetic energy preserving two-point flux by
     # Average each factor of products in flux
     rho_total_avg = 0.5f0 * (rho_total_ll + rho_total_rr)
     v_avg = 0.5f0 .* (v_ll + v_rr)
-    v_dot_n_avg = 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
+    v_dot_n_avg = dot(v_avg, normal_direction)
     p_avg = 0.5f0 * (p_ll + p_rr)
     td_avg = 0.5f0 * (td_ll + td_rr)
 
@@ -144,10 +145,11 @@ Kinetic energy preserving two-point flux by
                       vars_passive(u_rr, equations))
     f_mass_total = v_dot_n_avg * rho_total_avg
 
-    f_mom = f_mass_total * v_avg + normal_direction * p_avg
+    f_mom = f_mass_total * v_avg + p_avg * normal_direction
 
     f_td = flux_kennedy_gruber_td(f_mass_total, td_avg, p_avg, v_dot_n_avg,
                                   equations, equations.td_equation)
+
     return SVector(f_mom...,
                    f_td,
                    f_mass_air..., f_mass_precip1..., f_mass_passive...)
@@ -185,19 +187,11 @@ equations::CompressibleEulerAtmo) = flux_ranocha(u_ll, u_rr, normal_direction,
     p_ll = pressure(u_ll, equations)
     p_rr = pressure(u_rr, equations)
 
-    gamma_ll = gamma_total(vars_gas(u_ll, equations), vars_condens(u_ll, equations),
-                           equations.td_state)
-    gamma_rr = gamma_total(vars_gas(u_rr, equations), vars_condens(u_rr, equations),
-                           equations.td_state)
-
     # Compute the necessary mean values
     rho_total_mean = ln_mean(rho_total_ll, rho_total_rr)
-    inv_rho_p_mean = p_ll * p_rr * inv_ln_mean(rho_total_ll * p_rr, rho_total_rr * p_ll)
     v_avg = 0.5f0 .* (v_ll + v_rr)
     v_dot_n_avg = 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
     p_avg = 0.5f0 * (p_ll + p_rr)
-    velocity_square_avg = 0.5f0 * dot(v_ll, v_rr)
-    inv_gamma_minus_one = 1 / (0.5f0 * (gamma_ll + gamma_rr) - 1)
 
     # Calculate fluxes depending on normal_direction
     f_mass_air = v_dot_n_avg *
@@ -213,10 +207,11 @@ equations::CompressibleEulerAtmo) = flux_ranocha(u_ll, u_rr, normal_direction,
 
     f_mom = f_mass_total * v_avg + normal_direction * p_avg
 
-    # TODO: only valid for total energy
-    f_td = (f_mass_total * (velocity_square_avg + inv_rho_p_mean * inv_gamma_minus_one)
-            +
-            0.5f0 * (p_ll * v_dot_n_rr + p_rr * v_dot_n_ll))
+    velocity_square_avg = 0.5f0 * dot(v_ll, v_rr)
+
+    f_td = flux_ranocha_td(f_mass_total, rho_total_ll, rho_total_rr, p_ll, p_rr,
+                           v_dot_n_ll, v_dot_n_rr, velocity_square_avg, equations,
+                           equations.td_equation)
 
     return SVector(f_mom...,
                    f_td,
@@ -232,6 +227,8 @@ Entropy conservative two-point flux by
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)
 """
+@inline flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector,
+equations::CompressibleEulerAtmo) = flux_ec(u_ll, u_rr, normal_direction, equations)
 @inline function flux_ec(u_ll, u_rr, normal_direction::AbstractVector,
                          equations::CompressibleEulerAtmo)
     rho_total_ll = density_total(u_ll, equations)
@@ -281,6 +278,8 @@ Total energy conservative two-point flux by
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)
 """
+@inline flux_tec(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector,
+equations::CompressibleEulerAtmo) = flux_tec(u_ll, u_rr, normal_direction, equations)
 @inline function flux_tec(u_ll, u_rr, normal_direction::AbstractVector,
                           equations::CompressibleEulerAtmo)
     rho_total_ll = density_total(u_ll, equations)
@@ -331,6 +330,8 @@ Entropy and total energy conservative two-point flux by
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)
 """
+@inline flux_etec(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector,
+equations::CompressibleEulerAtmo) = flux_etec(u_ll, u_rr, normal_direction, equations)
 @inline function flux_etec(u_ll, u_rr, normal_direction::AbstractVector,
                            equations::CompressibleEulerAtmo)
     rho_total_ll = density_total(u_ll, equations)

@@ -126,8 +126,7 @@ end
 end
 
 @inline function gamma_total(rho_gas, rho_condens, td_state::Mixture)
-    return R_total(rho_gas, td_state) /
-           cv_total(rho_gas, rho_condens, td_state) + 1
+    error("gamma_total missing multi species implementation")
 end
 
 #=
@@ -168,10 +167,8 @@ end
 const IdealGas{RealType} = Mixture{Parameters, 1, 0, 0, RealType}
 IdealGas(; parameters) = Mixture(; parameters)
 
-@inline function gamma_total(rho_gas, rho_condens, td_state::IdealGas)
-    return td_state.gamma
+@inline function gamma_total(rho_gas, rho_condens,
+                             td_state::Mixture{ParametersType, 1, 0, 0}) where {ParametersType}
+    return td_state.gamma_gas[1]
 end
-
-varnames_gas(::Union{typeof(cons2cons), typeof(cons2prim)},
-::IdealGas) = ("",)
 end # @muladd

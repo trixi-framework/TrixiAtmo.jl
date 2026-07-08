@@ -8,14 +8,14 @@ struct PotentialTemperature{ThermodynamicStateType, RealType, NGAS} <:
        AbstractThermodynamicEquation
     td_state::ThermodynamicStateType
     K::SVector{NGAS, RealType} # = p_0 * (R / p_0)^gamma; scaling factor between pressure and weighted potential temperature
-    stolarsky_factor::SVector{NGAS, RealType} # = (gamma - 1) / gamma; used in the stolarsky mean
+    #stolarsky_factor::SVector{NGAS, RealType} # = (gamma - 1) / gamma; used in the stolarsky mean
 
     function PotentialTemperature(td_state)
         @unpack R_gas, gamma_gas, p_ref = td_state
         K = p_ref * (R_gas / p_ref) .^ gamma_gas
-        stolarsky_factor = (gamma_gas .- 1) / gamma_gas
-        return new{typeof(td_state), real(td_state), n_gas(td_state)}(td_state, K,
-                                                                      stolarsky_factor)
+        #stolarsky_factor = (gamma_gas .- 1) / gamma_gas
+        return new{typeof(td_state), real(td_state), n_gas(td_state)}(td_state, K)
+        #stolarsky_factor)
     end
 end
 
@@ -25,7 +25,12 @@ varname_td(::typeof(cons2prim), ::PotentialTemperature) = "p"
 @inline function pressure(u, equations::CompressibleEulerAtmo{NDIMS},
                           td_equation::PotentialTemperature,
                           td_state::Mixture) where {NDIMS}
-    p = td_equation.K[1] * var_td(u, equations)^td_state.gamma_gas[1]
+    gas = vars_gas(u, equations)
+    condens = vars_condens(u, equations)
+    K = K_total(gas, condens, td_equation, td_state)
+    gamma = gamma_total(gas, condens, td_state)
+    # way faster than using ^td_state.gamma_gas[1]
+    p = K * exp(gamma * log(var_td(u, equations)))
     return p
 end
 
@@ -33,8 +38,28 @@ end
                                 td_equation::PotentialTemperature,
                                 td_state::Mixture) where {NDIMS}
     p = pressure(u, equations, td_equation, td_state)
-    # TODO: single only, total density?
-    return sqrt(td_state.gamma_gas[1] * p / u[NDIMS + 2])
+    gamma = gamma_total(vars_gas(u, equations), vars_condens(u, equations), td_state)
+    return sqrt(gamma * p / u[NDIMS + 2])
+end
+
+@inline function K_total(rho_gas, rho_condens, td_equation::PotentialTemperature,
+                         td_state::Mixture{ParametersType, 1, 0, 0}) where {ParametersType}
+    return td_equation.K[1]
+end
+
+function prim2cons_td(prim, equations::CompressibleEulerAtmo{NDIMS},
+                      ::PotentialTemperature,
+                      td_state::Mixture) where {NDIMS}
+    @unpack p_ref = td_state
+
+    rho_total = prim2density_total(prim, equations)
+    prim_gas = vars_gas(prim, equations)
+    cons_gas = SVector{NGAS}(prim_gas[1],
+                             (prim_gas[SVector{NGAS - 1}(2:NGAS)] * rho_total)...)
+    R = rho_R_total(cons_gas, td_state)
+    gamma = gamma_total(cons_gas, prim_gas * rho_total, td_state)
+
+    return (var_td(prim, equations) / p_ref)^(1 / gamma) * p_ref / R
 end
 
 @inline function flux_td(u, equations::CompressibleEulerAtmo{NDIMS},
@@ -55,28 +80,46 @@ end
            inv_ln_mean(rho_total_ll / rho_theta_ll, rho_total_rr / rho_theta_rr)
 end
 
+# Only implemented for dry air. Mixture could results in gamma_ll and gamma_rr.
 @inline function flux_tec_td(rho_theta_ll, rho_theta_rr, v_dot_n_avg,
-                             equations::CompressibleEulerAtmo, ::PotentialTemperature)
-    # TODO only 1
+                             equations::CompressibleEulerAtmo,
+                             ::PotentialTemperature{ThermodynamicStateType, RealType,
+                                                    1}) where {ThermodynamicStateType,
+                                                               RealType}
     gammamean = stolarsky_mean(rho_theta_ll, rho_theta_rr,
                                equations.td_state.gamma_gas[1])
     return gammamean * v_dot_n_avg
 end
 
+# Only implemented for dry air. Mixture could results in gamma_ll and gamma_rr.
 @inline function flux_etec_td(rho_theta_ll, rho_theta_rr, v_dot_n_avg,
-                              equations::CompressibleEulerAtmo, ::PotentialTemperature)
-    # TODO only 1
+                              equations::CompressibleEulerAtmo,
+                              ::PotentialTemperature{ThermodynamicStateType, RealType,
+                                                     1}) where {ThermodynamicStateType,
+                                                                RealType}
     gammamean = stolarsky_mean(rho_theta_ll, rho_theta_rr,
                                equations.td_state.gamma_gas[1])
     return gammamean * v_dot_n_avg
 end
 
-function prim2cons_td(prim, equations::CompressibleEulerAtmo{NDIMS},
-                      ::PotentialTemperature,
-                      td_state::Mixture) where {NDIMS}
-    @unpack R_gas, gamma_gas, p_ref = td_state
-    # TODO: single only
+@inline function flux_nonconservative_waruszewski_etal_td(u_ll, u_rr, normal_direction,
+                                                          rho_avg, phi_jump,
+                                                          ::CompressibleEulerAtmo,
+                                                          ::PotentialTemperature)
+    return 0
+end
 
-    return (var_td(prim, equations) / p_ref)^(1 / gamma_gas[1]) * p_ref / R_gas[1]
+@inline function flux_nonconservative_artiano_etal_td(u_ll, u_rr, normal_direction,
+                                                      rho_avg, phi_jump,
+                                                      ::CompressibleEulerAtmo,
+                                                      ::PotentialTemperature)
+    return 0
+end
+
+@inline function flux_nonconservative_souza_etal_td(u_ll, u_rr, normal_direction,
+                                                    rho_avg, phi_jump,
+                                                    ::CompressibleEulerAtmo,
+                                                    ::PotentialTemperature)
+    return 0
 end
 end # @muladd

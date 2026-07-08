@@ -5,5 +5,7 @@
 
 abstract type AbstractThermodynamicEquation end
 
-include("td_total_energy.jl")
+include("td_energy_total.jl")
+include("td_energy_internal.jl")
+include("td_energy_total_potential.jl")
 include("td_potential_temperature.jl")

@@ -45,10 +45,15 @@ The well-balancedness on curvilinear coordinates was proven by
 
     f_mom = (rho_avg * phi_jump) * normal_direction
 
+    f_td = flux_nonconservative_waruszewski_etal_td(u_ll, u_rr, normal_direction,
+                                                    rho_avg, phi_jump,
+                                                    equations, equations.td_equation)
+
     zero_u = zero(eltype(u_ll))
 
     return SVector(f_mom...,
-                   ntuple(i -> zero_u, Val(NVARS - NDIMS))...)
+                   f_td,
+                   ntuple(i -> zero_u, Val(NVARS - NDIMS - 1))...)
 end
 
 """
@@ -67,22 +72,19 @@ Well-balanced gravity term for a constant potential temperature background state
                                                    normal_direction::AbstractVector,
                                                    equations::CompressibleEulerAtmo{NDIMS,
                                                                                     NVARS,
-                                                                                    NGAS,
-                                                                                    NCONDENS,
-                                                                                    NPRECIP,
+                                                                                    1,
+                                                                                    0,
+                                                                                    0,
                                                                                     NPASSIVE,
                                                                                     1};) where {
                                                                                                 NDIMS,
                                                                                                 NVARS,
-                                                                                                NGAS,
-                                                                                                NCONDENS,
-                                                                                                NPRECIP,
                                                                                                 NPASSIVE
                                                                                                 }
     rho_ll = density_total(u_ll, equations)
     rho_rr = density_total(u_rr, equations)
 
-    # TODO currently only 1
+    # Only implemented for dry air. Mixture could results in gamma_ll and gamma_rr.
     rho_avg = stolarsky_mean(rho_ll, rho_rr, equations.td_state.gamma_gas[1])
 
     phi_ll = aux_ll[1]
@@ -91,10 +93,15 @@ Well-balanced gravity term for a constant potential temperature background state
 
     f_mom = (rho_avg * phi_jump) * normal_direction
 
+    f_td = flux_nonconservative_artiano_etal_td(u_ll, u_rr, normal_direction,
+                                                rho_avg, phi_jump,
+                                                equations, equations.td_equation)
+
     zero_u = zero(eltype(u_ll))
 
     return SVector(f_mom...,
-                   ntuple(i -> zero_u, Val(NVARS - NDIMS))...)
+                   f_td,
+                   ntuple(i -> zero_u, Val(NVARS - NDIMS - 1))...)
 end
 
 """
@@ -134,9 +141,14 @@ end
 
     f_mom = (rho_avg * phi_jump) * normal_direction
 
+    f_td = flux_nonconservative_souza_etal_td(u_ll, u_rr, normal_direction,
+                                              rho_avg, phi_jump,
+                                              equations, equations.td_equation)
+
     zero_u = zero(eltype(u_ll))
 
     return SVector(f_mom...,
-                   ntuple(i -> zero_u, Val(NVARS - NDIMS))...)
+                   f_td,
+                   ntuple(i -> zero_u, Val(NVARS - NDIMS - 1))...)
 end
 end # @muladd
