@@ -47,19 +47,21 @@ end
     return td_equation.K[1]
 end
 
-function prim2cons_td(prim, equations::CompressibleEulerAtmo{NDIMS},
-                      ::PotentialTemperature,
-                      td_state::Mixture) where {NDIMS}
+function prim2cons_td(prim, equations::CompressibleEulerAtmo{NDIMS, NVARS, NGAS},
+                      td_equation::PotentialTemperature,
+                      td_state::Mixture) where {NDIMS, NVARS, NGAS}
     @unpack p_ref = td_state
 
     rho_total = prim2density_total(prim, equations)
     prim_gas = vars_gas(prim, equations)
+    condens = vars_condens(prim, equations)
     cons_gas = SVector{NGAS}(prim_gas[1],
                              (prim_gas[SVector{NGAS - 1}(2:NGAS)] * rho_total)...)
-    R = rho_R_total(cons_gas, td_state)
-    gamma = gamma_total(cons_gas, prim_gas * rho_total, td_state)
+    K = K_total(cons_gas, condens, td_equation, td_state)
+    gamma = gamma_total(cons_gas, condens * rho_total, td_state)
 
-    return (var_td(prim, equations) / p_ref)^(1 / gamma) * p_ref / R
+    rho_theta = (var_td(prim, equations) / K)^(1 / gamma)
+    return rho_theta
 end
 
 @inline function flux_td(u, equations::CompressibleEulerAtmo{NDIMS},

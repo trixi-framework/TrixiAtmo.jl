@@ -27,6 +27,14 @@ abstract type AbstractCompressibleEulerAtmo{NDIMS, NVARS, NPASSIVE} <:
     return SVector(ntuple(@inline(v->u[v] / rho), Val(NDIMS)))
 end
 
+@inline velocity_magnitude(u, aux, equations::AbstractCompressibleEulerAtmo) = velocity_magnitude(u,
+                                                                                                  equations)
+@inline function velocity_magnitude(u, equations::AbstractCompressibleEulerAtmo)
+    rho_total = density_total(u, equations)
+    mom = vars_moment(u, equations)
+    return sqrt(dot(mom, mom)) / rho_total
+end
+
 # thermodynamic variable next (NDIMS+1)
 
 # dry air density next

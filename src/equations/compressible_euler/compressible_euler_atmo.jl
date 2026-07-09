@@ -171,7 +171,7 @@ function varnames(variables::typeof(cons2prim),
          {NDIMS, NVARS, NGAS, NCONDENS, NPRECIP, NPASSIVE, NAUX}
     return (ntuple(i -> "v$i", Val(NDIMS))...,
             varname_td(variables, equations.td_equation),
-            (SVector{NGAS}("rho", ntuple(i -> "r_", Val(NGAS - 1))...) .*
+            (SVector{NGAS}("rho_", ntuple(i -> "r_", Val(NGAS - 1))...) .*
              varnames_gas(variables, equations.td_state))...,
             ("r_" .* varnames_liquid(variables, equations.td_state))...,
             ("r_" .* varnames_precip(variables, equations.td_state))...,
@@ -330,7 +330,6 @@ Should be used together with [`UnstructuredMesh2D`](@ref), [`P4estMesh`](@ref), 
                                                                                               NDIMS,
                                                                                               NVARS
                                                                                               }
-    @info typeof(surface_flux_function)
     rho_gas = vars_gas(u_inner, equations)
     rho_condens = vars_condens(u_inner, equations)
 
