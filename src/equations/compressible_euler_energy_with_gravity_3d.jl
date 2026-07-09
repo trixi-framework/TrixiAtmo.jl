@@ -76,7 +76,7 @@ have_nonconservative_terms(::CompressibleEulerEnergyEquationsWithGravity3D) = Tr
 # Calculate 1D flux for a single point
 @inline function flux(u, normal_direction::AbstractVector,
                       equations::CompressibleEulerEnergyEquationsWithGravity3D)
-    rho_e = last(u)
+    rho_e = u[5]
     rho, v1, v2, v3, p = cons2prim(u, equations)
 
     v_normal = v1 * normal_direction[1] + v2 * normal_direction[2] +

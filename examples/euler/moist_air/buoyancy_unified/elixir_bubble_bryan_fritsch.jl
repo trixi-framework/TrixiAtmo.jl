@@ -21,7 +21,7 @@ td_state = TrixiAtmo.IdealGas(; parameters)
 #    n_condens = n_condens)
 
 td_equation = PotentialTemperature(td_state)
-#td_equation = TotalEnergy(td_state)
+#td_equation = EnergyTotal(td_state)
 
 ###############################################################################
 # Microphysics
