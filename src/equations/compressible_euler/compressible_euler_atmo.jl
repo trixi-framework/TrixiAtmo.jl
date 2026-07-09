@@ -465,4 +465,54 @@ equations::CompressibleEulerAtmo) = boundary_condition_slip_wall_simple(u_inner,
                                                  equations)
     return flux, noncons_flux
 end
+
+# Transform source terms, see abstract
+# special case: no aux vars
+function transform_source_terms_sum(source_terms::Tuple,
+                                    equations::CompressibleEulerAtmo{NDIMS, NVARS, NGAS,
+                                                                     NCONDENS, NPRECIP,
+                                                                     NPASSIVE, 0}) where {
+                                                                                          NDIMS,
+                                                                                          NVARS,
+                                                                                          NGAS,
+                                                                                          NCONDENS,
+                                                                                          NPRECIP,
+                                                                                          NPASSIVE
+                                                                                          }
+    function source_terms_transformed(u, x, t,
+                                      equations::CompressibleEulerAtmo)
+        # evaluate and add source terms
+        source_ref = mapreduce(+, source_terms) do f
+            ret = f(u, x, t, equations)
+            SVector(ret..., ntuple(i -> 0, Val(NVARS - length(ret)))...)
+        end
+        return source_ref
+    end
+    return source_terms_transformed
+end
+
+# general case: with aux vars
+function transform_source_terms_sum(source_terms::Tuple,
+                                    equations::CompressibleEulerAtmo{NDIMS, NVARS, NGAS,
+                                                                     NCONDENS, NPRECIP,
+                                                                     NPASSIVE, NAUX}) where {
+                                                                                             NDIMS,
+                                                                                             NVARS,
+                                                                                             NGAS,
+                                                                                             NCONDENS,
+                                                                                             NPRECIP,
+                                                                                             NPASSIVE,
+                                                                                             NAUX
+                                                                                             }
+    function source_terms_transformed(u, aux, x, t,
+                                      equations::CompressibleEulerAtmo)
+        # evaluate and add source terms
+        source_ref = mapreduce(+, source_terms) do f
+            ret = f(u, aux, x, t, equations)
+            SVector(ret..., ntuple(i -> 0, Val(NVARS - length(ret)))...)
+        end
+        return source_ref
+    end
+    return source_terms_transformed
+end
 end # @muladd
