@@ -30,14 +30,15 @@
 #        q    water vapor mixing ratio (kg/kg)
 #
 function initial_condition_baroclinic_instability_generator(parameters::Parameters{RealType};
-                                                            deep_atmosphere = True(),
-                                                            moisture = False(),
-                                                            perturbation_stream_function = False(),
-                                                            earth_scaling_factor = RealType(1),) where {RealType}
+                                                            deep_atmosphere = true,
+                                                            moisture = false,
+                                                            perturbation_stream_function = true,
+                                                            earth_scaling_factor = RealType(1)) where {RealType}
     # Physical parameters (taken from TrixiAtmo parameters)
     a = parameters.earth_radius
     g = parameters.earth_gravitational_acceleration
     cp = parameters.c_dry_air_const_pressure
+    cv = parameters.c_dry_air_const_volume
     p0 = parameters.ref_pressure
     omega = parameters.earth_rotation_rate
 
@@ -75,13 +76,77 @@ function initial_condition_baroclinic_instability_generator(parameters::Paramete
     constC = 0.5f0 * (K + 2) * (T0E - T0P) / (T0E * T0P)
     constH = Rd * T0 / g
 
-    function initial_condition(cart_coords, t, equations)
-        spherical_coords = cartesian_to_spherical_coordinates(cart_coords)
-        spherical_u, spherical_v, T, thetav, rho, p, q = baroclinic_wave_test(spherical_coords)
-        spherical_velocities = SVector(spherical_u, spherical_v, 0)
-        cart_u, cart_v, cart_w = spherical_to_cartesian_velocities(spherical_coords,
-                                                                   spherical_velocities)
-        return SVector(rho, cart_u, cart_v, cart_w, p)
+    function evaluate_pressure_temperature(lon, lat, z)
+        scaledZ = z / (B * constH)
+        tau1 = constA * lapse / T0 * exp(lapse * z / T0) +
+               constB * (1 - 2 * scaledZ^2) * exp(-scaledZ^2)
+        tau2 = constC * (1 - 2 * scaledZ^2) * exp(-scaledZ^2)
+
+        inttau1 = constA * (exp(lapse * z / T0) - 1) +
+                  constB * z * exp(-scaledZ^2)
+        inttau2 = constC * z * exp(-scaledZ^2)
+
+        if !deep_atmosphere
+            rratio = RealType(1)
+        else
+            rratio = (z + aref) / aref
+        end
+
+        # interior term on temperature expression
+        inttermT = (rratio * cos(lat))^K - K / (K + 2) * (rratio * cos(lat))^(K + 2)
+
+        # temperature
+        T = 1 / (rratio^2 * (tau1 - tau2 * inttermT))
+
+        # hydrostatic pressure
+        p = p0 * exp(-g / Rd * (inttau1 - inttau2 * inttermT))
+
+        return p, T
+    end
+
+    function evaluate_exponential(lon, lat, z)
+
+        # Great circle distance
+        greatcircler = 1 / pertexpr * acos(sin(pertlat) * sin(lat) +
+                            cos(pertlat) * cos(lat) * cos(lon - pertlon))
+
+        # Vertical tapering of stream function
+        if z < pertz
+            perttaper = 1 - 3 * z^2 / pertz^2 + 2 * z^3 / pertz^3
+        else
+            perttaper = RealType(0)
+        end
+
+        # Zonal velocity perturbation
+        if greatcircler < 1
+            exponential = pertup * perttaper * exp(-greatcircler^2)
+        else
+            exponential = RealType(0)
+        end
+        return exponential
+    end
+
+    function evaluate_streamfunction(lon, lat, z)
+
+        # Great circle distance
+        greatcircler = 1 / pertr * acos(sin(pertlat) * sin(lat) +
+                            cos(pertlat) * cos(lat) * cos(lon - pertlon))
+
+        # Vertical tapering of stream function
+        if z < pertz
+            perttaper = 1 - 3 * z^2 / pertz^2 + 2 * z^3 / pertz^3
+        else
+            perttaper = RealType(0)
+        end
+
+        # Horizontal tapering of stream function
+        if greatcircler < 1
+            cospert = cos(0.5f0 * pi * greatcircler)
+        else
+            cospert = RealType(0)
+        end
+
+        return -pertu0 * pertr * perttaper * cospert^4
     end
 
     function baroclinic_wave_test(spherical_coords)
@@ -96,7 +161,7 @@ function initial_condition_baroclinic_instability_generator(parameters::Paramete
         if deep_atmosphere
             rratio = (z + aref) / aref
         else
-            rratio = 1
+            rratio = RealType(1)
         end
 
         # Initialize velocity field
@@ -104,7 +169,6 @@ function initial_condition_baroclinic_instability_generator(parameters::Paramete
         bigU = g / aref * K * inttau2 * inttermU * T
 
         if !deep_atmosphere
-            then
             rcoslat = aref * cos(lat)
         else
             rcoslat = (z + aref) * cos(lat)
@@ -112,7 +176,7 @@ function initial_condition_baroclinic_instability_generator(parameters::Paramete
 
         omegarcoslat = omegaref * rcoslat
         u = -omegarcoslat + sqrt(omegarcoslat^2 + rcoslat * bigU)
-        v = 0
+        v = RealType(0)
 
         # Add perturbation to the velocity field
         if perturbation_stream_function
@@ -145,7 +209,7 @@ function initial_condition_baroclinic_instability_generator(parameters::Paramete
             # Convert virtual temperature to temperature
             T = T / (1 + Mvap * q)
         else
-            q = 0
+            q = RealType(0)
         end
 
         # Initialize virtual potential temperature
@@ -156,78 +220,17 @@ function initial_condition_baroclinic_instability_generator(parameters::Paramete
         return u, v, T, thetav, rho, p, q
     end
 
-    function evaluate_pressure_temperature(lon, lat, z)
-        scaledZ = z / (B * constH)
-        tau1 = constA * lapse / T0 * exp(lapse * z / T0) +
-               constB * (1 - 2 * scaledZ^2) * exp(-scaledZ^2)
-        tau2 = constC * (1 - 2 * scaledZ^2) * exp(-scaledZ^2)
-
-        inttau1 = constA * (exp(lapse * z / T0) - 1) +
-                  constB * z * exp(-scaledZ^2)
-        inttau2 = constC * z * exp(-scaledZ^2)
-
-        if !deep_atmosphere
-            rratio = 1
-        else
-            rratio = (z + aref) / aref
-        end
-
-        # interior term on temperature expression
-        inttermT = (rratio * cos(lat))^K - K / (K + 2) * (rratio * cos(lat))^(K + 2)
-
-        # temperature
-        T = 1 / (rratio^2 * (tau1 - tau2 * inttermT))
-
-        # hydrostatic pressure
-        p = p0 * exp(-g / Rd * (inttau1 - inttau2 * inttermT))
-
-        return p, T
+    function initial_condition(cart_coords, t, equations)
+        spherical_coords = cartesian_to_spherical_coordinates(cart_coords)
+        spherical_altitude_coords = SVector(spherical_coords[1], spherical_coords[2],
+                                            spherical_coords[3] - a)
+        spherical_u, spherical_v, T, thetav, rho, p, q = baroclinic_wave_test(spherical_altitude_coords)
+        spherical_velocities = SVector(spherical_u, spherical_v, 0)
+        cart_u, cart_v, cart_w = spherical_to_cartesian_velocities(spherical_coords,
+                                                                   spherical_velocities)
+        return SVector(rho, cart_u, cart_v, cart_w, p)
     end
 
-    function evaluate_exponential(lon, lat, z)
-
-        # Great circle distance
-        greatcircler = 1 / pertexpr * acos(sin(pertlat) * sin(lat) +
-                            cos(pertlat) * cos(lat) * cos(lon - pertlon))
-
-        # Vertical tapering of stream function
-        if z < pertz
-            perttaper = 1 - 3 * z^2 / pertz^2 + 2 * z^3 / pertz^3
-        else
-            perttaper = 0
-        end
-
-        # Zonal velocity perturbation
-        if greatcircler < 1
-            exponential = pertup * perttaper * exp(-greatcircler^2)
-        else
-            exponential = 0
-        end
-        return exponential
-    end
-
-    function evaluate_streamfunction(lon, lat, z)
-
-        # Great circle distance
-        greatcircler = 1 / pertr * acos(sin(pertlat) * sin(lat) +
-                            cos(pertlat) * cos(lat) * cos(lon - pertlon))
-
-        # Vertical tapering of stream function
-        if z < pertz
-            perttaper = 1 - 3 * z^2 / pertz^2 + 2 * z^3 / pertz^3
-        else
-            perttaper = 0
-        end
-
-        # Horizontal tapering of stream function
-        if greatcircler < 1
-            cospert = cos(0.5f0 * pi * greatcircler)
-        else
-            cospert = 0
-        end
-
-        return -pertu0 * pertr * perttaper * cospert^4
-    end
     return initial_condition
 end
 end # @muladd

@@ -2,29 +2,29 @@
     cartesian_to_spherical_coordinates(cartesian_coord)
 
 # Input
-    x: vector of Cartesian coordinates
+    cartesian_coord: vector of Cartesian coordinates (x, y, z)
 
 # Output
-    vector of spherical cordinates, i.e.
-    1. longitude phi in [-pi, pi] 
+    vector of spherical coordinates, i.e.
+    1. longitude (phi) in [-pi, pi]
        measured from x-axis (phi=0) with positive values in eastwards direction
-    2. latitude theta in [-pi/2, pi/2]
+    2. latitude (theta) in [-pi/2, pi/2]
        measuring elevation from x-y-plane (theta=0), i.e. north pole is at pi/2
     3. radius
 """
 function cartesian_to_spherical_coordinates(cartesian_coord)
     r = norm(cartesian_coord)
-    theta = atan(cartesian_coord[2], cartesian_coord[1])
-    phi = asin(cartesian_coord[3] / r)
-    return SVector(phi, theta, r)
+    lon = atan(cartesian_coord[2], cartesian_coord[1])
+    lat = asin(cartesian_coord[3] / r)
+    return SVector(lon, lat, r)
 end
 
 """
     spherical_to_cartesian_velocities(spherical_coord, spherical_velocities)
 
 # Input
-    coord: position in spherical coordinates r, theta, phi (see above)
-    vel: velocity components w (radial), v (meridional), u (azimutal)
+    spherical_coord: position in spherical coordinates lon, lat, r (see above)
+    spherical_velocities: velocity components u (azimutal), v (meridional), w (radial)
 
 # Output
     vector of Cartesian velocity components

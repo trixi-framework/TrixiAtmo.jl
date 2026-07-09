@@ -26,6 +26,7 @@ function source_terms_gravity_cartZ_generator(equations::CompressibleEulerAtmo{N
 
         return SVector(ntuple(i -> u0, NDIMS - 1)..., -g * rho, -g * u_td)
     end
+    return source_terms
 end
 
 @inline function st_gravity_spherical_td(u, x, equations::CompressibleEulerAtmo{3},
@@ -33,33 +34,108 @@ end
     return dot(vars_moment(u, equations), x)
 end
 
-function source_terms_gravity_spherical_generator(equations::CompressibleEulerAtmo{3})
+function source_terms_gravity_spherical_generator(equations::CompressibleEulerAtmo{3,
+                                                                                   NVARS,
+                                                                                   NGAS,
+                                                                                   NCONDENS,
+                                                                                   NPRECIP,
+                                                                                   NPASSIVE,
+                                                                                   0}) where {
+                                                                                              NVARS,
+                                                                                              NGAS,
+                                                                                              NCONDENS,
+                                                                                              NPRECIP,
+                                                                                              NPASSIVE
+                                                                                              }
     g = equations.parameters.earth_gravitational_acceleration
-    a = equations.parameters.radius_earth
+    a = equations.parameters.earth_radius
 
     function source_terms(u, x, t, equations)
         r = norm(x)
-        rho = u[1]
-        u0 = zero(eltype(u))
+        rho_total = density_total(u, equations)
 
         temp = -g * a^2 / r^3
         u_td = st_gravity_spherical_td(u, x, equations, equations.td_equation)
 
-        return SVector(u0, (temp * rho_total) .* x, temp * u_td)
+        return SVector(((temp * rho_total) * x)..., temp * u_td)
     end
+    return source_terms
 end
 
-function source_terms_coriolis_generator(equations::CompressibleEulerAtmo{3})
-    omega = equations.parameters.angular_velocity
+function source_terms_gravity_spherical_generator(equations::CompressibleEulerAtmo{3,
+                                                                                   NVARS,
+                                                                                   NGAS,
+                                                                                   NCONDENS,
+                                                                                   NPRECIP,
+                                                                                   NPASSIVE,
+                                                                                   NAUX}) where {
+                                                                                                 NVARS,
+                                                                                                 NGAS,
+                                                                                                 NCONDENS,
+                                                                                                 NPRECIP,
+                                                                                                 NPASSIVE,
+                                                                                                 NAUX
+                                                                                                 }
+    g = equations.parameters.earth_gravitational_acceleration
+    a = equations.parameters.earth_radius
 
-    function source_terms(u, x, t, equations)
-        u0 = zero(eltype(u))
+    function source_terms(u, aux, x, t, equations)
+        r = norm(x)
+        rho_total = density_total(u, equations)
 
-        # Coriolis term, -2Ω × ρv = -2 * angular_velocity * (0, 0, 1) × u[2:4]
-        du2 = 2 * omega * u[3]
-        du3 = -2 * omega * u[2]
+        temp = -g * a^2 / r^3
+        u_td = st_gravity_spherical_td(u, x, equations, equations.td_equation)
 
-        return SVector(u0, du2, du3, u0, u0)
+        return SVector(((temp * rho_total) * x)..., temp * u_td)
     end
+    return source_terms
+end
+
+function source_terms_coriolis_generator(equations::CompressibleEulerAtmo{3, NVARS,
+                                                                          NGAS,
+                                                                          NCONDENS,
+                                                                          NPRECIP,
+                                                                          NPASSIVE, 0}) where {
+                                                                                               NVARS,
+                                                                                               NGAS,
+                                                                                               NCONDENS,
+                                                                                               NPRECIP,
+                                                                                               NPASSIVE
+                                                                                               }
+    omega = equations.parameters.earth_rotation_rate
+
+    function source_terms(u, aux, x, t, equations)
+        # Coriolis term, -2Ω × ρv = -2 * angular_velocity * (0, 0, 1) × u[1:3]
+        du1 = 2 * omega * u[2]
+        du2 = -2 * omega * u[1]
+
+        return SVector(du1, du2)
+    end
+    return source_terms
+end
+
+function source_terms_coriolis_generator(equations::CompressibleEulerAtmo{3, NVARS,
+                                                                          NGAS,
+                                                                          NCONDENS,
+                                                                          NPRECIP,
+                                                                          NPASSIVE,
+                                                                          NAUX}) where {
+                                                                                        NVARS,
+                                                                                        NGAS,
+                                                                                        NCONDENS,
+                                                                                        NPRECIP,
+                                                                                        NPASSIVE,
+                                                                                        NAUX
+                                                                                        }
+    omega = equations.parameters.earth_rotation_rate
+
+    function source_terms(u, aux, x, t, equations)
+        # Coriolis term, -2Ω × ρv = -2 * angular_velocity * (0, 0, 1) × u[1:3]
+        du1 = 2 * omega * u[2]
+        du2 = -2 * omega * u[1]
+
+        return SVector(du1, du2)
+    end
+    return source_terms
 end
 end # @muladd
