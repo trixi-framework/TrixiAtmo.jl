@@ -251,15 +251,7 @@ end
 @inline cons2entropy(cons, aux, equations::CompressibleEulerAtmo) = cons2entropy(cons,
                                                                                  equations)
 @inline function cons2entropy(cons, equations::CompressibleEulerAtmo)
-    rho_total = density_total(cons, equations)
-    rho_gas = vars_gas(cons, equations)
-    rho_liquid = vars_gas(cons, equations)
-    T = 270.0 # temperature(cons, equations)
-
-    #s_gas = entropies_gas(rho_gas, T, equations.td_state)
-    #s_liquid = entropies_liquid(rho_liquid, T, equations.td_state)
-
-    return cons
+    return cons2entropy(cons, equations, equations.td_equation, equations.td_state)
 end
 
 # Less "cautious", i.e., less overestimating `λ_max` compared to `max_abs_speed_naive`
