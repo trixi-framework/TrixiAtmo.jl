@@ -115,7 +115,7 @@ ode = semidiscretize(semi, tspan)
 
 summary_callback = SummaryCallback()
 
-analysis_interval = 1000
+analysis_interval = 10_000
 
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval)
 
@@ -140,7 +140,7 @@ if amr
                                           max_level = 2, max_threshold = 45.0)
 
     amr_callback = AMRCallback(semi, amr_controller,
-                               interval = 1000,
+                               interval = analysis_interval,
                                adapt_initial_condition = true,
                                adapt_initial_condition_only_refine = true)
 
