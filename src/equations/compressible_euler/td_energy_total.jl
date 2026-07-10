@@ -44,19 +44,20 @@ varname_td(::typeof(cons2prim), ::EnergyTotal) = "p"
     return (var_td(u, equations) - rho_Ekin - rho_Elat) / rho_cv
 end
 
-# TODO use other formula to spare division in temperature?
 @inline function pressure(u, equations::CompressibleEulerAtmo, ::EnergyTotal,
                           td_state::Mixture)
-    @unpack R_gas = td_state
-
+    rho_total = density_total(u, equations)
     rho_gas = vars_gas(u, equations)
+    rho_condens = vars_condens(u, equations)
+    rho_moment = vars_moment(u, equations)
 
-    T = temperature(u, equations)
+    # TODO
+    #rho_Elat = latent_heat * rho_vapor
 
-    # Gas constant of mixture times rho
-    rho_R = rho_R_total(rho_gas, td_state)
+    gamma = gamma_total(rho_gas, rho_condens, td_state)
 
-    return rho_R * T
+    return (gamma - 1) * (var_td(u, equations) -
+            0.5f0 * dot(rho_moment, rho_moment) / rho_total)
 end
 
 @inline function speed_of_sound(u, equations::CompressibleEulerAtmo, ::EnergyTotal,
