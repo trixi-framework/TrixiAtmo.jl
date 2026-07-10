@@ -1,13 +1,13 @@
 @muladd begin
 #! format: noindent
 
-function geopotential_cartZ(x, t, equations::CompressibleEulerAtmo{NDIMS}) where
+function geopotential_cartZ(x, equations::CompressibleEulerAtmo{NDIMS}) where
          {NDIMS}
     g = equations.parameters.earth_gravitational_acceleration
     return g * x[NDIMS]
 end
 
-function geopotential_spherical(x, t,
+function geopotential_spherical(x,
                                 equations::CompressibleEulerAtmo{NDIMS}) where
          {NDIMS}
     g = equations.parameters.earth_gravitational_acceleration
