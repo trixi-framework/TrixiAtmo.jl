@@ -108,8 +108,12 @@ end
 for dim in 2:3
     println("\nDimension $dim")
     for (iflux, _flux) in enumerate(fluxes)
-        println("    Flux ", _flux)
-        display(bench[1, dim - 1, iflux])
-        display(bench[2, dim - 1, iflux])
+        println("  Flux ", _flux)
+        trial1 = median(bench[1, dim - 1, iflux])
+        trial2 = median(bench[2, dim - 1, iflux])
+        println("    ", BenchmarkTools.prettytime(trial1.time), "  ",
+                trial1.allocs, " allocs")
+        println("    ", BenchmarkTools.prettytime(trial2.time), "  ",
+                trial2.allocs, " allocs")
     end
 end
