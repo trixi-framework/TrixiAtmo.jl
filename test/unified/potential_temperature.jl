@@ -41,8 +41,8 @@ equations_orig = [CompressibleEulerPotentialTemperatureEquations1D(c_p = c_p, c_
 ###############################################################################
 # Test
 
-u_ll = SVector(1.1, -0.5, 2.34, 2.4, 330.0)
-u_rr = SVector(1.2, -0.45, 1.89, 2.56, 321.0)
+prim_ll = SVector(1.1, -0.5, 2.34, 2.4, 100_000.0)
+prim_rr = SVector(1.2, -0.45, 1.89, 2.56, 101_000.0)
 
 normal_directions = [SVector(0.5, -0.5, 0.2),
     SVector(-1.2, 0.3, 1.4),
@@ -56,15 +56,34 @@ bench = Array{BenchmarkTools.Trial, 3}(undef, 2, 2, length(fluxes))
 
 for dim in 2:3
     println("Dimension $dim")
-    u_orig_ll = SVector{dim + 2}(u_ll[1], u_ll[SVector{dim}(2:(dim + 1))]...,
-                                 u_ll[5])
-    u_orig_rr = SVector{dim + 2}(u_rr[1], u_rr[SVector{dim}(2:(dim + 1))]...,
-                                 u_rr[5])
+    prim_orig_ll = SVector{dim + 2}(prim_ll[1], prim_ll[SVector{dim}(2:(dim + 1))]...,
+                                    prim_ll[5])
+    prim_orig_rr = SVector{dim + 2}(prim_rr[1], prim_rr[SVector{dim}(2:(dim + 1))]...,
+                                    prim_rr[5])
 
-    u_uni_ll = SVector{dim + 2}(u_ll[SVector{dim}(2:(dim + 1))]..., u_ll[5],
-                                u_ll[1])
-    u_uni_rr = SVector{dim + 2}(u_rr[SVector{dim}(2:(dim + 1))]..., u_rr[5],
-                                u_rr[1])
+    prim_uni_ll = SVector{dim + 2}(prim_ll[SVector{dim}(2:(dim + 1))]..., prim_ll[5],
+                                   prim_ll[1])
+    prim_uni_rr = SVector{dim + 2}(prim_rr[SVector{dim}(2:(dim + 1))]..., prim_rr[5],
+                                   prim_rr[1])
+
+    # convert to conservative
+    u_orig_ll = prim2cons(prim_orig_ll, equations_orig[dim])
+    u_orig_rr = prim2cons(prim_orig_rr, equations_orig[dim])
+    u_uni_ll = prim2cons(prim_uni_ll, equations_uni[dim])
+    u_uni_rr = prim2cons(prim_uni_rr, equations_uni[dim])
+
+    @test u_uni_ll ≈ SVector{dim + 2}(u_orig_ll[SVector{dim}(2:(dim + 1))]...,
+                           u_orig_ll[dim + 2],
+                           u_orig_ll[1])
+    @test u_uni_rr ≈ SVector{dim + 2}(u_orig_rr[SVector{dim}(2:(dim + 1))]...,
+                           u_orig_rr[dim + 2],
+                           u_orig_rr[1])
+
+    # check conversion to prim
+    @test prim_orig_ll ≈ cons2prim(u_orig_ll, equations_orig[dim])
+    @test prim_orig_rr ≈ cons2prim(u_orig_rr, equations_orig[dim])
+    @test prim_uni_ll ≈ cons2prim(u_uni_ll, equations_uni[dim])
+    @test prim_uni_rr ≈ cons2prim(u_uni_rr, equations_uni[dim])
 
     for n in 1:(dim + 2)
         println("  Normal $n")
