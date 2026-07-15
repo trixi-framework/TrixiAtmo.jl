@@ -64,9 +64,9 @@ function prim2cons_td(prim, equations::CompressibleEulerAtmo{NDIMS, NVARS, NGAS}
     return rho_theta
 end
 
-@inline function cons2entropy(cons, ::CompressibleEulerAtmo,
+@inline function cons2entropy(cons, ::CompressibleEulerAtmo{NDIMS, NVARS},
                               td_equation::PotentialTemperature,
-                              td_state::Mixture{ParametersType, 1, 0, 0}) where {ParametersType}
+                              td_state::Mixture{ParametersType, 1, 0, 0}) where {NDIMS, NVARS, ParametersType}
     rho = density_total(cons, equations)
     rho_theta = var_td(cons, equations)
 
@@ -76,7 +76,9 @@ end
     w1 = log(K * (rho_theta / rho)^gamma) - gamma
     w5 = rho / rho_theta * gamma
 
-    return SVector(w1, zeros(SVector{3, Int64})..., w5)
+    n_passive = NVARS - NDIMS - 2
+
+    return SVector(ntuple(i -> 0, Val(NDIMS))..., w5, w1, ntuple(i -> 0, Val(n_passive))...)
 end
 
 @inline function flux_td(u, equations::CompressibleEulerAtmo{NDIMS},

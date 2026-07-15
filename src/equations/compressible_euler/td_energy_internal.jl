@@ -97,7 +97,7 @@ end
 
     n_passive = NVARS - NDIMS - 2
 
-    return SVector(w1, zeros(SVector{3, Int64})..., w5, ntuple(i -> 0, Val(n_passive))...)
+    return SVector(zeros(SVector{3, Int64})..., w5, w1, ntuple(i -> 0, Val(n_passive))...)
 end
 
 @inline function flux_td(u, equations::CompressibleEulerAtmo{NDIMS}, ::EnergyInternal,

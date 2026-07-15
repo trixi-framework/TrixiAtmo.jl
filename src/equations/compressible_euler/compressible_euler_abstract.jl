@@ -83,23 +83,24 @@ end
 function transform_initial_condition(initial_condition,
                                      ::AbstractCompressibleEulerAtmo{NDIMS, NVARS,
                                                                      NPASSIVE};
-                                     initial_tracers = zeros(SVector{NPASSIVE, Int64})) where {
-                                                                                               NDIMS,
-                                                                                               NVARS,
-                                                                                               NPASSIVE
-                                                                                               }
+                                     initial_condition_passive = (x, e) -> 0) where {
+                                                                                     NDIMS,
+                                                                                     NVARS,
+                                                                                     NPASSIVE
+                                                                                     }
     @inline function initial_condition_transformed(x, t,
                                                    equations::AbstractCompressibleEulerAtmo{NDIMS,
                                                                                             NVARS,
                                                                                             NPASSIVE}) where
                      {NDIMS, NVARS, NPASSIVE}
         prim = initial_condition(x, t, equations)
+        passive = initial_condition_passive(x, equations)
         len = min(length(prim), NVARS - NPASSIVE)
         prim_transformed = SVector(prim[SVector{NDIMS + 1}(2:(NDIMS + 2))]...,
                                    prim[1],
                                    prim[SVector{len - NDIMS - 2}((NDIMS + 3):len)]...,
                                    ntuple(i -> 0, Val(NVARS - NPASSIVE - len))...,
-                                   initial_tracers...)
+                                   passive...)
         return prim2cons(prim_transformed, equations)
     end
     return initial_condition_transformed

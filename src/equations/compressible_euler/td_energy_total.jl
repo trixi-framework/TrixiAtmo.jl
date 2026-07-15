@@ -104,9 +104,10 @@ function prim2cons_td(prim, equations::CompressibleEulerAtmo{NDIMS, NVARS, NGAS}
     return (Eint + Elatent + Ekinetic) * rho_total
 end
 
-@inline function cons2entropy(cons, equations::CompressibleEulerAtmo{NDIMS},
+@inline function cons2entropy(cons, equations::CompressibleEulerAtmo{NDIMS, NVARS},
                               td_equation::EnergyTotal,
                               td_state::Mixture{ParametersType, 1, 0, 0}) where {NDIMS,
+                                                                                 NVARS,
                                                                                  ParametersType
                                                                                  }
     rho = density_total(cons, equations)
@@ -121,7 +122,9 @@ end
          0.5f0 * rho_p * dot(v, v)
     w5 = -rho_p
 
-    return SVector(w1, (v * rho_p)..., w5)
+    n_passive = NVARS - NDIMS - 2
+
+    return SVector((v * rho_p)..., w5, w1, ntuple(i -> 0, Val(n_passive))...)
 end
 
 @inline function flux_td(u, equations::CompressibleEulerAtmo{NDIMS}, ::EnergyTotal,
