@@ -39,8 +39,9 @@ function source_terms_hs_relaxation_generator(parameters::Parameters{RealType},
 
     @inline function source_terms(u, aux, x, t, equations)
         lon, lat, r = cartesian_to_spherical_coordinates(x)
+        rho = density_total(u, equations)
         p = pressure(u, equations)
-        T = temperature(u, equations)
+        T = p / (rho * R)
         u_mom = vars_moment(u, equations)
 
         sigma = p / p0   # "p_0 instead of instantaneous surface pressure"
