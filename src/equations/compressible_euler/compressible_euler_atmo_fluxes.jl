@@ -102,6 +102,107 @@ end
                        ntuple(i -> 0, Val(NVARS - NDIMS - 1))...)
 end
 
+@inline flux_surface_artiano(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector, equations::CompressibleEulerAtmo) = flux_surface_artiano(u_ll,
+                                                                                                                                                    u_rr,
+                                                                                                                                                    normal_direction,
+                                                                                                                                                    equations)
+@inline function flux_surface_artiano(u_ll, u_rr, normal_direction::AbstractVector,
+                                      equations::CompressibleEulerAtmo{NDIMS, NVARS}) where {
+                                                                                             NDIMS,
+                                                                                             NVARS
+                                                                                             }
+    a = 340.0
+    norm_ = norm(normal_direction)
+
+    rho_total_ll = density_total(u_ll, equations)
+    rho_total_rr = density_total(u_rr, equations)
+    v_n_ll = dot(vars_moment(u_ll, equations), normal_direction) / rho_total_ll
+    v_n_rr = dot(vars_moment(u_rr, equations), normal_direction) / rho_total_rr
+    p_ll = pressure(u_ll, equations)
+    p_rr = pressure(u_rr, equations)
+
+    rho_lnmean = ln_mean(rho_total_ll, rho_total_rr)
+    rho_avg = 0.5f0 * (rho_total_ll + rho_total_rr)
+
+    p_interface = 0.5f0 * (p_ll + p_rr) -
+                  0.5f0 * a * rho_avg * (v_n_rr - v_n_ll) / norm_
+    v_interface = 0.5f0 * (v_n_ll + v_n_rr) -
+                  1 / (2 * a * rho_avg) * (p_rr - p_ll) * norm_
+
+    if (v_interface >= 0)
+        signum = -1
+        f_mom = vars_moment(u_ll, equations) * v_interface
+    else
+        signum = 1
+        f_mom = vars_moment(u_rr, equations) * v_interface
+    end
+
+    f_mass_air = (ln_mean.(vars_airborn(u_ll, equations),
+                           vars_airborn(u_rr, equations)) +
+                  signum * 0.5f0 *
+                  (vars_airborn(u_rr, equations) .-
+                   vars_airborn(u_ll, equations))) * v_interface
+    f_mass_precip = (ln_mean.(vars_precip(u_ll, equations),
+                              vars_precip(u_rr, equations)) +
+                     signum * 0.5f0 *
+                     (vars_precip(u_rr, equations) .-
+                      vars_precip(u_ll, equations))) * v_interface
+    f_mass_passive = (ln_mean.(vars_passive(u_ll, equations),
+                               vars_passive(u_rr, equations)) +
+                      signum * 0.5f0 *
+                      (vars_passive(u_rr, equations) .-
+                       vars_passive(u_ll, equations))) * v_interface
+    f_mass_total = (rho_lnmean + signum * 0.5f0 * (rho_total_rr - rho_total_ll)) *
+                   v_interface
+
+    f_td = flux_artiano_td(rho_total_ll, rho_total_rr, p_ll, p_rr,
+                           f_mass_total, v_interface,
+                           equations, equations.td_equation)
+
+    return SVector((f_mom + p_interface * normal_direction)...,
+                   f_td,
+                   f_mass_air..., f_mass_precip..., f_mass_passive...)
+end
+
+@inline flux_volume_artiano(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector, equations::CompressibleEulerAtmo) = flux_volume_artiano(u_ll,
+                                                                                                                                                  u_rr,
+                                                                                                                                                  normal_direction,
+                                                                                                                                                  equations)
+@inline function flux_volume_artiano(u_ll, u_rr, normal_direction::AbstractVector,
+                                     equations::CompressibleEulerAtmo{NDIMS, NVARS}) where {
+                                                                                            NDIMS,
+                                                                                            NVARS
+                                                                                            }
+    rho_total_ll = density_total(u_ll, equations)
+    rho_total_rr = density_total(u_rr, equations)
+    p_ll = pressure(u_ll, equations)
+    p_rr = pressure(u_rr, equations)
+    v_ll = vars_moment(u_ll, equations) / rho_total_ll
+    v_rr = vars_moment(u_rr, equations) / rho_total_rr
+    v_avg = 0.5f0 .* (v_ll + v_rr)
+    v_dot_n_avg = dot(v_avg, normal_direction)
+    rho_lnmean = ln_mean(rho_total_ll, rho_total_rr)
+    p_interface = 0.5f0 * (p_ll + p_rr)
+
+    f_mass_air = ln_mean.(vars_airborn(u_ll, equations),
+                          vars_airborn(u_rr, equations)) * v_dot_n_avg
+    f_mass_precip = ln_mean.(vars_precip(u_ll, equations),
+                             vars_precip(u_rr, equations)) * v_dot_n_avg
+    f_mass_passive = ln_mean.(vars_passive(u_ll, equations),
+                              vars_passive(u_rr, equations)) * v_dot_n_avg
+    f_mass_total = rho_lnmean * v_dot_n_avg
+
+    f_mom = f_mass_total * v_avg + p_interface * normal_direction
+
+    f_td = flux_artiano_td(rho_total_ll, rho_total_rr, p_ll, p_rr,
+                           f_mass_total, v_dot_n_avg,
+                           equations, equations.td_equation)
+
+    return SVector(f_mom...,
+                   f_td,
+                   f_mass_air..., f_mass_precip..., f_mass_passive...)
+end
+
 """
     flux_kennedy_gruber(u_ll, u_rr, orientation_or_normal_direction,
                         equations::CompressibleEulerEquations3D)

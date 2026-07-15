@@ -56,6 +56,47 @@ The well-balancedness on curvilinear coordinates was proven by
                    ntuple(i -> zero_u, Val(NVARS - NDIMS - 1))...)
 end
 
+@inline function flux_nonconservative_surface_artiano(u_ll, u_rr,
+                                                      aux_ll, aux_rr,
+                                                      normal_direction::AbstractVector,
+                                                      equations::CompressibleEulerAtmo{NDIMS,
+                                                                                       NVARS,
+                                                                                       NGAS,
+                                                                                       NCONDENS,
+                                                                                       NPRECIP,
+                                                                                       NPASSIVE,
+                                                                                       1};) where {
+                                                                                                   NDIMS,
+                                                                                                   NVARS,
+                                                                                                   NGAS,
+                                                                                                   NCONDENS,
+                                                                                                   NPRECIP,
+                                                                                                   NPASSIVE
+                                                                                                   }
+    a = 340.0
+    norm_ = norm(normal_direction)
+
+    rho_total_ll = density_total(u_ll, equations)
+    rho_total_rr = density_total(u_rr, equations)
+    v_n_ll = dot(vars_moment(u_ll, equations), normal_direction) / rho_total_ll
+    v_n_rr = dot(vars_moment(u_rr, equations), normal_direction) / rho_total_rr
+    p_ll = pressure(u_ll, equations)
+    p_rr = pressure(u_rr, equations)
+
+    rho_avg = 0.5f0 * (rho_total_ll + rho_total_rr)
+    v_interface = 0.5f0 * (v_n_ll + v_n_rr) -
+                  1 / (2 * a * rho_avg) * (p_rr - p_ll) * norm_
+
+    f_td = flux_nonconservative_surface_artiano_td(p_ll, p_rr, v_interface,
+                                                   equations, equations.td_equation)
+
+    zero_u = zero(eltype(u_ll))
+
+    return SVector(ntuple(i -> zero_u, Val(NDIMS))...,
+                   f_td,
+                   ntuple(i -> zero_u, Val(NVARS - NDIMS - 1))...)
+end
+
 """
     flux_nonconservative_artiano_etal(u_ll, u_rr, aux_ll, aux_rr,
                                       normal_direction::AbstractVector,

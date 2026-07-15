@@ -54,7 +54,7 @@ include("callbacks_stage/callbacks_stage.jl")
 export Parameters,
        DryAir, WaterVapor, CloudWater, RainWater,
        IdealGas, Mixture,
-       EnergyTotal, PotentialTemperature,
+       EnergyTotal, EnergyInternal, PotentialTemperature,
        MicrophysicsRelaxation
 
 export CompressibleMoistEulerEquations2D,
@@ -84,7 +84,8 @@ export flux_nonconservative_zeros, flux_nonconservative_ec,
        flux_nonconservative_artiano_etal,
        flux_nonconservative_waruszewski_etal, flux_zero,
        flux_ec_rain, flux_LMARS, flux_nonconservative_es, flux_conservative_es,
-       flux_conservative_etec, flux_nonconservative_etec
+       flux_conservative_etec, flux_nonconservative_etec,
+       flux_surface_artiano, flux_volume_artiano, flux_nonconservative_surface_artiano
 
 export clean_solution_lagrange_multiplier!
 

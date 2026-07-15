@@ -16,7 +16,8 @@ earth_radius = 6.371229e6
 
 # 1: EnergyTotal
 # 2: PotentialTemperature
-td_variant = 2
+# 3: EnergyInternal
+td_variant = 3
 amr = true
 
 parameters = Parameters{RealType}(;
@@ -32,8 +33,10 @@ parameters = Parameters{RealType}(;
 td_single = IdealGas(; parameters)
 if td_variant == 1
     td_eq = EnergyTotal(td_single)
-else
+elseif td_variant == 2
     td_eq = PotentialTemperature(td_single)
+elseif td_variant == 3
+    td_eq = EnergyInternal(td_single)
 end
 
 ###############################################################################
@@ -74,11 +77,15 @@ source_terms = transform_source_terms(source_terms_coriolis_reference, equations
 
 polydeg = 5
 
-surface_flux = (FluxLMARS(340), flux_zero)
 if td_variant == 1
+    surface_flux = (FluxLMARS(340), flux_zero)
     volume_flux = (flux_ranocha, flux_nonconservative_waruszewski_etal)
-else
+elseif td_variant == 2
+    surface_flux = (FluxLMARS(340), flux_zero)
     volume_flux = (flux_tec, flux_nonconservative_souza_etal)
+elseif td_variant == 3
+    surface_flux = (flux_surface_artiano, flux_nonconservative_surface_artiano)
+    volume_flux = (flux_volume_artiano, flux_nonconservative_waruszewski_etal)
 end
 
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
@@ -105,7 +112,7 @@ semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     boundary_conditions = boundary_conditions,
                                     aux_field = geopotential_spherical)
 
-days = 10
+days = 14
 tspan = (0.0, days * SECONDS_PER_DAY)
 
 ode = semidiscretize(semi, tspan)
@@ -150,6 +157,6 @@ end
 tol = 1e-6
 sol = solve(ode,
             SSPRK43(thread = Trixi.Threaded());
-            maxiters = 1e7,
+            maxiters = 1e8,
             abstol = tol, reltol = tol, ode_default_options()...,
             callback = callbacks)

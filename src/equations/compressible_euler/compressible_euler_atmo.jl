@@ -420,15 +420,35 @@ end
     return flux
 end
 
-@inline boundary_condition_slip_wall_simple(u_inner, aux_inner,
-normal_direction::AbstractVector,
-x, t,
-surface_flux_functions,
-equations::CompressibleEulerAtmo) = boundary_condition_slip_wall_simple(u_inner,
-                                                                        normal_direction,
-                                                                        x, t,
-                                                                        surface_flux_functions,
-                                                                        equations)
+@inline function boundary_condition_slip_wall_simple(u_inner, aux_inner,
+                                                     normal_direction::AbstractVector,
+                                                     x, t,
+                                                     surface_flux_functions::Tuple,
+                                                     equations::CompressibleEulerAtmo{NDIMS}) where {NDIMS}
+    # normalize the outward pointing direction
+    normal = normal_direction / norm(normal_direction)
+    surface_flux_function, nonconservative_flux_function = surface_flux_functions
+
+    # compute the normal velocity
+    u_mom = vars_moment(u_inner, equations)
+    u_mom_normal = dot(vars_moment(u_inner, equations), normal)
+    u_boundary_mom = u_mom - 2 * u_mom_normal * normal
+
+    # create the "external" boundary solution state
+    u_boundary = SVector(u_boundary_mom...,
+                         var_td(u_inner, equations),
+                         vars_airborn(u_inner, equations)...,
+                         vars_precip(u_inner, equations)...,
+                         vars_passive(u_inner, equations)...)
+
+    # calculate the boundary flux
+    flux = surface_flux_function(u_inner, u_boundary, aux_inner, aux_inner,
+                                 normal_direction, equations)
+    noncons_flux = nonconservative_flux_function(u_inner, u_boundary, aux_inner,
+                                                 aux_inner, normal_direction, equations)
+    return flux, noncons_flux
+end
+
 @inline function boundary_condition_slip_wall_simple(u_inner,
                                                      normal_direction::AbstractVector,
                                                      x, t,
