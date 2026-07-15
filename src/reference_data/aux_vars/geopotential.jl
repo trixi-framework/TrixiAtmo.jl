@@ -7,6 +7,8 @@ function geopotential_cartZ(x, equations::CompressibleEulerAtmo{NDIMS}) where
     return g * x[NDIMS]
 end
 
+# TODO: constant term?
+# phi = EARTH_GRAVITATIONAL_ACCELERATION * (EARTH_RADIUS - EARTH_RADIUS^2 / r)
 function geopotential_spherical(x,
                                 equations::CompressibleEulerAtmo{NDIMS}) where
          {NDIMS}

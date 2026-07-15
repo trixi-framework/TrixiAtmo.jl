@@ -104,7 +104,7 @@ function source_terms_coriolis_generator(equations::CompressibleEulerAtmo{3, NVA
                                                                                                }
     omega = equations.parameters.earth_rotation_rate
 
-    function source_terms(u, aux, x, t, equations)
+    function source_terms(u, x, t, equations)
         # Coriolis term, -2Ω × ρv = -2 * angular_velocity * (0, 0, 1) × u[1:3]
         du1 = 2 * omega * u[2]
         du2 = -2 * omega * u[1]

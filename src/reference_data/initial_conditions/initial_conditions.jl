@@ -1,3 +1,4 @@
+include("balanced.jl")
 include("baroclinic_instability.jl")
 include("bubble.jl")
 include("gravity_waves.jl")
