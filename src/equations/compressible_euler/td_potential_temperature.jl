@@ -64,7 +64,7 @@ function prim2cons_td(prim, equations::CompressibleEulerAtmo{NDIMS, NVARS, NGAS}
     return rho_theta
 end
 
-@inline function cons2entropy(cons, ::CompressibleEulerAtmo{NDIMS, NVARS},
+@inline function cons2entropy(cons, equations::CompressibleEulerAtmo{NDIMS, NVARS},
                               td_equation::PotentialTemperature,
                               td_state::Mixture{ParametersType, 1, 0, 0}) where {NDIMS, NVARS, ParametersType}
     rho = density_total(cons, equations)
