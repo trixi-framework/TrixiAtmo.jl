@@ -98,6 +98,8 @@ export P4estMeshCubedSphere2D, P4estMeshQuadIcosahedron2D, DGMultiMeshTriIcosahe
 export EARTH_RADIUS, EARTH_GRAVITATIONAL_ACCELERATION,
        EARTH_ROTATION_RATE, SECONDS_PER_DAY
 
+export cartesian_to_spherical_coordinates
+
 export transform_initial_condition, transform_source_terms, transform_source_terms_sum
 
 export initial_condition_gaussian, initial_condition_geostrophic_balance,
