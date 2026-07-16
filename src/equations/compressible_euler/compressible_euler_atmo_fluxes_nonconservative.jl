@@ -27,14 +27,14 @@ The well-balancedness on curvilinear coordinates was proven by
                                                                                         NCONDENS,
                                                                                         NPRECIP,
                                                                                         NPASSIVE,
-                                                                                        1};) where {
-                                                                                                    NDIMS,
-                                                                                                    NVARS,
-                                                                                                    NGAS,
-                                                                                                    NCONDENS,
-                                                                                                    NPRECIP,
-                                                                                                    NPASSIVE
-                                                                                                    }
+                                                                                        1}) where {
+                                                                                                   NDIMS,
+                                                                                                   NVARS,
+                                                                                                   NGAS,
+                                                                                                   NCONDENS,
+                                                                                                   NPRECIP,
+                                                                                                   NPASSIVE
+                                                                                                   }
     rho_ll = density_total(u_ll, equations)
     rho_rr = density_total(u_rr, equations)
     rho_avg = ln_mean(rho_ll, rho_rr)
@@ -65,14 +65,14 @@ end
                                                                                        NCONDENS,
                                                                                        NPRECIP,
                                                                                        NPASSIVE,
-                                                                                       1};) where {
-                                                                                                   NDIMS,
-                                                                                                   NVARS,
-                                                                                                   NGAS,
-                                                                                                   NCONDENS,
-                                                                                                   NPRECIP,
-                                                                                                   NPASSIVE
-                                                                                                   }
+                                                                                       1}) where {
+                                                                                                  NDIMS,
+                                                                                                  NVARS,
+                                                                                                  NGAS,
+                                                                                                  NCONDENS,
+                                                                                                  NPRECIP,
+                                                                                                  NPASSIVE
+                                                                                                  }
     a = 340.0
     norm_ = norm(normal_direction)
 
@@ -117,11 +117,11 @@ Well-balanced gravity term for a constant potential temperature background state
                                                                                     0,
                                                                                     0,
                                                                                     NPASSIVE,
-                                                                                    1};) where {
-                                                                                                NDIMS,
-                                                                                                NVARS,
-                                                                                                NPASSIVE
-                                                                                                }
+                                                                                    1}) where {
+                                                                                               NDIMS,
+                                                                                               NVARS,
+                                                                                               NPASSIVE
+                                                                                               }
     rho_ll = density_total(u_ll, equations)
     rho_rr = density_total(u_rr, equations)
 
@@ -164,14 +164,14 @@ end
                                                                                   NCONDENS,
                                                                                   NPRECIP,
                                                                                   NPASSIVE,
-                                                                                  1};) where {
-                                                                                              NDIMS,
-                                                                                              NVARS,
-                                                                                              NGAS,
-                                                                                              NCONDENS,
-                                                                                              NPRECIP,
-                                                                                              NPASSIVE
-                                                                                              }
+                                                                                  1}) where {
+                                                                                             NDIMS,
+                                                                                             NVARS,
+                                                                                             NGAS,
+                                                                                             NCONDENS,
+                                                                                             NPRECIP,
+                                                                                             NPASSIVE
+                                                                                             }
     rho_ll = density_total(u_ll, equations)
     rho_rr = density_total(u_rr, equations)
     rho_avg = 0.5f0 * (rho_ll + rho_rr)
