@@ -15,7 +15,7 @@ varname_td(::typeof(cons2prim), ::EnergyInternal) = "p"
 @inline function temperature(u, equations::CompressibleEulerAtmo{NDIMS},
                              ::EnergyInternal,
                              td_state::Mixture) where {NDIMS}
-    @unpack cv_gas, c_condens, latent_heat = td_state
+    @unpack latent_heat = td_state
 
     rho_total = density_total(u, equations)
     rho_gas = vars_gas(u, equations)

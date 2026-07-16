@@ -19,6 +19,15 @@ end
     return -k_T * rho_cv * (temperature - T_equi)
 end
 
+@inline function st_hs_relaxation_td(u, k_T, temperature, T_equi,
+                                     equations::CompressibleEulerAtmo{3},
+                                     ::EnergyInternal)
+    rho_gas = vars_gas(u, equations)
+    rho_condens = vars_condens(u, equations)
+    rho_cv = rho_cv_total(rho_gas, rho_condens, equations.td_state)
+    return -k_T * rho_cv * (temperature - T_equi)
+end
+
 function source_terms_hs_relaxation_generator(parameters::Parameters{RealType},
                                               equations::CompressibleEulerAtmo{3}) where {RealType}
     # equations (55)-(58) in the paper
