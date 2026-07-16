@@ -10,15 +10,17 @@ using TrixiAtmo: IdealGas,
 ###############################################################################
 # Parameters
 
+td_variants = ["Etot", "Tpot", "Eint"]
+
+td_variant = 3
+amr = true
+tracer = true
+med_thres = 28.0
+max_thres = 45.0
+
 RealType = Float64
 earth_scale = 1.0
 earth_radius = 6.371229e6
-
-# 1: EnergyTotal
-# 2: PotentialTemperature
-# 3: EnergyInternal
-td_variant = 3
-amr = true
 
 parameters = Parameters{RealType}(;
                                   earth_gravitational_acceleration = 9.81,
@@ -43,6 +45,7 @@ end
 # Equations
 
 equations = CompressibleEulerAtmo(; n_dims = 3, n_vars_aux = 1,
+                                  n_vars_passive = tracer ? 1 : 0,
                                   parameters = parameters,
                                   thermodynamic_state = td_single,
                                   thermodynamic_equation = td_eq)
@@ -54,7 +57,23 @@ initial_condition_reference = initial_condition_baroclinic_instability_generator
                                                                                  perturbation_stream_function = true,
                                                                                  earth_scaling_factor = earth_scale)
 
-initial_condition = transform_initial_condition(initial_condition_reference, equations)
+if tracer
+    @inline function initial_tracer(x, equations::CompressibleEulerAtmo)
+        lon, lat, r = cartesian_to_spherical_coordinates(x)
+        z = r - equations.parameters.earth_radius
+
+        # Initial condition for tracers: blob as a fraction of density
+        return 1e-4 +
+               0.1 * exp(-40 * (((lon - 0.12134886826) / 1.5)^2 +
+                    ((lat - 0.889007697127))^2 +
+                    ((z - 5_000) / 30_000)^2))
+    end
+else
+    initial_tracer = (x, e) -> 0
+end
+
+initial_condition = transform_initial_condition(initial_condition_reference, equations;
+                                                initial_condition_passive = initial_tracer)
 
 # TODO simple!
 boundary_conditions = (; inside = boundary_condition_slip_wall_simple,
@@ -128,11 +147,16 @@ analysis_callback = AnalysisCallback(semi, interval = analysis_interval)
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
+dir_name = "out_baroclinic_$(td_variants[td_variant])"
+if amr
+    dir_name *= "_$med_thres-$max_thres"
+end
+
 save_solution = SaveSolutionCallback(interval = analysis_interval,
                                      save_initial_solution = true,
                                      save_final_solution = true,
                                      solution_variables = cons2prim,
-                                     output_directory = "out_baroclinic")
+                                     output_directory = dir_name)
 
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,
@@ -143,8 +167,8 @@ if amr
 
     amr_controller = ControllerThreeLevel(semi, amr_indicator,
                                           base_level = 0,
-                                          med_level = 1, med_threshold = 28.0,
-                                          max_level = 2, max_threshold = 45.0)
+                                          med_level = 1, med_threshold = med_thres,
+                                          max_level = 2, max_threshold = max_thres)
 
     amr_callback = AMRCallback(semi, amr_controller,
                                interval = analysis_interval,

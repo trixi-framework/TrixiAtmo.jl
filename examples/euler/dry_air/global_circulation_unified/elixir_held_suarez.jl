@@ -11,13 +11,16 @@ using TrixiAtmo: IdealGas,
 ###############################################################################
 # Parameters
 
+td_variants = ["Etot", "Tpot", "Eint"]
+
+td_variant = 1
+amr = true
+tracer = true
+med_thres = 15.0
+max_thres = 45.0
+
 RealType = Float64
 earth_radius = EARTH_RADIUS
-
-# 1: EnergyTotal
-# 2: PotentialTemperature
-td_variant = 1
-amr = false
 
 parameters = Parameters{RealType}(;
                                   earth_gravitational_acceleration = EARTH_GRAVITATIONAL_ACCELERATION,
@@ -32,14 +35,17 @@ parameters = Parameters{RealType}(;
 td_single = IdealGas(; parameters)
 if td_variant == 1
     td_eq = EnergyTotal(td_single)
-else
+elseif td_variant == 2
     td_eq = PotentialTemperature(td_single)
+elseif td_variant == 3
+    td_eq = EnergyInternal(td_single)
 end
 
 ###############################################################################
 # Equations
 
 equations = CompressibleEulerAtmo(; n_dims = 3, n_vars_aux = 1,
+                                  n_vars_passive = tracer ? 1 : 0,
                                   parameters = parameters,
                                   thermodynamic_state = td_single,
                                   thermodynamic_equation = td_eq)
@@ -48,7 +54,24 @@ equations = CompressibleEulerAtmo(; n_dims = 3, n_vars_aux = 1,
 # Initial and boundary conditions
 
 initial_condition_reference = initial_condition_isothermal_generator(parameters)
-initial_condition = transform_initial_condition(initial_condition_reference, equations)
+
+if tracer
+    @inline function initial_tracer(x, equations::CompressibleEulerAtmo)
+        lon, lat, r = cartesian_to_spherical_coordinates(x)
+        z = r - equations.parameters.earth_radius
+
+        # Initial condition for tracers: blob as a fraction of density
+        return 1e-4 +
+               0.1 * exp(-40 * (((lon - 0.12134886826) / 1.5)^2 +
+                    ((lat - 0.889007697127))^2 +
+                    ((z - 5_000) / 30_000)^2))
+    end
+else
+    initial_tracer = (x, e) -> 0
+end
+
+initial_condition = transform_initial_condition(initial_condition_reference, equations;
+                                                initial_condition_passive = initial_tracer)
 
 # TODO simple!
 boundary_conditions = (; inside = boundary_condition_slip_wall_simple,
@@ -74,11 +97,15 @@ source_terms = transform_source_terms_sum((source_terms_coriolis_reference,
 
 polydeg = 4
 
-surface_flux = (FluxLMARS(340), flux_zero)
 if td_variant == 1
+    surface_flux = (FluxLMARS(340), flux_zero)
     volume_flux = (flux_kennedy_gruber, flux_nonconservative_waruszewski_etal)
-else
+elseif td_variant == 2
+    surface_flux = (FluxLMARS(340), flux_zero)
     volume_flux = (flux_ec, flux_nonconservative_waruszewski_etal)
+elseif td_variant == 3
+    surface_flux = (flux_surface_artiano, flux_nonconservative_surface_artiano)
+    volume_flux = (flux_volume_artiano, flux_nonconservative_waruszewski_etal)
 end
 
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
@@ -122,11 +149,16 @@ analysis_callback = AnalysisCallback(semi, interval = analysis_interval)
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
+dir_name = "out_held_suarez_$(td_variants[td_variant])"
+if amr
+    dir_name *= "_$med_thres-$max_thres"
+end
+
 save_solution = SaveSolutionCallback(interval = analysis_interval,
                                      save_initial_solution = true,
                                      save_final_solution = true,
                                      solution_variables = cons2prim,
-                                     output_directory = "out_held_suarez")
+                                     output_directory = dir_name)
 
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,
@@ -137,8 +169,8 @@ if amr
 
     amr_controller = ControllerThreeLevel(semi, amr_indicator,
                                           base_level = 0,
-                                          med_level = 1, med_threshold = 28.0,
-                                          max_level = 2, max_threshold = 45.0)
+                                          med_level = 1, med_threshold = med_thres,
+                                          max_level = 2, max_threshold = max_thres)
 
     amr_callback = AMRCallback(semi, amr_controller,
                                interval = analysis_interval,
@@ -148,7 +180,7 @@ if amr
     callbacks = CallbackSet(callbacks.discrete_callbacks..., amr_callback)
 end
 
-tol = 1e-5
+tol = 1e-6
 sol = solve(ode,
             RDPK3SpFSAL49(; thread = Trixi.Threaded());
             maxiters = 1e8,
