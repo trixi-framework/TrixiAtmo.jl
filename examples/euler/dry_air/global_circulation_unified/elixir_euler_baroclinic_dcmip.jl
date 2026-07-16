@@ -15,8 +15,8 @@ td_variants = ["Etot", "Tpot", "Eint"]
 td_variant = 3
 amr = true
 tracer = true
-med_thres = 28.0
-max_thres = 45.0
+med_thres = 28
+max_thres = 45
 
 RealType = Float64
 earth_scale = 1.0
@@ -64,8 +64,8 @@ if tracer
 
         # Initial condition for tracers: blob as a fraction of density
         return 1e-4 +
-               0.1 * exp(-40 * (((lon - 0.12134886826) / 1.5)^2 +
-                    ((lat - 0.889007697127))^2 +
+               0.1 * exp(-40 * (((lon - 0.45))^2 +
+                    ((lat - 0.75) / 1.5)^2 +
                     ((z - 5_000) / 30_000)^2))
     end
 else

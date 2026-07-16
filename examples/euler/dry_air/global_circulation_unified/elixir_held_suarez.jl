@@ -16,8 +16,8 @@ td_variants = ["Etot", "Tpot", "Eint"]
 td_variant = 1
 amr = true
 tracer = true
-med_thres = 15.0
-max_thres = 45.0
+med_thres = 15
+max_thres = 45
 
 RealType = Float64
 earth_radius = EARTH_RADIUS
