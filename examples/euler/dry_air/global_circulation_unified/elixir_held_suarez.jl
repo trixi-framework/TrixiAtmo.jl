@@ -13,11 +13,11 @@ using TrixiAtmo: IdealGas,
 
 td_variants = ["Etot", "Tpot", "Eint"]
 
-td_variant = 1
+td_variant = 3
 amr = true
 tracer = true
-med_thres = 15
-max_thres = 45
+vel_max = 45
+tracer_max = 1.0
 
 RealType = Float64
 earth_radius = EARTH_RADIUS
@@ -61,10 +61,10 @@ if tracer
         z = r - equations.parameters.earth_radius
 
         # Initial condition for tracers: blob as a fraction of density
-        return 1e-4 +
+        return 1e-2 +
                0.1 * exp(-40 * (((lon - 0.12134886826) / 1.5)^2 +
                     ((lat - 0.889007697127))^2 +
-                    ((z - 5_000) / 30_000)^2))
+                    ((z - 8_000) / 20_000)^2))
     end
 else
     initial_tracer = (x, e) -> 0
@@ -150,8 +150,11 @@ analysis_callback = AnalysisCallback(semi, interval = analysis_interval)
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
 dir_name = "out_held_suarez_$(td_variants[td_variant])"
+if tracer
+    dir_name *= "+t"
+end
 if amr
-    dir_name *= "_$med_thres-$max_thres"
+    dir_name *= "_velmax-$vel_max"
 end
 
 save_solution = SaveSolutionCallback(interval = analysis_interval,
@@ -165,12 +168,17 @@ callbacks = CallbackSet(summary_callback,
                         alive_callback,
                         save_solution)
 if amr
-    amr_indicator = IndicatorMax(semi, variable = velocity_magnitude)
+    @inline function velocity_tracer(u, aux, equations::CompressibleEulerAtmo)
+        vel = velocity_magnitude(u, equations) / vel_max
+        tracer = TrixiAtmo.vars_passive(u, equations)[1] / tracer_max
+        return max(vel, tracer)
+    end
+    amr_indicator = IndicatorMax(semi, variable = velocity_tracer)
 
     amr_controller = ControllerThreeLevel(semi, amr_indicator,
                                           base_level = 0,
-                                          med_level = 1, med_threshold = med_thres,
-                                          max_level = 2, max_threshold = max_thres)
+                                          med_level = 1, med_threshold = 0.4,
+                                          max_level = 2, max_threshold = 1.0)
 
     amr_callback = AMRCallback(semi, amr_controller,
                                interval = analysis_interval,
