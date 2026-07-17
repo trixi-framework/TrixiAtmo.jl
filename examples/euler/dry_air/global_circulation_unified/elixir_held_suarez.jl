@@ -170,7 +170,8 @@ callbacks = CallbackSet(summary_callback,
 if amr
     @inline function velocity_tracer(u, aux, equations::CompressibleEulerAtmo)
         vel = velocity_magnitude(u, equations) / vel_max
-        tracer = TrixiAtmo.vars_passive(u, equations)[1] / tracer_max
+        rho = TrixiAtmo.density_total(u, equations)
+        tracer = TrixiAtmo.vars_passive(u, equations)[1] / (rho * tracer_max)
         return max(vel, tracer)
     end
     amr_indicator = IndicatorMax(semi, variable = velocity_tracer)
