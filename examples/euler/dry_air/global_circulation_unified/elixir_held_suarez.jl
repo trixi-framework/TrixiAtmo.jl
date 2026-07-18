@@ -60,11 +60,15 @@ if tracer
         lon, lat, r = cartesian_to_spherical_coordinates(x)
         z = r - equations.parameters.earth_radius
 
+        lon_pos = 0.12134886826
+        lon_dist = min(abs(lon - lon_pos), abs(lon + 2 * pi - lon_pos),
+                   abs(lon - 2 * pi - lon_pos))
+
         # Initial condition for tracers: blob as a fraction of density
         return 1e-2 +
-               0.1 * exp(-40 * (((lon - 0.12134886826) / 1.5)^2 +
+               0.1 * exp(-40 * (((lon_dist) / 1.5)^2 +
                     ((lat - 0.889007697127))^2 +
-                    ((z - 8_000) / 20_000)^2))
+                    ((z - 8_000) / 10_000)^2))
     end
 else
     initial_tracer = (x, e) -> 0
@@ -163,10 +167,12 @@ save_solution = SaveSolutionCallback(interval = analysis_interval,
                                      solution_variables = cons2prim,
                                      output_directory = dir_name)
 
+stepsize_callback = StepsizeCallback(cfl = 0.9)
+
 callbacks = CallbackSet(summary_callback,
+                        stepsize_callback,
                         analysis_callback,
-                        alive_callback,
-                        save_solution)
+                        alive_callback)
 if amr
     @inline function velocity_tracer(u, aux, equations::CompressibleEulerAtmo)
         vel = velocity_magnitude(u, equations) / vel_max
@@ -189,9 +195,12 @@ if amr
     callbacks = CallbackSet(callbacks.discrete_callbacks..., amr_callback)
 end
 
+callbacks = CallbackSet(callbacks.discrete_callbacks..., save_solution)
+
 tol = 1e-6
 sol = solve(ode,
-            RDPK3SpFSAL49(; thread = Trixi.Threaded());
+            CarpenterKennedy2N54(williamson_condition = false);
+            #RDPK3SpFSAL49(; thread = Trixi.Threaded());
             maxiters = 1e8,
             abstol = tol, reltol = tol, ode_default_options()...,
             callback = callbacks)

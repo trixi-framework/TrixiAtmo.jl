@@ -71,7 +71,7 @@ if tracer
         return 1e-2 +
                0.1 * exp(-45 * (((lon_dist))^2 +
                     ((lat - 0.45) / 1.2)^2 +
-                    ((z - 10_000) / 20_000)^2))
+                    ((z - 10_000) / 15_000)^2))
     end
 else
     initial_tracer = (x, e) -> 0
