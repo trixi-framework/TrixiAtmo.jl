@@ -62,7 +62,7 @@ if tracer
 
         lon_pos = 0.12134886826
         lon_dist = min(abs(lon - lon_pos), abs(lon + 2 * pi - lon_pos),
-                   abs(lon - 2 * pi - lon_pos))
+                       abs(lon - 2 * pi - lon_pos))
 
         # Initial condition for tracers: blob as a fraction of density
         return 1e-2 +
@@ -128,7 +128,7 @@ end
 mesh = P4estMeshCubedSphere(trees_per_cube_face..., earth_radius, 30000,
                             polydeg = polydeg,
                             initial_refinement_level = initial_refinement_level,
-                            p4est_partition_allow_for_coarsening=false)
+                            p4est_partition_allow_for_coarsening = false)
 
 ###############################################################################
 # Semidiscretization

@@ -66,7 +66,7 @@ if tracer
 
         lon_pos = 0.75
         lon_dist = min(abs(lon - lon_pos), abs(lon + 2 * pi - lon_pos),
-                   abs(lon - 2 * pi - lon_pos))
+                       abs(lon - 2 * pi - lon_pos))
 
         # Initial condition for tracers: blob as a fraction of density
         return 1e-2 +
