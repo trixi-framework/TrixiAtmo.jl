@@ -17,7 +17,7 @@ td_variant = 3
 amr = true
 tracer = true
 vel_max = 45
-tracer_max = 1.0
+tracer_max = 0.1
 
 RealType = Float64
 earth_radius = EARTH_RADIUS
@@ -127,7 +127,8 @@ end
 
 mesh = P4estMeshCubedSphere(trees_per_cube_face..., earth_radius, 30000,
                             polydeg = polydeg,
-                            initial_refinement_level = initial_refinement_level)
+                            initial_refinement_level = initial_refinement_level,
+                            p4est_partition_allow_for_coarsening=false)
 
 ###############################################################################
 # Semidiscretization
