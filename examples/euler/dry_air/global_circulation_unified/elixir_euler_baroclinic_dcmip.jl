@@ -201,6 +201,7 @@ callbacks = CallbackSet(callbacks.discrete_callbacks..., save_solution)
 tol = 1e-6
 sol = solve(ode,
             CarpenterKennedy2N54(williamson_condition = false);
+            dt = 1.0,
             #SSPRK43(); # thread = Trixi.Threaded());
             maxiters = 1e8,
             abstol = tol, reltol = tol, ode_default_options()...,
