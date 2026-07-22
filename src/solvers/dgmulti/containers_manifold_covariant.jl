@@ -165,7 +165,7 @@ end
 
 function calc_christoffel_symbols!(aux_values, mesh::DGMultiMesh,
                                    equations::AbstractCovariantEquations{2, 3},
-                                   metric_terms::MetricTermsCovariantSphere{ChristoffelSymbolsAutodiff},
+                                   metric_terms::MetricTermsCovariant{ChristoffelSymbolsAutodiff},
                                    dg, element, v1, v2, v3, radius)
     rd = dg.basis
     for i in 1:Trixi.nnodes(dg)
@@ -184,7 +184,7 @@ end
 
 function calc_christoffel_symbols!(aux_values, mesh::DGMultiMesh,
                                    equations::AbstractCovariantEquations{2, 3},
-                                   metric_terms::MetricTermsCovariantSphere{ChristoffelSymbolsCollocationDerivative},
+                                   metric_terms::MetricTermsCovariant{ChristoffelSymbolsCollocationDerivative},
                                    dg, element, v1, v2, v3, radius)
     for i in 1:Trixi.nnodes(dg)
         # Compute metric derivatives using collocation differentiation

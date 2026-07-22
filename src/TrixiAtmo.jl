@@ -81,7 +81,7 @@ export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!
 export cons2prim_and_vorticity, contravariant2global
 
 export P4estMeshCubedSphere2D, P4estMeshQuadIcosahedron2D, DGMultiMeshTriIcosahedron2D,
-       MetricTermsCrossProduct, MetricTermsInvariantCurl, MetricTermsCovariantSphere,
+       MetricTermsCrossProduct, MetricTermsInvariantCurl, MetricTermsCovariant,
        ChristoffelSymbolsAutodiff, ChristoffelSymbolsCollocationDerivative
 
 export EARTH_RADIUS, EARTH_GRAVITATIONAL_ACCELERATION,
