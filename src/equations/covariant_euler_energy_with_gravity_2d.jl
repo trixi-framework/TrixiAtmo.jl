@@ -4,10 +4,61 @@
 @doc raw"""
     CovariantEulerEnergyEquationsWithGravity2D{GlobalCoordinateSystem} <:  
         AbstractCovariantEquations{2, 2, GlobalCoordinateSystem, 4}
+
+Denoting the [covariant derivative](https://en.wikipedia.org/wiki/Covariant_derivative) by 
+$\nabla_j$ and summing over repeated indices, the compressible Euler equations with gravity 
+can be expressed in covariant form as
+```math
+\begin{aligned}
+\partial_t \rho + \nabla_j (\rho v^j) &= 0,\\
+\partial_t (\rho v^i) + \nabla_j \tau^{ij} + \rho G^{ij}\partial_j \Phi &= 0,\\
+\partial_t E + \nabla_j\big(v^j(E + p)\big) &= 0,
+\end{aligned}
+```
+where $\rho$ is the density, $v^i$ and $G^{ij}$ are the contravariant velocity and metric
+tensor components, $\Phi$ is the geopotential, and $\partial_j$ is used as a shorthand for
+$\partial / \partial \xi^j$. The total energy density $E$ is taken to include the
+gravitational potential energy, such that the pressure $p$ is given in terms of the
+conservative variables by the equation of state
+```math
+p = (\gamma - 1)\left(E - \frac{1}{2}\rho G_{ij} v^i v^j - \rho \Phi\right),
+```
+with $\gamma$ denoting the ratio of specific heats. Because the potential energy is already 
+accounted for within $E$, no additional source term due to gravity appears in the energy 
+equation. The contravariant momentum flux tensor components are given by
+```math
+\tau^{ij} = \rho v^i v^j + p G^{ij}.
+```
+As with the covariant shallow water equations (see 
+[`CovariantShallowWaterEquations2D`](@ref)), this system may be formulated on the reference 
+element as a system of conservation laws with a source term, as given by
+```math
+J \frac{\partial}{\partial t}
+\left[\begin{array}{c} \rho \\ \rho v^1 \\ \rho v^2 \\ E \end{array}\right] 
++
+\frac{\partial}{\partial \xi^1} 
+\left[\begin{array}{c} J \rho v^1 \\ J \tau^{11} \\ J \tau^{12} \\ J v^1 (E + p) \end{array}\right]
++ 
+\frac{\partial}{\partial \xi^2} 
+\left[\begin{array}{c} J \rho v^2 \\ J \tau^{21} \\ J \tau^{22} \\ J v^2 (E + p) \end{array}\right] 
+= J \left[\begin{array}{c} 0 \\ 
+-\Gamma^1_{jk}\tau^{jk} - J\rho G^{1j}\partial_j \Phi \\ 
+-\Gamma^2_{jk}\tau^{jk} - J\rho G^{2j}\partial_j \Phi \\
+0
+ \end{array}\right],
+```
+where the Christoffel symbols of the second kind $\Gamma^i_{jk}$ are defined as in 
+[`CovariantShallowWaterEquations2D`](@ref).
+
+!!! note
+    The geometric part of the source term above, involving the Christoffel symbols
+    $\Gamma^i_{jk}$, is **not currently implemented**. Only the gravitational contribution 
+    to the momentum source term is included, through the exported function 
+    `source_terms_gravity`.
+
 ## References
-- Comparison of two Euler equation sets in a Discontinuous Galerkin
-solver for atmospheric modelling (BRIDGE v0.9)
-Michael Baldauf and Florian Prill
+- M. Baldauf and F. Prill. Comparison of two Euler equation sets in a Discontinuous
+  Galerkin solver for atmospheric modelling (BRIDGE v0.9).
 """
 struct CovariantEulerEnergyEquationsWithGravity2D{GlobalCoordinateSystem,
                                                   RealT <: Real} <:
