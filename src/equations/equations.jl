@@ -232,11 +232,11 @@ end
 end
 
 # Extract the area element J = (det(AᵀA))^(1/2) from the auxiliary variables
-@inline function area_element(aux_vars, ::AbstractCovariantEquations{2, 3})
+@inline function area_element(aux_vars, ::AbstractCovariantEquations{2, 2})
     return aux_vars[9]
 end
 
-@inline function area_element(aux_vars, ::AbstractCovariantEquations{2, 2})
+@inline function area_element(aux_vars, ::AbstractCovariantEquations{2, 3})
     return aux_vars[13]
 end
 
