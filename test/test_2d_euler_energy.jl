@@ -26,4 +26,20 @@ EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler/dry_air")
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
 end
 
+@trixi_testset "elixir_covariant_energy_inertia_gravity_waves" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "buoyancy",
+                                 "elixir_covariant_energy_inertia_gravity_waves.jl"),
+                        l2=[
+                            5.988113879663543e-8,
+                            1.652979410541983e-9,
+                            5.413741859342455e-8,
+                            0.016802245219125052
+                        ],
+                        linf=[
+                            7.418985343843332e-7,
+                            2.078836479520174e-8,
+                            5.333954417018675e-7,
+                            0.18759511329699308
+                        ], tspan=(0.0, 10.0))
+end
 end
