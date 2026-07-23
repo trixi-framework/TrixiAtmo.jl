@@ -94,33 +94,19 @@ end
 
 @inline function cons2entropy(u, aux_vars,
                               equations::CovariantEulerEnergyEquationsWithGravity2D)
+    Gcov = metric_covariant(aux_vars, equations)
     rho, rho_vcon1, rho_vcon2, rho_e_total = u
-    phi = geopotential(aux_vars, equations)
-
-    # Contravariant velocity components
-    vcon = velocity_contravariant(u, equations)
-
-    # Covariant components via the metric
-    vcov = metric_covariant(aux_vars, equations) * vcon
-
-    # Kinetic energy in covariant form v_i v^i
-    v_square = dot(vcov, vcon)
-
-    # Pressure (remove gravitational potential contribution from total energy)
-    p = (equations.gamma - 1) * (rho_e_total - 0.5f0 * rho * v_square - rho * phi)
-
-    # Thermodynamic entropy and rho/p
-    p = 1
-    rho = 1
-    s = log(p) - equations.gamma * log(rho)
-    rho_p = rho / p
+    p = pressure(u, aux_vars, equations)
+    vcon = SVector(rho_vcon1 / rho, rho_vcon2 / rho)
+    vcov = Gcov * vcon
+    s = log(p / rho^equations.gamma)
 
     # Entropy variables (covariant form)
     w1 = (equations.gamma - s) * equations.inv_gamma_minus_one -
-         0.5f0 * rho_p * v_square
-    w2 = rho_p * vcov[1]
-    w3 = rho_p * vcov[2]
-    w4 = -rho_p
+         0.5f0 * rho / p * dot(vcov, vcon)
+    w2 = rho / p * vcov[1]
+    w3 = rho / p * vcov[2]
+    w4 = -rho / p
 
     return SVector(w1, w2, w3, w4)
 end

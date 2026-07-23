@@ -101,8 +101,8 @@ function Trixi.calc_interface_flux!(cache,
                                     mesh::DGMultiMesh,
                                     have_nonconservative_terms::False,
                                     equations::AbstractCovariantEquations{NDIMS},
-                                    dg::DGMulti{NDIMS_AMBIENT, <:Tri}) where {NDIMS_AMBIENT,
-                                                                              NDIMS}
+                                    dg::DGMulti{NDIMS_AMBIENT}) where {NDIMS_AMBIENT,
+                                                                       NDIMS}
     @unpack surface_flux = surface_integral
     md = mesh.md
     rd = dg.basis
