@@ -237,7 +237,7 @@ end
     rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, aux_vars_ll, equations)
     rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, aux_vars_rr, equations)
 
-    # Calcualte the normal velocities and sound speeds
+    # Calculate the normal velocities and sound speeds
     v_ll = (v1_ll * normal_direction[1]
             +
             v2_ll * normal_direction[2])
