@@ -2,7 +2,7 @@
 #! format: noindent
 
 @doc raw"""
-    CovariantEulerEnergyEquationsWithGravity2D{GlobalCoordinateSystem} <:  
+    CovariantEulerEquations2D{GlobalCoordinateSystem} <:  
         AbstractCovariantEquations{2, 2, GlobalCoordinateSystem, 4}
 
 Denoting the [covariant derivative](https://en.wikipedia.org/wiki/Covariant_derivative) by 
