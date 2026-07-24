@@ -33,7 +33,7 @@ end
                         polydeg=3,
                         cells_per_dimension=(5, 5),
                         tspan=(0.0, 1.0 * SECONDS_PER_DAY),
-                        metric_terms=MetricTermsCovariantSphere(christoffel_symbols = ChristoffelSymbolsCollocationDerivative()))
+                        metric_terms=MetricTermsCovariant(christoffel_symbols = ChristoffelSymbolsCollocationDerivative()))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
@@ -113,7 +113,7 @@ end
                             0.20465035365748313,
                             0.14813768215259907
                         ],
-                        metric_terms=MetricTermsCovariantSphere(christoffel_symbols = ChristoffelSymbolsCollocationDerivative()),
+                        metric_terms=MetricTermsCovariant(christoffel_symbols = ChristoffelSymbolsCollocationDerivative()),
                         polydeg=3,
                         initial_refinement_level=1,
                         tspan=(0.0, 1.0 * SECONDS_PER_DAY))

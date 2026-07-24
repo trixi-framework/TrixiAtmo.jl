@@ -50,6 +50,7 @@ include("callbacks_stage/callbacks_stage.jl")
 export CompressibleMoistEulerEquations2D,
        CompressibleRainyEulerEquations2D,
        CovariantLinearAdvectionEquation2D, CovariantShallowWaterEquations2D,
+       CovariantEulerEnergyEquationsWithGravity2D,
        ShallowWaterEquations3D, SplitCovariantShallowWaterEquations2D,
        CompressibleEulerPotentialTemperatureEquations1D,
        CompressibleEulerPotentialTemperatureEquations2D,
@@ -70,7 +71,7 @@ export flux_chandrashekar, FluxLMARS
 export flux_nonconservative_zeros, flux_nonconservative_ec,
        flux_nonconservative_surface_simplified, source_terms_geometric_coriolis,
        source_terms_coriolis, source_terms_coriolis_lagrange_multiplier,
-       flux_tec, flux_etec, flux_nonconservative_souza_etal,
+       source_terms_gravity, flux_tec, flux_etec, flux_nonconservative_souza_etal,
        flux_nonconservative_artiano_etal,
        flux_nonconservative_waruszewski_etal, flux_zero,
        flux_ec_rain, flux_LMARS, flux_nonconservative_es, flux_conservative_es,
@@ -78,10 +79,11 @@ export flux_nonconservative_zeros, flux_nonconservative_ec,
 
 export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!
 
-export cons2prim_and_vorticity, contravariant2global
+export cons2prim_and_vorticity, contravariant2global, contravariant_cons2global_prim
 
 export P4estMeshCubedSphere2D, P4estMeshQuadIcosahedron2D, DGMultiMeshTriIcosahedron2D,
-       MetricTermsCrossProduct, MetricTermsInvariantCurl, MetricTermsCovariantSphere,
+       MetricTermsCrossProduct, MetricTermsInvariantCurl, MetricTermsCovariant,
+       SphericalManifold, FlatManifold,
        ChristoffelSymbolsAutodiff, ChristoffelSymbolsCollocationDerivative
 
 export EARTH_RADIUS, EARTH_GRAVITATIONAL_ACCELERATION,

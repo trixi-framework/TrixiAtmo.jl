@@ -49,35 +49,50 @@ function Trixi.calc_sources!(du, u, t, source_term::Nothing,
     nothing
 end
 
-# version for covariant equations on DGMultiMeshes
-function Trixi.calc_volume_integral!(du, u,
-                                     mesh::DGMultiMesh{NDIMS_AMBIENT, <:Trixi.NonAffine},
-                                     have_nonconservative_terms::False,
-                                     equations::AbstractCovariantEquations{NDIMS},
-                                     volume_integral::VolumeIntegralWeakForm, dg::DGMulti,
-                                     cache) where {NDIMS_AMBIENT, NDIMS}
-    rd = dg.basis
-    md = mesh.md
+# Affine mesh version for covariant equations - dispatcher
+function Trixi.volume_integral_kernel!(du, u, element,
+                                       mesh::DGMultiMesh{NDIMS_AMBIENT, <:Trixi.Affine},
+                                       have_nonconservative_terms::False,
+                                       equations::AbstractCovariantEquations{NDIMS},
+                                       volume_integral::VolumeIntegralWeakForm, dg::DGMulti,
+                                       cache) where {NDIMS_AMBIENT, NDIMS}
+    volume_integral_covariant_kernel!(du, u, element, mesh, have_nonconservative_terms,
+                                      equations, volume_integral, dg, cache)
+end
+
+# Non-affine mesh version for covariant equations - dispatcher
+function Trixi.volume_integral_kernel!(du, u, element,
+                                       mesh::DGMultiMesh{NDIMS_AMBIENT, <:Trixi.NonAffine},
+                                       have_nonconservative_terms::False,
+                                       equations::AbstractCovariantEquations{NDIMS},
+                                       volume_integral::VolumeIntegralWeakForm, dg::DGMulti,
+                                       cache) where {NDIMS_AMBIENT, NDIMS}
+    volume_integral_covariant_kernel!(du, u, element, mesh, have_nonconservative_terms,
+                                      equations, volume_integral, dg, cache)
+end
+
+# Volume integral kernel for covariant equations.
+function volume_integral_covariant_kernel!(du, u, element,
+                                           mesh::DGMultiMesh,
+                                           have_nonconservative_terms::False,
+                                           equations::AbstractCovariantEquations{NDIMS},
+                                           volume_integral::VolumeIntegralWeakForm,
+                                           dg::DGMulti,
+                                           cache) where {NDIMS}
     (; weak_differentiation_matrices) = cache
     (; u_values, local_values_threaded) = cache.solution_container
     (; aux_quad_values) = cache.auxiliary_container
 
-    # interpolate to quadrature points
-    Trixi.apply_to_each_field(Trixi.mul_by!(rd.Vq), u_values, u)
-
-    Trixi.@threaded for e in Trixi.eachelement(mesh, dg, cache)
-        flux_values = local_values_threaded[Threads.threadid()]
-        for i in 1:NDIMS
-            for j in Trixi.eachindex(flux_values)
-                u_node = u_values[j, e]
-                aux_node = aux_quad_values[j, e]
-                area_elem = area_element(aux_node, equations)
-                flux_values[j] = flux(u_node, aux_node, i, equations)
-            end
-
-            Trixi.apply_to_each_field(Trixi.mul_by_accum!(weak_differentiation_matrices[i]),
-                                      view(du, :, e), flux_values)
+    flux_values = local_values_threaded[Threads.threadid()]
+    for i in 1:NDIMS
+        for j in Trixi.eachindex(flux_values)
+            u_node = u_values[j, element]
+            aux_node = aux_quad_values[j, element]
+            flux_values[j] = flux(u_node, aux_node, i, equations)
         end
+
+        Trixi.apply_to_each_field(Trixi.mul_by_accum!(weak_differentiation_matrices[i]),
+                                  view(du, :, element), flux_values)
     end
 end
 
@@ -86,8 +101,8 @@ function Trixi.calc_interface_flux!(cache,
                                     mesh::DGMultiMesh,
                                     have_nonconservative_terms::False,
                                     equations::AbstractCovariantEquations{NDIMS},
-                                    dg::DGMulti{NDIMS_AMBIENT, <:Tri}) where {NDIMS_AMBIENT,
-                                                                              NDIMS}
+                                    dg::DGMulti{NDIMS_AMBIENT}) where {NDIMS_AMBIENT,
+                                                                       NDIMS}
     @unpack surface_flux = surface_integral
     md = mesh.md
     rd = dg.basis
@@ -167,4 +182,53 @@ function Trixi.calc_interface_flux!(cache, surface_integral::SurfaceIntegralWeak
     end
 
     return nothing
+end
+
+function Trixi.calc_single_boundary_flux!(cache, t, boundary_condition, boundary_key, mesh,
+                                          have_nonconservative_terms::False,
+                                          equations::AbstractCovariantEquations{NDIMS},
+                                          dg::DGMulti) where {NDIMS}
+    rd = dg.basis
+    md = mesh.md
+    (; u_face_values, flux_face_values) = cache.solution_container
+    (; aux_face_values) = cache.auxiliary_container
+    @unpack xyzf = md
+    @unpack surface_flux = dg.surface_integral
+
+    # reshape face/normal arrays to have size = (num_points_on_face, num_faces_total).
+    # mesh.boundary_faces indexes into the columns of these face-reshaped arrays.
+    num_faces = StartUpDG.num_faces(rd.element_type)
+    num_pts_per_face = rd.Nfq ÷ num_faces
+    num_faces_total = num_faces * md.num_elements
+
+    # This function was originally defined as
+    # `reshape_by_face(u) = reshape(view(u, :), num_pts_per_face, num_faces_total)`.
+    # This results in allocations due to https://github.com/JuliaLang/julia/issues/36313.
+    # To avoid allocations, we use Tim Holy's suggestion:
+    # https://github.com/JuliaLang/julia/issues/36313#issuecomment-782336300.
+    reshape_by_face(u) = Base.ReshapedArray(u, (num_pts_per_face, num_faces_total), ())
+
+    u_face_values = reshape_by_face(u_face_values)
+    aux_face_values = reshape_by_face(aux_face_values)
+    flux_face_values = reshape_by_face(flux_face_values)
+    xyzf = reshape_by_face.(xyzf)
+    nrstJ = map(nrstJ -> Base.ReshapedArray(nrstJ, (num_pts_per_face, num_faces), ()),
+                rd.nrstJ)
+
+    # loop through boundary faces, which correspond to columns of reshaped u_face_values, ...
+    for f in mesh.boundary_faces[boundary_key]
+        for i in Base.OneTo(num_pts_per_face)
+            ref_face = mod(f - 1, num_faces) + 1
+            face_normal = SVector{NDIMS}(getindex.(nrstJ, i, ref_face))
+            face_coordinates = SVector{NDIMS}(getindex.(xyzf, i, f))
+            flux_face_values[i, f] = boundary_condition(u_face_values[i, f],
+                                                        aux_face_values[i, f],
+                                                        face_normal, face_coordinates,
+                                                        t,
+                                                        surface_flux, equations)
+        end
+    end
+
+    # Note: modifying the values of the reshaped array modifies the values of cache.solution_container.flux_face_values.
+    # However, we don't have to re-reshape, since cache.solution_container.flux_face_values still retains its original shape.
 end

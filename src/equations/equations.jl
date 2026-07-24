@@ -207,7 +207,12 @@ end
 # Extract the covariant basis vectors a_i from the auxiliary variables as a matrix A, 
 # where A[:, i] contains the components of the ith covariant tangent basis vector with 
 # respect to the global (Cartesian or spherical) coordinate system
-@inline function basis_covariant(aux_vars, ::AbstractCovariantEquations{2})
+@inline function basis_covariant(aux_vars, ::AbstractCovariantEquations{2, 2})
+    return SMatrix{2, 2}(aux_vars[1], aux_vars[2],
+                         aux_vars[3], aux_vars[4])
+end
+
+@inline function basis_covariant(aux_vars, ::AbstractCovariantEquations{2, 3})
     return SMatrix{3, 2}(aux_vars[1], aux_vars[2], aux_vars[3],
                          aux_vars[4], aux_vars[5], aux_vars[6])
 end
@@ -215,36 +220,65 @@ end
 # Extract the contravariant basis vectors a^i from the auxiliary variables as a matrix B, 
 # where B[i, :] contains the components of the ith contravariant tangent basis vector with 
 # respect to the global (Cartesian or spherical) coordinate system
-@inline function basis_contravariant(aux_vars, ::AbstractCovariantEquations{2})
+@inline function basis_contravariant(aux_vars, ::AbstractCovariantEquations{2, 2})
+    return SMatrix{2, 2}(aux_vars[5], aux_vars[6],
+                         aux_vars[7], aux_vars[8])
+end
+
+@inline function basis_contravariant(aux_vars, ::AbstractCovariantEquations{2, 3})
     return SMatrix{2, 3}(aux_vars[7], aux_vars[8],
                          aux_vars[9], aux_vars[10],
                          aux_vars[11], aux_vars[12])
 end
 
 # Extract the area element J = (det(AᵀA))^(1/2) from the auxiliary variables
-@inline function area_element(aux_vars, ::AbstractCovariantEquations{2})
+@inline function area_element(aux_vars, ::AbstractCovariantEquations{2, 2})
+    return aux_vars[9]
+end
+
+@inline function area_element(aux_vars, ::AbstractCovariantEquations{2, 3})
     return aux_vars[13]
 end
 
 # Extract the covariant metric tensor components Gᵢⱼ from the auxiliary variables
-@inline function metric_covariant(aux_vars, ::AbstractCovariantEquations{2})
+@inline function metric_covariant(aux_vars, ::AbstractCovariantEquations{2, 2})
+    return SMatrix{2, 2}(aux_vars[10], aux_vars[11],
+                         aux_vars[11], aux_vars[12])
+end
+
+@inline function metric_covariant(aux_vars, ::AbstractCovariantEquations{2, 3})
     return SMatrix{2, 2}(aux_vars[14], aux_vars[15],
                          aux_vars[15], aux_vars[16])
 end
 
 # Extract the contravariant metric tensor components Gⁱʲ from the auxiliary variables
-@inline function metric_contravariant(aux_vars, ::AbstractCovariantEquations{2})
+@inline function metric_contravariant(aux_vars, ::AbstractCovariantEquations{2, 2})
+    return SMatrix{2, 2}(aux_vars[13], aux_vars[14],
+                         aux_vars[14], aux_vars[15])
+end
+
+@inline function metric_contravariant(aux_vars, ::AbstractCovariantEquations{2, 3})
     return SMatrix{2, 2}(aux_vars[17], aux_vars[18],
                          aux_vars[18], aux_vars[19])
 end
 
 # Extract the bottom topography hₛ from the auxiliary variables
-@inline function bottom_topography(aux_vars, ::AbstractCovariantEquations{2})
+@inline function bottom_topography(aux_vars, ::AbstractCovariantEquations{2, 3})
     return aux_vars[20]
 end
 
+# Extract the geopotential from the auxiliary variables
+@inline function geopotential(aux_vars, ::AbstractCovariantEquations{2, 2})
+    return aux_vars[16]
+end
+
 # Extract the Christoffel symbols of the second kind Γⁱⱼₖ from the auxiliary variables
-@inline function christoffel_symbols(aux_vars, ::AbstractCovariantEquations{2})
+@inline function christoffel_symbols(aux_vars, ::AbstractCovariantEquations{2, 2})
+    return (SMatrix{2, 2}(aux_vars[17], aux_vars[18], aux_vars[18], aux_vars[19]),
+            SMatrix{2, 2}(aux_vars[20], aux_vars[21], aux_vars[21], aux_vars[22]))
+end
+
+@inline function christoffel_symbols(aux_vars, ::AbstractCovariantEquations{2, 3})
     return (SMatrix{2, 2}(aux_vars[21], aux_vars[22], aux_vars[22], aux_vars[23]),
             SMatrix{2, 2}(aux_vars[24], aux_vars[25], aux_vars[25], aux_vars[26]))
 end
@@ -330,6 +364,9 @@ abstract type AbstractCompressibleMoistEulerEquations{NDIMS, NVARS} <:
 abstract type AbstractCovariantShallowWaterEquations2D{GlobalCoordinateSystem} <:
               AbstractCovariantEquations{2, 3, GlobalCoordinateSystem, 3} end
 
+abstract type AbstractCovariantEulerEquations{NDIMS, GlobalCoordinateSystem, NVARS} <:
+              AbstractCovariantEquations{NDIMS, NDIMS, GlobalCoordinateSystem, NVARS} end
+
 abstract type AbstractCompressibleRainyEulerEquations{NDIMS, NVARS} <:
               AbstractEquations{NDIMS, NVARS} end
 
@@ -340,6 +377,7 @@ end
 include("covariant_advection.jl")
 include("covariant_shallow_water.jl")
 include("covariant_shallow_water_split.jl")
+include("covariant_euler_energy_with_gravity_2d.jl")
 include("compressible_moist_euler_2d.jl")
 include("compressible_rainy_euler_2d.jl")
 include("compressible_euler_potential_temperature_1d.jl")
