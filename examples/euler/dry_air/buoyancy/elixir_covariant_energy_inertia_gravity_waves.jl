@@ -114,5 +114,5 @@ callbacks = CallbackSet(summary_callback, analysis_callback, save_solution,
 
 # OrdinaryDiffEq's `solve` method evolves the solution in time and executes the passed 
 # callbacks
-sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
+sol = solve(ode, RDPK3SpFSAL49(; thread = Trixi.Threaded()),
             dt = 1.0, save_everystep = false, callback = callbacks)
