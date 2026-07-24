@@ -92,7 +92,7 @@ end
 # specifically to transformations from conservative variables.
 function varnames(::typeof(contravariant2global),
                   ::CovariantEulerEnergyEquationsWithGravity2D)
-    return ("rho", "v1", "v2", "e")
+    return ("rho", "v1", "v2", "rho_e")
 end
 
 # Convenience functions to extract physical variables from state vector
