@@ -204,7 +204,7 @@ end
                         ],
                         rtol=_rtol,
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY),
-                        trees_per_cube_face = (2, 2))
+                        trees_per_cube_face=(2, 2))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
