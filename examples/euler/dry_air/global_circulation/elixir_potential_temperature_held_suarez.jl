@@ -129,8 +129,8 @@ solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
 lat_lon_trees_per_dim = 10
 layers = 8
 
-mesh = Trixi.T8codeMeshCubedSphere(lat_lon_trees_per_dim, layers, EARTH_RADIUS, 30000.0,
-                                   polydeg = polydeg, initial_refinement_level = 0)
+mesh = P4estMeshCubedSphereTopography(lat_lon_trees_per_dim, layers, EARTH_RADIUS, 30000.0,
+                                      polydeg = polydeg, initial_refinement_level = 0)
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_terms_held_suarez,
