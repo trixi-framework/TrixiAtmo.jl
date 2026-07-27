@@ -208,8 +208,8 @@ volume_flux = (flux_tec, flux_nonconservative_souza_etal)
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
 trees_per_cube_face = (8, 4)
-mesh = P4estMeshCubedSphere(trees_per_cube_face..., EARTH_RADIUS, 30000,
-                            polydeg = polydeg, initial_refinement_level = 0)
+mesh = P4estMeshCubedSphereTopography(trees_per_cube_face..., EARTH_RADIUS, 30000,
+                                      polydeg = polydeg, initial_refinement_level = 0)
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_terms_baroclinic_instability,

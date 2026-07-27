@@ -82,7 +82,8 @@ end
     P4estMeshCubedSphereTopography(trees_per_face_dimension, layers, inner_radius, thickness;
                          polydeg, RealT=Float64,
                          initial_refinement_level=0, unsaved_changes=true,
-                         p4est_partition_allow_for_coarsening=true, initial_topography, 
+                         p4est_partition_allow_for_coarsening=true,
+                         initial_topography = initial_topography_perfect_sphere, 
                          adapt_vertical_grid, keep_columns_together = false)
 
 Build a "Cubed Sphere" mesh as `P4estMesh` with
@@ -116,7 +117,8 @@ function P4estMeshCubedSphereTopography(trees_per_face_dimension, layers, inner_
                                         initial_refinement_level = 0,
                                         unsaved_changes = true,
                                         p4est_partition_allow_for_coarsening = true,
-                                        initial_topography, adapt_vertical_grid = GalChen(),
+                                        initial_topography = initial_topography_perfect_sphere,
+                                        adapt_vertical_grid = GalChen(),
                                         keep_columns_together = false)
     connectivity = connectivity_cubed_sphere(trees_per_face_dimension, layers)
 
@@ -254,6 +256,15 @@ function Trixi.partition!(mesh::Trixi.P4estMeshParallel{3}; weight_fn = C_NULL)
                                Int(mesh.p4est_partition_allow_for_coarsening),
                                weight_fn)
     end
+end
+
+"""
+    initial_topography_perfect_sphere(lat, lon)
+Topography of a perfect sphere. It returns zero elevation for any combination
+of latitude and longitude.
+"""
+function initial_topography_perfect_sphere(lat, lon)
+    return zero(typeof(lat))
 end
 
 # Connectivity of a cubed-sphere where we number along a column first!
