@@ -126,10 +126,9 @@ solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
 
 # these are the settings used in Souza et al.
-lat_lon_trees_per_dim = 10
-layers = 8
+trees_per_cube_face = (10, 8)
 
-mesh = P4estMeshCubedSphereTopography(lat_lon_trees_per_dim, layers, EARTH_RADIUS, 30000.0,
+mesh = P4estMeshCubedSphereTopography(trees_per_cube_face..., EARTH_RADIUS, 30000.0,
                                       polydeg = polydeg, initial_refinement_level = 0)
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
