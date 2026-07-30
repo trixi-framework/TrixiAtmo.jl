@@ -19,7 +19,7 @@ function Trixi.compute_coefficients!(::Nothing, u, initial_condition, t,
 end
 
 # Calculate the source contribution, passing auxiliary variables to the source term function.
-function Trixi.calc_sources!(du, u, t, source_terms,
+@inline function Trixi.calc_sources!(du, u, t, source_terms,
                              mesh, equations::AbstractCovariantEquations, dg::DGMulti,
                              cache)
     rd = dg.basis
@@ -50,29 +50,33 @@ function Trixi.calc_sources!(du, u, t, source_term::Nothing,
 end
 
 # Affine mesh version for covariant equations - dispatcher
-function Trixi.volume_integral_kernel!(du, u, element,
+@inline function Trixi.volume_integral_kernel!(du, u, element,
                                        mesh::DGMultiMesh{NDIMS_AMBIENT, <:Trixi.Affine},
                                        have_nonconservative_terms::False,
-                                       equations::AbstractCovariantEquations{NDIMS},
+                                       equations::AbstractCovariantEquations,
                                        volume_integral::VolumeIntegralWeakForm, dg::DGMulti,
-                                       cache) where {NDIMS_AMBIENT, NDIMS}
+                                       cache) where {NDIMS_AMBIENT}
     volume_integral_covariant_kernel!(du, u, element, mesh, have_nonconservative_terms,
                                       equations, volume_integral, dg, cache)
+
+    return nothing
 end
 
 # Non-affine mesh version for covariant equations - dispatcher
-function Trixi.volume_integral_kernel!(du, u, element,
+@inline function Trixi.volume_integral_kernel!(du, u, element,
                                        mesh::DGMultiMesh{NDIMS_AMBIENT, <:Trixi.NonAffine},
                                        have_nonconservative_terms::False,
-                                       equations::AbstractCovariantEquations{NDIMS},
+                                       equations::AbstractCovariantEquations,
                                        volume_integral::VolumeIntegralWeakForm, dg::DGMulti,
-                                       cache) where {NDIMS_AMBIENT, NDIMS}
+                                       cache) where {NDIMS_AMBIENT}
     volume_integral_covariant_kernel!(du, u, element, mesh, have_nonconservative_terms,
                                       equations, volume_integral, dg, cache)
+
+    return nothing
 end
 
 # Volume integral kernel for covariant equations.
-function volume_integral_covariant_kernel!(du, u, element,
+@inline function volume_integral_covariant_kernel!(du, u, element,
                                            mesh::DGMultiMesh,
                                            have_nonconservative_terms::False,
                                            equations::AbstractCovariantEquations{NDIMS},
@@ -94,6 +98,8 @@ function volume_integral_covariant_kernel!(du, u, element,
         Trixi.apply_to_each_field(Trixi.mul_by_accum!(weak_differentiation_matrices[i]),
                                   view(du, :, element), flux_values)
     end
+
+    return nothing
 end
 
 function Trixi.calc_interface_flux!(cache,
