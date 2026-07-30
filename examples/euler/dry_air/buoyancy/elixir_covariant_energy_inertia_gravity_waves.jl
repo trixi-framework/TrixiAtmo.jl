@@ -7,10 +7,21 @@ using OrdinaryDiffEqLowStorageRK, Trixi, TrixiAtmo
 ###############################################################################
 # Spatial discretization
 
+"""
+	initial_condition_gravity_waves(x, t,
+                                        equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+
+Test cases for linearized analytical solution by
+-  Baldauf, Michael and Brdar, Slavko (2013)
+   An analytic solution for linear gravity waves in a channel as a test
+   for numerical models using the non-hydrostatic, compressible {E}uler equations
+   [DOI: 10.1002/qj.2105] (https://doi.org/10.1002/qj.2105)
+"""
 function initial_condition_gravity_waves(x, t,
-                                         equations)
-    g = 9.81
-    c_p, c_v = 1004, 717
+                                         equations::CovariantEulerEnergyEquations2D)
+    g = equations.gravity
+    c_p = equations.c_p
+    c_v = equations.c_v
     # center of perturbation
     x_c = 100_000.0
     a = 5_000
@@ -27,21 +38,19 @@ function initial_condition_gravity_waves(x, t,
     rho = rhos * exp(-delta * x[2]) + rho_b * exp(-0.5 * delta * x[2])
     v1 = 20
     v2 = 0
-    if p <= 0 || rho <= 0
-        @show p rho
-        error("Non-physical initial condition: pressure and density must be positive.")
-    end
+
     return SVector(rho, v1, v2, p)
 end
 
-function geopotential(x)
-    return 9.81 * x[2]
+function geopotential(x, equations::CovariantEulerEnergyEquations2D)
+    return equations.gravity * x[2]
 end
 
 initial_condition = initial_condition_gravity_waves
 
-equations = CovariantEulerEnergyEquations2D(1.4,
-                                      global_coordinate_system = GlobalCartesianCoordinates())
+equations = CovariantEulerEnergyEquations2D(c_p = 1004,
+                                            c_v = 717,
+                                            gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 
 ###############################################################################
 # Build DG solver.

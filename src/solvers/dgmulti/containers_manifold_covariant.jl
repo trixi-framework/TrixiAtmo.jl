@@ -84,7 +84,7 @@ function calc_aux_node!(aux_node, basis_covariant, x_node,
 
     # Geopotential
     if !isnothing(geopotential)
-        aux_node[16] = geopotential(x_node)
+        aux_node[16] = geopotential(x_node, equations)
     else
         aux_node[16] = zero(eltype(aux_node))
     end
@@ -120,7 +120,7 @@ function calc_aux_node!(aux_node, basis_covariant, x_node,
 
     # Bottom topography
     if !isnothing(bottom_topography)
-        aux_node[20] = bottom_topography(x_node)
+        aux_node[20] = bottom_topography(x_node, equations)
     else
         aux_node[20] = zero(eltype(aux_node))
     end

@@ -63,13 +63,30 @@ where the Christoffel symbols of the second kind $\Gamma^i_{jk}$ are defined as 
 struct CovariantEulerEnergyEquations2D{GlobalCoordinateSystem,
                                                   RealT <: Real} <:
        AbstractCovariantEulerEquations{2, GlobalCoordinateSystem, 4}
-    gamma::RealT  # 
-    inv_gamma_minus_one::RealT  # 
+    p_0::RealT # reference pressure in Pa
+    c_p::RealT # specific heat at constant pressure in J/(kg K)
+    c_v::RealT # specific heat at constant volume in J/(kg K)
+    gravity::RealT # gravitational acceleration in m/s²
+    R::RealT # gas constant in J/(kg K)
+    gamma::RealT # ratio of specific heats
+    inv_gamma_minus_one::RealT # = inv(gamma - 1); can be used to write slow divisions as fast multiplications
+    K::RealT # = p_0 * (R / p_0)^gamma; scaling factor between pressure and weighted potential temperature
+    stolarsky_factor::RealT # = (gamma - 1) / gamma; used in the stolarsky mean
     global_coordinate_system::GlobalCoordinateSystem
-    function CovariantEulerEnergyEquations2D(gamma::RealT;
-                                                        global_coordinate_system = GlobalCartesianCoordinates()) where {RealT <:
-                                                                                                                        Real}
-        return new{typeof(global_coordinate_system), RealT}(gamma, inv(gamma - 1))
+    function CovariantEulerEnergyEquations2D(; c_p, c_v,
+                                             gravity,
+                                             global_coordinate_system = GlobalCartesianCoordinates())
+        c_p, c_v, gravity = promote(c_p, c_v, gravity)
+        p_0 = 100_000
+        R = c_p - c_v
+        gamma = c_p / c_v
+        inv_gamma_minus_one = inv(gamma - 1)
+        K = p_0 * (R / p_0)^gamma
+        stolarsky_factor = (gamma - 1) / gamma
+        return new{typeof(global_coordinate_system), typeof(c_p)}(p_0, c_p, c_v, gravity, R,
+                                                                  gamma,
+                                                                  inv_gamma_minus_one,
+                                                                  K, stolarsky_factor)
     end
 end
 

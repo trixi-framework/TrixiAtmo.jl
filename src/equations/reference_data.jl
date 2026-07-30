@@ -230,7 +230,7 @@ end
 
 # Bottom topography function to pass as auxiliary_field keyword argument in constructor for 
 # SemidiscretizationHyperbolic, used with initial_condition_isolated_mountain
-@inline function bottom_topography_isolated_mountain(x)
+@inline function bottom_topography_isolated_mountain(x, equations)
     RealT = eltype(x)
     a = sqrt(x[1]^2 + x[2]^2 + x[3]^2)  # radius of the sphere
     lon, lat = atan(x[2], x[1]), asin(x[3] / a)
@@ -330,7 +330,7 @@ end
 
 # Bottom topography function to pass as auxiliary_field keyword argument in constructor for 
 # SemidiscretizationHyperbolic, used with initial_condition_unsteady_solid_body_rotation
-@inline function bottom_topography_unsteady_solid_body_rotation(x)
+@inline function bottom_topography_unsteady_solid_body_rotation(x, equations)
     return 0.5f0 * (EARTH_ROTATION_RATE * x[3])^2 / EARTH_GRAVITATIONAL_ACCELERATION
 end
 
