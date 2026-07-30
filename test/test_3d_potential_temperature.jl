@@ -188,23 +188,23 @@ end
                                  "elixir_potential_temperature_held_suarez.jl"),
                         l2=[
                             0.0031433373482917877,
-                            0.00013227403432754568,
-                            0.00013227403435669966,
+                            0.000132274039341287,
+                            0.00013227403926677734,
                             0.00014259768410822775,
                             0.7578318727895532,
                             569.8247547308886
                         ],
                         linf=[
                             0.023356419582470034,
-                            0.0015226272537349924,
-                            0.0015226272475246977,
-                            0.0005022230908559857,
+                            0.0015226273650469607,
+                            0.0015226273524388042,
+                            0.0005022233032394358,
                             4.88597072706591,
                             1703.946276059638
                         ],
                         rtol=_rtol,
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY),
-                        lat_lon_trees_per_dim=2, layers=2)
+                        trees_per_cube_face=(2, 2))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
