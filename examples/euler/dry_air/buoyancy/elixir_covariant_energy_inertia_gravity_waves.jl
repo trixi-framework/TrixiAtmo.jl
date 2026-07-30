@@ -40,7 +40,7 @@ end
 
 initial_condition = initial_condition_gravity_waves
 
-equations = CovariantEulerEnergyEquationsWithGravity2D(1.4,
+equations = CovariantEulerEnergyEquations2D(1.4,
                                       global_coordinate_system = GlobalCartesianCoordinates())
 
 ###############################################################################

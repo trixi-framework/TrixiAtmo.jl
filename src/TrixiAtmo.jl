@@ -50,7 +50,7 @@ include("callbacks_stage/callbacks_stage.jl")
 export CompressibleMoistEulerEquations2D,
        CompressibleRainyEulerEquations2D,
        CovariantLinearAdvectionEquation2D, CovariantShallowWaterEquations2D,
-       CovariantEulerEnergyEquationsWithGravity2D,
+       CovariantEulerEnergyEquations2D,
        ShallowWaterEquations3D, SplitCovariantShallowWaterEquations2D,
        CompressibleEulerPotentialTemperatureEquations1D,
        CompressibleEulerPotentialTemperatureEquations2D,

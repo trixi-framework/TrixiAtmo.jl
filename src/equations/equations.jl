@@ -377,7 +377,7 @@ end
 include("covariant_advection.jl")
 include("covariant_shallow_water.jl")
 include("covariant_shallow_water_split.jl")
-include("covariant_euler_energy_with_gravity_2d.jl")
+include("covariant_euler_energy_2d.jl")
 include("compressible_moist_euler_2d.jl")
 include("compressible_rainy_euler_2d.jl")
 include("compressible_euler_potential_temperature_1d.jl")

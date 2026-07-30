@@ -60,28 +60,28 @@ where the Christoffel symbols of the second kind $\Gamma^i_{jk}$ are defined as 
 - M. Baldauf and F. Prill. Comparison of two Euler equation sets in a Discontinuous
   Galerkin solver for atmospheric modelling (BRIDGE v0.9).
 """
-struct CovariantEulerEnergyEquationsWithGravity2D{GlobalCoordinateSystem,
+struct CovariantEulerEnergyEquations2D{GlobalCoordinateSystem,
                                                   RealT <: Real} <:
        AbstractCovariantEulerEquations{2, GlobalCoordinateSystem, 4}
     gamma::RealT  # 
     inv_gamma_minus_one::RealT  # 
     global_coordinate_system::GlobalCoordinateSystem
-    function CovariantEulerEnergyEquationsWithGravity2D(gamma::RealT;
+    function CovariantEulerEnergyEquations2D(gamma::RealT;
                                                         global_coordinate_system = GlobalCartesianCoordinates()) where {RealT <:
                                                                                                                         Real}
         return new{typeof(global_coordinate_system), RealT}(gamma, inv(gamma - 1))
     end
 end
 
-have_nonconservative_terms(::CovariantEulerEnergyEquationsWithGravity2D) = False()
+have_nonconservative_terms(::CovariantEulerEnergyEquations2D) = False()
 
 # The conservative variables are the height and contravariant momentum components
-function varnames(::typeof(cons2cons), ::CovariantEulerEnergyEquationsWithGravity2D)
+function varnames(::typeof(cons2cons), ::CovariantEulerEnergyEquations2D)
     return ("rho", "rho_vcon1", "rho_vcon2", "rho_e")
 end
 
 # The primitive variables are the height and contravariant velocity components
-function varnames(::typeof(cons2prim), ::CovariantEulerEnergyEquationsWithGravity2D)
+function varnames(::typeof(cons2prim), ::CovariantEulerEnergyEquations2D)
     return ("rho", "vcon1", "vcon2", "p")
 end
 
@@ -91,23 +91,23 @@ end
 # works for both primitive and conservative variables, although varnames refers 
 # specifically to transformations from conservative variables.
 function varnames(::typeof(contravariant2global),
-                  ::CovariantEulerEnergyEquationsWithGravity2D)
+                  ::CovariantEulerEnergyEquations2D)
     return ("rho", "v1", "v2", "rho_e")
 end
 
 # Convenience functions to extract physical variables from state vector
-@inline density(u, ::CovariantEulerEnergyEquationsWithGravity2D) = u[1]
+@inline density(u, ::CovariantEulerEnergyEquations2D) = u[1]
 
-@inline velocity_contravariant(u, ::CovariantEulerEnergyEquationsWithGravity2D) = SVector(u[2] /
+@inline velocity_contravariant(u, ::CovariantEulerEnergyEquations2D) = SVector(u[2] /
                                                                                           u[1],
                                                                                           u[3] /
                                                                                           u[1])
-@inline momentum_contravariant(u, ::CovariantEulerEnergyEquationsWithGravity2D) = SVector(u[2],
+@inline momentum_contravariant(u, ::CovariantEulerEnergyEquations2D) = SVector(u[2],
                                                                                           u[3])
 
-@inline total_energy(u, ::CovariantEulerEnergyEquationsWithGravity2D) = u[4]
+@inline total_energy(u, ::CovariantEulerEnergyEquations2D) = u[4]
 
-@inline energy_density(u, ::CovariantEulerEnergyEquationsWithGravity2D) = u[4] / u[1]
+@inline energy_density(u, ::CovariantEulerEnergyEquations2D) = u[4] / u[1]
 
 @inline function kinetic_energy(u, aux_vars, equations::AbstractCovariantEulerEquations)
     rho = density(u, equations)
@@ -125,7 +125,7 @@ end
 end
 
 @inline function cons2prim(u, aux_vars,
-                           equations::CovariantEulerEnergyEquationsWithGravity2D)
+                           equations::CovariantEulerEnergyEquations2D)
     rho = density(u, equations)
     vcon = velocity_contravariant(u, equations)
     p = pressure(u, aux_vars, equations)
@@ -133,7 +133,7 @@ end
 end
 
 @inline function prim2cons(u, aux_vars,
-                           equations::CovariantEulerEnergyEquationsWithGravity2D)
+                           equations::CovariantEulerEnergyEquations2D)
     rho, vcon1, vcon2, p = u
     vcon = SVector(vcon1, vcon2)
     Gcov = metric_covariant(aux_vars, equations)
@@ -144,7 +144,7 @@ end
 end
 
 @inline function cons2entropy(u, aux_vars,
-                              equations::CovariantEulerEnergyEquationsWithGravity2D)
+                              equations::CovariantEulerEnergyEquations2D)
     Gcov = metric_covariant(aux_vars, equations)
     rho, rho_vcon1, rho_vcon2, rho_e_total = u
     p = pressure(u, aux_vars, equations)
@@ -164,7 +164,7 @@ end
 
 # Convert contravariant momentum components to the global coordinate system
 @inline function contravariant2global(u, aux_vars,
-                                      equations::CovariantEulerEnergyEquationsWithGravity2D)
+                                      equations::CovariantEulerEnergyEquations2D)
     v1, v2 = basis_covariant(aux_vars, equations) *
              SVector(u[2], u[3])
     return SVector(u[1], v1, v2, u[4])
@@ -172,7 +172,7 @@ end
 
 # Convert momentum components in the global coordinate system to contravariant components
 @inline function global2contravariant(u, aux_vars,
-                                      equations::CovariantEulerEnergyEquationsWithGravity2D)
+                                      equations::CovariantEulerEnergyEquations2D)
     vcon1, vcon2 = basis_contravariant(aux_vars, equations) *
                    SVector(u[2], u[3])
     return SVector(u[1], vcon1, vcon2, u[4])
@@ -221,7 +221,7 @@ end
 
 # Maximum wave speeds with respect to the covariant basis
 @inline function max_abs_speeds(u, aux_vars,
-                                equations::CovariantEulerEnergyEquationsWithGravity2D)
+                                equations::CovariantEulerEnergyEquations2D)
     rho, vcon1, vcon2, p = cons2prim(u, aux_vars, equations)
     Gcon = metric_contravariant(aux_vars, equations)
     c1 = sqrt(equations.gamma * p / rho * Gcon[1, 1])
@@ -233,7 +233,7 @@ end
 # Maximum wave speed along the normal direction in reference space
 @inline function max_abs_speed(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
                                normal_direction::AbstractVector,
-                               equations::CovariantEulerEnergyEquationsWithGravity2D)
+                               equations::CovariantEulerEnergyEquations2D)
     rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, aux_vars_ll, equations)
     rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, aux_vars_rr, equations)
 
@@ -259,7 +259,7 @@ end
                                               normal_direction::AbstractVector,
                                               x, t,
                                               surface_flux_function,
-                                              equations::CovariantEulerEnergyEquationsWithGravity2D)
+                                              equations::CovariantEulerEnergyEquations2D)
     # Reflect the normal contravariant velocity component and keep the tangential component unchanged
     u_boundary = SVector(u_inner[1], u_inner[2], -u_inner[3], u_inner[4])
 
@@ -270,10 +270,10 @@ end
 end
 
 function source_terms_gravity(u, x, t, aux_vars,
-                              equations::CovariantEulerEnergyEquationsWithGravity2D)
+                              equations::CovariantEulerEnergyEquations2D)
     rho = u[1]
     Gcon = metric_contravariant(aux_vars, equations)
     Gcov = metric_covariant(aux_vars, equations)
-    return SVector(0.0, 0.0, -equations.g * rho * Gcon[2, 2] * sqrt(Gcov[2, 2]), 0.0)
+    return SVector(0.0, 0.0, -9.81 * rho * Gcon[2, 2] * sqrt(Gcov[2, 2]), 0.0)
 end
 end # @muladd
