@@ -290,7 +290,7 @@ function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 
             if !isnothing(bottom_topography)
                 x_node = Trixi.get_node_coords(node_coordinates, equations, dg, i, j,
                                                element)
-                aux_node_vars[20, i, j, element] = bottom_topography(x_node)
+                aux_node_vars[20, i, j, element] = bottom_topography(x_node, equations)
             else
                 aux_node_vars[20, i, j, element] = zero(eltype(aux_node_vars))
             end
