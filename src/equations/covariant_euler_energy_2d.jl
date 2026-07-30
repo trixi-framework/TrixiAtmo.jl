@@ -291,6 +291,6 @@ function source_terms_gravity(u, x, t, aux_vars,
     rho = u[1]
     Gcon = metric_contravariant(aux_vars, equations)
     Gcov = metric_covariant(aux_vars, equations)
-    return SVector(0.0, 0.0, -9.81 * rho * Gcon[2, 2] * sqrt(Gcov[2, 2]), 0.0)
+    return SVector(0.0, 0.0, -equations.gravity * rho * Gcon[2, 2] * sqrt(Gcov[2, 2]), 0.0)
 end
 end # @muladd
