@@ -170,9 +170,7 @@ end
 end
 
 # This signature is used for source terms, adding Rayleigh damping
-# to avoid reflections at the boundaries. It relaxes the solution towards the background
-# state and is therefore restricted to the potential temperature formulation, in which the
-# last prognostic variable is the weighted potential temperature.
+# to avoid reflections at the boundaries.
 @inline function (setup::MountainWaveSetup)(u, x, t,
                                             equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     @unpack theta_0, u0, brunt_vaisala_frequency = setup
