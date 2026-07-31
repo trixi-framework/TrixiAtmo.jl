@@ -82,7 +82,7 @@ function Trixi.max_dt(u, t, mesh::DGMultiMesh,
         for i in 1:nnodes(dg)
             u_node = u[i, e]
             aux_node = aux_values[i, e]
-            detg = area_element(aux_node, equations)
+            detg = volume_element(aux_node, equations)
             lambda_i = Trixi.max_abs_speeds(u_node, aux_node, equations)
             max_speeds = max.(max_speeds, lambda_i)
         end

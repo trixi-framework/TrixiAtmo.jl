@@ -126,6 +126,48 @@ function calc_aux_node!(aux_node, basis_covariant, x_node,
     end
 end
 
+    function calc_aux_node!(aux_node, basis_covariant, x_node,
+                            equations::AbstractCovariantEquations{3, 3},
+                            geopotential)
+        aux_node[1:9] = SVector(basis_covariant)
+
+        # Covariant metric tensor G := basis_covariant' * basis_covariant
+        metric_covariant = basis_covariant' * basis_covariant
+
+        # Contravariant metric tensor inv(G)
+        metric_contravariant = inv(metric_covariant)
+
+        # Contravariant basis vectors as rows of a matrix
+        basis_contravariant = metric_contravariant * basis_covariant'
+        aux_node[10:18] = SVector(basis_contravariant)
+
+        # Area element
+        aux_node[19] = sqrt(det(metric_covariant))
+
+        # Covariant metric tensor components
+        aux_node[20:25] = SVector(metric_covariant[1, 1],
+                                  metric_covariant[1, 2],
+                                  metric_covariant[1, 3],
+                                  metric_covariant[2, 2],
+                                  metric_covariant[2, 3],
+                                  metric_covariant[3, 3])
+
+        # Contravariant metric tensor components
+        aux_node[26:31] = SVector(metric_contravariant[1, 1],
+                                  metric_contravariant[1, 2],
+                                  metric_contravariant[1, 3],
+                                  metric_contravariant[2, 2],
+                                  metric_contravariant[2, 3],
+                                  metric_contravariant[3, 3])
+
+        # geopotential
+        if !isnothing(geopotential)
+            aux_node[32] = geopotential(x_node)
+        else
+            aux_node[32] = zero(eltype(aux_node))
+        end
+    end
+
 function compute_vertex_mask(dg::DGMulti{<:Any, <:Tri})
     rd = dg.basis
     VMask = []
@@ -147,6 +189,22 @@ function compute_vertex_mask(dg::DGMulti{<:Any, <:Quad})
         for j in 1:size(rd.rst[1], 1)
             r, s = rd.rst[1][j], rd.rst[2][j]
             if all(isapprox.((r, s), corner))
+                push!(VMask, j)
+            end
+        end
+    end
+    return VMask
+end
+
+function compute_vertex_mask(dg::DGMulti{<:Any, <:Hex})
+    rd = dg.basis
+    VMask = []
+    corners = [(-1.0, -1.0, -1.0), (-1.0, 1.0, -1.0), (1.0, -1.0, -1.0), (1.0, 1.0, -1.0),
+               (-1.0, -1.0, 1.0), (-1.0, 1.0, 1.0), (1.0, -1.0, 1.0), (1.0, 1.0, 1.0)]
+    for corner in corners
+        for j in 1:size(rd.rst[1], 1)
+            r, s, t = rd.rst[1][j], rd.rst[2][j], rd.rst[3][j]
+            if all(isapprox.((r, s, t), corner))
                 push!(VMask, j)
             end
         end
@@ -198,6 +256,43 @@ end
                          dxeds[1], dxeds[2])
 end
 
+@inline function calc_basis_covariant(vertices, r, s, t, _, dg::DGMulti{3, <:Hex},
+                                          ::MetricTermsCovariant{SphericalManifold},
+                                          ::GlobalCartesianCoordinates)
+        v1, v2, v3, v4, v5, v6, v7, v8 = vertices
+
+        # Construct a bilinear mapping based on the eight corner vertices
+        xe = 0.25f0 * (((1 - r) * (1 - s) * v1 + (1 - r) * (1 + s) * v2 +
+                         (1 + r) * (1 - s) * v3 + (1 + r) * (1 + s) * v4) * (1 - t) +
+                       ((1 - r) * (1 - s) * v5 + (1 - r) * (1 + s) * v6 +
+                         (1 + r) * (1 - s) * v7 + (1 + r) * (1 + s) * v8) * (1 + t))
+
+        # Derivatives of bilinear map with respect to reference coordinates r, s, t
+        dxedr = 0.25f0 *
+                (((-(1 - s) * v1 - (1 + s) * v2 + (1 - s) * v3 + (1 + s) * v4) * (1 - t) +
+                  (-(1 - s) * v5 - (1 + s) * v6 + (1 - s) * v7 + (1 + s) * v8) * (1 + t)))
+        dxeds = 0.25f0 *                
+                (((-(1 - r) * v1 + (1 - r) * v2 - (1 + r) * v3 + (1 + r) * v4) * (1 - t) +
+                  (-(1 - r) * v5 + (1 - r) * v6 - (1 + r) * v7 + (1 + r) * v8) * (1 + t)))
+        dxedt = 0.25f0 *
+                (-(((1 - r) * (1 - s) * v1 + (1 - r) * (1 + s) * v2 +
+                    (1 + r) * (1 - s) * v3 + (1 + r) * (1 + s) * v4)) +
+                   ((1 - r) * (1 - s) * v5 + (1 - r) * (1 + s) * v6 +
+                    (1 + r) * (1 - s) * v7 + (1 + r) * (1 + s) * v8))
+
+        # Use product/quotient rule on the projection
+        norm_xe = norm(xe)
+        height = norm(v5) - norm(v1)
+        radius = norm(v1) + 0.5 * (1 + t) * height
+        dxdr = radius / norm_xe * (dxedr - dot(xe, dxedr) / norm_xe^2 * xe)
+        dxds = radius / norm_xe * (dxeds - dot(xe, dxeds) / norm_xe^2 * xe)
+        dxdt = radius / norm_xe * (dxedt - dot(xe, dxedt) / norm_xe^2 * xe) + 0.5 * height / norm_xe * xe
+
+        return SMatrix{3, 3}(dxdr[1], dxdr[2], dxdr[3],
+                             dxds[1], dxds[2], dxds[3],
+                             dxdt[1], dxdt[2], dxdt[3])
+    end
+
 # Calculate the covariant metric tensor components G₁₁, G₁₂ (= G₂₁), and G₂₂ and return in 
 # that order as an SVector of length 3
 function calc_metric_covariant(vertices, xi1, xi2, radius, dg, metric_terms,
@@ -208,6 +303,14 @@ function calc_metric_covariant(vertices, xi1, xi2, radius, dg, metric_terms,
     return SVector(Gcov[1, 1], Gcov[1, 2], Gcov[2, 2])
 end
 
+function calc_metric_covariant(vertices, xi1, xi2, xi3, radius, dg, metric_terms,
+                               equations::AbstractCovariantEquations{3})
+    A = calc_basis_covariant(vertices, xi1, xi2, xi3, radius, dg, metric_terms,
+                             equations.global_coordinate_system)
+    Gcov = A' * A
+    return SVector(Gcov[1, 1], Gcov[1, 2], Gcov[1, 3], Gcov[2, 2], Gcov[2, 3], Gcov[3, 3])
+end
+
 # Use ForwardDiff.jl to automatically differentiate the covariant metric tensor components 
 function calc_metric_derivatives_autodiff(vertices, xi1, xi2, radius, dg, metric_terms,
                                           equations::AbstractCovariantEquations{2})
@@ -216,6 +319,17 @@ function calc_metric_derivatives_autodiff(vertices, xi1, xi2, radius, dg, metric
     dGdxi2 = derivative(x -> calc_metric_covariant(vertices, xi1, x, radius, dg,
                                                    metric_terms, equations), xi2)
     return dGdxi1, dGdxi2
+end
+
+function calc_metric_derivatives_autodiff(vertices, xi1, xi2, xi3, radius, dg, metric_terms,
+                                          equations::AbstractCovariantEquations{3})
+    dGdxi1 = derivative(x -> calc_metric_covariant(vertices, x, xi2, xi3, radius, dg,
+                                                   metric_terms, equations), xi1)
+    dGdxi2 = derivative(x -> calc_metric_covariant(vertices, xi1, x, xi3, radius, dg,
+                                                   metric_terms, equations), xi2)
+    dGdxi3 = derivative(x -> calc_metric_covariant(vertices, xi1, xi2, x, radius, dg,
+                                                   metric_terms, equations), xi3)
+    return dGdxi1, dGdxi2, dGdxi3
 end
 
 # Use the collocation derivative operator to numerically differentiate the covariant 
@@ -253,6 +367,74 @@ function calc_metric_derivatives_collocation(aux_values,
     return SVector(dG11dxi1, dG12dxi1, dG22dxi1), SVector(dG11dxi2, dG12dxi2, dG22dxi2)
 end
 
+function calc_metric_derivatives_collocation(aux_values, equations::AbstractCovariantEquations{3},
+                                             dg::DGMulti, i, element)
+    rd = dg.basis
+    (; Vq, Drst) = rd
+    Dr, Ds, Dt = Drst
+
+    for i in 1:Trixi.nnodes(dg)
+
+        # Numerically differentiate covariant metric components with respect to ξ¹
+        dG11dxi1 = zero(eltype(aux_values[i, element]))
+        dG12dxi1 = zero(eltype(aux_values[i, element]))
+        dG13dxi1 = zero(eltype(aux_values[i, element]))
+        dG22dxi1 = zero(eltype(aux_values[i, element]))
+        dG23dxi1 = zero(eltype(aux_values[i, element]))
+        dG33dxi1 = zero(eltype(aux_values[i, element]))
+        for jj in 1:nnodes(dg)
+            aux_node_jj = aux_values[jj, element]
+            Gcov_jj = metric_covariant(aux_node_jj, equations)
+            dG11dxi1 += Dr[i, jj] * Gcov_jj[1, 1]
+            dG12dxi1 += Dr[i, jj] * Gcov_jj[1, 2]
+            dG13dxi1 += Dr[i, jj] * Gcov_jj[1, 3]
+            dG22dxi1 += Dr[i, jj] * Gcov_jj[2, 2]
+            dG23dxi1 += Dr[i, jj] * Gcov_jj[2, 3]
+            dG33dxi1 += Dr[i, jj] * Gcov_jj[3, 3]
+        end
+
+        # Numerically differentiate covariant metric components with respect to ξ²
+        dG11dxi2 = zero(eltype(aux_values[i, element]))
+        dG12dxi2 = zero(eltype(aux_values[i, element]))
+        dG13dxi2 = zero(eltype(aux_values[i, element]))
+        dG22dxi2 = zero(eltype(aux_values[i, element]))
+        dG23dxi2 = zero(eltype(aux_values[i, element]))
+        dG33dxi2 = zero(eltype(aux_values[i, element]))
+        for jj in 1:nnodes(dg)
+            aux_node_jj = aux_values[jj, element]
+            Gcov_jj = metric_covariant(aux_node_jj, equations)
+            dG11dxi2 += Ds[i, jj] * Gcov_jj[1, 1]
+            dG12dxi2 += Ds[i, jj] * Gcov_jj[1, 2]
+            dG13dxi2 += Ds[i, jj] * Gcov_jj[1, 3]
+            dG22dxi2 += Ds[i, jj] * Gcov_jj[2, 2]
+            dG23dxi2 += Ds[i, jj] * Gcov_jj[2, 3]
+            dG33dxi2 += Ds[i, jj] * Gcov_jj[3, 3]
+        end
+
+        # Numerically differentiate covariant metric components with respect to ξ³
+        dG11dxi3 = zero(eltype(aux_values[i, element]))
+        dG12dxi3 = zero(eltype(aux_values[i, element]))
+        dG13dxi3 = zero(eltype(aux_values[i, element]))
+        dG22dxi3 = zero(eltype(aux_values[i, element]))
+        dG23dxi3 = zero(eltype(aux_values[i, element]))
+        dG33dxi3 = zero(eltype(aux_values[i, element]))
+        for jj in 1:nnodes(dg)
+            aux_node_jj = aux_values[jj, element]
+            Gcov_jj = metric_covariant(aux_node_jj, equations)
+            dG11dxi3 += Dt[i, jj] * Gcov_jj[1, 1]
+            dG12dxi3 += Dt[i, jj] * Gcov_jj[1, 2]
+            dG13dxi3 += Dt[i, jj] * Gcov_jj[1, 3]
+            dG22dxi3 += Dt[i, jj] * Gcov_jj[2, 2]
+            dG23dxi3 += Dt[i, jj] * Gcov_jj[2, 3]
+            dG33dxi3 += Dt[i, jj] * Gcov_jj[3, 3]
+        end
+    end
+
+    return SVector(dG11dxi1, dG12dxi1, dG13dxi1, dG22dxi1, dG23dxi1, dG33dxi1),
+           SVector(dG11dxi2, dG12dxi2, dG13dxi2, dG22dxi2, dG23dxi2, dG33dxi2),
+           SVector(dG11dxi3, dG12dxi3, dG13dxi3, dG22dxi3, dG23dxi3, dG33dxi3)
+end
+
 function calc_christoffel_symbols!(aux_values, mesh::DGMultiMesh,
                                    equations::AbstractCovariantEquations{2},
                                    metric_terms::MetricTermsCovariant{<:Any,
@@ -286,6 +468,43 @@ function calc_christoffel_symbols!(aux_values, mesh::DGMultiMesh,
         aux_node = Vector(aux_values[i, element])
         Gcon = metric_contravariant(aux_node, equations)
         aux_node[(end - 5):end] .= calc_christoffel_symbols(dGdxi1, dGdxi2, Gcon)
+
+        aux_values[i, element] = SVector{n_aux_node_vars(equations)}(aux_node)
+    end
+end
+
+
+function calc_christoffel_symbols!(aux_values, mesh::DGMultiMesh,
+                                   equations::AbstractCovariantEquations{3},
+                                   metric_terms::MetricTermsCovariant{<:Any, ChristoffelSymbolsAutodiff},
+                                   dg, element, vertices, radius)
+    rd = dg.basis
+    for i in 1:Trixi.nnodes(dg)
+        # Compute metric derivatives using automatic differentiation
+        dGdxi1, dGdxi2, dGdxi3 = calc_metric_derivatives_autodiff(vertices, rd.rst[1][i],
+                                                                 rd.rst[2][i], rd.rst[3][i], radius,
+                                                                 dg, metric_terms, equations)
+
+        aux_node = Vector(aux_values[i, element])
+        Gcon = metric_contravariant(aux_node, equations)
+        aux_node[end-17:end] .= calc_christoffel_symbols(dGdxi1, dGdxi2, dGdxi3, Gcon)
+
+        aux_values[i, element] = SVector{n_aux_node_vars(equations)}(aux_node)
+    end
+end
+
+function calc_christoffel_symbols!(aux_values, mesh::DGMultiMesh,
+                                   equations::AbstractCovariantEquations{3},
+                                   metric_terms::MetricTermsCovariant{<:Any, ChristoffelSymbolsCollocationDerivative},
+                                   dg, element, vertices, radius)
+    for i in 1:Trixi.nnodes(dg)
+        # Compute metric derivatives using collocation differentiation
+        dGdxi1, dGdxi2, dGdxi3 = calc_metric_derivatives_collocation(aux_values, equations, dg,
+                                                             i, element)
+
+        aux_node = Vector(aux_values[i, element])
+        Gcon = metric_contravariant(aux_node, equations)
+        aux_node[end-17:end] .= calc_christoffel_symbols(dGdxi1, dGdxi2, dGdxi3, Gcon)
 
         aux_values[i, element] = SVector{n_aux_node_vars(equations)}(aux_node)
     end

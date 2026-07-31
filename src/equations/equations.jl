@@ -217,6 +217,12 @@ end
                          aux_vars[4], aux_vars[5], aux_vars[6])
 end
 
+@inline function basis_covariant(aux_vars, ::AbstractCovariantEquations{3, 3})
+    return SMatrix{3, 3}(aux_vars[1], aux_vars[2], aux_vars[3],
+                         aux_vars[4], aux_vars[5], aux_vars[6],
+                         aux_vars[7], aux_vars[8], aux_vars[9])
+end
+
 # Extract the contravariant basis vectors a^i from the auxiliary variables as a matrix B, 
 # where B[i, :] contains the components of the ith contravariant tangent basis vector with 
 # respect to the global (Cartesian or spherical) coordinate system
@@ -231,6 +237,12 @@ end
                          aux_vars[11], aux_vars[12])
 end
 
+@inline function basis_contravariant(aux_vars, ::AbstractCovariantEquations{3, 3})
+    return SMatrix{3, 3}(aux_vars[10], aux_vars[11], aux_vars[12],
+                         aux_vars[13], aux_vars[14], aux_vars[15],
+                         aux_vars[16], aux_vars[17], aux_vars[18])
+end
+
 # Extract the area element J = (det(AᵀA))^(1/2) from the auxiliary variables
 @inline function area_element(aux_vars, ::AbstractCovariantEquations{2, 2})
     return aux_vars[9]
@@ -238,6 +250,15 @@ end
 
 @inline function area_element(aux_vars, ::AbstractCovariantEquations{2, 3})
     return aux_vars[13]
+end
+
+@inline function volume_element(aux_vars, ::AbstractCovariantEquations{3, 3})
+    return aux_vars[19]
+end
+
+# Fallback to area element if equations are 2D
+@inline function volume_element(aux_vars, equations::AbstractCovariantEquations{2})
+    return area_element(aux_vars, equations)
 end
 
 # Extract the covariant metric tensor components Gᵢⱼ from the auxiliary variables
@@ -251,6 +272,13 @@ end
                          aux_vars[15], aux_vars[16])
 end
 
+
+@inline function metric_covariant(aux_vars, ::AbstractCovariantEquations{3, 3})
+    return SMatrix{3, 3}(aux_vars[20], aux_vars[21], aux_vars[22],
+                         aux_vars[21], aux_vars[23], aux_vars[24],
+                         aux_vars[22], aux_vars[24], aux_vars[25])
+end
+
 # Extract the contravariant metric tensor components Gⁱʲ from the auxiliary variables
 @inline function metric_contravariant(aux_vars, ::AbstractCovariantEquations{2, 2})
     return SMatrix{2, 2}(aux_vars[13], aux_vars[14],
@@ -260,6 +288,12 @@ end
 @inline function metric_contravariant(aux_vars, ::AbstractCovariantEquations{2, 3})
     return SMatrix{2, 2}(aux_vars[17], aux_vars[18],
                          aux_vars[18], aux_vars[19])
+end
+
+@inline function metric_contravariant(aux_vars, ::AbstractCovariantEquations{3, 3})
+    return SMatrix{3, 3}(aux_vars[26], aux_vars[27], aux_vars[28],
+                         aux_vars[27], aux_vars[29], aux_vars[30],
+                         aux_vars[28], aux_vars[30], aux_vars[31])
 end
 
 # Extract the bottom topography hₛ from the auxiliary variables
@@ -272,6 +306,10 @@ end
     return aux_vars[16]
 end
 
+@inline function geopotential(aux_vars, ::AbstractCovariantEquations{3, 3})
+    return aux_vars[32]
+end
+
 # Extract the Christoffel symbols of the second kind Γⁱⱼₖ from the auxiliary variables
 @inline function christoffel_symbols(aux_vars, ::AbstractCovariantEquations{2, 2})
     return (SMatrix{2, 2}(aux_vars[17], aux_vars[18], aux_vars[18], aux_vars[19]),
@@ -281,6 +319,18 @@ end
 @inline function christoffel_symbols(aux_vars, ::AbstractCovariantEquations{2, 3})
     return (SMatrix{2, 2}(aux_vars[21], aux_vars[22], aux_vars[22], aux_vars[23]),
             SMatrix{2, 2}(aux_vars[24], aux_vars[25], aux_vars[25], aux_vars[26]))
+end
+
+@inline function christoffel_symbols(aux_vars, ::AbstractCovariantEquations{3, 3})
+    return (SMatrix{3, 3}(aux_vars[33], aux_vars[34], aux_vars[35],
+                          aux_vars[34], aux_vars[36], aux_vars[37],
+                          aux_vars[35], aux_vars[37], aux_vars[38]),
+            SMatrix{3, 3}(aux_vars[39], aux_vars[40], aux_vars[41],
+                          aux_vars[40], aux_vars[42], aux_vars[43],
+                          aux_vars[41], aux_vars[43], aux_vars[44]),
+            SMatrix{3, 3}(aux_vars[45], aux_vars[46], aux_vars[47],
+                          aux_vars[46], aux_vars[48], aux_vars[49],
+                          aux_vars[47], aux_vars[49], aux_vars[50]))
 end
 
 # Numerical flux plus dissipation for abstract covariant equations as a function of the 
@@ -320,7 +370,7 @@ end
                                                               equations::AbstractCovariantEquations)
     λ = dissipation.max_abs_speed(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
                                   orientation_or_normal_direction, equations)
-    return -0.5f0 * area_element(aux_vars_ll, equations) * λ * (u_rr - u_ll)
+    return -0.5f0 * volume_element(aux_vars_ll, equations) * λ * (u_rr - u_ll)
 end
 
 # Convert a vector from a global spherical to Cartesian basis representation. A tangent 

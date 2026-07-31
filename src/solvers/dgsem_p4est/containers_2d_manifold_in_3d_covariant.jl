@@ -450,6 +450,80 @@ function calc_christoffel_symbols(dGdxi1, dGdxi2, Gcon)
                    Gcon[2, 1] * Gamma_1[2, 2] + Gcon[2, 2] * Gamma_2[2, 2])  # Γ²₂₂
 end
 
+function calc_christoffel_symbols(dGdxi1, dGdxi2, dGdxi3, Gcon)
+    dG11dxi1, dG12dxi1, dG13dxi1, dG22dxi1, dG23dxi1, dG33dxi1 = dGdxi1
+    dG11dxi2, dG12dxi2, dG13dxi2, dG22dxi2, dG23dxi2, dG33dxi2 = dGdxi2
+    dG11dxi3, dG12dxi3, dG13dxi3, dG22dxi3, dG23dxi3, dG33dxi3 = dGdxi3
+
+    # Compute Christoffel symbols of the first kind
+    Gamma1 = SMatrix{3, 3}(0.5f0 * dG11dxi1,                                               # Γ₁₁₁     
+                           0.5f0 * dG11dxi2,                                               # Γ₁₁₂
+                           0.5f0 * dG11dxi3,                                               # Γ₁₁₃
+                           0.5f0 * dG11dxi2,                                               # Γ₁₂₁
+                           dG12dxi2 - 0.5f0 * dG22dxi1,                                    # Γ₁₂₂
+                           0.5f0 * dG12dxi3 + 0.5f0 * dG13dxi2 - 0.5f0 * dG23dxi1,         # Γ₁₂₃
+                           0.5f0 * dG11dxi3,                                               # Γ₁₃₁
+                           0.5f0 * dG12dxi3 + 0.5f0 * dG13dxi2 - 0.5f0 * dG23dxi1,         # Γ₁₃₂
+                           dG13dxi3 - 0.5f0 * dG33dxi1)                                    # Γ₁₃₃
+    Gamma2 = SMatrix{3, 3}(dG12dxi1 - 0.5f0 * dG11dxi2,                                    # Γ₂₁₁
+                           0.5f0 * dG22dxi1,                                               # Γ₂₁₂
+                           0.5f0 * dG23dxi1 + 0.5f0 * dG12dxi3 - 0.5f0 * dG13dxi2,         # Γ₂₁₃
+                           0.5f0 * dG22dxi1,                                               # Γ₂₂₁
+                           0.5f0 * dG22dxi2,                                               # Γ₂₂₂
+                           0.5f0 * dG22dxi3,                                               # Γ₂₂₃
+                           0.5f0 * dG23dxi1 + 0.5f0 * dG12dxi3 - 0.5f0 * dG13dxi2,         # Γ₂₃₁
+                           0.5f0 * dG22dxi3,                                               # Γ₂₃₂
+                           dG23dxi3 - 0.5f0 * dG33dxi2)                                    # Γ₂₃₃
+    Gamma3 = SMatrix{3, 3}(dG13dxi1 - 0.5f0 * dG11dxi3,                                    # Γ₃₁₁
+                           0.5f0 * dG23dxi1 + 0.5f0 * dG13dxi2 - 0.5f0 * dG12dxi3,         # Γ₃₁₂
+                           0.5f0 * dG33dxi1,                                               # Γ₃₁₃
+                           0.5f0 * dG23dxi1 + 0.5f0 * dG13dxi2 - 0.5f0 * dG12dxi3,         # Γ₃₂₁
+                           dG23dxi2 - 0.5f0 * dG22dxi3,                                    # Γ₃₂₂
+                           0.5f0 * dG33dxi2,                                               # Γ₃₂₃
+                           0.5f0 * dG33dxi1,                                               # Γ₃₃₁
+                           0.5f0 * dG33dxi2,                                               # Γ₃₃₂
+                           0.5f0 * dG33dxi3)                                               # Γ₃₃₃
+
+    # Raise indices to get Christoffel symbols of the second kind
+    return SVector(Gcon[1, 1] * Gamma1[1, 1] + Gcon[1, 2] * Gamma2[1, 1] +
+                   Gcon[1, 3] * Gamma3[1, 1],          # Γ¹₁₁
+                   Gcon[1, 1] * Gamma1[1, 2] + Gcon[1, 2] * Gamma2[1, 2] +
+                   Gcon[1, 3] * Gamma3[1, 2],          # Γ¹₁₂ (= Γ¹₂₁)
+                   Gcon[1, 1] * Gamma1[1, 3] + Gcon[1, 2] * Gamma2[1, 3] +
+                   Gcon[1, 3] * Gamma3[1, 3],          # Γ¹₁₃ (= Γ¹₃₁)
+                   Gcon[1, 1] * Gamma1[2, 2] + Gcon[1, 2] * Gamma2[2, 2] +
+                   Gcon[1, 3] * Gamma3[2, 2],          # Γ¹₂₂
+                   Gcon[1, 1] * Gamma1[2, 3] + Gcon[1, 2] * Gamma2[2, 3] +
+                   Gcon[1, 3] * Gamma3[2, 3],          # Γ¹₂₃ (= Γ¹₃₂)
+                   Gcon[1, 1] * Gamma1[3, 3] + Gcon[1, 2] * Gamma2[3, 3] +
+                   Gcon[1, 3] * Gamma3[3, 3],          # Γ¹₃₃
+                   Gcon[2, 1] * Gamma1[1, 1] + Gcon[2, 2] * Gamma2[1, 1] +
+                   Gcon[2, 3] * Gamma3[1, 1],          # Γ²₁₁
+                   Gcon[2, 1] * Gamma1[1, 2] + Gcon[2, 2] * Gamma2[1, 2] +
+                   Gcon[2, 3] * Gamma3[1, 2],          # Γ²₁₂ (= Γ²₂₁)
+                   Gcon[2, 1] * Gamma1[1, 3] + Gcon[2, 2] * Gamma2[1, 3] +
+                   Gcon[2, 3] * Gamma3[1, 3],          # Γ²₁₃ (= Γ²₃₁)
+                   Gcon[2, 1] * Gamma1[2, 2] + Gcon[2, 2] * Gamma2[2, 2] +
+                   Gcon[2, 3] * Gamma3[2, 2],          # Γ²₂₂
+                   Gcon[2, 1] * Gamma1[2, 3] + Gcon[2, 2] * Gamma2[2, 3] +
+                   Gcon[2, 3] * Gamma3[2, 3],          # Γ²₂₃ (= Γ²₃₂)
+                   Gcon[2, 1] * Gamma1[3, 3] + Gcon[2, 2] * Gamma2[3, 3] +
+                   Gcon[2, 3] * Gamma3[3, 3],          # Γ²₃₃
+                   Gcon[3, 1] * Gamma1[1, 1] + Gcon[3, 2] * Gamma2[1, 1] +
+                   Gcon[3, 3] * Gamma3[1, 1],          # Γ³₁₁
+                   Gcon[3, 1] * Gamma1[1, 2] + Gcon[3, 2] * Gamma2[1, 2] +
+                   Gcon[3, 3] * Gamma3[1, 2],          # Γ³₁₂ (= Γ³₂₁)
+                   Gcon[3, 1] * Gamma1[1, 3] + Gcon[3, 2] * Gamma2[1, 3] +
+                   Gcon[3, 3] * Gamma3[1, 3],          # Γ³₁₃ (= Γ³₃₁)
+                   Gcon[3, 1] * Gamma1[2, 2] + Gcon[3, 2] * Gamma2[2, 2] +
+                   Gcon[3, 3] * Gamma3[2, 2],          # Γ³₂₂
+                   Gcon[3, 1] * Gamma1[2, 3] + Gcon[3, 2] * Gamma2[2, 3] +
+                   Gcon[3, 3] * Gamma3[2, 3],          # Γ³₂₃ (= Γ³₃₂)
+                   Gcon[3, 1] * Gamma1[3, 3] + Gcon[3, 2] * Gamma2[3, 3] +
+                   Gcon[3, 3] * Gamma3[3, 3])
+
+end
+
 # Calculate Christoffel symbols using automatic differentiation based on the exact 
 # spherical geometry
 function calc_christoffel_symbols!(aux_node_vars, mesh::P4estMesh{2, 3},

@@ -42,7 +42,7 @@ function Trixi.create_cache(mesh::DGMultiMesh{NDIMS}, equations::AbstractCovaria
     Trixi.apply_to_each_field(Trixi.mul_by!(rd.Vf), aux_face_values, aux_values)
 
     # interpolate J to quadrature points for weight-adjusted DG (WADG)
-    invJ = inv.(area_element.(aux_quad_values, equations))
+    invJ = inv.(volume_element.(aux_quad_values, equations))
 
     solution_container = Trixi.initialize_dgmulti_solution_container(mesh, equations, dg,
                                                                      uEltype)
