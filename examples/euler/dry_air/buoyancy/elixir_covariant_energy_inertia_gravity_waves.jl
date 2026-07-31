@@ -69,17 +69,15 @@ coordinates_min = (0.0, 0.0)
 coordinates_max = (300_000.0, 10_000.0)
 cells_per_dimension = (60, 8)
 
-mesh = DGMultiMesh(dg,cells_per_dimension;
+mesh = DGMultiMesh(dg, cells_per_dimension;
                    periodicity = (true, false),
                    coordinates_min = coordinates_min,
                    coordinates_max = coordinates_max)
-
 
 # Transform the initial condition to the proper set of conservative variables
 initial_condition_transformed = transform_initial_condition(initial_condition, equations)
 
 boundary_conditions = (; entire_boundary = boundary_condition_slip_wall)
-
 
 # A semidiscretization collects data structures and functions for the spatial discretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, dg,
@@ -103,8 +101,7 @@ summary_callback = SummaryCallback()
 # results
 analysis_callback = AnalysisCallback(semi, interval = 100,
                                      save_analysis = true,
-                                     extra_analysis_errors = (:conservation_error,),
-)
+                                     extra_analysis_errors = (:conservation_error,))
 
 # The SaveSolutionCallback allows to save the solution to a file in regular intervals
 save_solution = SaveSolutionCallback(interval = 100,
