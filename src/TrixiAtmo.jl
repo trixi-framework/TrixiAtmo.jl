@@ -81,7 +81,8 @@ export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!
 
 export cons2prim_and_vorticity, contravariant2global, contravariant_cons2global_prim
 
-export P4estMeshCubedSphere2D, P4estMeshQuadIcosahedron2D, DGMultiMeshTriIcosahedron2D,
+export P4estMeshCubedSphere2D, P4estMeshQuadIcosahedron2D,
+       DGMultiMeshTriIcosahedron2D, DGMultiMeshCubedShell3D
        MetricTermsCrossProduct, MetricTermsInvariantCurl, MetricTermsCovariant,
        SphericalManifold, FlatManifold,
        ChristoffelSymbolsAutodiff, ChristoffelSymbolsCollocationDerivative
