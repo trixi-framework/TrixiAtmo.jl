@@ -19,7 +19,7 @@ equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 10
 # The background state is isothermal at T_0, which is the particular case of a constant
 # Brunt-Väisälä frequency obtained with theta_0 = T_0 and N = g / sqrt(c_p * T_0).
 T_0 = 250
-setup = MountainWaveSetup(theta_0 = T_0, u0 = 20,
+setup = MountainWaveSetup(theta_0 = 250, u0 = 20,
                           brunt_vaisala_frequency = equations.g /
                                                     sqrt(equations.c_p * T_0),
                           z_damping_start = 15000, z_damping_end = 30000,
