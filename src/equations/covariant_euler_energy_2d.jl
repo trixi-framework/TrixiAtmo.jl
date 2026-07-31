@@ -61,7 +61,7 @@ where the Christoffel symbols of the second kind $\Gamma^i_{jk}$ are defined as 
   Galerkin solver for atmospheric modelling (BRIDGE v0.9).
 """
 struct CovariantEulerEnergyEquations2D{GlobalCoordinateSystem,
-                                                  RealT <: Real} <:
+                                       RealT <: Real} <:
        AbstractCovariantEulerEquations{2, GlobalCoordinateSystem, 4}
     p_0::RealT # reference pressure in Pa
     c_p::RealT # specific heat at constant pressure in J/(kg K)
@@ -83,7 +83,8 @@ struct CovariantEulerEnergyEquations2D{GlobalCoordinateSystem,
         inv_gamma_minus_one = inv(gamma - 1)
         K = p_0 * (R / p_0)^gamma
         stolarsky_factor = (gamma - 1) / gamma
-        return new{typeof(global_coordinate_system), typeof(c_p)}(p_0, c_p, c_v, gravity, R,
+        return new{typeof(global_coordinate_system), typeof(c_p)}(p_0, c_p, c_v,
+                                                                  gravity, R,
                                                                   gamma,
                                                                   inv_gamma_minus_one,
                                                                   K, stolarsky_factor)
@@ -116,11 +117,11 @@ end
 @inline density(u, ::CovariantEulerEnergyEquations2D) = u[1]
 
 @inline velocity_contravariant(u, ::CovariantEulerEnergyEquations2D) = SVector(u[2] /
-                                                                                          u[1],
-                                                                                          u[3] /
-                                                                                          u[1])
+                                                                               u[1],
+                                                                               u[3] /
+                                                                               u[1])
 @inline momentum_contravariant(u, ::CovariantEulerEnergyEquations2D) = SVector(u[2],
-                                                                                          u[3])
+                                                                               u[3])
 
 @inline total_energy(u, ::CovariantEulerEnergyEquations2D) = u[4]
 
@@ -291,6 +292,7 @@ function source_terms_gravity(u, x, t, aux_vars,
     rho = u[1]
     Gcon = metric_contravariant(aux_vars, equations)
     Gcov = metric_covariant(aux_vars, equations)
-    return SVector(0.0, 0.0, -equations.gravity * rho * Gcon[2, 2] * sqrt(Gcov[2, 2]), 0.0)
+    return SVector(0.0, 0.0, -equations.gravity * rho * Gcon[2, 2] * sqrt(Gcov[2, 2]),
+                   0.0)
 end
 end # @muladd
