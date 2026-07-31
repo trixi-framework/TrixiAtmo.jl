@@ -33,7 +33,7 @@ Trixi.MPI.Barrier(Trixi.mpi_comm())
                         tspan=(0.0, 0.1))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 1000)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 1000)
 end
 
 @trixi_testset "elixir_potential_temperature_vortex_shedding with Sleve" begin
@@ -60,7 +60,7 @@ end
                         trees_per_cube_face=(3, 2), adapt_vertical_grid=Sleve(0.7, 0.8))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 1000)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 1000)
     # Check partitioning (a total of 108 elements split into 4 partitions)
     local_nelems = nelements(solver, semi.cache)
 

@@ -29,7 +29,7 @@ include("test_trixiatmo.jl")
                         tspan=(0.0, 0.1))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 5000)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 5000)
 end
 
 @trixi_testset "elixir_tri_barotropic_instability threaded" begin
@@ -47,7 +47,7 @@ end
                         tspan=(0.0, 1.0 * SECONDS_PER_DAY))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 5000)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 5000)
 end
 end
 end # module
