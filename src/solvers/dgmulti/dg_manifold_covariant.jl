@@ -20,8 +20,9 @@ end
 
 # Calculate the source contribution, passing auxiliary variables to the source term function.
 @inline function Trixi.calc_sources!(du, u, t, source_terms,
-                             mesh, equations::AbstractCovariantEquations, dg::DGMulti,
-                             cache)
+                                     mesh, equations::AbstractCovariantEquations,
+                                     dg::DGMulti,
+                                     cache)
     rd = dg.basis
     md = mesh.md
     @unpack Pq = rd
@@ -49,54 +50,32 @@ function Trixi.calc_sources!(du, u, t, source_term::Nothing,
     nothing
 end
 
-# Affine mesh version for covariant equations - dispatcher
-@inline function Trixi.volume_integral_kernel!(du, u, element,
-                                       mesh::DGMultiMesh{NDIMS_AMBIENT, <:Trixi.Affine},
-                                       have_nonconservative_terms::False,
-                                       equations::AbstractCovariantEquations,
-                                       volume_integral::VolumeIntegralWeakForm, dg::DGMulti,
-                                       cache) where {NDIMS_AMBIENT}
-    volume_integral_covariant_kernel!(du, u, element, mesh, have_nonconservative_terms,
-                                      equations, volume_integral, dg, cache)
-
-    return nothing
-end
-
-# Non-affine mesh version for covariant equations - dispatcher
-@inline function Trixi.volume_integral_kernel!(du, u, element,
-                                       mesh::DGMultiMesh{NDIMS_AMBIENT, <:Trixi.NonAffine},
-                                       have_nonconservative_terms::False,
-                                       equations::AbstractCovariantEquations,
-                                       volume_integral::VolumeIntegralWeakForm, dg::DGMulti,
-                                       cache) where {NDIMS_AMBIENT}
-    volume_integral_covariant_kernel!(du, u, element, mesh, have_nonconservative_terms,
-                                      equations, volume_integral, dg, cache)
-
-    return nothing
-end
-
-# Volume integral kernel for covariant equations.
-@inline function volume_integral_covariant_kernel!(du, u, element,
-                                           mesh::DGMultiMesh,
-                                           have_nonconservative_terms::False,
-                                           equations::AbstractCovariantEquations{NDIMS},
-                                           volume_integral::VolumeIntegralWeakForm,
-                                           dg::DGMulti,
-                                           cache) where {NDIMS}
+function Trixi.calc_volume_integral!(du, u, mesh::DGMultiMesh,
+                                     have_nonconservative_terms,
+                                     equations::AbstractCovariantEquations{NDIMS},
+                                     volume_integral::VolumeIntegralWeakForm, dg::DGMulti,
+                                     cache) where {NDIMS}
+    rd = dg.basis
     (; weak_differentiation_matrices) = cache
     (; u_values, local_values_threaded) = cache.solution_container
     (; aux_quad_values) = cache.auxiliary_container
 
-    flux_values = local_values_threaded[Threads.threadid()]
-    for i in 1:NDIMS
-        for j in Trixi.eachindex(flux_values)
-            u_node = u_values[j, element]
-            aux_node = aux_quad_values[j, element]
-            flux_values[j] = flux(u_node, aux_node, i, equations)
-        end
+    # interpolate to quadrature points
+    Trixi.apply_to_each_field(Trixi.mul_by!(rd.Vq), u_values, u)
 
-        Trixi.apply_to_each_field(Trixi.mul_by_accum!(weak_differentiation_matrices[i]),
-                                  view(du, :, element), flux_values)
+    Trixi.@threaded for element in Trixi.eachelement(mesh, dg, cache)
+        flux_values = local_values_threaded[Threads.threadid()]
+
+        for i in 1:NDIMS
+            for j in Trixi.eachindex(flux_values)
+                u_node = u_values[j, element]
+                aux_node = aux_quad_values[j, element]
+                flux_values[j] = flux(u_node, aux_node, i, equations)
+            end
+
+            Trixi.apply_to_each_field(Trixi.mul_by_accum!(weak_differentiation_matrices[i]),
+                                      view(du, :, element), flux_values)
+        end
     end
 
     return nothing
