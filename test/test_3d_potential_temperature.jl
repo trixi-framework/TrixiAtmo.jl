@@ -24,7 +24,7 @@ EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler/dry_air")
                         tspan=(0.0, 1.0))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_taylor_green_vortex" begin
@@ -47,7 +47,7 @@ end
                         tspan=(0.0, 1.0), surface_flux=flux_ec, volume_flux=flux_ec)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_taylor_green_vortex" begin
@@ -70,7 +70,7 @@ end
                         tspan=(0.0, 1.0), surface_flux=flux_tec, volume_flux=flux_tec)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_taylor_green_vortex" begin
@@ -94,7 +94,7 @@ end
                         volume_flux=flux_tec, atol=5e-6)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_baroclinic_instability Souza" begin
@@ -120,7 +120,7 @@ end
                         atol=4e-9)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_baroclinic_instability Waruszewski" begin
@@ -146,7 +146,7 @@ end
                         volume_flux=(flux_ec, flux_nonconservative_waruszewski_etal))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_baroclinic_instability Artiano" begin
@@ -173,7 +173,7 @@ end
                         volume_flux=(flux_etec, flux_nonconservative_artiano_etal))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_held_suarez" begin
@@ -207,7 +207,7 @@ end
                         lat_lon_trees_per_dim=2, layers=2)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_vortex_shedding" begin
@@ -234,7 +234,7 @@ end
                         trees_per_cube_face=(2, 2))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_vortex_shedding with Sleve" begin
@@ -261,7 +261,7 @@ end
                         trees_per_cube_face=(2, 2), adapt_vertical_grid=Sleve(0.7, 0.8))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 end
