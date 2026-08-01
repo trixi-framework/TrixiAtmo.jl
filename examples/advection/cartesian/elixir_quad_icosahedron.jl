@@ -18,7 +18,7 @@ initial_condition = initial_condition_gaussian
 polydeg = 3
 cells_per_dimension = (2, 2)
 
-# We use the ShallowWaterEquations3D equations structure but modify the rhs! function to
+# We use the ShallowWaterEquations3D equations structure but modify the rhs_hyperbolic! function to
 # convert it to a variable-coefficient advection equation
 equations = ShallowWaterEquations3D(gravity = 0)
 
