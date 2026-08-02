@@ -25,7 +25,7 @@ EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler/dry_air")
                         ], tspan=(0.0, 0.01), tol=1e-15, atol=1e-8)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 end
