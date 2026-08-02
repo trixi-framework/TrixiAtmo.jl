@@ -41,7 +41,6 @@ L = 144000
 H = 30000
 
 cells_per_dimension = (200, 50)
-cells_per_dimension = (20, 12)
 mesh = P4estMesh(cells_per_dimension, polydeg = polydeg,
                  faces = terrain_following_faces(topography, -L / 2, L / 2, H),
                  initial_refinement_level = 0, periodicity = (false, false))
