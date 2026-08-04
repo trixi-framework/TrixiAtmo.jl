@@ -185,7 +185,6 @@ end
                                 equations::CovariantEulerEnergyEquations3D)
     rho, vcon1, vcon2, vcon3, p = cons2prim(u, aux_vars, equations)
     Gcon = metric_contravariant(aux_vars, equations)
-    @show p, rho, Gcon[1,1]
     c1 = sqrt(equations.gamma * p / rho * Gcon[1, 1])
     c2 = sqrt(equations.gamma * p / rho * Gcon[2, 2])
     c3 = sqrt(equations.gamma * p / rho * Gcon[3, 3])
