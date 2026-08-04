@@ -1,4 +1,5 @@
 using Documenter
+using DocumenterCodeBlocks: CodeBlocks
 using DocumenterInterLinks
 using TrixiAtmo
 using Literate
@@ -108,6 +109,9 @@ makedocs(;
                                   canonical = "https://trixi-framework.github.io/TrixiAtmo.jl",
                                   edit_link = "main",
                                   assets = String[],),
+         # Improve code blocks in the documentation by using DocumenterCodeBlocks.jl
+         plugins = [CodeBlocks()],
+         # Explicitly specify documentation structure
          pages = ["Home" => "index.md",
              "Tutorials" => tutorial_pages,
              "Reference" => "reference.md",
