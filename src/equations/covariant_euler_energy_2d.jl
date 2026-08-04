@@ -201,7 +201,7 @@ end
                       equations::AbstractCovariantEulerEquations)
     # Geometric variables
     Gcon = metric_contravariant(aux_vars, equations)
-    J = area_element(aux_vars, equations)
+    J = volume_element(aux_vars, equations)
 
     # Physical variables
     rho_vcon = momentum_contravariant(u, equations)
@@ -220,7 +220,7 @@ end
                       equations::AbstractCovariantEulerEquations)
     # Geometric variables
     Gcon = metric_contravariant(aux_vars, equations)
-    J = area_element(aux_vars, equations)
+    J = volume_element(aux_vars, equations)
 
     # Physical variables
     rho = density(u, equations)

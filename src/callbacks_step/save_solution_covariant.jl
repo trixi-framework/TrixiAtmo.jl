@@ -127,7 +127,7 @@ end
 
 @inline function contravariant_cons2global_prim(u, aux_vars,
                                                 equations::CovariantEulerEnergyEquations3D)
-    rho, _, _, p = cons2prim(u, aux_vars, equations)
+    rho, _, _, _, p = cons2prim(u, aux_vars, equations)
     _, rho_v1, rho_v2, rho_v3, _ = contravariant2global(u, aux_vars, equations)
     v1, v2, v3 = rho_v1 / rho, rho_v2 / rho, rho_v3 / rho
     return SVector(rho, v1, v2, v3, p)

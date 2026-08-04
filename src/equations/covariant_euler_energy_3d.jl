@@ -260,7 +260,7 @@ end
     cross_product = SVector(Omega[2] * rho_vcon[3] - Omega[3] * rho_vcon[2],
                             Omega[3] * rho_vcon[1] - Omega[1] * rho_vcon[3],
                             Omega[1] * rho_vcon[2] - Omega[2] * rho_vcon[1])
-    s_cor = 2 * equations.rotation_rate * J * Gcon * cross_product
+    s_cor = 2 * EARTH_ROTATION_RATE * J * Gcon * cross_product
 
     # Bouyancy source term
     r = norm(x)
