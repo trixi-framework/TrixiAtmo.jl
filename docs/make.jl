@@ -110,7 +110,8 @@ makedocs(;
                                   edit_link = "main",
                                   assets = String[],),
          # Improve code blocks in the documentation by using DocumenterCodeBlocks.jl
-         plugins = [CodeBlocks()],
+         # and render links to documentation from other repositories nicely
+         plugins = [CodeBlocks(), links, fallbacks],
          # Explicitly specify documentation structure
          pages = ["Home" => "index.md",
              "Tutorials" => tutorial_pages,
@@ -118,8 +119,7 @@ makedocs(;
              "Authors" => "authors.md",
              "Contributing" => "contributing.md",
              "Code of Conduct" => "code_of_conduct.md",
-             "License" => "license.md"],
-         plugins = [links, fallbacks],)
+             "License" => "license.md"],)
 
 deploydocs(;
            repo = "github.com/trixi-framework/TrixiAtmo.jl",
