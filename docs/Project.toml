@@ -8,7 +8,7 @@ Trixi = "a7f1ee26-1774-49b1-8366-f1abc58fbfcb"
 
 [compat]
 Documenter = "1.3"
-DocumenterCodeBlocks = "b6400b83-267f-4b55-9fd8-bffc853bdfd8"
+DocumenterCodeBlocks = "1.0"
 DocumenterInterLinks = "0.3.1, 1"
 Literate = "2"
 OrdinaryDiffEqLowStorageRK = "3"
