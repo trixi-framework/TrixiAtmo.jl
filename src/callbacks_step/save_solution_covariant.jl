@@ -146,11 +146,6 @@ function Trixi.varnames(::typeof(contravariant_cons2global_prim),
 end
 
 function Trixi.varnames(::typeof(contravariant_cons2global_prim),
-                        equations::CovariantEulerEnergyEquations2D)
-    return ("rho", "v1", "v2", "p")
-end
-
-function Trixi.varnames(::typeof(contravariant_cons2global_prim),
                         equations::CovariantEulerEnergyEquations3D)
     return ("rho", "v1", "v2", "v3", "p")
 end

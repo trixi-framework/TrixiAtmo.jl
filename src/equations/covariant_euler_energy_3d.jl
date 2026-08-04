@@ -121,9 +121,9 @@ end
                                                                                u[3],
                                                                                u[4])
 
-@inline total_energy(u, ::CovariantEulerEnergyEquations3D) = u[4]
+@inline total_energy(u, ::CovariantEulerEnergyEquations3D) = u[5]
 
-@inline energy_density(u, ::CovariantEulerEnergyEquations3D) = u[4] / u[1]
+@inline energy_density(u, ::CovariantEulerEnergyEquations3D) = u[5] / u[1]
 
 @inline function cons2prim(u, aux_vars,
                            equations::CovariantEulerEnergyEquations3D)
