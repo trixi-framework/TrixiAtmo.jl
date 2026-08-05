@@ -27,7 +27,6 @@ struct CompressibleEulerPotentialTemperatureEquationsWithGravity3D{RealT <: Real
     end
 end
 
-
 function varnames(::typeof(cons2cons),
                   ::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     ("rho", "rho_v1", "rho_v2", "rho_v3", "rho_theta", "phi")
