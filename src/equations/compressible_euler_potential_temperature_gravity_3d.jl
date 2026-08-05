@@ -284,7 +284,8 @@ end
     flux_kennedy_gruber(u_ll, u_rr, normal_direction,
                         equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
 
-Kinetic energy preserving two-point flux by
+Modification of the kinetic-energy-preserving two-point flux by Kennedy and Gruber
+that is consistent with ['CompressibleEulerPotentialTemperatureEquationsWithGravity3D'](@ref). See:
 - Kennedy and Gruber (2008)
   Reduced aliasing formulations of the convective terms within the
   Navier-Stokes equations for a compressible fluid
