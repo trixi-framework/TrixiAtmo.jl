@@ -268,13 +268,15 @@ end
               RealT
         @test eltype(@inferred flux_etec(u_ll, u_rr, normal_direction, equations)) ==
               RealT
-        @test eltype(@inferred flux_kennedy_gruber(u_ll, u_rr, normal_direction, equations)) ==
-              RealT
-        @test eltype(@inferred flux_lmars_combined(u_ll, u_rr, normal_direction, equations)) ==
-              RealT
-        @test eltype(@inferred flux_kennedy_gruber_souza_etal(u_ll, u_rr, normal_direction,
-                                                              equations)) ==
-              RealT
+        for i in 1:2
+            @test eltype(@inferred flux_kennedy_gruber(u_ll, u_rr, normal_direction, equations)[i]) ==
+                  RealT
+            @test eltype(@inferred flux_lmars_combined(u_ll, u_rr, normal_direction, equations)[i]) ==
+                  RealT
+            @test eltype(@inferred flux_kennedy_gruber_souza_etal(u_ll, u_rr, normal_direction,
+                                                                  equations)[i]) ==
+                  RealT
+        end
         @test eltype(@inferred cons2prim(u, equations)) == RealT
         @test eltype(@inferred prim2cons(u, equations)) == RealT
         @test eltype(@inferred cons2entropy(u, equations)) == RealT
