@@ -266,8 +266,9 @@ end
     r = norm(x)
     GM = EARTH_RADIUS^2 * EARTH_GRAVITATIONAL_ACCELERATION
     Gcov = metric_covariant(aux_vars, equations)
-    derivative_phi = -GM / r^2
-    s_boy = [0, 0, derivative_phi * rho * Gcon[3, 3] * sqrt(Gcov[3, 3])]
+    derivative_phi = GM / r^2
+    derivative_phi = equations.gravity
+    s_boy = [0.0, 0.0, derivative_phi * rho * Gcon[3, 3] * sqrt(Gcov[3, 3])]
 
     # Combined source terms
     source_1 = s_geo[1] + s_cor[1]
