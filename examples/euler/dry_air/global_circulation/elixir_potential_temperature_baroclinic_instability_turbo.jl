@@ -3,8 +3,6 @@
 # `Trixi.combine_conservative_and_nonconservative_fluxes`.
 # For optimal results consider increasing the resolution to 16x16x8 trees per cube face.
 #
-# This elixir takes about 8 hours, using 16 threads of an AMD Ryzen 7 7800X3D.
-#
 # References:
 # - Paul A. Ullrich, Thomas Melvin, Christiane Jablonowski, Andrew Staniforth (2013)
 #   A proposed baroclinic wave test case for deep- and shallow-atmosphere dynamical cores
