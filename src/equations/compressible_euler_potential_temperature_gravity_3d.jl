@@ -285,7 +285,7 @@ end
                         equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
 
 Modification of the kinetic-energy-preserving two-point flux by Kennedy and Gruber
-that is consistent with ['CompressibleEulerPotentialTemperatureEquationsWithGravity3D'](@ref). See:
+that is consistent with [`CompressibleEulerPotentialTemperatureEquationsWithGravity3D`](@ref). See:
 - Kennedy and Gruber (2008)
   Reduced aliasing formulations of the convective terms within the
   Navier-Stokes equations for a compressible fluid
