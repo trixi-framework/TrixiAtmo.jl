@@ -176,6 +176,27 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
+@trixi_testset "elixir_potential_temperature_baroclinic_instability with combined fluxes" begin
+    trixi_include(@__MODULE__,
+                  joinpath(EXAMPLES_DIR, "global_circulation",
+                           "elixir_potential_temperature_baroclinic_instability_turbo.jl"),
+                  tspan = (0.0, 100.0), trees_per_cube_face = (2, 2))
+    u_ode_specialized = copy(sol.u[end])
+
+    trixi_include(@__MODULE__,
+                  joinpath(EXAMPLES_DIR, "global_circulation",
+                           "elixir_potential_temperature_baroclinic_instability.jl"),
+                  surface_flux = (FluxLMARS(340), flux_zero),
+                  volume_flux = (flux_kennedy_gruber, flux_nonconservative_souza_etal),
+                  tspan = (0.0, 100.0), trees_per_cube_face = (2, 2))
+    u_ode = copy(sol.u[end])
+
+    @test u_ode_specialized ≈ u_ode
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
+end
+
 @trixi_testset "elixir_potential_temperature_held_suarez" begin
     import ..CI_ON_MACOS
     if CI_ON_MACOS
