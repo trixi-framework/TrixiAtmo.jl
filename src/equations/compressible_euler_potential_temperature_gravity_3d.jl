@@ -1,5 +1,44 @@
 @muladd begin
 #! format: noindent
+
+@doc raw"""
+    CompressibleEulerPotentialTemperatureEquationsWithGravity3D(; c_p, c_v, gravity)
+
+The compressible Euler equations with gravity in potential temperature formulation
+```math
+\frac{\partial}{\partial t}
+\begin{pmatrix}
+\rho \\ \rho v_1 \\ \rho v_2 \\ \rho v_3 \\ \rho \theta
+\end{pmatrix}
++
+\frac{\partial}{\partial x}
+\begin{pmatrix}
+\rho v_1 \\ \rho v_1^2 + p \\ \rho v_1 v_2 \\ \rho v_1 v_3 \\ \rho \theta v_1
+\end{pmatrix}
++
+\frac{\partial}{\partial y}
+\begin{pmatrix}
+\rho v_2 \\ \rho v_1 v_2 \\ \rho v_2^2 + p \\ \rho v_2 v_3 \\ \rho \theta v_2
+\end{pmatrix}
++
+\frac{\partial}{\partial z}
+\begin{pmatrix}
+\rho v_3 \\ \rho v_1 v_3 \\ \rho v_2 v_3 \\ \rho v_3^2 + p \\ \rho \theta v_3
+\end{pmatrix}
+=
+\begin{pmatrix}
+0 \\ -\rho \frac{\partial}{\partial x} \phi \\ -\rho \frac{\partial}{\partial y} \phi \\ -\rho \frac{\partial}{\partial z} \phi \\ 0
+\end{pmatrix}
+```
+for an ideal gas with ratio of specific heats ``\gamma = c_p / c_v`` in three space dimensions.
+Here, ``\rho`` is the density, ``v_1, v_2, v_3`` are the velocities, ``\theta`` is the
+potential temperature, ``\phi`` is the gravitational potential, and
+```math
+p = p_0 \left( \frac{R \rho \theta}{p_0} \right)^\gamma
+```
+the pressure, where ``p_0 = 10^5\,\mathrm{Pa}`` is the reference pressure and
+``R = c_p - c_v`` the gas constant.
+"""
 struct CompressibleEulerPotentialTemperatureEquationsWithGravity3D{RealT <: Real} <:
        AbstractCompressibleEulerEquations{3, 6}
     p_0::RealT # reference pressure in Pa
