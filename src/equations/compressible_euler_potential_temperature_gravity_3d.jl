@@ -1,5 +1,44 @@
 @muladd begin
 #! format: noindent
+
+@doc raw"""
+    CompressibleEulerPotentialTemperatureEquationsWithGravity3D(; c_p, c_v, gravity)
+
+The compressible Euler equations with gravity in potential temperature formulation
+```math
+\frac{\partial}{\partial t}
+\begin{pmatrix}
+\rho \\ \rho v_1 \\ \rho v_2 \\ \rho v_3 \\ \rho \theta
+\end{pmatrix}
++
+\frac{\partial}{\partial x}
+\begin{pmatrix}
+\rho v_1 \\ \rho v_1^2 + p \\ \rho v_1 v_2 \\ \rho v_1 v_3 \\ \rho \theta v_1
+\end{pmatrix}
++
+\frac{\partial}{\partial y}
+\begin{pmatrix}
+\rho v_2 \\ \rho v_1 v_2 \\ \rho v_2^2 + p \\ \rho v_2 v_3 \\ \rho \theta v_2
+\end{pmatrix}
++
+\frac{\partial}{\partial z}
+\begin{pmatrix}
+\rho v_3 \\ \rho v_1 v_3 \\ \rho v_2 v_3 \\ \rho v_3^2 + p \\ \rho \theta v_3
+\end{pmatrix}
+=
+\begin{pmatrix}
+0 \\ -\rho \frac{\partial}{\partial x} \phi \\ -\rho \frac{\partial}{\partial y} \phi \\ -\rho \frac{\partial}{\partial z} \phi \\ 0
+\end{pmatrix}
+```
+for an ideal gas with ratio of specific heats ``\gamma = c_p / c_v`` in three space dimensions.
+Here, ``\rho`` is the density, ``v_1, v_2, v_3`` are the velocities, ``\theta`` is the
+potential temperature, ``\phi`` is the gravitational potential, and
+```math
+p = p_0 \left( \frac{R \rho \theta}{p_0} \right)^\gamma
+```
+the pressure, where ``p_0 = 10^5\,\mathrm{Pa}`` is the reference pressure and
+``R = c_p - c_v`` the gas constant.
+"""
 struct CompressibleEulerPotentialTemperatureEquationsWithGravity3D{RealT <: Real} <:
        AbstractCompressibleEulerEquations{3, 6}
     p_0::RealT # reference pressure in Pa
@@ -202,6 +241,180 @@ end
                    f4 + p_interface * normal_direction[3],
                    f5, zero(eltype(u_ll)))
 end
+
+"""
+    flux_lmars_combined(u_ll, u_rr, normal_direction,
+                        equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+
+Version of the low Mach number approximate Riemann solver `FluxLMARS(340)` that returns the
+conservative and the nonconservative contribution of the surface flux as a tuple, see
+[`Trixi.combine_conservative_and_nonconservative_fluxes`](@ref). It is therefore used as a
+single `surface_flux` instead of the tuple `(FluxLMARS(340), flux_zero)`.
+
+The geopotential is continuous across interfaces, so the nonconservative gravity term, which
+is proportional to the jump of the geopotential, vanishes on the surface. Hence both
+contributions are given by the plain LMARS flux and no gravity term is computed here.
+"""
+@inline function flux_lmars_combined(u_ll, u_rr,
+                                     normal_direction::AbstractVector,
+                                     equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+    # constants
+    a = 340
+
+    # Unpack left and right state
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+
+    v_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2] +
+           v3_ll * normal_direction[3]
+    v_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2] +
+           v3_rr * normal_direction[3]
+
+    norm_ = norm(normal_direction)
+
+    rho_avg = 0.5f0 * (rho_ll + rho_rr)
+
+    p_interface = 0.5f0 * (p_ll + p_rr) - 0.5f0 * a * rho_avg * (v_rr - v_ll) / norm_
+    v_interface = 0.5f0 * (v_ll + v_rr) - 1 / (2 * a * rho_avg) * (p_rr - p_ll) * norm_
+
+    if (v_interface > 0)
+        f1, f2, f3, f4, f5 = u_ll * v_interface
+    else
+        f1, f2, f3, f4, f5 = u_rr * v_interface
+    end
+
+    flux = SVector(f1,
+                   f2 + p_interface * normal_direction[1],
+                   f3 + p_interface * normal_direction[2],
+                   f4 + p_interface * normal_direction[3],
+                   f5, zero(eltype(u_ll)))
+
+    return flux, flux
+end
+
+@inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_lmars_combined), ::CompressibleEulerPotentialTemperatureEquationsWithGravity3D) = Trixi.True()
+
+# The boundary condition must also be specialized for a combined surface flux such that it
+# returns only the first contribution of the surface flux.
+@inline function boundary_condition_slip_wall(u_inner,
+                                              normal_direction::AbstractVector,
+                                              x, t,
+                                              surface_flux_function::typeof(flux_lmars_combined),
+                                              equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+    # normalize the outward pointing direction
+    normal = normal_direction / norm(normal_direction)
+    # compute the normal velocity
+    u_normal = normal[1] * u_inner[2] + normal[2] * u_inner[3] + normal[3] * u_inner[4]
+
+    # create the "external" boundary solution state
+    u_boundary = SVector(u_inner[1],
+                         u_inner[2] - 2 * u_normal * normal[1],
+                         u_inner[3] - 2 * u_normal * normal[2],
+                         u_inner[4] - 2 * u_normal * normal[3],
+                         u_inner[5], u_inner[6])
+
+    # calculate the boundary flux
+    flux, _ = surface_flux_function(u_inner, u_boundary, normal_direction, equations)
+
+    return flux
+end
+
+"""
+    flux_kennedy_gruber(u_ll, u_rr, normal_direction,
+                        equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+
+Modification of the kinetic-energy-preserving two-point flux by Kennedy and Gruber
+that is consistent with [`CompressibleEulerPotentialTemperatureEquationsWithGravity3D`](@ref). See:
+- Kennedy and Gruber (2008)
+  Reduced aliasing formulations of the convective terms within the
+  Navier-Stokes equations for a compressible fluid
+  [DOI: 10.1016/j.jcp.2007.09.020](https://doi.org/10.1016/j.jcp.2007.09.020)
+"""
+@inline function flux_kennedy_gruber(u_ll, u_rr, normal_direction::AbstractVector,
+                                     equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+    # Unpack left and right state
+    rho_theta_ll = u_ll[5]
+    rho_theta_rr = u_rr[5]
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+
+    # Average each factor of products in flux
+    rho_avg = 0.5f0 * (rho_ll + rho_rr)
+    v1_avg = 0.5f0 * (v1_ll + v1_rr)
+    v2_avg = 0.5f0 * (v2_ll + v2_rr)
+    v3_avg = 0.5f0 * (v3_ll + v3_rr)
+    p_avg = 0.5f0 * (p_ll + p_rr)
+    theta_avg = 0.5f0 * (rho_theta_ll / rho_ll + rho_theta_rr / rho_rr)
+
+    v_dot_n_avg = v1_avg * normal_direction[1] + v2_avg * normal_direction[2] +
+                  v3_avg * normal_direction[3]
+
+    # Calculate fluxes depending on normal_direction
+    f1 = rho_avg * v_dot_n_avg
+    f2 = f1 * v1_avg + p_avg * normal_direction[1]
+    f3 = f1 * v2_avg + p_avg * normal_direction[2]
+    f4 = f1 * v3_avg + p_avg * normal_direction[3]
+    f5 = f1 * theta_avg
+
+    return SVector(f1, f2, f3, f4, f5, zero(eltype(u_ll)))
+end
+
+"""
+    flux_kennedy_gruber_souza_etal(u_ll, u_rr, normal_direction,
+                                   equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+
+Fused version of [`flux_kennedy_gruber`](@ref) and [`flux_nonconservative_souza_etal`](@ref)
+that computes the conservative and the nonconservative contributions in a single kernel,
+returning the tuple
+
+    flux_kennedy_gruber(u_ll, u_rr, n, equations)
+        ± 0.5f0 * flux_nonconservative_souza_etal(u_ll, u_rr, n, equations)
+
+see [`Trixi.combine_conservative_and_nonconservative_fluxes`](@ref). It is therefore used as
+a single `volume_flux` instead of the tuple
+`(flux_kennedy_gruber, flux_nonconservative_souza_etal)`.
+"""
+@inline function flux_kennedy_gruber_souza_etal(u_ll, u_rr,
+                                                normal_direction::AbstractVector,
+                                                equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+    # Unpack left and right state
+    rho_theta_ll = u_ll[5]
+    rho_theta_rr = u_rr[5]
+    phi_ll = u_ll[6]
+    phi_rr = u_rr[6]
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+
+    # Average each factor of products in flux
+    rho_avg = 0.5f0 * (rho_ll + rho_rr)
+    v1_avg = 0.5f0 * (v1_ll + v1_rr)
+    v2_avg = 0.5f0 * (v2_ll + v2_rr)
+    v3_avg = 0.5f0 * (v3_ll + v3_rr)
+    p_avg = 0.5f0 * (p_ll + p_rr)
+    theta_avg = 0.5f0 * (rho_theta_ll / rho_ll + rho_theta_rr / rho_rr)
+
+    v_dot_n_avg = v1_avg * normal_direction[1] + v2_avg * normal_direction[2] +
+                  v3_avg * normal_direction[3]
+
+    # Conservative part, cf. `flux_kennedy_gruber`
+    f1 = rho_avg * v_dot_n_avg
+    f2 = f1 * v1_avg + p_avg * normal_direction[1]
+    f3 = f1 * v2_avg + p_avg * normal_direction[2]
+    f4 = f1 * v3_avg + p_avg * normal_direction[3]
+    f5 = f1 * theta_avg
+
+    # Nonconservative part, cf. `flux_nonconservative_souza_etal`, scaled by 0.5
+    gravity = 0.5f0 * rho_avg * (phi_rr - phi_ll)
+    g2 = normal_direction[1] * gravity
+    g3 = normal_direction[2] * gravity
+    g4 = normal_direction[3] * gravity
+
+    zero_ = zero(eltype(u_ll))
+    return SVector(f1, f2 + g2, f3 + g3, f4 + g4, f5, zero_),
+           SVector(f1, f2 - g2, f3 - g3, f4 - g4, f5, zero_)
+end
+
+@inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_kennedy_gruber_souza_etal), ::CompressibleEulerPotentialTemperatureEquationsWithGravity3D) = Trixi.True()
 
 """
 	flux_tec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperatureWithGravity3D)
@@ -487,3 +700,64 @@ end
     return abs(v1) + c, abs(v2) + c, abs(v3) + c
 end
 end # @muladd
+
+# Specializations of the `FluxTurbo` interface of Trixi.jl.
+const FluxKennedyGruberSouzaEtal = Tuple{typeof(flux_kennedy_gruber),
+                                         typeof(flux_nonconservative_souza_etal)}
+
+# We precompute `rho, v1, v2, v3, theta, p, phi`, i.e., one quantity more than the number
+# of variables.
+@inline function Trixi.nturbovars(::FluxKennedyGruberSouzaEtal,
+                                  ::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+    return Val(7)
+end
+
+@inline function Trixi.cons2turbo(::FluxKennedyGruberSouzaEtal,
+                                  rho, rho_v1, rho_v2, rho_v3, rho_theta, phi,
+                                  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+    v1 = rho_v1 / rho
+    v2 = rho_v2 / rho
+    v3 = rho_v3 / rho
+    theta = rho_theta / rho
+    p = equations.K * exp(equations.gamma * log(rho_theta))
+
+    return rho, v1, v2, v3, theta, p, phi
+end
+
+@inline function Trixi.flux_turbo(::FluxKennedyGruberSouzaEtal,
+                                  rho_ll, v1_ll, v2_ll, v3_ll, theta_ll, p_ll, phi_ll,
+                                  rho_rr, v1_rr, v2_rr, v3_rr, theta_rr, p_rr, phi_rr,
+                                  normal_direction_1, normal_direction_2,
+                                  normal_direction_3,
+                                  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+    # Average each factor of products in flux
+    rho_avg = 0.5f0 * (rho_ll + rho_rr)
+    v1_avg = 0.5f0 * (v1_ll + v1_rr)
+    v2_avg = 0.5f0 * (v2_ll + v2_rr)
+    v3_avg = 0.5f0 * (v3_ll + v3_rr)
+    p_avg = 0.5f0 * (p_ll + p_rr)
+    theta_avg = 0.5f0 * (theta_ll + theta_rr)
+
+    v_dot_n_avg = v1_avg * normal_direction_1 + v2_avg * normal_direction_2 +
+                  v3_avg * normal_direction_3
+
+    # Conservative part, i.e. 'flux_kennedy_gruber'
+    f1 = rho_avg * v_dot_n_avg
+    f2 = f1 * v1_avg + p_avg * normal_direction_1
+    f3 = f1 * v2_avg + p_avg * normal_direction_2
+    f4 = f1 * v3_avg + p_avg * normal_direction_3
+    f5 = f1 * theta_avg
+
+    # Nonconservative part, i.e., `flux_nonconservative_souza_etal`, scaled by 0.5. Since this
+    # flux is antisymmetric, the right contribution is obtained by flipping the sign.
+    gravity = 0.5f0 * rho_avg * (phi_rr - phi_ll)
+    g2 = normal_direction_1 * gravity
+    g3 = normal_direction_2 * gravity
+    g4 = normal_direction_3 * gravity
+
+    zero_ = zero(eltype(rho_ll))
+    flux_left = (f1, f2 + g2, f3 + g3, f4 + g4, f5, zero_)
+    flux_right = (f1, f2 - g2, f3 - g3, f4 - g4, f5, zero_)
+
+    return flux_left, flux_right
+end
