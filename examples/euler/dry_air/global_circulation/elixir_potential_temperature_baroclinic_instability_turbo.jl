@@ -14,6 +14,15 @@ using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 using LinearAlgebra: norm
 
+function Base.similar(equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D,
+                      ::Type{NewRealT}) where {NewRealT}
+    return CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = convert(NewRealT,
+                                                                                     equations.c_p),
+                                                                       c_v = convert(NewRealT,
+                                                                                     equations.c_v),
+                                                                       gravity = convert(NewRealT,
+                                                                                         equations.g))
+end
 # Unperturbed balanced steady-state.
 # Returns primitive variables with only the velocity in longitudinal direction (rho, u, p).
 # The other velocity components are zero.
@@ -227,11 +236,11 @@ semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
 T = 10 # 10 days
 tspan = (0.0, T * SECONDS_PER_DAY) # time in seconds for 10 days
 
-ode = semidiscretize(semi, tspan)
+ode = semidiscretize(semi, tspan; storage_type = nothing, real_type = nothing)
 
 summary_callback = SummaryCallback()
 
-analysis_interval = 1000
+analysis_interval = 100000
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval)
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
@@ -241,8 +250,9 @@ save_solution = SaveSolutionCallback(dt = 100, save_initial_solution = true,
 
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,
-                        alive_callback,
-                        save_solution)
+                        alive_callback
+                        #save_solution
+                        )
 
 ###############################################################################
 # Use a Runge-Kutta method with automatic (error based) time step size control

@@ -659,6 +659,50 @@ end
 
     return abs(v1) + c, abs(v2) + c, abs(v3) + c
 end
+
+@inline function flux_etec_waruszewski_etal_combined(u_ll, u_rr,
+                                                     normal_direction::AbstractVector,
+                                                     equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll, phi_ll = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr, phi_rr = cons2prim(u_rr, equations)
+    rho_theta_ll = u_ll[5]
+    rho_theta_rr = u_rr[5]
+
+    v_dot_n_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2] +
+                 v3_ll * normal_direction[3]
+    v_dot_n_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2] +
+                 v3_rr * normal_direction[3]
+
+    # Conservative part: the total energy and entropy conservative flux.
+    gammamean = stolarsky_mean(rho_theta_ll, rho_theta_rr, equations.gamma)
+    v1_avg = 0.5f0 * (v1_ll + v1_rr)
+    v2_avg = 0.5f0 * (v2_ll + v2_rr)
+    v3_avg = 0.5f0 * (v3_ll + v3_rr)
+    p_avg = 0.5f0 * (p_ll + p_rr)
+
+    f5 = gammamean * 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
+    f1 = f5 * ln_mean(rho_ll / rho_theta_ll, rho_rr / rho_theta_rr)
+    f2 = f1 * v1_avg + p_avg * normal_direction[1]
+    f3 = f1 * v2_avg + p_avg * normal_direction[2]
+    f4 = f1 * v3_avg + p_avg * normal_direction[3]
+
+    # Non-conservative part: the well balanced gravity term, half to each side.
+    rho_mean = ln_mean(rho_ll, rho_rr)
+    phi_jump = phi_rr - phi_ll
+    noncons_2 = 0.5f0 * normal_direction[1] * rho_mean * phi_jump
+    noncons_3 = 0.5f0 * normal_direction[2] * rho_mean * phi_jump
+    noncons_4 = 0.5f0 * normal_direction[3] * rho_mean * phi_jump
+
+    z = zero(eltype(u_ll))
+    flux_left = SVector(f1, f2 + noncons_2, f3 + noncons_3, f4 + noncons_4, f5, z)
+    flux_right = SVector(f1, f2 - noncons_2, f3 - noncons_3, f4 - noncons_4, f5, z)
+    return flux_left, flux_right
+end
+
+@inline function Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_etec_waruszewski_etal_combined),
+                                                                       ::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+    Trixi.True()
+end
 end # @muladd
 
 # Specializations of the `FluxTurbo` interface of Trixi.jl.
@@ -719,5 +763,105 @@ end
     flux_left = (f1, f2 + g2, f3 + g3, f4 + g4, f5, zero_)
     flux_right = (f1, f2 - g2, f3 - g3, f4 - g4, f5, zero_)
 
+    return flux_left, flux_right
+end
+
+@inline function Trixi.nturbovars(::Tuple{typeof(flux_etec),
+                                          typeof(flux_nonconservative_waruszewski_etal)},
+                                  ::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+    return Val(10)
+end
+
+@inline function Trixi.cons2turbo(::Tuple{typeof(flux_etec),
+                                          typeof(flux_nonconservative_waruszewski_etal)},
+                                  rho, rho_v1, rho_v2, rho_v3, rho_theta, phi,
+                                  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+    v1 = rho_v1 / rho
+    v2 = rho_v2 / rho
+    v3 = rho_v3 / rho
+    p = equations.K * rho_theta^equations.gamma
+    x = rho / rho_theta                     # argument of the logarithmic mean
+    # Only two logarithms, not three: log(x) = log(rho) - log(rho*theta), so the
+    # third is redundant and is recovered in the kernel with one subtraction.
+    return rho, v1, v2, v3, p, rho_theta, log(rho), log(rho_theta), x, phi
+end
+
+@inline function Trixi.flux_turbo(::Tuple{typeof(flux_etec),
+                                          typeof(flux_nonconservative_waruszewski_etal)},
+                                  rho_ll, v1_ll, v2_ll, v3_ll, p_ll, rho_theta_ll,
+                                  log_rho_ll, log_rho_theta_ll, x_ll, phi_ll,
+                                  rho_rr, v1_rr, v2_rr, v3_rr, p_rr, rho_theta_rr,
+                                  log_rho_rr, log_rho_theta_rr, x_rr, phi_rr,
+                                  normal_direction_1, normal_direction_2,
+                                  normal_direction_3,
+                                  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+    gamma = equations.gamma
+
+    v_dot_n_ll = v1_ll * normal_direction_1 + v2_ll * normal_direction_2 +
+                 v3_ll * normal_direction_3
+    v_dot_n_rr = v1_rr * normal_direction_1 + v2_rr * normal_direction_2 +
+                 v3_rr * normal_direction_3
+
+    # The three means are inlined rather than called, so that
+    # LoopVectorization.jl can optimize them: inside `@turbo` the values are SIMD
+    # vectors, a comparison yields a mask instead of a `Bool`, and both paths of
+    # the `ifelse` are evaluated. This follows the `flux_ranocha` turbo method of
+    # Trixi.
+
+    # gammamean = stolarsky_mean(rho_theta_ll, rho_theta_rr, gamma)
+    x1, y1 = rho_theta_ll, rho_theta_rr
+    x1_plus_y1 = x1 + y1
+    y1_minus_x1 = y1 - x1
+    z1 = y1_minus_x1^2 / x1_plus_y1^2
+    c1 = (gamma - 2) / 3
+    c2 = -(gamma + 1) * (gamma - 3) * c1 / 15
+    c3 = -(2 * gamma * (gamma - 2) - 9) * c2 / 21
+    special_path1 = 0.5f0 * x1_plus_y1 * (1 + z1 * (c1 + z1 * (c2 + c3 * z1)))
+    # rho_theta^(gamma-1) without a power: p = K*rho_theta^gamma, so it is simply
+    # p/(K*rho_theta). That removes the two `exp` the generic Stolarsky mean needs.
+    xg = p_ll / (equations.K * x1)
+    yg = p_rr / (equations.K * y1)
+    regular_path1 = (gamma - 1) * (yg * y1 - xg * x1) / (gamma * (yg - xg))
+    gammamean = ifelse(z1 < 1.0f-4, special_path1, regular_path1)
+
+    # x_mean = ln_mean(rho_ll / rho_theta_ll, rho_rr / rho_theta_rr)
+    x2, y2 = x_ll, x_rr
+    x2_plus_y2 = x2 + y2
+    y2_minus_x2 = y2 - x2
+    z2 = y2_minus_x2^2 / x2_plus_y2^2
+    special_path2 = x2_plus_y2 / (2 + z2 * (2 / 3 + z2 * (2 / 5 + 2 / 7 * z2)))
+    # log(x) = log(rho) - log(rho*theta), recovered rather than precomputed
+    regular_path2 = y2_minus_x2 / ((log_rho_rr - log_rho_theta_rr) -
+                     (log_rho_ll - log_rho_theta_ll))
+    x_mean = ifelse(z2 < 1.0f-4, special_path2, regular_path2)
+
+    # rho_mean = ln_mean(rho_ll, rho_rr), for the gravity term
+    x3, y3 = rho_ll, rho_rr
+    x3_plus_y3 = x3 + y3
+    y3_minus_x3 = y3 - x3
+    z3 = y3_minus_x3^2 / x3_plus_y3^2
+    special_path3 = x3_plus_y3 / (2 + z3 * (2 / 3 + z3 * (2 / 5 + 2 / 7 * z3)))
+    regular_path3 = y3_minus_x3 / (log_rho_rr - log_rho_ll)
+    rho_mean = ifelse(z3 < 1.0f-4, special_path3, regular_path3)
+
+    v1_avg = 0.5f0 * (v1_ll + v1_rr)
+    v2_avg = 0.5f0 * (v2_ll + v2_rr)
+    v3_avg = 0.5f0 * (v3_ll + v3_rr)
+    p_avg = 0.5f0 * (p_ll + p_rr)
+
+    f5 = gammamean * 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
+    f1 = f5 * x_mean
+    f2 = f1 * v1_avg + p_avg * normal_direction_1
+    f3 = f1 * v2_avg + p_avg * normal_direction_2
+    f4 = f1 * v3_avg + p_avg * normal_direction_3
+
+    phi_jump = phi_rr - phi_ll
+    noncons_2 = 0.5f0 * normal_direction_1 * rho_mean * phi_jump
+    noncons_3 = 0.5f0 * normal_direction_2 * rho_mean * phi_jump
+    noncons_4 = 0.5f0 * normal_direction_3 * rho_mean * phi_jump
+
+    z = zero(rho_ll)
+    flux_left = (f1, f2 + noncons_2, f3 + noncons_3, f4 + noncons_4, f5, z)
+    flux_right = (f1, f2 - noncons_2, f3 - noncons_3, f4 - noncons_4, f5, z)
     return flux_left, flux_right
 end
