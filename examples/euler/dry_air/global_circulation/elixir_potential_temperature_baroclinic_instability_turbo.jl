@@ -14,15 +14,6 @@ using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 using LinearAlgebra: norm
 
-function Base.similar(equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D,
-                      ::Type{NewRealT}) where {NewRealT}
-    return CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = convert(NewRealT,
-                                                                                     equations.c_p),
-                                                                       c_v = convert(NewRealT,
-                                                                                     equations.c_v),
-                                                                       gravity = convert(NewRealT,
-                                                                                         equations.g))
-end
 # Unperturbed balanced steady-state.
 # Returns primitive variables with only the velocity in longitudinal direction (rho, u, p).
 # The other velocity components are zero.

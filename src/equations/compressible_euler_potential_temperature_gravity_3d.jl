@@ -27,6 +27,16 @@ struct CompressibleEulerPotentialTemperatureEquationsWithGravity3D{RealT <: Real
     end
 end
 
+function Base.similar(equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D,
+                      ::Type{NewRealT}) where {NewRealT}
+    return CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = convert(NewRealT,
+                                                                                     equations.c_p),
+                                                                       c_v = convert(NewRealT,
+                                                                                     equations.c_v),
+                                                                       gravity = convert(NewRealT,
+                                                                                         equations.g))
+end
+
 function varnames(::typeof(cons2cons),
                   ::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     ("rho", "rho_v1", "rho_v2", "rho_v3", "rho_theta", "phi")
