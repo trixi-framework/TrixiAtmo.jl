@@ -102,7 +102,7 @@ function perturbation_stream_function(lon, lat, z)
     # In the first case, the vertical taper function is per definition zero.
     # In the second case, the stream function is per definition zero.
     if z > pertz || great_circle_distance_by_a > perturbation_radius
-        return 0, 0
+        return zero(z), zero(z)
     end
 
     # Vertical tapering of stream function
