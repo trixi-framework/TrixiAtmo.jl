@@ -12,61 +12,7 @@
 
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
-using LinearAlgebra: norm
 
-function cartesian_to_sphere(x)
-    r = norm(x)
-    lambda = atan(x[2], x[1])
-    if lambda < 0
-        lambda += 2 * pi
-    end
-    phi = asin(x[3] / r)
-
-    return lambda, phi, r
-end
-
-function initial_condition_vortex_shedding(x, t,
-                                           equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
-    lon, lat, r = cartesian_to_sphere(x)
-    radius_earth = EARTH_RADIUS / 20
-    R = equations.c_p - equations.c_v
-    k = R / equations.c_p
-    # Convert spherical velocity to Cartesian
-    u0 = 20
-    v1 = -u0 * cos(lat) * sin(lon)
-    v2 = u0 * cos(lat) * cos(lon)
-    v3 = 0
-    g = EARTH_GRAVITATIONAL_ACCELERATION  # g
-    T = 288
-    angular_velocity = EARTH_ROTATION_RATE * 20  # Ω
-    r = norm(x)
-    # Make sure that r is not smaller than radius_earth
-    z = max(r - radius_earth, 0.0)
-    phi = g * z
-    N = 0.0182 # Brunt–Väisälä frequency
-    p = equations.p_0 * exp(-radius_earth * N^2 * u0 / (2 * g^2 * k) *
-            (u0 / radius_earth + 2 * angular_velocity) * (sin(lat)^2 - 1) -
-            N^2 / (g^2 * k) * phi)
-    rho = p / (R * T)
-    return prim2cons(SVector(rho, v1, v2, v3, p, phi), equations)
-end
-
-@inline function source_terms_coriolis(u, x, t,
-                                       equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
-    radius_earth = EARTH_RADIUS / 20  # a
-    angular_velocity = EARTH_ROTATION_RATE * 20  # Ω
-
-    du1 = zero(eltype(u))
-    du2 = zero(eltype(u))
-    du3 = zero(eltype(u))
-    du4 = zero(eltype(u))
-    du5 = zero(eltype(u))
-    # Coriolis term, -2Ω × ρv = -2 * angular_velocity * (0, 0, 1) × u[2:4]
-    du2 -= -2 * angular_velocity * u[3]
-    du3 -= 2 * angular_velocity * u[2]
-
-    return SVector(du1, du2, du3, du4, du5, zero(eltype(u)))
-end
 equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004,
                                                                         c_v = 717,
                                                                         gravity = EARTH_GRAVITATIONAL_ACCELERATION)
@@ -90,7 +36,7 @@ function initial_topography_gaussian(lat, lon)
     lambda_c = pi
     phi_c = 20 * pi / 180
 
-    r_earth = EARTH_RADIUS / 20
+    r_earth = SMALL_EARTH_RADIUS
     dist = r_earth * acos(clamp(sin(phi_c) * sin(lat) +
                       cos(phi_c) * cos(lat) * cos(lon - lambda_c), -1, 1))
 
@@ -99,7 +45,7 @@ end
 
 trees_per_cube_face = (16, 8)
 
-mesh = P4estMeshCubedSphereTopography(trees_per_cube_face..., EARTH_RADIUS / 20,
+mesh = P4estMeshCubedSphereTopography(trees_per_cube_face..., SMALL_EARTH_RADIUS,
                                       20000,
                                       polydeg = polydeg,
                                       initial_refinement_level = 0,
@@ -108,7 +54,7 @@ mesh = P4estMeshCubedSphereTopography(trees_per_cube_face..., EARTH_RADIUS / 20,
                                       keep_columns_together = true)
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
-                                    source_terms = source_terms_coriolis,
+                                    source_terms = source_terms_coriolis_small_earth,
                                     boundary_conditions = boundary_conditions)
 
 ###############################################################################

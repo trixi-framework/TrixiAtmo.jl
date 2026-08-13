@@ -27,7 +27,7 @@ EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler/dry_air")
 end
 
 @trixi_testset "elixir_potential_temperature_linear_hydrostatic" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "tests",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "mountain_flow",
                                  "elixir_potential_temperature_linear_hydrostatic.jl"),
                         l2=[
                             2.669332229493225e-6,
@@ -51,7 +51,7 @@ end
 end
 
 @trixi_testset "elixir_potential_temperature_linear_nonhydrostatic" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "tests",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "mountain_flow",
                                  "elixir_potential_temperature_linear_nonhydrostatic.jl"),
                         l2=[
                             4.345825921806206e-7,
