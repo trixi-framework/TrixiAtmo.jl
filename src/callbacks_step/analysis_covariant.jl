@@ -35,7 +35,7 @@ function Trixi.integrate(func::Func, u,
     integral = zero(func(u_values[1], aux_quad_values[1], equations))
     total_volume = zero(sum(rd.wq))
     for element in Trixi.eachelement(mesh, dg, cache)
-        weights = area_element.(aux_quad_values[:, element], equations) .* rd.wq
+        weights = volume_element.(aux_quad_values[:, element], equations) .* rd.wq
         integral += sum(weights .*
                         func.(u_values[:, element], aux_quad_values[:, element],
                               equations))
@@ -127,7 +127,7 @@ function Trixi.analyze(::typeof(Trixi.entropy_timederivative), du, u, t,
     for element in Trixi.eachelement(mesh, dg, cache)
         for i in 1:(rd.Nq)
             node_weight = rd.wq[i] *
-                          area_element(aux_quad_values[i, element], equations)
+                          volume_element(aux_quad_values[i, element], equations)
             dS_dt += dot(cons2entropy(u_values[i, element], aux_quad_values[i, element],
                                       equations),
                          du_values[i, element]) * node_weight
@@ -211,7 +211,7 @@ function Trixi.calc_error_norms(func, u, t, analyzer,
                                     aux_quad_values[i], equations)
         error_at_node = func(u_values[i], equations) - func(u_exact, equations)
         ref_index = mod(i - 1, rd.Nq) + 1
-        node_weight = rd.wq[ref_index] * area_element(aux_quad_values[i], equations)
+        node_weight = rd.wq[ref_index] * volume_element(aux_quad_values[i], equations)
         component_l2_errors += node_weight * error_at_node .^ 2
         component_linf_errors = max.(component_linf_errors, abs.(error_at_node))
         total_volume += node_weight
