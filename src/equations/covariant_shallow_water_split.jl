@@ -114,8 +114,32 @@ paper for the special case of the Euclidean metric $G_{ab} = \delta_{ab}$:
     mass_flux = 0.5f0 * (J_ll * h_vcon_ll[orientation] + J_rr * h_vcon_rr[orientation])
 
     # Momentum flux is average of mass flux times average of velocities
-    return SVector(mass_flux, 0.5f0 * (vcon_ll[1] + vcon_rr[1]) * mass_flux,
-                   0.5f0 * (vcon_ll[2] + vcon_rr[2]) * mass_flux)
+    f2 = 0.5f0 * (vcon_ll[1] + vcon_rr[1]) * mass_flux
+    f3 = 0.5f0 * (vcon_ll[2] + vcon_rr[2]) * mass_flux
+    return SVector(mass_flux, f2, f3)
+end
+
+@inline function flux_ec(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
+                         normal_direction::AbstractArray,
+                         equations::SplitCovariantShallowWaterEquations2D)
+    # Geometric variables
+    J_ll = area_element(aux_vars_ll, equations)
+    J_rr = area_element(aux_vars_rr, equations)
+
+    # Physical variables
+    h_vcon_ll = momentum_contravariant(u_ll, equations)
+    h_vcon_rr = momentum_contravariant(u_rr, equations)
+    vcon_ll = velocity_contravariant(u_ll, equations)
+    vcon_rr = velocity_contravariant(u_rr, equations)
+
+    # Mass flux is simple average
+    mass_flux = 0.5f0 * (J_ll * dot(normal_direction, h_vcon_ll) +
+                 J_rr * dot(normal_direction, h_vcon_rr))
+
+    # Momentum flux is average of mass flux times average of velocities
+    f2 = 0.5f0 * (vcon_ll[1] + vcon_rr[1]) * mass_flux
+    f3 = 0.5f0 * (vcon_ll[2] + vcon_rr[2]) * mass_flux
+    return SVector(mass_flux, f2, f3)
 end
 
 @doc raw"""
@@ -152,8 +176,42 @@ end
     pressure_term = equations.gravity * Gcon_ll[:, orientation] * h_ll *
                     (h_rr + h_s_jump)
 
-    return SVector(zero(eltype(u_ll)), J_ll * (geometric_term[1] + pressure_term[1]),
-                   J_ll * (geometric_term[2] + pressure_term[2]))
+    # Momentum flux
+    f2 = J_ll * (geometric_term[1] + pressure_term[1])
+    f3 = J_ll * (geometric_term[2] + pressure_term[2])
+
+    return SVector(zero(eltype(u_ll)), f2, f3)
+end
+
+@inline function flux_nonconservative_ec(u_ll, u_rr, aux_vars_ll,
+                                         aux_vars_rr,
+                                         normal_direction::AbstractArray,
+                                         equations::SplitCovariantShallowWaterEquations2D)
+    # Geometric variables
+    Gcon_ll = metric_contravariant(aux_vars_ll, equations)
+    Gcov_rr = metric_covariant(aux_vars_rr, equations)
+    J_ll = area_element(aux_vars_ll, equations)
+    h_s_jump = bottom_topography(aux_vars_rr, equations) -
+               bottom_topography(aux_vars_ll, equations)
+
+    # Physical variables
+    h_ll = waterheight(u_ll, equations)
+    h_rr = waterheight(u_rr, equations)
+    h_vcon_ll = momentum_contravariant(u_ll, equations)
+    vcon_rr = velocity_contravariant(u_rr, equations)
+    vcov_rr = Gcov_rr * vcon_rr
+    Gcon_ll_normal = Gcon_ll * normal_direction
+
+    geometric_term = 0.5f0 * dot(h_vcon_ll, normal_direction) *
+                     (Gcon_ll * vcov_rr - vcon_rr)
+    pressure_term = equations.gravity * Gcon_ll_normal * h_ll *
+                    (h_rr + h_s_jump)
+
+    # Momentum flux
+    f2 = J_ll * (geometric_term[1] + pressure_term[1])
+    f3 = J_ll * (geometric_term[2] + pressure_term[2])
+
+    return SVector(zero(eltype(u_ll)), f2, f3)
 end
 
 @doc raw"""
@@ -182,7 +240,32 @@ end
 
     pressure_term = equations.gravity * Gcon_ll[:, orientation] * h_ll * h_rr
 
-    return SVector(zero(eltype(u_ll)), J_ll * pressure_term[1], J_ll * pressure_term[2])
+    # Momentum flux
+    f2 = J_ll * pressure_term[1]
+    f3 = J_ll * pressure_term[2]
+
+    return SVector(zero(eltype(u_ll)), f2, f3)
+end
+
+@inline function flux_nonconservative_surface_simplified(u_ll, u_rr, aux_vars_ll,
+                                                         aux_vars_rr,
+                                                         normal_direction::AbstractArray,
+                                                         equations::SplitCovariantShallowWaterEquations2D)
+    # Geometric variables
+    Gcon_ll = metric_contravariant(aux_vars_ll, equations)
+    J_ll = area_element(aux_vars_ll, equations)
+
+    # Physical variables
+    h_ll = waterheight(u_ll, equations)
+    h_rr = waterheight(u_rr, equations)
+
+    pressure_term = equations.gravity * Gcon_ll * normal_direction * h_ll * h_rr
+
+    # Momentum flux
+    f2 = J_ll * pressure_term[1]
+    f3 = J_ll * pressure_term[2]
+
+    return SVector(zero(eltype(u_ll)), f2, f3)
 end
 
 # Geometric and Coriolis source terms for a rotating sphere for use with the modified 

@@ -50,7 +50,7 @@ function Trixi.SemidiscretizationHyperbolic(mesh::DGMultiMesh,
                                             # while `uEltype` is used as element type of solutions etc.
                                             RealT = real(solver), uEltype = RealT,
                                             initial_cache = NamedTuple(),
-                                            metric_terms = MetricTermsCrossProduct(),
+                                            metric_terms = MetricTermsCovariantSphere(),
                                             auxiliary_field = nothing)
     cache = (;
              Trixi.create_cache(mesh, equations, solver, RealT, metric_terms,
