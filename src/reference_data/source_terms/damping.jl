@@ -9,25 +9,18 @@ function source_terms_rayleigh_damping_generator(;
                                                  bounds,
                                                  alpha = 0.5f0)
     @inline function source_terms(u, x, t,
-                                  ::AbstractCompressibleEulerAtmo{NDIMS, NVARS,
-                                                                  NPASSIVE}) where
-                     {NDIMS, NVARS, NPASSIVE}
-        rho_total = u[1] +
-                    sum(u[SVector{NVARS - NPASSIVE - NDIMS - 2}((NDIMS + 3):(NVARS - NPASSIVE))])
-        v1 = u[2] / rho_total
-        v2 = u[3] / rho_total
-        u0 = zero(eltype(u))
-        tau_s = u0
+                                  equations::AbstractCompressibleEulerAtmo{2})
+        rho_total = density_total(u, equations)
+        v = vars_moment(u, equations) / rho_total
+        tau_s = zero(eltype(u))
         for bound in bounds
             if abs(x[bound[1]]) > abs(bound[2])
                 tau_s += alpha *
-                         sin(0.5f0 * (x[2] - bound[2]) / (bound[3] - bound[2]))^2
+                         sinpi(0.5f0 * (x[bound[1]] - bound[2]) / (bound[3] - bound[2]))^2
             end
         end
-        return SVector(u0,
-                       -tau_s * rho_total * (v1 - v1_0),
-                       -tau_s * rho_total * (v2 - v2_0),
-                       u0)
+        return SVector(-tau_s * rho_total * (v[1] - v1_0),
+                       -tau_s * rho_total * (v[2] - v2_0))
     end
     return source_terms
 end

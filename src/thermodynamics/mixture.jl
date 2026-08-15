@@ -125,8 +125,11 @@ end
     return rho_cv_total(rho_gas, rho_condens, td_state) / rho_total
 end
 
+# TODO: check!
+# include condensates?
 @inline function gamma_total(rho_gas, rho_condens, td_state::Mixture)
-    error("gamma_total missing multi species implementation")
+    @unpack cv_gas, gamma_gas = td_state
+    return sum(rho_gas .* cv_gas .* gamma_gas) / dot(rho_gas, cv_gas)
 end
 
 #=

@@ -97,6 +97,7 @@ function prim2cons_td(prim, equations::CompressibleEulerAtmo{NDIMS, NVARS, NGAS}
     # latent heats
     # TODO fraction only?
     Elatent = td_state.latent_heat * prim_vapor
+    Elatent = 0
 
     # kinetic energy
     Ekinetic = 0.5f0 * dot(prim_moment, prim_moment)
@@ -122,6 +123,31 @@ end
          0.5f0 * rho_p * dot(v, v)
     w5 = -rho_p
 
+    n_passive = NVARS - NDIMS - 2
+
+    return SVector((v * rho_p)..., w5, w1, ntuple(i -> 0, Val(n_passive))...)
+end
+
+# TODO! multi species
+@inline function cons2entropy(cons, equations::CompressibleEulerAtmo{NDIMS, NVARS},
+                              td_equation::EnergyTotal,
+                              td_state::Mixture) where {NDIMS, NVARS}
+    rho = density_total(cons, equations)
+    p = pressure(cons, equations)
+    v = vars_moment(cons, equations) ./ rho
+
+    gamma = gamma_total(vars_gas(cons, equations),
+                        vars_condens(cons, equations),
+                        td_state)
+
+    s = log(p) - gamma * log(rho)
+    rho_p = rho / p
+
+    w1 = (gamma - s) * inv(gamma - 1) -
+         0.5f0 * rho_p * dot(v, v)
+    w5 = -rho_p
+
+    # TODO !!
     n_passive = NVARS - NDIMS - 2
 
     return SVector((v * rho_p)..., w5, w1, ntuple(i -> 0, Val(n_passive))...)

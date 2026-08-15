@@ -1,3 +1,6 @@
+@muladd begin
+#! format: noindent
+
 # Kunz / Wassermann 2D
 #
 function initial_condition_rainy_mountain_generator(parameters::Parameters{RealType};
@@ -16,7 +19,6 @@ function initial_condition_rainy_mountain_generator(parameters::Parameters{RealT
     c_pv = parameters.c_vapor_const_pressure
     c_vv = parameters.c_vapor_const_volume
     p_0 = parameters.ref_pressure
-    eps = parameters.tol_eps
 
     R_d = c_pd - c_vd
     R_v = c_pv - c_vv
@@ -35,18 +37,18 @@ function initial_condition_rainy_mountain_generator(parameters::Parameters{RealT
         # rho by ideal gas law
         rho_d = p_d / (R_d * T)
 
-        RH = 0.1 #relative_humidity
-        #if (x[2] > zm)
-        #    RH = RH * (1.0 + 2 * inv(pi) * atan((zm - x[2]) / 500))
-        #end
+        RH = relative_humidity
+        if (x[2] > zm)
+            RH = RH * (1.0 + 2 * inv(pi) * atan((zm - x[2]) / 500))
+        end
 
-        e_s = saturation_vapor_pressure(T, equations, equations.microphysics)
+        e_s = saturation_vapor_pressure(T, equations.parameters, equations.microphysics)
         p_v = RH * e_s
         rho_v = p_v / (R_v * T)
 
         rho_total = rho_d + rho_v
 
-        r_v = 0 #rho_v / rho_total
+        r_v = rho_v / rho_total
         r_l = 0  # no cloud water
         r_r = 0  # no rain
 
@@ -56,9 +58,11 @@ function initial_condition_rainy_mountain_generator(parameters::Parameters{RealT
         p = p_d + p_v  # Dalton's law
 
         r_v = 0
+        p = p_d
 
-        return SVector(rho_d, v1, v2, p_d, r_v, r_l, r_r)
+        return SVector(rho_d, v1, v2, p, r_v, r_l, r_r)
     end
 
     return initial_condition
+end
 end
