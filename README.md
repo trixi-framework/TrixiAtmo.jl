@@ -21,7 +21,7 @@ Currently available features include:
 
 * Compressible Euler and shallow water models on cubed sphere meshes, discretizing the
   atmosphere or its two-dimensional surface
-* Moist compressible Euler equations, including cloud and rain microphysics
+* Moist compressible Euler equations, including rain microphysics
 * Flux-differencing formulations, including entropy-stable schemes
 
 ## Installation
