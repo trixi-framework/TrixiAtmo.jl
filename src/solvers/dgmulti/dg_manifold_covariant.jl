@@ -169,6 +169,7 @@ function Trixi.calc_interface_flux!(cache, surface_integral::SurfaceIntegralWeak
     return nothing
 end
 
+# Compute the boundary fluxes, passing auxiliary variables to the boundary condition function.
 function Trixi.calc_single_boundary_flux!(cache, t, boundary_condition, boundary_key, mesh,
                                           have_nonconservative_terms::False,
                                           equations::AbstractCovariantEquations{NDIMS},

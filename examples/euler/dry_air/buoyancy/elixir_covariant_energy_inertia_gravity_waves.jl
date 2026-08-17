@@ -1,5 +1,5 @@
 ###############################################################################
-# DGSEM for the linear advection equation on a prismed icosahedral grid
+# DGSEM for the covariant Euler equations in total energy formulation
 ###############################################################################
 
 using OrdinaryDiffEqLowStorageRK, Trixi, TrixiAtmo
