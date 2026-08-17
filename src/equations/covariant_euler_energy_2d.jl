@@ -93,12 +93,12 @@ end
 
 have_nonconservative_terms(::CovariantEulerEnergyEquations2D) = False()
 
-# The conservative variables are the height and contravariant momentum components
+# The conservative variables are the density, contravariant momentum components, and total energy density
 function varnames(::typeof(cons2cons), ::CovariantEulerEnergyEquations2D)
     return ("rho", "rho_vcon1", "rho_vcon2", "rho_e")
 end
 
-# The primitive variables are the height and contravariant velocity components
+# The primitive variables are the density, contravariant velocity components, and pressure
 function varnames(::typeof(cons2prim), ::CovariantEulerEnergyEquations2D)
     return ("rho", "vcon1", "vcon2", "p")
 end
