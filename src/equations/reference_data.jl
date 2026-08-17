@@ -2,10 +2,63 @@
 #! format: noindent
 
 # Physical constants in SI units (reference values from the Williamson et al. test suite)
+
+@doc raw"""
+    EARTH_RADIUS
+
+Radius ``a = 6.37122 \times 10^6\ \mathrm{m}`` of the Earth.
+"""
 const EARTH_RADIUS = 6.37122e6  # m
+
+@doc raw"""
+    EARTH_GRAVITATIONAL_ACCELERATION
+
+Gravitational acceleration ``g = 9.80616\ \mathrm{m}/\mathrm{s}^2`` at the surface of the
+Earth.
+"""
 const EARTH_GRAVITATIONAL_ACCELERATION = 9.80616  # m/s²
+
+@doc raw"""
+    EARTH_ROTATION_RATE
+
+Rotation rate ``\Omega = 7.292 \times 10^{-5}\ \mathrm{rad}/\mathrm{s}`` of the Earth, see
+[`source_terms_coriolis`](@ref).
+"""
 const EARTH_ROTATION_RATE = 7.292e-5  # rad/s
+
+"""
+    SECONDS_PER_DAY
+
+Number of seconds in a day, useful to prescribe the time span of the global circulation test
+cases.
+"""
 const SECONDS_PER_DAY = 8.64e4
+
+@doc raw"""
+    SMALL_EARTH_SCALING
+
+Scaling factor ``X = 20`` of the reduced-radius ("small Earth") configuration used, e.g., by
+the DCMIP test suite. The radius of the Earth is divided and its rotation rate multiplied by
+``X``, which shrinks the planet while keeping the relevant dimensionless numbers unchanged.
+
+See also [`SMALL_EARTH_RADIUS`](@ref) and [`SMALL_EARTH_ROTATION_RATE`](@ref).
+"""
+const SMALL_EARTH_SCALING = 20  # X
+
+@doc raw"""
+    SMALL_EARTH_RADIUS
+
+Radius ``a / X`` of the reduced-radius Earth, see [`SMALL_EARTH_SCALING`](@ref).
+"""
+const SMALL_EARTH_RADIUS = EARTH_RADIUS / SMALL_EARTH_SCALING  # m
+
+@doc raw"""
+    SMALL_EARTH_ROTATION_RATE
+
+Rotation rate ``X \Omega`` of the reduced-radius Earth, see [`SMALL_EARTH_SCALING`](@ref)
+and [`source_terms_coriolis_small_earth`](@ref).
+"""
+const SMALL_EARTH_ROTATION_RATE = EARTH_ROTATION_RATE * SMALL_EARTH_SCALING  # rad/s
 
 @doc raw"""
     initial_condition_gaussian(x, t, equations)

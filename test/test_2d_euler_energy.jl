@@ -23,7 +23,7 @@ EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler/dry_air")
                         ], tspan=(0.0, 10.0), atol=5e-11)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_covariant_energy_inertia_gravity_waves" begin

@@ -21,7 +21,7 @@ Currently available features include:
 
 * Compressible Euler and shallow water models on cubed sphere meshes, discretizing the
   atmosphere or its two-dimensional surface
-* Moist compressible Euler equations, including cloud and rain microphysics
+* Moist compressible Euler equations, including rain microphysics
 * Flux-differencing formulations, including entropy-stable schemes
 
 ## Installation
@@ -30,12 +30,12 @@ If you have not yet installed Julia, please [follow the instructions for your
 operating system](https://julialang.org/downloads/platform/). TrixiAtmo.jl works
 with Julia v1.10 and newer. We recommend using the latest stable release of Julia.
 
-TrixiAtmo.jl is a registered Julia package and can be installed using Julia's package manager. 
-In addition, TrixiAtmo.jl requires the numerical solver framework 
+TrixiAtmo.jl is a registered Julia package and can be installed using Julia's package manager.
+In addition, TrixiAtmo.jl requires the numerical solver framework
 [Trixi.jl](https://github.com/trixi-framework/Trixi.jl) as well as relevant sub-packages of
 [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) for time integration. Executing the
-following in the Julia REPL will install the packages required to run the cases in the `examples` 
-directory, along with [Trixi2Vtk.jl](https://github.com/trixi-framework/Trixi2Vtk.jl), which enables 
+following in the Julia REPL will install the packages required to run the cases in the `examples`
+directory, along with [Trixi2Vtk.jl](https://github.com/trixi-framework/Trixi2Vtk.jl), which enables
 visualization of the resulting HDF5-based output files:
 ```julia
 julia> using Pkg
@@ -97,15 +97,24 @@ community. To get in touch with the developers,
 or [create an issue](https://github.com/trixi-framework/TrixiAtmo.jl/issues/new).
 
 ## Acknowledgments
-<p align="center">
-  <!-- BMBF -->
-  <img width="300px" src="https://user-images.githubusercontent.com/3637659/231436391-b28a76a4-f027-40f9-bd28-14e3a2f3e16a.png"/>
+<p align="center" style="font-size:0;"><!--
+  BMBF     --><img align="middle" src="https://github.com/trixi-framework/Trixi.jl/assets/3637659/f59af636-3098-4be6-bf80-c6be3f17cbc6" height="120"><!--
+  DFG      --><img align="middle" src="https://github.com/trixi-framework/Trixi.jl/assets/3637659/e67b9ed3-7699-466a-bdaf-2ba070a29a8e" height="120"><!--
+  M3ODEL   --><img align="middle" src="https://github.com/user-attachments/assets/dc903573-244f-4674-a0d4-019fef24bd4d" height="120">
 </p>
 
-This project has benefited from funding from the 
-[Federal Ministry of Education and Research](https://www.bmbf.de) (BMBF) 
+This project has benefited from funding from the
+[Federal Ministry of Education and Research](https://www.bmbf.de) (BMBF)
 through the following grants:
 
 * Project grant "Adaptive earth system modeling with significantly reduced computation time for
   exascale supercomputers (ADAPTEX)" (funding id: 16ME0668K)
 * Project grant "ICON-DG" of the WarmWorld initiative (funding id: 01LK2315B)
+
+This project has benefited from funding by the [Deutsche
+Forschungsgemeinschaft](https://www.dfg.de/) (DFG, German Research Foundation)
+through the following grant:
+* Individual grant no. 528753982.
+
+This project has benefited from funding by the
+[Mainz Institute of Multiscale Modeling (M³ODEL)](https://model.uni-mainz.de/).

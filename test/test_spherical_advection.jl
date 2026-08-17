@@ -22,7 +22,7 @@ include("test_trixiatmo.jl")
     # and small reference values
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "Spherical advection (quad icosahedron), Cartesian weak form, LLF surface flux" begin
@@ -45,7 +45,7 @@ end
     # and small reference values
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "Spherical advection, Cartesian weak form, element-local mapping" begin
@@ -68,7 +68,7 @@ end
     # and small reference values
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "Spherical advection, covariant weak form, LLF surface flux" begin
@@ -78,7 +78,7 @@ end
                         linf=[14.235905681508598, 0.0, 0.0])
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "Spherical advection, covariant weak form, LLF surface flux, global spherical coords" begin
@@ -89,10 +89,10 @@ end
                         global_coordinate_system=GlobalSphericalCoordinates())
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-# The covariant flux-differencing form should be equivalent to the weak form when the 
+# The covariant flux-differencing form should be equivalent to the weak form when the
 # arithmetic mean is used as the two-point flux
 @trixi_testset "Spherical advection, covariant flux-differencing, central/LLF" begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/covariant",
@@ -102,7 +102,7 @@ end
                         volume_integral=VolumeIntegralFluxDifferencing(flux_central))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 # Version with arithmetic mean used for both the volume and surface fluxes
@@ -115,7 +115,7 @@ end
                         surface_flux=flux_central)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "Spherical advection on quad icosahedral grid, covariant weak form, LLF surface flux" begin
@@ -125,7 +125,7 @@ end
                         linf=[13.54834739856517, 0.0, 0.0])
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "Spherical advection on tri icosahedral grid, covariant weak form, LLF surface flux" begin
@@ -143,7 +143,7 @@ end
                         ])
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 end # module

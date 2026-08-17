@@ -50,7 +50,7 @@ solver = DGSEM(polydeg, surface_flux, volume_integral)
 initial_refinement_level = 6
 mesh = TreeMesh(coordinates_min, coordinates_max,
                 initial_refinement_level = initial_refinement_level,
-                periodicity = (true, false), n_cells_max = 1_000_000)
+                periodicity = (true, false))
 
 semi = SemidiscretizationHyperbolicParabolic(mesh, (equations, equations_parabolic),
                                              initial_condition_rainy, solver;

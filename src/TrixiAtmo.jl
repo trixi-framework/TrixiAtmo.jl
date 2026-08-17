@@ -77,6 +77,8 @@ export flux_nonconservative_zeros, flux_nonconservative_ec,
        flux_ec_rain, flux_LMARS, flux_nonconservative_es, flux_conservative_es,
        flux_conservative_etec, flux_nonconservative_etec
 
+export flux_lmars_combined, flux_kennedy_gruber_souza_etal
+
 export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!
 
 export cons2prim_and_vorticity, contravariant2global, contravariant_cons2global_prim
@@ -87,7 +89,8 @@ export P4estMeshCubedSphere2D, P4estMeshQuadIcosahedron2D, DGMultiMeshTriIcosahe
        ChristoffelSymbolsAutodiff, ChristoffelSymbolsCollocationDerivative
 
 export EARTH_RADIUS, EARTH_GRAVITATIONAL_ACCELERATION,
-       EARTH_ROTATION_RATE, SECONDS_PER_DAY
+       EARTH_ROTATION_RATE, SECONDS_PER_DAY,
+       SMALL_EARTH_SCALING, SMALL_EARTH_RADIUS, SMALL_EARTH_ROTATION_RATE
 
 export transform_initial_condition
 
@@ -95,6 +98,16 @@ export initial_condition_gaussian, initial_condition_geostrophic_balance,
        initial_condition_rossby_haurwitz, initial_condition_isolated_mountain,
        initial_condition_unsteady_solid_body_rotation,
        initial_condition_barotropic_instability
+
+export initial_condition_adiabatic, initial_condition_gravity_waves,
+       initial_condition_baroclinic_instability, initial_condition_isothermal,
+       initial_condition_vortex_shedding
+
+export source_terms_coriolis_small_earth
+
+export MountainWaveSetup, SchärMountain, WitchOfAgnesi, terrain_following_faces
+
+export cartesian_to_sphere, rayleigh_damping_coefficient
 
 export bottom_topography_isolated_mountain, bottom_topography_unsteady_solid_body_rotation
 

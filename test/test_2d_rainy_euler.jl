@@ -35,7 +35,7 @@ EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler")
         t = sol.t[end]
         u_ode = sol.u[end]
         du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
+        @test (@allocated TrixiAtmo.Trixi.rhs_hyperbolic!(du_ode, u_ode, semi, t)) < 100
     end
 end
 
@@ -72,7 +72,7 @@ end
         t = sol.t[end]
         u_ode = sol.u[end]
         du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
+        @test (@allocated TrixiAtmo.Trixi.rhs_hyperbolic!(du_ode, u_ode, semi, t)) < 100
     end
 end
 
@@ -109,7 +109,7 @@ end
         t = sol.t[end]
         u_ode = sol.u[end]
         du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
+        @test (@allocated TrixiAtmo.Trixi.rhs_hyperbolic!(du_ode, u_ode, semi, t)) < 100
     end
 end
 
@@ -149,7 +149,7 @@ end
         t = sol.t[end]
         u_ode = sol.u[end]
         du_ode = similar(u_ode)
-        @test (@allocated TrixiAtmo.Trixi.rhs!(du_ode, u_ode, semi, t)) < 100
+        @test (@allocated TrixiAtmo.Trixi.rhs_hyperbolic!(du_ode, u_ode, semi, t)) < 100
     end
 end
 end # module

@@ -391,4 +391,7 @@ include("compressible_euler_energy_with_gravity_3d.jl")
 include("compressible_euler_internal_energy_with_gravity_2d.jl")
 include("shallow_water_3d.jl")
 include("reference_data.jl")
+include("initial_condition_compressible_euler_1d.jl")
+include("initial_condition_compressible_euler_2d.jl")
+include("initial_condition_compressible_euler_3d.jl")
 end # @muladd

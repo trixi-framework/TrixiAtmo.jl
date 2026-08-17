@@ -8,56 +8,6 @@
 
 using OrdinaryDiffEqLowStorageRK
 using Trixi, TrixiAtmo
-using LinearAlgebra: norm
-
-function initial_condition_isothermal(x, t,
-                                      equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
-    # equation (60) in the paper
-    T = 285
-
-    @unpack p_0, R = equations
-
-    r = norm(x)
-    # Make sure that r is not smaller than radius_earth
-    z = max(r - EARTH_RADIUS, 0.0)
-    r = z + EARTH_RADIUS
-
-    # pressure, geopotential formulation
-    p = p_0 *
-        exp(EARTH_GRAVITATIONAL_ACCELERATION *
-            (EARTH_RADIUS^2 / r - EARTH_RADIUS) /
-            (R * T))
-
-    # density (via ideal gas law)
-    rho = p / (R * T)
-
-    # geopotential
-    phi = EARTH_GRAVITATIONAL_ACCELERATION * (EARTH_RADIUS - EARTH_RADIUS^2 / r)
-
-    return prim2cons(SVector(rho, 0, 0, 0, p, phi), equations)
-end
-
-@inline function source_terms_coriolis(u, x, t,
-                                       equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
-    du0 = zero(eltype(u))
-
-    # Coriolis term, -2Ω × ρv = -2 * angular_velocity * (0, 0, 1) × u[2:4]
-    du2 = 2 * EARTH_ROTATION_RATE * u[3]
-    du3 = -2 * EARTH_ROTATION_RATE * u[2]
-
-    return SVector(du0, du2, du3, du0, du0, du0)
-end
-
-function cartesian_to_sphere(x)
-    r = norm(x)
-    lambda = atan(x[2], x[1])
-    if lambda < 0
-        lambda += 2 * pi
-    end
-    phi = asin(x[3] / r)
-
-    return lambda, phi, r
-end
 
 @inline function source_terms_hs_relaxation(u, x, t,
                                             equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
