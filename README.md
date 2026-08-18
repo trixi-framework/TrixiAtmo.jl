@@ -67,7 +67,7 @@ You can directly refer to TrixiAtmo.jl as
                   Ranocha, Hendrik and
                   Rueda-Ramírez, Andrés and
                   Schlottke-Lakemper, Michael},
-  title        = {TrixiAtmo.jl}: athmospheric flow simulations with {Trixi.jl},
+  title        = {TrixiAtmo.jl}: atmospheric flow simulations with {Trixi.jl},
   month        = jan,
   year         = 2026,
   publisher    = {Zenodo},
