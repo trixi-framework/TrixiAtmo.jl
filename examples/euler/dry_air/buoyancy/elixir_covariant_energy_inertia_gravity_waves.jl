@@ -107,15 +107,18 @@ analysis_callback = AnalysisCallback(semi, interval = 100,
 save_solution = SaveSolutionCallback(interval = 100,
                                      solution_variables = contravariant_cons2global_prim)
 
+# The StepsizeCallback handles the re-calculation of the maximum Δt after each time step
+stepsize_callback = StepsizeCallback(cfl = 0.7)
+
 # Create a CallbackSet to collect all callbacks such that they can be passed to the ODE 
 # solver
-callbacks = CallbackSet(summary_callback, analysis_callback, save_solution)
+callbacks = CallbackSet(summary_callback, analysis_callback, save_solution,
+                        stepsize_callback)
 
 ###############################################################################
 # run the simulation
 
 # OrdinaryDiffEq's `solve` method evolves the solution in time and executes the passed 
 # callbacks
-sol = solve(ode, RDPK3SpFSAL49(; thread = Trixi.Threaded());
-            abstol = 1.0e-6, reltol = 1.0e-6,
-            save_everystep = false, callback = callbacks)
+sol = solve(ode, CarpenterKennedy2N54(williamson_condition = false),
+            dt = 1.0, save_everystep = false, callback = callbacks)
