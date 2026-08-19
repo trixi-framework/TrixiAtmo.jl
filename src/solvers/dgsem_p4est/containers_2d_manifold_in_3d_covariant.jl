@@ -290,7 +290,7 @@ function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 
             if !isnothing(bottom_topography)
                 x_node = Trixi.get_node_coords(node_coordinates, equations, dg, i, j,
                                                element)
-                aux_node_vars[20, i, j, element] = bottom_topography(x_node)
+                aux_node_vars[20, i, j, element] = bottom_topography(x_node, equations)
             else
                 aux_node_vars[20, i, j, element] = zero(eltype(aux_node_vars))
             end
@@ -454,7 +454,8 @@ end
 # spherical geometry
 function calc_christoffel_symbols!(aux_node_vars, mesh::P4estMesh{2, 3},
                                    equations::AbstractCovariantEquations{2, 3},
-                                   metric_terms::MetricTermsCovariantSphere{ChristoffelSymbolsAutodiff},
+                                   metric_terms::MetricTermsCovariant{<:Any,
+                                                                      ChristoffelSymbolsAutodiff},
                                    dg, element, v1, v2, v3, v4, radius)
     for j in eachnode(dg), i in eachnode(dg)
         # Differentiate the metric tensor components 
@@ -473,7 +474,8 @@ end
 # Calculate Christoffel symbols approximately using the collocation derivative
 function calc_christoffel_symbols!(aux_node_vars, mesh::P4estMesh{2, 3},
                                    equations::AbstractCovariantEquations{2, 3},
-                                   metric_terms::MetricTermsCovariantSphere{ChristoffelSymbolsCollocationDerivative},
+                                   metric_terms::MetricTermsCovariant{<:Any,
+                                                                      ChristoffelSymbolsCollocationDerivative},
                                    dg, element, v1, v2, v3, v4, radius)
     for j in eachnode(dg), i in eachnode(dg)
         # Differentiate the metric tensor components 

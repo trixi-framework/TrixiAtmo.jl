@@ -50,7 +50,7 @@ function Trixi.SemidiscretizationHyperbolic(mesh::DGMultiMesh,
                                             # while `uEltype` is used as element type of solutions etc.
                                             RealT = real(solver), uEltype = RealT,
                                             initial_cache = NamedTuple(),
-                                            metric_terms = MetricTermsCovariantSphere(),
+                                            metric_terms = MetricTermsCovariant(),
                                             auxiliary_field = nothing)
     cache = (;
              Trixi.create_cache(mesh, equations, solver, RealT, metric_terms,
@@ -74,7 +74,7 @@ end
 
 # Constructor for SemidiscretizationHyperbolic for the covariant form. Requires 
 # compatibility between the mesh and equations (i.e. the same `NDIMS` and `NDIMS_AMBIENT`)
-# and sets the default metric terms to MetricTermsCovariantSphere.
+# and sets the default metric terms to MetricTermsCovariant.
 function Trixi.SemidiscretizationHyperbolic(mesh::P4estMesh{NDIMS, NDIMS_AMBIENT},
                                             equations::AbstractCovariantEquations{NDIMS,
                                                                                   NDIMS_AMBIENT},
@@ -85,7 +85,7 @@ function Trixi.SemidiscretizationHyperbolic(mesh::P4estMesh{NDIMS, NDIMS_AMBIENT
                                             # `RealT` is used as real type for node locations etc.
                                             # while `uEltype` is used as element type of solutions etc.
                                             RealT = real(solver), uEltype = RealT,
-                                            metric_terms = MetricTermsCovariantSphere(),
+                                            metric_terms = MetricTermsCovariant(),
                                             auxiliary_field = nothing) where {NDIMS,
                                                                               NDIMS_AMBIENT}
     cache = (;
