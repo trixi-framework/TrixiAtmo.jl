@@ -1,7 +1,7 @@
 @muladd begin
 #! format: noindent
 
-# New p4est element container that allows the use of a PtrArray for the 
+# New p4est element container that allows the use of a PtrArray for the
 # contravariant_vectors, and stores the auxiliary_variables as an additional field
 mutable struct P4estElementContainerPtrArray{NDIMS, RealT <: Real, uEltype <: Real,
                                              NDIMSP1,
@@ -43,9 +43,9 @@ end
     return uEltype
 end
 
-# Extract contravariant vector Ja^i (i = index) as SVector. This function dispatches on the 
-# type of contravariant_vectors, specializing for NDIMS = 2 and NDIMS_AMBIENT = 3 by using 
-# the fact that the second type parameter of PtrArray is NDIMS + 3, and the fourth type 
+# Extract contravariant vector Ja^i (i = index) as SVector. This function dispatches on the
+# type of contravariant_vectors, specializing for NDIMS = 2 and NDIMS_AMBIENT = 3 by using
+# the fact that the second type parameter of PtrArray is NDIMS + 3, and the fourth type
 # parameter of PtrArray is Tuple{StaticInt{NDIMS_AMBIENT}, Vararg{IntT, NDIMS + 2}}.
 @inline function Trixi.get_contravariant_vector(index,
                                                 contravariant_vectors::PtrArray{RealT,
@@ -170,8 +170,8 @@ end
 
 # Calculate contravariant vectors, multiplied by the Jacobian determinant J of the transformation mapping,
 # using eq (12) of :
-#   Giraldo, F. X. (2001). A spectral element shallow water model on spherical geodesic grids. 
-#   International Journal for Numerical Methods in Fluids, 35(8), 869-901. 
+#   Giraldo, F. X. (2001). A spectral element shallow water model on spherical geodesic grids.
+#   International Journal for Numerical Methods in Fluids, 35(8), 869-901.
 #   https://doi.org/10.1002/1097-0363(20010430)35:8<869::AID-FLD116>3.0.CO;2-S
 # This is equivalent to the cross-product form, but we end up with three contravariant vectors
 # because there are three space dimensions.
@@ -234,10 +234,10 @@ end
 
 # Calculate contravariant vectors, multiplied by the Jacobian determinant J of the transformation mapping,
 # using the invariant curl form for a cubed sphere.
-# In the cubed sphere, the node coordinates are first mapped with polynomials in ξ and η, and then we add 
+# In the cubed sphere, the node coordinates are first mapped with polynomials in ξ and η, and then we add
 # a linear ζ dependency, i.e.:
 #    xₗ(ξ, η, ζ) = ζ * xₗ(ξ, η) with ζ = 1 at the sphere surface.
-# 
+#
 # As a result, the covariant vectors with respect to ζ are xₗ_ζ = xₗ
 #
 # We compute the metric terms in two steps

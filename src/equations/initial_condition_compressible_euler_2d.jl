@@ -1,5 +1,5 @@
 """
-	initial_condition_gravity_waves(x, t,
+    initial_condition_gravity_waves(x, t,
                                         equations::AbstractCompressibleEulerEquations{2, 5})
 
 Test cases for linearized analytical solution by
@@ -39,7 +39,7 @@ end
                                 equations::AbstractCompressibleEulerEquations{2, 5})
 
 Atmosphere at rest with constant potential temperature ``\theta = 300\ \mathrm{K}`` in
-hydrostatic balance, used to assess the well-balanced property of a discretization. 
+hydrostatic balance, used to assess the well-balanced property of a discretization.
 """
 function initial_condition_adiabatic(x, t,
                                      equations::AbstractCompressibleEulerEquations{2, 5})
@@ -75,7 +75,7 @@ Rayleigh damping coefficient of the absorbing layers used to avoid reflections a
 boundaries of a two-dimensional domain. It is the sum of the contributions of a vertical
 layer, which starts at the height `z_damping_start` and ends at the top of the domain
 `z_damping_end`, and of two lateral layers, which start at ``\pm`` `x_damping_start` and end
-at ``\pm`` `x_damping_end`. 
+at ``\pm`` `x_damping_end`.
 """
 @inline function rayleigh_damping_coefficient(x, damping_rate,
                                               z_damping_start, z_damping_end,
@@ -236,7 +236,7 @@ width ``a`` = `half_width`, given by the witch of Agnesi curve
 h(x) = \frac{h_c}{1 + (x / a)^2}.
 ```
 The resulting object is callable as `h(x)` and is meant to be passed to
-[`terrain_following_faces`](@ref). 
+[`terrain_following_faces`](@ref).
 The flow over such a mountain is hydrostatic for
 ``a N / u_0 \gg 1`` and non-hydrostatic for ``a N / u_0 \sim 1``, with ``N`` the
 Brunt-Väisälä frequency and ``u_0`` the background velocity, see [`MountainWaveSetup`](@ref).

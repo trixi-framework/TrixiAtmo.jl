@@ -87,8 +87,8 @@ function init_auxiliary_node_variables!(aux_values, mesh::DGMultiMesh,
     return nothing
 end
 
-# Analytically compute the transformation matrix A, such that G = AᵀA is the 
-# covariant metric tensor and a_i = A[1,i] * e_x + A[2,i] * e_y + A[3,i] * e_z denotes 
+# Analytically compute the transformation matrix A, such that G = AᵀA is the
+# covariant metric tensor and a_i = A[1,i] * e_x + A[2,i] * e_y + A[3,i] * e_z denotes
 # the covariant tangent basis, where e_x, e_y, and e_z are the Cartesian unit basis vectors.
 @inline function calc_basis_covariant(v1, v2, v3, xi1, xi2, radius,
                                       ::GlobalCartesianCoordinates)
@@ -111,7 +111,7 @@ end
                          dxdxi2[1], dxdxi2[2], dxdxi2[3])
 end
 
-# Calculate the covariant metric tensor components G₁₁, G₁₂ (= G₂₁), and G₂₂ and return in 
+# Calculate the covariant metric tensor components G₁₁, G₁₂ (= G₂₁), and G₂₂ and return in
 # that order as an SVector of length 3
 function calc_metric_covariant(v1, v2, v3, xi1, xi2, radius, equations)
     A = calc_basis_covariant(v1, v2, v3, xi1, xi2, radius,
@@ -120,7 +120,7 @@ function calc_metric_covariant(v1, v2, v3, xi1, xi2, radius, equations)
     return SVector(Gcov[1, 1], Gcov[1, 2], Gcov[2, 2])
 end
 
-# Use ForwardDiff.jl to automatically differentiate the covariant metric tensor components 
+# Use ForwardDiff.jl to automatically differentiate the covariant metric tensor components
 function calc_metric_derivatives_autodiff(v1, v2, v3, xi1, xi2, radius, equations)
     dGdxi1 = derivative(x -> calc_metric_covariant(v1, v2, v3, x, xi2, radius,
                                                    equations), xi1)
@@ -129,7 +129,7 @@ function calc_metric_derivatives_autodiff(v1, v2, v3, xi1, xi2, radius, equation
     return dGdxi1, dGdxi2
 end
 
-# Use the collocation derivative operator to numerically differentiate the covariant 
+# Use the collocation derivative operator to numerically differentiate the covariant
 # metric tensor components
 function calc_metric_derivatives_collocation(aux_values, equations, dg::DGMulti, i,
                                              element)

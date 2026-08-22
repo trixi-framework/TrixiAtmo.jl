@@ -4,7 +4,7 @@
 @doc raw"""
     ShallowWaterEquations3D(; gravity, rotation_rate = 0, H0 = 0)
 
-Rotating shallow water equations (SWE) in three space dimensions to be solved on curved manifolds (e.g., on a spherical shell). 
+Rotating shallow water equations (SWE) in three space dimensions to be solved on curved manifolds (e.g., on a spherical shell).
 The equations are given by
 ```math
 \begin{aligned}
@@ -21,9 +21,9 @@ The equations are given by
 The unknown quantities of the SWE are the water height ``h`` and the velocities ``\mathbf{v} = (v_1, v_2, v_3)^T``.
 The gravitational acceleration is denoted by `g`.
 
-The 3D Shallow Water Equations (SWE) extend the 2D SWE to model shallow water flows on 2D manifolds embedded within 3D space. 
-To confine the flow to the 2D manifold, a source term incorporating a Lagrange multiplier is applied to the momentum equations using the function [`source_terms_lagrange_multiplier`](@ref). 
-This term effectively removes momentum components that are normal to the manifold, ensuring the flow remains 
+The 3D Shallow Water Equations (SWE) extend the 2D SWE to model shallow water flows on 2D manifolds embedded within 3D space.
+To confine the flow to the 2D manifold, a source term incorporating a Lagrange multiplier is applied to the momentum equations using the function [`source_terms_lagrange_multiplier`](@ref).
+This term effectively removes momentum components that are normal to the manifold, ensuring the flow remains
 constrained within the 2D surface.
 
 To incorporate the effect of the rotation of the manifold, use the function [`source_terms_coriolis`](@ref), which adds the necessary Coriolis source terms to the momentum equations assuming a rotation around the ``z`` axis with a rotation rate in radians per time unit given by `rotation_rate`. To incorporate both Coriolis forces and the Lagrange multiplier terms, use [`source_terms_coriolis_lagrange_multiplier`](@ref).
@@ -43,15 +43,15 @@ This affects the implementation and use of these equations in various ways:
 * Trixi.jl's visualization tools will visualize the bottom topography by default.
 
 References:
-- J. Coté (1988). "A Lagrange multiplier approach for the metric terms of semi-Lagrangian models on the sphere". 
+- J. Coté (1988). "A Lagrange multiplier approach for the metric terms of semi-Lagrangian models on the sphere".
   Quarterly Journal of the Royal Meteorological Society 114, 1347-1352. [DOI: 10.1002/qj.49711448310](https://doi.org/10.1002/qj.49711448310)
-- F. X. Giraldo (2001). "A spectral element shallow water model on spherical geodesic grids". 
+- F. X. Giraldo (2001). "A spectral element shallow water model on spherical geodesic grids".
   [DOI: 10.1002/1097-0363(20010430)35:8<869::AID-FLD116>3.0.CO;2-S](https://doi.org/10.1002/1097-0363(20010430)35:8%3C869::AID-FLD116%3E3.0.CO;2-S)
 """
 struct ShallowWaterEquations3D{RealT <: Real} <:
        AbstractShallowWaterEquations{3, 5}
     gravity::RealT # gravitational acceleration
-    rotation_rate::RealT  # rotation rate around z axis for Coriolis term 
+    rotation_rate::RealT  # rotation rate around z axis for Coriolis term
     H0::RealT      # constant "lake-at-rest" total water height
 end
 
@@ -289,14 +289,14 @@ and for curvilinear 2D case in the paper:
 end
 
 """
-    source_terms_coriolis(u, du, x, t, 
+    source_terms_coriolis(u, du, x, t,
                           equations::ShallowWaterEquations3D,
                           normal_direction)
 
 Source term function to apply the Coriolis force with an angular velocity of
 `equations.rotation_rate` around the ``z`` axis.
 
-The vector `normal_direction` is perpendicular to the 2D manifold. By default, 
+The vector `normal_direction` is perpendicular to the 2D manifold. By default,
 it is the normal contravariant basis vector.
 """
 function source_terms_coriolis(u, du, x, t,
@@ -327,7 +327,7 @@ end
 Source term function to apply a Lagrange multiplier to the semi-discretization
 in order to constrain the momentum to a 2D manifold.
 
-The vector `normal_direction` is perpendicular to the 2D manifold. By default, 
+The vector `normal_direction` is perpendicular to the 2D manifold. By default,
 it is the normal contravariant basis vector.
 """
 function source_terms_lagrange_multiplier(u, du, x, t,
@@ -366,10 +366,10 @@ end
 """
          clean_solution_lagrange_multiplier!(u, equations::ShallowWaterEquations3D, normal_direction)
 
-Function to apply Lagrange multiplier discretely to the solution in order to constrain 
+Function to apply Lagrange multiplier discretely to the solution in order to constrain
 the momentum to a 2D manifold.
 
-The vector `normal_direction` is perpendicular to the 2D manifold. By default, 
+The vector `normal_direction` is perpendicular to the 2D manifold. By default,
 it is the normal contravariant basis vector.
 """
 function clean_solution_lagrange_multiplier!(u, equations::ShallowWaterEquations3D,
@@ -437,7 +437,7 @@ end
     return SVector(diss[1], diss[2], diss[3], diss[4], zero(eltype(u_ll)))
 end
 
-# Specialization of [`DissipationLaxFriedrichsEntropyVariables`](https://trixi-framework.github.io/Trixi.jl/stable/reference-trixi/#Trixi.DissipationLaxFriedrichsEntropyVariables) 
+# Specialization of [`DissipationLaxFriedrichsEntropyVariables`](https://trixi-framework.github.io/Trixi.jl/stable/reference-trixi/#Trixi.DissipationLaxFriedrichsEntropyVariables)
 # for the shallow water system. This is equivalent to `DissipationLocalLaxFriedrichs` if the bottom topography is continuous
 @inline function (dissipation::DissipationLaxFriedrichsEntropyVariables)(u_ll, u_rr,
                                                                          orientation_or_normal_direction,

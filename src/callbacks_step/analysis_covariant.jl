@@ -1,7 +1,7 @@
 @muladd begin
 #! format: noindent
 
-# When the equations are of type AbstractCovariantEquations, the functions which we would 
+# When the equations are of type AbstractCovariantEquations, the functions which we would
 # like to integrate depend on the solution as well as the auxiliary variables
 function Trixi.integrate(func::Func, u,
                          mesh::Union{TreeMesh{2}, StructuredMesh{2},
@@ -47,8 +47,8 @@ function Trixi.integrate(func::Func, u,
     return integral
 end
 
-# For the covariant form, we want to integrate using the exact area element 
-# J = √G = (det(AᵀA))^(1/2), which is stored in cache.auxiliary_variables, not the approximate 
+# For the covariant form, we want to integrate using the exact area element
+# J = √G = (det(AᵀA))^(1/2), which is stored in cache.auxiliary_variables, not the approximate
 # area element used in the Cartesian formulation, which stored in cache.elements
 function Trixi.integrate_via_indices(func::Func, u,
                                      mesh::Union{StructuredMesh{2},
@@ -98,7 +98,7 @@ function Trixi.analyze(::typeof(Trixi.entropy_timederivative), du, u, t,
         u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
         du_node = Trixi.get_node_vars(du, equations, dg, i, j, element)
 
-        # compute ∂S/∂u ⋅ ∂u/∂t, where the entropy variables ∂S/∂u depend on the solution 
+        # compute ∂S/∂u ⋅ ∂u/∂t, where the entropy variables ∂S/∂u depend on the solution
         # and auxiliary variables
         dot(cons2entropy(u_node, aux_node, equations), du_node)
     end
@@ -170,7 +170,7 @@ function Trixi.calc_error_norms(func, u, t, analyzer, mesh::P4estMesh{2},
             u_numerical = Trixi.get_node_vars(u, equations, dg, i, j, element)
             diff = func(u_exact, equations) - func(u_numerical, equations)
 
-            # For the L2 error, integrate with respect to area element stored in aux vars 
+            # For the L2 error, integrate with respect to area element stored in aux vars
             J = area_element(aux_node, equations)
             l2_error += diff .^ 2 * (weights[i] * weights[j] * J)
 

@@ -267,7 +267,7 @@ end
     # velocity
     v1, v2 = velocities(u, rho_inv, equations)
 
-    # get speed of sound 
+    # get speed of sound
     v_sound = speed_of_sound(u, equations)[1]
 
     # get terminal velocity rain
@@ -404,7 +404,7 @@ end
     ref_temp = equations.ref_temperature
     ref_L = equations.ref_latent_heat_vap_temp
 
-    # testing 
+    # testing
     if (temperature < 0.0)
         display(temperature)
         error("temp less than zero")
@@ -428,7 +428,7 @@ end
     ref_temp = equations.ref_temperature
     ref_L = equations.ref_latent_heat_vap_temp
 
-    # testing 
+    # testing
     if (temperature < 0.0)
         display(temperature)
         error("temp less than zero")
@@ -468,7 +468,7 @@ end
     # energy density
     energy = energy_density(u, equations)
 
-    # flux for orientation cases 
+    # flux for orientation cases
     if (orientation == 1)
         # mass
         f1 = rho_dry * v1
