@@ -53,7 +53,7 @@ function Trixi.max_dt(u, t, mesh::P4estMesh{2}, constant_speed::False,
     # e.g. for steady-state linear advection
     max_scaled_speed = nextfloat(zero(t))
 
-    # Because the covariant form computes max_abs_speeds using the contravariant 
+    # Because the covariant form computes max_abs_speeds using the contravariant
     # velocity components already, there is no need to transform them here
     for element in eachelement(dg, cache)
         max_lambda1 = max_lambda2 = zero(max_scaled_speed)

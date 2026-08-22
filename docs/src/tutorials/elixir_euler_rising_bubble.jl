@@ -127,7 +127,7 @@ initial_condition = initial_condition_warm_bubble
 # so we prescribe slip-wall boundary conditions at the bottom and top boundaries.
 #
 # This must match the mesh periodicity setting below:
-# 
+#
 # ```julia
 # periodicity = (true, false)
 # ```
@@ -181,7 +181,7 @@ solver
 #
 # The computational domain is
 #
-# ```math 
+# ```math
 #   x \in [0, 20000]\,\mathrm{m}, \quad z \in [-5000, 15000]\,\mathrm{m}
 # ```
 #

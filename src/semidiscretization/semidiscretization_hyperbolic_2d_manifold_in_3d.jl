@@ -72,7 +72,7 @@ function Trixi.SemidiscretizationHyperbolic(mesh::DGMultiMesh,
                                                                 performance_counter)
 end
 
-# Constructor for SemidiscretizationHyperbolic for the covariant form. Requires 
+# Constructor for SemidiscretizationHyperbolic for the covariant form. Requires
 # compatibility between the mesh and equations (i.e. the same `NDIMS` and `NDIMS_AMBIENT`)
 # and sets the default metric terms to MetricTermsCovariantSphere.
 function Trixi.SemidiscretizationHyperbolic(mesh::P4estMesh{NDIMS, NDIMS_AMBIENT},

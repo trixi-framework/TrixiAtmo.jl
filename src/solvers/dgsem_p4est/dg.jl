@@ -1,7 +1,7 @@
 # This method is called when a SemidiscretizationHyperbolic is constructed.
 # It constructs the basic `cache` used throughout the simulation to compute
-# the RHS etc, and is modified here to use custom metric terms as well as provide the 
-# option to # use auxiliary variables. 
+# the RHS etc, and is modified here to use custom metric terms as well as provide the
+# option to # use auxiliary variables.
 function Trixi.create_cache(mesh::P4estMesh, equations::AbstractEquations, dg::DG, ::Any,
                             metric_terms, auxiliary_field,
                             ::Type{uEltype}) where {uEltype <: Real}

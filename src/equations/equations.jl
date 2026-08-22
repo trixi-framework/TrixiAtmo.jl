@@ -5,38 +5,38 @@ using Trixi: AbstractEquations, AbstractCompressibleEulerEquations,
              AbstractShallowWaterEquations
 
 @doc raw"""
-    AbstractCovariantEquations{NDIMS, 
-                               NDIMS_AMBIENT, 
+    AbstractCovariantEquations{NDIMS,
+                               NDIMS_AMBIENT,
                                GlobalCoordinateSystem,
-                               NVARS} <: AbstractEquations{NDIMS, NVARS} 
+                               NVARS} <: AbstractEquations{NDIMS, NVARS}
 
 Abstract type used to dispatch on systems of equations in covariant form, in which fluxes
-and prognostic variables are stored and computed in terms of their contravariant components 
+and prognostic variables are stored and computed in terms of their contravariant components
 defining their expansions in terms of the local covariant tangent basis. The type parameter
 `NDIMS` denotes the dimension of the manifold on which the equations are solved, while
-`NDIMS_AMBIENT` is the dimension of the ambient space in which such a manifold is embedded. 
+`NDIMS_AMBIENT` is the dimension of the ambient space in which such a manifold is embedded.
 Some references on discontinuous Galerkin methods in covariant flux form are listed below:
 
 - M. Baldauf (2020). Discontinuous Galerkin solver for the shallow-water equations in
-  covariant form on the sphere and the ellipsoid. Journal of Computational Physics 
-  410:109384. [DOI: 10.1016/j.jcp.2020.109384](https://doi.org/10.1016/j.jcp.2020.109384) 
+  covariant form on the sphere and the ellipsoid. Journal of Computational Physics
+  410:109384. [DOI: 10.1016/j.jcp.2020.109384](https://doi.org/10.1016/j.jcp.2020.109384)
 - M. Baldauf (2021). A horizontally explicit, vertically implicit (HEVI) discontinuous
-  Galerkin scheme for the 2-dimensional Euler and Navier-Stokes equations using 
+  Galerkin scheme for the 2-dimensional Euler and Navier-Stokes equations using
   terrain-following coordinates. Journal of Computational Physics 446:110635. [DOI: 10.1016/
   j.jcp.2021.110635](https://doi.org/10.1016/j.jcp.2021.110635)
 - L. Bao, R. D. Nair, and H. M. Tufo (2014). A mass and momentum flux-form high-order
-  discontinuous Galerkin shallow water model on the cubed-sphere. A mass and momentum 
-  flux-form high-order discontinuous Galerkin shallow water model on the cubed-sphere. 
-  Journal of Computational Physics 271:224-243. 
+  discontinuous Galerkin shallow water model on the cubed-sphere. A mass and momentum
+  flux-form high-order discontinuous Galerkin shallow water model on the cubed-sphere.
+  Journal of Computational Physics 271:224-243.
   [DOI: 10.1016/j.jcp.2013.11.033](https://doi.org/10.1016/j.jcp.2013.11.033)
 
-When using this equation type, functions which are evaluated pointwise, such as fluxes, 
-source terms, and initial conditions take in the extra argument `aux_vars`, which contains 
-the geometric information needed for the covariant form. The type parameter 
-`GlobalCoordinateSystem` specifies the global coordinate system used to define the 
-covariant tangent basis, and may be either [`GlobalCartesianCoordinates`](@ref) or 
-[`GlobalSphericalCoordinates`](@ref). The `GlobalCoordinateSystem` type parameter also 
-specifies the coordinate system with respect to which the initial condition should be 
+When using this equation type, functions which are evaluated pointwise, such as fluxes,
+source terms, and initial conditions take in the extra argument `aux_vars`, which contains
+the geometric information needed for the covariant form. The type parameter
+`GlobalCoordinateSystem` specifies the global coordinate system used to define the
+covariant tangent basis, and may be either [`GlobalCartesianCoordinates`](@ref) or
+[`GlobalSphericalCoordinates`](@ref). The `GlobalCoordinateSystem` type parameter also
+specifies the coordinate system with respect to which the initial condition should be
 prescribed.
 """
 abstract type AbstractCovariantEquations{NDIMS,
@@ -47,7 +47,7 @@ abstract type AbstractCovariantEquations{NDIMS,
 """
     GlobalCartesianCoordinates()
 
-Struct used for dispatch, specifying that the covariant tangent basis vectors should be 
+Struct used for dispatch, specifying that the covariant tangent basis vectors should be
 defined with respect to a global Cartesian coordinate system.
 """
 struct GlobalCartesianCoordinates end
@@ -55,7 +55,7 @@ struct GlobalCartesianCoordinates end
 """
     GlobalSphericalCoordinates()
 
-Struct used for dispatch, specifying that the covariant tangent basis vectors should be 
+Struct used for dispatch, specifying that the covariant tangent basis vectors should be
 defined with respect to a global spherical coordinate system.
 """
 struct GlobalSphericalCoordinates end
@@ -64,8 +64,8 @@ struct GlobalSphericalCoordinates end
     have_aux_node_vars(equations)
 
 Trait function determining whether `equations` requires the use of auxiliary variables.
-Classical conservation laws such as the [`CompressibleEulerEquations2D`](@ref) do not 
-require auxiliary variables. The return value will be `True()` or `False()` to allow 
+Classical conservation laws such as the [`CompressibleEulerEquations2D`](@ref) do not
+require auxiliary variables. The return value will be `True()` or `False()` to allow
 dispatching on the return type.
 """
 @inline have_aux_node_vars(::AbstractEquations) = False()
@@ -73,21 +73,21 @@ dispatching on the return type.
 @doc raw"""
     transform_initial_condition(initial_condition, equations)
 
-Takes in a function with the signature `initial_condition(x, t, equations)` which returns 
+Takes in a function with the signature `initial_condition(x, t, equations)` which returns
 an initial condition given in terms of global Cartesian or zonal/meridional velocity
-components, and returns another function `initial_condition_transformed(x, t, equations)` 
-or `initial_condition_transformed(x, t, aux_vars, equations)` which returns the same 
-initial data, but transformed to the appropriate prognostic variables used internally by 
-the solver. For the covariant form, this involves a transformation of the global velocity 
-components to contravariant components using [`global2contravariant`](@ref) as well as a 
-conversion from primitive to conservative variables. For standard Cartesian formulations, 
-this simply involves a conversion from  primitive to conservative variables. The intention 
-here is to have a set of test cases (for example, [`initial_condition_gaussian`](@ref)) for 
-which the initial condition is prescribed using a standardized set of primitive variables 
-in a global coordinate system, and transformed to the specific prognostic variables 
+components, and returns another function `initial_condition_transformed(x, t, equations)`
+or `initial_condition_transformed(x, t, aux_vars, equations)` which returns the same
+initial data, but transformed to the appropriate prognostic variables used internally by
+the solver. For the covariant form, this involves a transformation of the global velocity
+components to contravariant components using [`global2contravariant`](@ref) as well as a
+conversion from primitive to conservative variables. For standard Cartesian formulations,
+this simply involves a conversion from  primitive to conservative variables. The intention
+here is to have a set of test cases (for example, [`initial_condition_gaussian`](@ref)) for
+which the initial condition is prescribed using a standardized set of primitive variables
+in a global coordinate system, and transformed to the specific prognostic variables
 required for a given model.
-!!! note 
-    When using the covariant formulation, the initial velocity components should be defined 
+!!! note
+    When using the covariant formulation, the initial velocity components should be defined
     in the coordinate system specified by the `GlobalCoordinateSystem` type parameter in
     [`AbstractCovariantEquations`](@ref).
 """
@@ -111,11 +111,11 @@ end
 """
     contravariant2global(u, aux_vars, equations)
 
-Transform the vector `u` of solution variables with the momentum or velocity given in terms 
-of local contravariant components into the global coordinate system specified by the 
-`GlobalCoordinateSystem` type parameter in [`AbstractCovariantEquations`](@ref). `u` is a 
-vector type of the correct length `nvariables(equations)`. Notice the function doesn't 
-include any error checks for the purpose of efficiency, so please make sure your input is 
+Transform the vector `u` of solution variables with the momentum or velocity given in terms
+of local contravariant components into the global coordinate system specified by the
+`GlobalCoordinateSystem` type parameter in [`AbstractCovariantEquations`](@ref). `u` is a
+vector type of the correct length `nvariables(equations)`. Notice the function doesn't
+include any error checks for the purpose of efficiency, so please make sure your input is
 correct. The inverse conversion is performed by [`global2contravariant`](@ref).
 """
 function contravariant2global end
@@ -124,16 +124,16 @@ function contravariant2global end
     global2contravariant(u, aux_vars, equations)
 
 Transform the vector `u` of solution variables with momentum or velocity components
-given with respect to the global coordinate system into local contravariant components. The 
-global coordinate system is specified by the `GlobalCoordinateSystem` type parameter in 
-[`AbstractCovariantEquations`](@ref). `u` is a vector type of the correct length 
-`nvariables(equations)`. Notice the function doesn't include any error checks for the 
-purpose of efficiency, so please make sure your input is correct. The inverse conversion is 
+given with respect to the global coordinate system into local contravariant components. The
+global coordinate system is specified by the `GlobalCoordinateSystem` type parameter in
+[`AbstractCovariantEquations`](@ref). `u` is a vector type of the correct length
+`nvariables(equations)`. Notice the function doesn't include any error checks for the
+purpose of efficiency, so please make sure your input is correct. The inverse conversion is
 performed by [`contravariant2global`](@ref).
 """
 function global2contravariant end
 
-# By default, the equations are assumed to be formulated in Cartesian coordinates. This 
+# By default, the equations are assumed to be formulated in Cartesian coordinates. This
 # function is specialized where needed.
 function cartesian2global(u, x, equations::AbstractEquations)
     return u
@@ -143,10 +143,10 @@ end
 @inline Trixi.cons2cons(u, aux_vars, ::AbstractEquations) = u
 @inline Trixi.prim2cons(u, aux_vars, ::AbstractEquations) = u
 
-# For the covariant form, the auxiliary variables are the the NDIMS*NDIMS_AMBIENT entries 
-# of the exact covariant basis matrix, the NDIMS*NDIMS_AMBIENT entries of the exact 
-# contravariant basis matrix, the exact area element, the upper-triangular covariant and 
-# contravariant metric tensor components, and the upper-triangular Christoffel symbols of 
+# For the covariant form, the auxiliary variables are the the NDIMS*NDIMS_AMBIENT entries
+# of the exact covariant basis matrix, the NDIMS*NDIMS_AMBIENT entries of the exact
+# contravariant basis matrix, the exact area element, the upper-triangular covariant and
+# contravariant metric tensor components, and the upper-triangular Christoffel symbols of
 # the second kind
 @inline have_aux_node_vars(::AbstractCovariantEquations) = True()
 
@@ -204,16 +204,16 @@ end
             "christoffel_symbols[2][2,2]")  # Γ²₂₂
 end
 
-# Extract the covariant basis vectors a_i from the auxiliary variables as a matrix A, 
-# where A[:, i] contains the components of the ith covariant tangent basis vector with 
+# Extract the covariant basis vectors a_i from the auxiliary variables as a matrix A,
+# where A[:, i] contains the components of the ith covariant tangent basis vector with
 # respect to the global (Cartesian or spherical) coordinate system
 @inline function basis_covariant(aux_vars, ::AbstractCovariantEquations{2})
     return SMatrix{3, 2}(aux_vars[1], aux_vars[2], aux_vars[3],
                          aux_vars[4], aux_vars[5], aux_vars[6])
 end
 
-# Extract the contravariant basis vectors a^i from the auxiliary variables as a matrix B, 
-# where B[i, :] contains the components of the ith contravariant tangent basis vector with 
+# Extract the contravariant basis vectors a^i from the auxiliary variables as a matrix B,
+# where B[i, :] contains the components of the ith contravariant tangent basis vector with
 # respect to the global (Cartesian or spherical) coordinate system
 @inline function basis_contravariant(aux_vars, ::AbstractCovariantEquations{2})
     return SMatrix{2, 3}(aux_vars[7], aux_vars[8],
@@ -249,9 +249,9 @@ end
             SMatrix{2, 2}(aux_vars[24], aux_vars[25], aux_vars[25], aux_vars[26]))
 end
 
-# Numerical flux plus dissipation for abstract covariant equations as a function of the 
-# state vectors u_ll and u_rr, as well as the auxiliary variable vectors aux_vars_ll and 
-# aux_vars_rr, which contain the geometric information. We assume that u_ll and u_rr have 
+# Numerical flux plus dissipation for abstract covariant equations as a function of the
+# state vectors u_ll and u_rr, as well as the auxiliary variable vectors aux_vars_ll and
+# aux_vars_rr, which contain the geometric information. We assume that u_ll and u_rr have
 # been transformed into the same local coordinate system.
 @inline function (numflux::Trixi.FluxPlusDissipation)(u_ll, u_rr,
                                                       aux_vars_ll, aux_vars_rr,
@@ -266,9 +266,9 @@ end
     return flux + diss
 end
 
-# Central flux for abstract covariant equations as a function of the state vectors u_ll and 
-# u_rr, as well as the auxiliary variable vectors aux_vars_ll and aux_vars_rr, which 
-# contain the geometric information. We assume that u_ll and u_rr have been transformed 
+# Central flux for abstract covariant equations as a function of the state vectors u_ll and
+# u_rr, as well as the auxiliary variable vectors aux_vars_ll and aux_vars_rr, which
+# contain the geometric information. We assume that u_ll and u_rr have been transformed
 # into the same  local coordinate system.
 @inline function Trixi.flux_central(u_ll, u_rr, aux_vars_ll, aux_vars_rr,
                                     orientation_or_normal_direction,
@@ -278,7 +278,7 @@ end
     return 0.5f0 * (flux_ll + flux_rr)
 end
 
-# Local Lax-Friedrichs dissipation for abstract covariant equations, where dissipation is 
+# Local Lax-Friedrichs dissipation for abstract covariant equations, where dissipation is
 # applied to all conservative variables and the wave speed may depend on auxiliary variables
 @inline function (dissipation::DissipationLocalLaxFriedrichs)(u_ll, u_rr, aux_vars_ll,
                                                               aux_vars_rr,
@@ -289,7 +289,7 @@ end
     return -0.5f0 * area_element(aux_vars_ll, equations) * λ * (u_rr - u_ll)
 end
 
-# Convert a vector from a global spherical to Cartesian basis representation. A tangent 
+# Convert a vector from a global spherical to Cartesian basis representation. A tangent
 # vector will have vrad = 0.
 @inline function spherical2cartesian(vlon, vlat, vrad, x)
     # compute longitude and latitude
@@ -306,7 +306,7 @@ end
     return vx, vy, vz
 end
 
-# Convert a vector from a global Cartesian to spherical basis representation. A tangent 
+# Convert a vector from a global Cartesian to spherical basis representation. A tangent
 # vector will have vrad = 0.
 @inline function cartesian2spherical(vx, vy, vz, x)
     # compute longitude and latitude

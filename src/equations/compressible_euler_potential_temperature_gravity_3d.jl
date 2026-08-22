@@ -127,9 +127,9 @@ end
 end
 
 """
-	flux_nonconservative_waruszewski_etal(u_ll, u_rr,
-										 normal_direction::AbstractVector,
-										 	equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+    flux_nonconservative_waruszewski_etal(u_ll, u_rr,
+                                         normal_direction::AbstractVector,
+                                             equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
 
 Well-balanced gravity term for isothermal background state
 -  Maciej Waruszewski and Jeremy E. Kozdon and Lucas C. Wilcox and Thomas H. Gibson and Francis X. Giraldo (2022),
@@ -158,9 +158,9 @@ The well balanced on curvilinear coordinates was proven by
 end
 
 """
-	flux_nonconservative_artiano_etal(u_ll, u_rr,
-									  normal_direction::AbstractVector,
-									  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+    flux_nonconservative_artiano_etal(u_ll, u_rr,
+                                      normal_direction::AbstractVector,
+                                      equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
 
 Well-balanced gravity term for constant potential temperature background state by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
@@ -183,7 +183,7 @@ Well-balanced gravity term for constant potential temperature background state b
 end
 
 """
-	flux_nonconservative_souza_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+    flux_nonconservative_souza_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
 
 -  Souza et al.
    The Flux-Differencing Discontinuous {G}alerkin Method Applied to
@@ -417,7 +417,7 @@ end
 @inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_kennedy_gruber_souza_etal), ::CompressibleEulerPotentialTemperatureEquationsWithGravity3D) = Trixi.True()
 
 """
-	flux_tec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperatureWithGravity3D)
+    flux_tec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperatureWithGravity3D)
 
 Total energy conservative two-point flux by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
@@ -457,7 +457,7 @@ Total energy conservative two-point flux by
 end
 
 """
-	flux_ec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperatureWithGravity3D)
+    flux_ec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperatureWithGravity3D)
 
 Entropy conservative two-point flux by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
@@ -494,7 +494,7 @@ Entropy conservative two-point flux by
 end
 
 """
-	flux_etec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperatureWithGravity3D)
+    flux_etec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperatureWithGravity3D)
 
 Entropy and total energy conservative two-point flux by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)

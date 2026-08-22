@@ -13,7 +13,7 @@ Build a quad-based icosahedral mesh as a 2D `P4estMesh` with
 each subdivided into 3 parent quads, each of which subdivided into `trees_per_face_dimension^2` trees).
 
 The node coordinates of the trees will be obtained using the element-local mapping from
-Appendix A of [Guba et al. (2014)](https://doi.org/10.5194/gmd-7-2803-2014). 
+Appendix A of [Guba et al. (2014)](https://doi.org/10.5194/gmd-7-2803-2014).
 See [`P4estMeshCubedSphere2D`](@ref) for more information about the element-local mapping.
 
 The mesh will have no boundaries.
@@ -33,10 +33,10 @@ The mesh will have no boundaries.
   adaptivity independent of domain partitioning. Should be `false` for static meshes to
   permit more fine-grained partitioning.
 
-!!! warning 
-    Adaptivity and MPI parallelization are not yet supported for equations in covariant 
-    form, and we require `initial_refinement_level = 0` for such cases. Furthermore, the 
-    calculation of the metric terms for the covariant form currently requires `polydeg` to 
+!!! warning
+    Adaptivity and MPI parallelization are not yet supported for equations in covariant
+    form, and we require `initial_refinement_level = 0` for such cases. Furthermore, the
+    calculation of the metric terms for the covariant form currently requires `polydeg` to
     be equal to the polynomial degree of the solver.
 """
 function P4estMeshQuadIcosahedron2D(trees_per_face_dimension, radius;
@@ -67,26 +67,26 @@ function P4estMeshQuadIcosahedron2D(trees_per_face_dimension, radius;
 end
 
 # Fig 1: Illustration of the unfolded icosahedron with the numbering of the triangular faces
-#           ,'|.     
-#         ,'  | `.   
-#       ,' 4  | 3 `. 
+#           ,'|.
+#         ,'  | `.
+#       ,' 4  | 3 `.
 #     ,'_____ |_____`.
 #     \      /\      /
 #      \ 5  /  \ 2  /
 #       \  /  1 \  /
-#        \/_______/_______________________________     
-#         \      /\      /\      /\      /\      /\    
-#          \ 6  /  \ 7  /  \ 8  /  \ 9  /  \ 10 /  \   
-#           \  / 11 \  / 12 \  / 13 \  / 14 \  / 15 \  
+#        \/_______/_______________________________
+#         \      /\      /\      /\      /\      /\
+#          \ 6  /  \ 7  /  \ 8  /  \ 9  /  \ 10 /  \
+#           \  / 11 \  / 12 \  / 13 \  / 14 \  / 15 \
 #            \/_______/_______/_______/_______/______\
-#                                            /\      /\   
-#                                           /  \ 20 /  \  
-#                                          / 19 \  / 16 \ 
+#                                            /\      /\
+#                                           /  \ 20 /  \
+#                                          / 19 \  / 16 \
 #                                         /______\/______\
 #                                          .     |      ,'
-#                                           `.18 | 17 ,'  
-#                                             `. |  ,'    
-#                                               `|,'       
+#                                           `.18 | 17 ,'
+#                                             `. |  ,'
+#                                               `|,'
 #
 # Each triangle is subdivided into 3 quadrilaterals with a local (ξ,η)-coordinate system.
 #
@@ -106,7 +106,7 @@ end
 #          /           |            \
 #         /            |             \
 #        /   η         | ↑η           \
-#       /  /     1     | |      2      \ 
+#       /  /     1     | |      2      \
 #      /  /            | |              \
 #     /  /             | |               \
 #    /  -------->ξ     | └------->ξ       \
@@ -117,25 +117,25 @@ end
 # We use the following numbering for the 12 vertices of the icosahedron
 # Fig 3:
 #            5
-#           ,'|.     
-#         ,'  | `.   
-#       ,'    |   `. 
+#           ,'|.
+#         ,'  | `.
+#       ,'    |   `.
 #    6,'_____1|_____`.4
 #     \      /\      /
 #      \    /  \    /
 #       \  /    \  /
-#       2\/______3/______4_______5_______6_______2     
-#         \      /\      /\      /\      /\      /\    
-#          \    /  \    /  \    /  \    /  \    /  \   
-#           \  /    \  /    \  /    \  /    \  /    \  
+#       2\/______3/______4_______5_______6_______2
+#         \      /\      /\      /\      /\      /\
+#          \    /  \    /  \    /  \    /  \    /  \
+#           \  /    \  /    \  /    \  /    \  /    \
 #            \/_______/_______/_______/_______/______\7
-#            7       8       9      10      11\      /\   
-#                                           /  \    /  \  
-#                                          /    \  /    \ 
+#            7       8       9      10      11\      /\
+#                                           /  \    /  \
+#                                          /    \  /    \
 #                                         /______\/______\
 #                                       10 .     |12    ,'8
-#                                           `.   |    ,'  
-#                                             `. |  ,'    
+#                                           `.   |    ,'
+#                                             `. |  ,'
 #                                               `|,'
 #                                                9
 
@@ -233,7 +233,7 @@ const icosahedron_triangle_vertices_idx_map = ([2, 3, 1], # Triangle 1
 #          /          ⎺|            \
 #         /            |             \
 #        /             |              \
-#       /              |               \ 
+#       /              |               \
 #      /               |                \
 #     /                |                 \
 #    /                 |                  \
@@ -246,7 +246,7 @@ const icosahedron_quad_vertices_idx_map = ([1, 2, 7, 6], # Quad 1
                                            [7, 4, 5, 6]) # Quad 3
 end
 
-# Function to initialize the p4est connectivity for the icosahedral grid. 
+# Function to initialize the p4est connectivity for the icosahedral grid.
 # For reference, see Fig 1 and Fig 2 above.
 function connectivity_icosahedron_2D(trees_per_face_dimension)
     num_triangles = 20
@@ -273,15 +273,15 @@ function connectivity_icosahedron_2D(trees_per_face_dimension)
     # Connectivities for the first 5 (1:5) and the last 5 (16:20) triangular faces
     # Notes:
     # - We subtract 1 because `p4est` uses zero-based indexing
-    # - We use circshift to do a circular shift in the triangle list of the 5 triangles that 
+    # - We use circshift to do a circular shift in the triangle list of the 5 triangles that
     #   are connected to each pole (useful due to periodicity)
-    # - We use triangle_offset_base to store the offset for the connections along the base of the 
+    # - We use triangle_offset_base to store the offset for the connections along the base of the
     #   triangles. For example, triangle 1 is connected to 6 (offset = +5), and triangle 16
     #   is connected to 11 (offset = -5)
-    # - We use triangle_offset_13 to store the offset for the connections along the edge of the 
+    # - We use triangle_offset_13 to store the offset for the connections along the edge of the
     #   triangles where quads 1 and 3 are, and triangle_offset_23 to store the offset for the connections
-    #   along the edge of the triangles where quads 1 and 2 are. For example, triangle 1 is connected to 
-    #   triangle 5 along the side where quads 1 and 3 are (triangle_offset_13 = +4), and triangle 1 is also 
+    #   along the edge of the triangles where quads 1 and 2 are. For example, triangle 1 is connected to
+    #   triangle 5 along the side where quads 1 and 3 are (triangle_offset_13 = +4), and triangle 1 is also
     #   connected to triangle 2 along the side where quads 2 and 3 are (triangle_offset_23 = 1)
     triangle_list = Vector(101:105)
     triangle_list_1 = Vector(1:5)
@@ -468,7 +468,7 @@ function connectivity_icosahedron_2D(trees_per_face_dimension)
     # - We use triangle_connectivity_n* to store the triangle connectivity along edges
     # - We use circshift to do a circular shift in the triangle list of triangles 6:15
     #   (useful due to periodicity)
-    # - We use triangle_offset_base to store the offset for the connections along the base of the 
+    # - We use triangle_offset_base to store the offset for the connections along the base of the
     #   triangles. For example, triangle 6 is connected to 1 (offset = -5), and triangle 11
     #   is connected to 16 (offset = +5)
     triangle_list = Vector(6:15)
@@ -661,7 +661,7 @@ end
 
 # Calculate physical coordinates of each node of a 2D quad-icosahedral mesh using the
 # element-local mapping from Guba et al. (see https://doi.org/10.5194/gmd-7-2803-2014,
-# Appendix A). 
+# Appendix A).
 function calc_tree_node_coordinates_quad_icosahedron_local!(node_coordinates::AbstractArray{<:Any,
                                                                                             4},
                                                             nodes,
