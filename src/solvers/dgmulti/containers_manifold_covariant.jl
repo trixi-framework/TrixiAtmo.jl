@@ -208,7 +208,7 @@ function calc_metric_covariant(vertices, xi1, xi2, radius, dg, metric_terms,
     return SVector(Gcov[1, 1], Gcov[1, 2], Gcov[2, 2])
 end
 
-# Use ForwardDiff.jl to automatically differentiate the covariant metric tensor components 
+# Use ForwardDiff.jl to automatically differentiate the covariant metric tensor components
 function calc_metric_derivatives_autodiff(vertices, xi1, xi2, radius, dg, metric_terms,
                                           equations::AbstractCovariantEquations{2})
     dGdxi1 = derivative(x -> calc_metric_covariant(vertices, x, xi2, radius, dg,

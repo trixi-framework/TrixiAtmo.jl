@@ -29,31 +29,31 @@ equation. The contravariant momentum flux tensor components are given by
 ```math
 \tau^{ij} = \rho v^i v^j + p G^{ij}.
 ```
-As with the covariant shallow water equations (see 
+As with the covariant shallow water equations (see
 [`CovariantShallowWaterEquations2D`](@ref)), this system may be formulated on the reference
 element as a system of conservation laws with a source term, as given by
 ```math
 J \frac{\partial}{\partial t}
 \left[\begin{array}{c} \rho \\ \rho v^1 \\ \rho v^2 \\ E \end{array}\right]
 +
-\frac{\partial}{\partial \xi^1} 
+\frac{\partial}{\partial \xi^1}
 \left[\begin{array}{c} J \rho v^1 \\ J \tau^{11} \\ J \tau^{12} \\ J v^1 (E + p) \end{array}\right]
-+ 
-\frac{\partial}{\partial \xi^2} 
++
+\frac{\partial}{\partial \xi^2}
 \left[\begin{array}{c} J \rho v^2 \\ J \tau^{21} \\ J \tau^{22} \\ J v^2 (E + p) \end{array}\right]
-= J \left[\begin{array}{c} 0 \\ 
--\Gamma^1_{jk}\tau^{jk} - J\rho G^{1j}\partial_j \Phi \\ 
+= J \left[\begin{array}{c} 0 \\
+-\Gamma^1_{jk}\tau^{jk} - J\rho G^{1j}\partial_j \Phi \\
 -\Gamma^2_{jk}\tau^{jk} - J\rho G^{2j}\partial_j \Phi \\
 0
- \end{array}\right],
+\end{array}\right],
 ```
 where the Christoffel symbols of the second kind $\Gamma^i_{jk}$ are defined as in
 [`CovariantShallowWaterEquations2D`](@ref).
 
 !!! note
     The geometric part of the source term above, involving the Christoffel symbols
-    $\Gamma^i_{jk}$, is **not currently implemented**. Only the gravitational contribution 
-    to the momentum source term is included, through the exported function 
+    $\Gamma^i_{jk}$, is **not currently implemented**. Only the gravitational contribution
+    to the momentum source term is included, through the exported function
     `source_terms_gravity`.
 
 ## References

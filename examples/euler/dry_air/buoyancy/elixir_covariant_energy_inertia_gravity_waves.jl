@@ -8,7 +8,7 @@ using OrdinaryDiffEqLowStorageRK, Trixi, TrixiAtmo
 # Spatial discretization
 
 """
-	initial_condition_gravity_waves(x, t,
+    initial_condition_gravity_waves(x, t,
                                         equations::CovariantEulerEnergyEquations2D)
 
 Test cases for linearized analytical solution by
