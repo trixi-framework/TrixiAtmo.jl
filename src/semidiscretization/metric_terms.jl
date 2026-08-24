@@ -29,8 +29,8 @@ struct MetricTermsInvariantCurl end
 
 Struct specifying options for computing geometric information for discretizations
 in covariant form based on an exact representation of the geometry. The first field
-'manifold' must fit the geometry of the mesh, which can be either [`SphericalManifold`](@ref)
-or [`FlatManifold`](@ref).
+`manifold` must fit the geometry of the mesh, which can be either `SphericalManifold` or
+`FlatManifold`.
 The field `christoffel_symbols` determines the approach used to compute the
 Christoffel symbols, for which the options are [`ChristoffelSymbolsAutodiff`](@ref) or
 [`ChristoffelSymbolsCollocationDerivative`](@ref).
