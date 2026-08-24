@@ -123,7 +123,7 @@ end
 #          /   \               /    \
 #         /     \             /      \
 #        /       \           /        \
-#       /         \         /          \ 
+#       /         \         /          \
 #      /           \       /            \
 #     /             \     /              \
 #    /               \   /                \
@@ -164,9 +164,9 @@ function StartUpDG.geometric_factors(x, y, z, Dr, Ds; Filters = (I, I, I))
     return rxJ, sxJ, ryJ, syJ, rzJ, szJ, J
 end
 
-# physical outward normals are computed via Nanson's formula: G * nhatJ, where 
-# G = matrix of J-scaled geometric terms. Here, Vf is a face interpolation matrix 
-# which maps interpolation nodes to face nodes. 
+# physical outward normals are computed via Nanson's formula: G * nhatJ, where
+# G = matrix of J-scaled geometric terms. Here, Vf is a face interpolation matrix
+# which maps interpolation nodes to face nodes.
 function StartUpDG.compute_normals(geo::SMatrix{Dim, DimAmbient}, Vf,
                                    nrstJ...) where {Dim, DimAmbient}
     nxyzJ = ntuple(x -> zeros(size(Vf, 1), size(first(geo), 2)), DimAmbient)

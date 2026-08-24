@@ -5,8 +5,8 @@
 @muladd begin
 #! format: noindent
 
-@doc raw""" 
-CompressibleEulerInternalEnergyEquationsWithGravity2D(; c_p, c_v, gravity) 
+@doc raw"""
+CompressibleEulerInternalEnergyEquationsWithGravity2D(; c_p, c_v, gravity)
 
 The compressible Euler equations with gravity
 ```math
@@ -99,11 +99,11 @@ have_nonconservative_terms(::CompressibleEulerInternalEnergyEquationsWithGravity
 end
 
 """
-	flux_conservative_etec(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
+    flux_conservative_etec(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
 
 Entropy conserving, total energy conserving and kinetic energy preserving two-point flux by
 -  Marco Artiano, Hendrik Ranocha (2026)
-   On Affordable High-Order Entropy-Conservative/Stable and 
+   On Affordable High-Order Entropy-Conservative/Stable and
    Well-Balanced Methods for Nonconservative Hyperbolic Systems
    [DOI: 10.48550/arXiv.2603.18978](https://arxiv.org/abs/2603.18978)
 """
@@ -133,11 +133,11 @@ Entropy conserving, total energy conserving and kinetic energy preserving two-po
 end
 
 """
-	flux_nonconservative_etec(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
+    flux_nonconservative_etec(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
 
 Nonconservative part of the entropy conserving, total energy conserving and kinetic energy preserving two-point flux by
 -  Marco Artiano, Hendrik Ranocha (2026)
-   On Affordable High-Order Entropy-Conservative/Stable and 
+   On Affordable High-Order Entropy-Conservative/Stable and
    Well-Balanced Methods for Nonconservative Hyperbolic Systems
   [DOI: 10.48550/arXiv.2603.18978](https://arxiv.org/abs/2603.18978)
 """
@@ -163,11 +163,11 @@ Nonconservative part of the entropy conserving, total energy conserving and kine
 end
 
 """
-	flux_conservative_es(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
+    flux_conservative_es(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
 
 Entropy stable two-point flux by
 -  Marco Artiano, Hendrik Ranocha (2026)
-   On Affordable High-Order Entropy-Conservative/Stable and 
+   On Affordable High-Order Entropy-Conservative/Stable and
    Well-Balanced Methods for Nonconservative Hyperbolic Systems
    [DOI: 10.48550/arXiv.2603.18978](https://arxiv.org/abs/2603.18978)
 """
@@ -213,11 +213,11 @@ Entropy stable two-point flux by
 end
 
 """
-	flux_nonconservative_es(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
+    flux_nonconservative_es(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
 
 Nonconservative part of the entropy stable two-point flux by
 -  Marco Artiano, Hendrik Ranocha (2026)
-   On Affordable High-Order Entropy-Conservative/Stable and 
+   On Affordable High-Order Entropy-Conservative/Stable and
    Well-Balanced Methods for Nonconservative Hyperbolic Systems
    [DOI: 10.48550/arXiv.2603.18978](https://arxiv.org/abs/2603.18978)
 """
