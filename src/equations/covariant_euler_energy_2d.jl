@@ -273,7 +273,6 @@ end
     return max(abs(v_ll) + c_ll, abs(v_rr) + c_rr)
 end
 
-
 @inline function boundary_condition_horizontal_slip_wall(u_inner, aux_inner,
                                                          normal_direction::AbstractVector,
                                                          x, t,
