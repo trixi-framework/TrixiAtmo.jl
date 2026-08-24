@@ -9,7 +9,7 @@ using OrdinaryDiffEqLowStorageRK, Trixi, TrixiAtmo
 
 """
 	initial_condition_gravity_waves(x, t,
-                                        equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+                                        equations::CovariantEulerEnergyEquations2D)
 
 Test cases for linearized analytical solution by
 -  Baldauf, Michael and Brdar, Slavko (2013)
