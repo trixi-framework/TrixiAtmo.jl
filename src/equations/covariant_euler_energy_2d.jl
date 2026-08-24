@@ -2,11 +2,11 @@
 #! format: noindent
 
 @doc raw"""
-    CovariantEulerEquations2D{GlobalCoordinateSystem} <:  
+    CovariantEulerEquations2D{GlobalCoordinateSystem} <:
         AbstractCovariantEquations{2, 2, GlobalCoordinateSystem, 4}
 
-Denoting the [covariant derivative](https://en.wikipedia.org/wiki/Covariant_derivative) by 
-$\nabla_j$ and summing over repeated indices, the compressible Euler equations with gravity 
+Denoting the [covariant derivative](https://en.wikipedia.org/wiki/Covariant_derivative) by
+$\nabla_j$ and summing over repeated indices, the compressible Euler equations with gravity
 can be expressed in covariant form as
 ```math
 \begin{aligned}
@@ -23,31 +23,31 @@ conservative variables by the equation of state
 ```math
 p = (\gamma - 1)\left(E - \frac{1}{2}\rho G_{ij} v^i v^j - \rho \Phi\right),
 ```
-with $\gamma$ denoting the ratio of specific heats. Because the potential energy is already 
-accounted for within $E$, no additional source term due to gravity appears in the energy 
+with $\gamma$ denoting the ratio of specific heats. Because the potential energy is already
+accounted for within $E$, no additional source term due to gravity appears in the energy
 equation. The contravariant momentum flux tensor components are given by
 ```math
 \tau^{ij} = \rho v^i v^j + p G^{ij}.
 ```
 As with the covariant shallow water equations (see 
-[`CovariantShallowWaterEquations2D`](@ref)), this system may be formulated on the reference 
+[`CovariantShallowWaterEquations2D`](@ref)), this system may be formulated on the reference
 element as a system of conservation laws with a source term, as given by
 ```math
 J \frac{\partial}{\partial t}
-\left[\begin{array}{c} \rho \\ \rho v^1 \\ \rho v^2 \\ E \end{array}\right] 
+\left[\begin{array}{c} \rho \\ \rho v^1 \\ \rho v^2 \\ E \end{array}\right]
 +
 \frac{\partial}{\partial \xi^1} 
 \left[\begin{array}{c} J \rho v^1 \\ J \tau^{11} \\ J \tau^{12} \\ J v^1 (E + p) \end{array}\right]
 + 
 \frac{\partial}{\partial \xi^2} 
-\left[\begin{array}{c} J \rho v^2 \\ J \tau^{21} \\ J \tau^{22} \\ J v^2 (E + p) \end{array}\right] 
+\left[\begin{array}{c} J \rho v^2 \\ J \tau^{21} \\ J \tau^{22} \\ J v^2 (E + p) \end{array}\right]
 = J \left[\begin{array}{c} 0 \\ 
 -\Gamma^1_{jk}\tau^{jk} - J\rho G^{1j}\partial_j \Phi \\ 
 -\Gamma^2_{jk}\tau^{jk} - J\rho G^{2j}\partial_j \Phi \\
 0
  \end{array}\right],
 ```
-where the Christoffel symbols of the second kind $\Gamma^i_{jk}$ are defined as in 
+where the Christoffel symbols of the second kind $\Gamma^i_{jk}$ are defined as in
 [`CovariantShallowWaterEquations2D`](@ref).
 
 !!! note
@@ -103,10 +103,10 @@ function varnames(::typeof(cons2prim), ::CovariantEulerEnergyEquations2D)
     return ("rho", "vcon1", "vcon2", "p")
 end
 
-# The change of variables contravariant2global converts the two local contravariant vector 
-# components u[2] and u[3] to the three global vector components specified by 
-# equations.global_coordinate_system (e.g. spherical or Cartesian). This transformation 
-# works for both primitive and conservative variables, although varnames refers 
+# The change of variables contravariant2global converts the two local contravariant vector
+# components u[2] and u[3] to the three global vector components specified by
+# equations.global_coordinate_system (e.g. spherical or Cartesian). This transformation
+# works for both primitive and conservative variables, although varnames refers
 # specifically to transformations from conservative variables.
 function varnames(::typeof(contravariant2global),
                   ::CovariantEulerEnergyEquations2D)
@@ -196,7 +196,7 @@ end
     return SVector(u[1], vcon1, vcon2, u[4])
 end
 
-# Flux as a function of the state vector u, as well as the auxiliary variables aux_vars, 
+# Flux as a function of the state vector u, as well as the auxiliary variables aux_vars,
 # which contain the geometric information required for the covariant form
 @inline function flux(u, aux_vars, orientation::Integer,
                       equations::AbstractCovariantEulerEquations)
