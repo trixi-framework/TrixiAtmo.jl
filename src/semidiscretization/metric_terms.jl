@@ -27,9 +27,11 @@ struct MetricTermsInvariantCurl end
 """
     MetricTermsCovariantSphere(christoffel_symbols = ChristoffelSymbolsAutodiff())
 
-Struct specifying options for computing geometric information for discretizations in
-covariant form based on an exact representation of the spherical geometry.  Currently, the
-only field is `christoffel_symbols`, specifying the approach used to compute the
+Struct specifying options for computing geometric information for discretizations
+in covariant form based on an exact representation of the geometry. The first field
+'manifold' must fit the geometry of the mesh, which can be either [`SphericalManifold`](@ref)
+or [`FlatManifold`](@ref).
+The field `christoffel_symbols` determines the approach used to compute the
 Christoffel symbols, for which the options are [`ChristoffelSymbolsAutodiff`](@ref) or
 [`ChristoffelSymbolsCollocationDerivative`](@ref).
 """
