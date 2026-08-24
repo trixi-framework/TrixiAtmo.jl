@@ -77,7 +77,7 @@ mesh = DGMultiMesh(dg, cells_per_dimension;
 # Transform the initial condition to the proper set of conservative variables
 initial_condition_transformed = transform_initial_condition(initial_condition, equations)
 
-boundary_conditions = (; entire_boundary = boundary_condition_slip_wall)
+boundary_conditions = (; entire_boundary = boundary_condition_horizontal_slip_wall)
 
 # A semidiscretization collects data structures and functions for the spatial discretization
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, dg,

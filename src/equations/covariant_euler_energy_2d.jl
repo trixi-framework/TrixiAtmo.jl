@@ -273,12 +273,13 @@ end
     return max(abs(v_ll) + c_ll, abs(v_rr) + c_rr)
 end
 
-@inline function boundary_condition_slip_wall(u_inner, aux_inner,
-                                              normal_direction::AbstractVector,
-                                              x, t,
-                                              surface_flux_function,
-                                              equations::CovariantEulerEnergyEquations2D)
-    # Reflect the normal contravariant velocity component and keep the tangential component unchanged
+
+@inline function boundary_condition_horizontal_slip_wall(u_inner, aux_inner,
+                                                         normal_direction::AbstractVector,
+                                                         x, t,
+                                                         surface_flux_function,
+                                                         equations::CovariantEulerEnergyEquations2D)
+    # Reflect the vertical contravariant velocity component and keep the horizontal component unchanged
     u_boundary = SVector(u_inner[1], u_inner[2], -u_inner[3], u_inner[4])
 
     # Compute the flux at the boundary using the surface flux function
