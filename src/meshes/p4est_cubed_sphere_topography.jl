@@ -23,7 +23,7 @@ where `η = z_reference / H` is the normalized reference height.
 - `eta_H`: fraction of the domain height `H` above which the
            topography influence vanishes completely.
            Must be in `(0, 1)`. Typical value: `0.7`.
-- `s`: controls the rate of decay of the topographic influence with height. 
+- `s`: controls the rate of decay of the topographic influence with height.
        Smaller values produce faster decay. Typical value: `0.8`.
 
 # References
@@ -83,7 +83,7 @@ end
                          polydeg, RealT=Float64,
                          initial_refinement_level=0, unsaved_changes=true,
                          p4est_partition_allow_for_coarsening=true,
-                         initial_topography = initial_topography_perfect_sphere, 
+                         initial_topography = initial_topography_perfect_sphere,
                          adapt_vertical_grid, keep_columns_together = false)
 
 Build a "Cubed Sphere" mesh as `P4estMesh` with
@@ -184,8 +184,8 @@ mutable struct ColumnPartitionContext
 end
 
 """
-    column_weight_callback(p8est_ptr::Ptr{p8est_t}, 
-                           which_tree::p4est_topidx_t, 
+    column_weight_callback(p8est_ptr::Ptr{p8est_t},
+                           which_tree::p4est_topidx_t,
                            quadrant_ptr::Ptr{p8est_quadrant_t})
 
 Custom p4est weight function that ensures that columns of elements are kept together within

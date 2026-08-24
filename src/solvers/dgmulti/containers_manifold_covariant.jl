@@ -154,8 +154,8 @@ function compute_vertex_mask(dg::DGMulti{<:Any, <:Quad})
     return VMask
 end
 
-# Analytically compute the transformation matrix A, such that G = AᵀA is the 
-# covariant metric tensor and a_i = A[1,i] * e_x + A[2,i] * e_y + A[3,i] * e_z denotes 
+# Analytically compute the transformation matrix A, such that G = AᵀA is the
+# covariant metric tensor and a_i = A[1,i] * e_x + A[2,i] * e_y + A[3,i] * e_z denotes
 # the covariant tangent basis, where e_x, e_y, and e_z are the Cartesian unit basis vectors.
 @inline function calc_basis_covariant(vertices, r, s, radius, dg::DGMulti{2, <:Tri},
                                       ::MetricTermsCovariant{SphericalManifold},
@@ -198,7 +198,7 @@ end
                          dxeds[1], dxeds[2])
 end
 
-# Calculate the covariant metric tensor components G₁₁, G₁₂ (= G₂₁), and G₂₂ and return in 
+# Calculate the covariant metric tensor components G₁₁, G₁₂ (= G₂₁), and G₂₂ and return in
 # that order as an SVector of length 3
 function calc_metric_covariant(vertices, xi1, xi2, radius, dg, metric_terms,
                                equations::AbstractCovariantEquations{2})
@@ -218,7 +218,7 @@ function calc_metric_derivatives_autodiff(vertices, xi1, xi2, radius, dg, metric
     return dGdxi1, dGdxi2
 end
 
-# Use the collocation derivative operator to numerically differentiate the covariant 
+# Use the collocation derivative operator to numerically differentiate the covariant
 # metric tensor components
 function calc_metric_derivatives_collocation(aux_values,
                                              equations::AbstractCovariantEquations{2},

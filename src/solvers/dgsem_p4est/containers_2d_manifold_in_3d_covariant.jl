@@ -1,9 +1,9 @@
 @muladd begin
 #! format: noindent
 
-# Container storing element information used by the covariant form. Note that most of the 
-# geometric information is stored in `cache.auxiliary_variables` (allowing such data to 
-# be passed into flux functions and treated as "variable coefficients") rather than in 
+# Container storing element information used by the covariant form. Note that most of the
+# geometric information is stored in `cache.auxiliary_variables` (allowing such data to
+# be passed into flux functions and treated as "variable coefficients") rather than in
 # `cache.elements` (the contents of which are inaccessible to the flux functions).
 struct P4estElementContainerCovariant{NDIMS, RealT <: Real, uEltype <: Real,
                                       NDIMSP2} <: Trixi.AbstractContainer
@@ -133,8 +133,8 @@ function init_auxiliary_node_variables(mesh::Union{P4estMesh, T8codeMesh},
     return auxiliary_variables
 end
 
-# By default, the auxiliary surface node variables are just the volume node variables 
-# evaluated at the surface nodes, similarly to prolong2interfaces. This could, however, be 
+# By default, the auxiliary surface node variables are just the volume node variables
+# evaluated at the surface nodes, similarly to prolong2interfaces. This could, however, be
 # specialized for other applications.
 function init_auxiliary_surface_node_variables!(auxiliary_variables::P4estAuxiliaryNodeVariableContainer{2},
                                                 mesh::Union{P4estMesh{2},
@@ -197,7 +197,7 @@ function init_auxiliary_surface_node_variables!(auxiliary_variables::P4estAuxili
     return nothing
 end
 
-# Get Cartesian node positions for the covariant form, dispatching on the dimension of the 
+# Get Cartesian node positions for the covariant form, dispatching on the dimension of the
 # manifold as well as the ambient dimension
 @inline function Trixi.get_node_coords(x,
                                        ::AbstractCovariantEquations{NDIMS,
@@ -208,26 +208,26 @@ end
 end
 
 # Compute the auxiliary metric terms for the covariant form, assuming that the
-# domain is a spherical shell. We do not make any assumptions on the mesh topology, but we 
-# require that the elements are constructed using the element-local mapping from the 
+# domain is a spherical shell. We do not make any assumptions on the mesh topology, but we
+# require that the elements are constructed using the element-local mapping from the
 # following paper:
 #
 # O. Guba, M. A. Taylor, P. A. Ullrich, J. R. Overfelt, and M. N. Levy (2014). The spectral
-# element method (SEM) on variable-resolution grids: evaluating grid sensitivity and 
+# element method (SEM) on variable-resolution grids: evaluating grid sensitivity and
 # resolution-aware numerical viscosity. Geoscientific Model Development 7(6) 2803–2816.
 # DOI: 10.5194/gmd-7-2803-2014
-# 
-# When creating a cubed sphere mesh using P4estMeshCubedSphere2D, this is enabled by 
-# passing the keyword argument "element_local_mapping = true" to the constructor and 
+#
+# When creating a cubed sphere mesh using P4estMeshCubedSphere2D, this is enabled by
+# passing the keyword argument "element_local_mapping = true" to the constructor and
 # ensuring that the polynomial degree of the mesh is equal to that of the solver.
 #
-# Otherwise, the mesh's tree node coordinates will be interpolated to the solver's 
-# physical node coordinates, and this would introduce a polynomial approximation of the 
+# Otherwise, the mesh's tree node coordinates will be interpolated to the solver's
+# physical node coordinates, and this would introduce a polynomial approximation of the
 # geometry, making the analytical metric terms computed here no longer correct.
-# 
-# The last argument is the bottom topography field as a function of Cartesian coordinates, 
+#
+# The last argument is the bottom topography field as a function of Cartesian coordinates,
 # which is passed into the SemidiscretizationHyperbolic constructor as the keyword argument
-# "auxiliary_field", which is set to nothing by default, corresponding to zero bottom 
+# "auxiliary_field", which is set to nothing by default, corresponding to zero bottom
 # topography
 function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 3},
                                         equations::AbstractCovariantEquations{2, 3}, dg,
@@ -239,7 +239,7 @@ function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 
     # Check that the degree of the mesh matches that of the solver
     @assert length(mesh.nodes) == nnodes(dg)
 
-    # The tree node coordinates are assumed to be on the spherical shell centred around the 
+    # The tree node coordinates are assumed to be on the spherical shell centred around the
     # origin. Therefore, we can compute the radius once and use it throughout.
     radius = norm(Trixi.get_node_coords(tree_node_coordinates, equations, dg, 1, 1, 1))
 
@@ -304,8 +304,8 @@ function init_auxiliary_node_variables!(auxiliary_variables, mesh::P4estMesh{2, 
     return nothing
 end
 
-# Analytically compute the transformation matrix A, such that G = AᵀA is the 
-# covariant metric tensor and a_i = A[1,i] * e_x + A[2,i] * e_y + A[3,i] * e_z denotes 
+# Analytically compute the transformation matrix A, such that G = AᵀA is the
+# covariant metric tensor and a_i = A[1,i] * e_x + A[2,i] * e_y + A[3,i] * e_z denotes
 # the covariant tangent basis, where e_x, e_y, and e_z are the Cartesian unit basis vectors.
 @inline function calc_basis_covariant(v1, v2, v3, v4, xi1, xi2, radius,
                                       ::GlobalCartesianCoordinates)
@@ -329,10 +329,10 @@ end
                          dxdxi2[1], dxdxi2[2], dxdxi2[3])
 end
 
-# Analytically compute the transformation matrix A, such that G = AᵀA is the 
-# covariant metric tensor and a_i = A[1,i] * e_lon + A[2,i] * e_lat denotes 
+# Analytically compute the transformation matrix A, such that G = AᵀA is the
+# covariant metric tensor and a_i = A[1,i] * e_lon + A[2,i] * e_lat denotes
 # the covariant tangent basis, where e_lon and e_lat are the unit basis vectors
-# in the longitudinal and latitudinal directions, respectively. This formula is 
+# in the longitudinal and latitudinal directions, respectively. This formula is
 # taken from Guba et al. (2014).
 @inline function calc_basis_covariant(v1, v2, v3, v4, xi1, xi2, radius,
                                       ::GlobalSphericalCoordinates)
@@ -372,7 +372,7 @@ end
     return SMatrix{3, 2}(A[1, 1], A[2, 1], 0.0f0, A[1, 2], A[2, 2], 0.0f0)
 end
 
-# Calculate the covariant metric tensor components G₁₁, G₁₂ (= G₂₁), and G₂₂ and return in 
+# Calculate the covariant metric tensor components G₁₁, G₁₂ (= G₂₁), and G₂₂ and return in
 # that order as an SVector of length 3
 function calc_metric_covariant(v1, v2, v3, v4, xi1, xi2, radius, equations)
     A = calc_basis_covariant(v1, v2, v3, v4, xi1, xi2, radius,
@@ -381,7 +381,7 @@ function calc_metric_covariant(v1, v2, v3, v4, xi1, xi2, radius, equations)
     return SVector(Gcov[1, 1], Gcov[1, 2], Gcov[2, 2])
 end
 
-# Use ForwardDiff.jl to automatically differentiate the covariant metric tensor components 
+# Use ForwardDiff.jl to automatically differentiate the covariant metric tensor components
 function calc_metric_derivatives_autodiff(v1, v2, v3, v4, xi1, xi2, radius, equations)
     dGdxi1 = derivative(x -> calc_metric_covariant(v1, v2, v3, v4, x, xi2, radius,
                                                    equations), xi1)
@@ -390,7 +390,7 @@ function calc_metric_derivatives_autodiff(v1, v2, v3, v4, xi1, xi2, radius, equa
     return dGdxi1, dGdxi2
 end
 
-# Use the collocation derivative operator to numerically differentiate the covariant 
+# Use the collocation derivative operator to numerically differentiate the covariant
 # metric tensor components
 function calc_metric_derivatives_collocation(aux_node_vars, equations, dg, i, j,
                                              element)
@@ -425,7 +425,7 @@ function calc_metric_derivatives_collocation(aux_node_vars, equations, dg, i, j,
     return SVector(dG11dxi1, dG12dxi1, dG22dxi1), SVector(dG11dxi2, dG12dxi2, dG22dxi2)
 end
 
-# Calculate the Christoffel symbols given the contravariant metric tensor components and 
+# Calculate the Christoffel symbols given the contravariant metric tensor components and
 # the partial derivatives of the covariant metric tensor components
 function calc_christoffel_symbols(dGdxi1, dGdxi2, Gcon)
     dG11dxi1, dG12dxi1, dG22dxi1 = dGdxi1
@@ -450,7 +450,7 @@ function calc_christoffel_symbols(dGdxi1, dGdxi2, Gcon)
                    Gcon[2, 1] * Gamma_1[2, 2] + Gcon[2, 2] * Gamma_2[2, 2])  # Γ²₂₂
 end
 
-# Calculate Christoffel symbols using automatic differentiation based on the exact 
+# Calculate Christoffel symbols using automatic differentiation based on the exact
 # spherical geometry
 function calc_christoffel_symbols!(aux_node_vars, mesh::P4estMesh{2, 3},
                                    equations::AbstractCovariantEquations{2, 3},
@@ -458,7 +458,7 @@ function calc_christoffel_symbols!(aux_node_vars, mesh::P4estMesh{2, 3},
                                                                       ChristoffelSymbolsAutodiff},
                                    dg, element, v1, v2, v3, v4, radius)
     for j in eachnode(dg), i in eachnode(dg)
-        # Differentiate the metric tensor components 
+        # Differentiate the metric tensor components
         dGdxi1, dGdxi2 = calc_metric_derivatives_autodiff(v1, v2, v3, v4,
                                                           dg.basis.nodes[i],
                                                           dg.basis.nodes[j],
@@ -478,7 +478,7 @@ function calc_christoffel_symbols!(aux_node_vars, mesh::P4estMesh{2, 3},
                                                                       ChristoffelSymbolsCollocationDerivative},
                                    dg, element, v1, v2, v3, v4, radius)
     for j in eachnode(dg), i in eachnode(dg)
-        # Differentiate the metric tensor components 
+        # Differentiate the metric tensor components
         dGdxi1, dGdxi2 = calc_metric_derivatives_collocation(aux_node_vars, equations,
                                                              dg,
                                                              i, j, element)
