@@ -6,7 +6,7 @@ using MPI: mpiexec
 #
 # We could do the same once we have a lot of tests
 const TRIXI_TEST = get(ENV, "TRIXI_TEST", "all")
-const TRIXI_MPI_NPROCS = clamp(Sys.CPU_THREADS, 2, 3)
+const TRIXI_MPI_NPROCS = 4
 const TRIXI_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
 
 @time @testset verbose=true showtiming=true "TrixiAtmo.jl tests" begin

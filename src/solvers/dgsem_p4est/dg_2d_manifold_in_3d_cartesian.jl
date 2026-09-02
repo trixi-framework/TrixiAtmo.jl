@@ -1,11 +1,11 @@
 @muladd begin
 #! format: noindent
 
-function Trixi.rhs!(du, u, t,
-                    mesh::Union{P4estMesh{2}, T8codeMesh{2}},
-                    equations::AbstractEquations{3},
-                    boundary_conditions, source_terms::Source,
-                    dg::DG, cache) where {Source}
+function Trixi.rhs_hyperbolic!(backend::Nothing, du, u, t,
+                               mesh::Union{P4estMesh{2}, T8codeMesh{2}},
+                               equations::AbstractEquations{3},
+                               boundary_conditions, source_terms::Source,
+                               dg::DG, cache) where {Source}
     backend = trixi_backend(u)
 
     # Reset du
@@ -34,12 +34,13 @@ function Trixi.rhs!(du, u, t,
 
     # Prolong solution to boundaries
     Trixi.@trixi_timeit Trixi.timer() "prolong2boundaries" begin
-        Trixi.prolong2boundaries!(cache, u, mesh, equations, dg)
+        Trixi.prolong2boundaries!(backend, cache, u, mesh, equations, dg)
     end
 
     # Calculate boundary fluxes
     Trixi.@trixi_timeit Trixi.timer() "boundary flux" begin
-        Trixi.calc_boundary_flux!(cache, t, boundary_conditions, mesh, equations,
+        Trixi.calc_boundary_flux!(backend, cache, t, boundary_conditions, mesh,
+                                  equations,
                                   dg.surface_integral, dg)
     end
 

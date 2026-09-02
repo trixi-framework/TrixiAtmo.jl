@@ -166,7 +166,7 @@ end
 end
 
 """
-	flux_nonconservative_waruszewski_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerEnergyEquationsWithGravity2D)
+    flux_nonconservative_waruszewski_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerEnergyEquationsWithGravity2D)
 
 Well-balanced gravity term for an isothermal background state
 for the [`CompressibleEulerEnergyEquationsWithGravity2D`](@ref)
@@ -205,7 +205,7 @@ The well-balancedness on curvilinear coordinates was proven by
 end
 
 """
-	flux_nonconservative_artiano_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerEnergyEquationsWithGravity2D)
+    flux_nonconservative_artiano_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerEnergyEquationsWithGravity2D)
 
 Well-balanced gravity term for a constant potential temperature background state
 for the [`CompressibleEulerEnergyEquationsWithGravity2D`](@ref)
@@ -238,7 +238,7 @@ developed by
 end
 
 """
-	flux_nonconservative_souza_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerEnergyEquationsWithGravity2D)
+    flux_nonconservative_souza_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerEnergyEquationsWithGravity2D)
 
 Kinetic and potential energy preserving (KPEP) gravity term
 for the [`CompressibleEulerEnergyEquationsWithGravity2D`](@ref)

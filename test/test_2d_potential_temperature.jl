@@ -23,11 +23,11 @@ EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler/dry_air")
                         ], tspan=(0.0, 1800.0), atol=1e-5)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_linear_hydrostatic" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "tests",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "mountain_flow",
                                  "elixir_potential_temperature_linear_hydrostatic.jl"),
                         l2=[
                             2.669332229493225e-6,
@@ -47,11 +47,11 @@ end
                         atol=1e-5)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_linear_nonhydrostatic" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "tests",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "mountain_flow",
                                  "elixir_potential_temperature_linear_nonhydrostatic.jl"),
                         l2=[
                             4.345825921806206e-7,
@@ -70,7 +70,7 @@ end
                         atol=1e-5)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_schaer_mountain" begin
@@ -94,7 +94,7 @@ end
                         atol=1e-5)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_well_balanced_curvilinear" begin
@@ -116,7 +116,7 @@ end
                         ], atol=1e-5)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_well_balanced_curvilinear" begin
@@ -140,7 +140,7 @@ end
 
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_robert_bubble" begin
@@ -162,7 +162,7 @@ end
 
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_robert_bubble" begin
@@ -185,7 +185,7 @@ end
 
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 end
