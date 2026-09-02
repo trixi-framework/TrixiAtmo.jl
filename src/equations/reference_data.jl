@@ -277,13 +277,13 @@ test suite described in the following paper:
     # Convert primitive variables from spherical coordinates to the chosen global
     # coordinate system, which depends on the equation type
     return spherical2global(SVector(h, vlon, vlat, zero(RealT),
-                                    bottom_topography_isolated_mountain(x)), x,
-                            equations)
+                                    bottom_topography_isolated_mountain(x, equations)),
+                            x, equations)
 end
 
 # Bottom topography function to pass as auxiliary_field keyword argument in constructor for
 # SemidiscretizationHyperbolic, used with initial_condition_isolated_mountain
-@inline function bottom_topography_isolated_mountain(x)
+@inline function bottom_topography_isolated_mountain(x, equations)
     RealT = eltype(x)
     a = sqrt(x[1]^2 + x[2]^2 + x[3]^2)  # radius of the sphere
     lon, lat = atan(x[2], x[1]), asin(x[3] / a)
@@ -377,13 +377,14 @@ following paper:
     # Convert primitive variables from Cartesian coordinates to the chosen global
     # coordinate system, which depends on the equation type
     return cartesian2global(SVector(H, v[1], v[2], v[3],
-                                    bottom_topography_unsteady_solid_body_rotation(x)),
+                                    bottom_topography_unsteady_solid_body_rotation(x,
+                                                                                   equations)),
                             x, equations)
 end
 
 # Bottom topography function to pass as auxiliary_field keyword argument in constructor for
 # SemidiscretizationHyperbolic, used with initial_condition_unsteady_solid_body_rotation
-@inline function bottom_topography_unsteady_solid_body_rotation(x)
+@inline function bottom_topography_unsteady_solid_body_rotation(x, equations)
     return 0.5f0 * (EARTH_ROTATION_RATE * x[3])^2 / EARTH_GRAVITATIONAL_ACCELERATION
 end
 
