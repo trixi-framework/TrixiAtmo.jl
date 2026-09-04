@@ -168,7 +168,7 @@ end
 end
 
 """
-	flux_tec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperature1D)
+    flux_tec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperature1D)
 
 Total energy conservative two-point flux by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
@@ -198,7 +198,7 @@ Total energy conservative two-point flux by
 end
 
 """
-	flux_ec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperatureWithGravity1D)
+    flux_ec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperatureWithGravity1D)
 
 Entropy conservative two-point flux by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
@@ -227,7 +227,7 @@ Entropy conservative two-point flux by
 end
 
 """
-	flux_etec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperatureWithGravity1D)
+    flux_etec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperatureWithGravity1D)
 
 Entropy and total energy conservative two-point flux by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)

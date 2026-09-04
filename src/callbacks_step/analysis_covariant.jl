@@ -1,7 +1,7 @@
 @muladd begin
 #! format: noindent
 
-# When the equations are of type AbstractCovariantEquations, the functions which we would 
+# When the equations are of type AbstractCovariantEquations, the functions which we would
 # like to integrate depend on the solution as well as the auxiliary variables
 function Trixi.integrate(func::Func, u,
                          mesh::Union{TreeMesh{2}, StructuredMesh{2},
@@ -32,11 +32,13 @@ function Trixi.integrate(func::Func, u,
     # interpolate u to quadrature points
     Trixi.apply_to_each_field(Trixi.mul_by!(rd.Vq), u_values, u)
 
-    integral = zero(func(u_values[1], equations))
+    integral = zero(func(u_values[1], aux_quad_values[1], equations))
     total_volume = zero(sum(rd.wq))
     for element in Trixi.eachelement(mesh, dg, cache)
         weights = area_element.(aux_quad_values[:, element], equations) .* rd.wq
-        integral += sum(weights .* func.(u_values[:, element], equations))
+        integral += sum(weights .*
+                        func.(u_values[:, element], aux_quad_values[:, element],
+                              equations))
         total_volume += sum(weights)
     end
     if normalize == true
@@ -45,8 +47,8 @@ function Trixi.integrate(func::Func, u,
     return integral
 end
 
-# For the covariant form, we want to integrate using the exact area element 
-# J = √G = (det(AᵀA))^(1/2), which is stored in cache.auxiliary_variables, not the approximate 
+# For the covariant form, we want to integrate using the exact area element
+# J = √G = (det(AᵀA))^(1/2), which is stored in cache.auxiliary_variables, not the approximate
 # area element used in the Cartesian formulation, which stored in cache.elements
 function Trixi.integrate_via_indices(func::Func, u,
                                      mesh::Union{StructuredMesh{2},
@@ -96,7 +98,7 @@ function Trixi.analyze(::typeof(Trixi.entropy_timederivative), du, u, t,
         u_node = Trixi.get_node_vars(u, equations, dg, i, j, element)
         du_node = Trixi.get_node_vars(du, equations, dg, i, j, element)
 
-        # compute ∂S/∂u ⋅ ∂u/∂t, where the entropy variables ∂S/∂u depend on the solution 
+        # compute ∂S/∂u ⋅ ∂u/∂t, where the entropy variables ∂S/∂u depend on the solution
         # and auxiliary variables
         dot(cons2entropy(u_node, aux_node, equations), du_node)
     end
@@ -105,7 +107,7 @@ end
 # Entropy time derivative for cons2entropy function which depends on auxiliary variables
 function Trixi.analyze(::typeof(Trixi.entropy_timederivative), du, u, t,
                        mesh::DGMultiMesh, equations::AbstractCovariantEquations,
-                       dg::DGMulti, cache)
+                       dg::DGMulti, cache; normalize = true)
     rd = dg.basis
     md = mesh.md
     (; u_values) = cache.solution_container
@@ -121,11 +123,19 @@ function Trixi.analyze(::typeof(Trixi.entropy_timederivative), du, u, t,
     # the L2 projection of v(u) would be equivalent to testing with v(u) due to the moment-preserving
     # property of the L2 projection.
     dS_dt = zero(eltype(first(du)))
-    for i in Base.OneTo(length(md.wJq))
-        ref_index = mod(i - 1, rd.Nq) + 1
-        node_weight = rd.wq[ref_index] * area_element(aux_quad_values[i], equations)
-        dS_dt += dot(cons2entropy(u_values[i], aux_quad_values[i], equations),
-                     du_values[i]) * node_weight
+    total_volume = zero(eltype(first(du)))
+    for element in Trixi.eachelement(mesh, dg, cache)
+        for i in 1:(rd.Nq)
+            node_weight = rd.wq[i] *
+                          area_element(aux_quad_values[i, element], equations)
+            dS_dt += dot(cons2entropy(u_values[i, element], aux_quad_values[i, element],
+                                      equations),
+                         du_values[i, element]) * node_weight
+            total_volume += node_weight
+        end
+    end
+    if normalize
+        dS_dt = dS_dt / total_volume
     end
     return dS_dt
 end
@@ -160,7 +170,7 @@ function Trixi.calc_error_norms(func, u, t, analyzer, mesh::P4estMesh{2},
             u_numerical = Trixi.get_node_vars(u, equations, dg, i, j, element)
             diff = func(u_exact, equations) - func(u_numerical, equations)
 
-            # For the L2 error, integrate with respect to area element stored in aux vars 
+            # For the L2 error, integrate with respect to area element stored in aux vars
             J = area_element(aux_node, equations)
             l2_error += diff .^ 2 * (weights[i] * weights[j] * J)
 

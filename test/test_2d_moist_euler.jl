@@ -26,7 +26,7 @@ EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler")
                         tspan=(0.0, 0.1))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_gemein_bubble moist" begin
@@ -53,7 +53,7 @@ end
                         tspan=(0.0, 0.1))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_gemein_nonhydrostatic_gravity_waves" begin
@@ -80,7 +80,7 @@ end
                         tspan=(0.0, 0.1))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_gemein_source_terms dry" begin
@@ -107,7 +107,7 @@ end
                         tspan=(0.0, 0.1))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_gemein_source_terms moist" begin
@@ -134,7 +134,7 @@ end
                         tspan=(0.0, 0.1))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 end # module

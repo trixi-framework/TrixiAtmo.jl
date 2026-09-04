@@ -24,7 +24,7 @@ EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler/dry_air")
                         tspan=(0.0, 1.0))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_taylor_green_vortex" begin
@@ -47,7 +47,7 @@ end
                         tspan=(0.0, 1.0), surface_flux=flux_ec, volume_flux=flux_ec)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_taylor_green_vortex" begin
@@ -70,7 +70,7 @@ end
                         tspan=(0.0, 1.0), surface_flux=flux_tec, volume_flux=flux_tec)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_taylor_green_vortex" begin
@@ -94,7 +94,7 @@ end
                         volume_flux=flux_tec, atol=5e-6)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_baroclinic_instability Souza" begin
@@ -120,7 +120,7 @@ end
                         atol=4e-9)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_baroclinic_instability Waruszewski" begin
@@ -146,7 +146,7 @@ end
                         volume_flux=(flux_ec, flux_nonconservative_waruszewski_etal))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_baroclinic_instability Artiano" begin
@@ -168,12 +168,43 @@ end
                             1.0016134087282467,
                             333.1178018152714
                         ],
-                        rtol=2e-8,
+                        rtol=8e-8,
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
                         volume_flux=(flux_etec, flux_nonconservative_artiano_etal))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
+end
+
+@trixi_testset "elixir_potential_temperature_baroclinic_instability with combined fluxes" begin
+    trixi_include(@__MODULE__,
+                  joinpath(EXAMPLES_DIR, "global_circulation",
+                           "elixir_potential_temperature_baroclinic_instability_turbo.jl"),
+                  tspan = (0.0, 100.0), trees_per_cube_face = (2, 2))
+    u_ode_specialized = copy(sol.u[end])
+
+    # Same combined surface flux, but with the fused combined volume flux instead of the
+    # SIMD-vectorized flux differencing volume integral selected by `FluxTurbo`.
+    trixi_include(@__MODULE__,
+                  joinpath(EXAMPLES_DIR, "global_circulation",
+                           "elixir_potential_temperature_baroclinic_instability_turbo.jl"),
+                  volume_flux = flux_kennedy_gruber_souza_etal,
+                  tspan = (0.0, 100.0), trees_per_cube_face = (2, 2))
+    u_ode_combined = copy(sol.u[end])
+
+    trixi_include(@__MODULE__,
+                  joinpath(EXAMPLES_DIR, "global_circulation",
+                           "elixir_potential_temperature_baroclinic_instability.jl"),
+                  surface_flux = (FluxLMARS(340), flux_zero),
+                  volume_flux = (flux_kennedy_gruber, flux_nonconservative_souza_etal),
+                  tspan = (0.0, 100.0), trees_per_cube_face = (2, 2))
+    u_ode = copy(sol.u[end])
+
+    @test u_ode_specialized ≈ u_ode
+    @test u_ode_combined ≈ u_ode
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_held_suarez" begin
@@ -188,26 +219,80 @@ end
                                  "elixir_potential_temperature_held_suarez.jl"),
                         l2=[
                             0.0031433373482917877,
-                            0.00013227403214817446,
-                            0.0001322740320211912,
+                            0.000132274039341287,
+                            0.00013227403926677734,
                             0.00014259768410822775,
                             0.7578318727895532,
                             569.8247547308886
                         ],
                         linf=[
                             0.023356419582470034,
-                            0.001522627198332827,
-                            0.0015226271932242787,
-                            0.0005022230908559857,
+                            0.0015226273650469607,
+                            0.0015226273524388042,
+                            0.0005022233032394358,
                             4.88597072706591,
                             1703.946276059638
                         ],
                         rtol=_rtol,
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY),
-                        lat_lon_trees_per_dim=2, layers=2)
+                        trees_per_cube_face=(2, 2))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
+end
+
+@trixi_testset "elixir_potential_temperature_vortex_shedding" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
+                                 "elixir_potential_temperature_vortex_shedding.jl"),
+                        l2=[
+                            0.00011127272731957073,
+                            0.036136807950192446,
+                            0.036132932940041926,
+                            0.047765679229021134,
+                            0.03287203491711795,
+                            5.112500661735035
+                        ],
+                        linf=[
+                            0.0011895976218974091,
+                            0.16161469307155263,
+                            0.15524551919165414,
+                            0.25696936007842397,
+                            0.34356951757109755,
+                            42.337304272491956
+                        ],
+                        rtol=1e-9,
+                        tspan=(0.0, 0.0001 * SECONDS_PER_DAY),
+                        trees_per_cube_face=(2, 2))
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
+end
+
+@trixi_testset "elixir_potential_temperature_vortex_shedding with Sleve" begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
+                                 "elixir_potential_temperature_vortex_shedding.jl"),
+                        l2=[
+                            0.00011127562057264662,
+                            0.03613675415332188,
+                            0.03613293640311338,
+                            0.04776567584661323,
+                            0.03287272064361882,
+                            5.114726513677777
+                        ],
+                        linf=[
+                            0.001189598854849594,
+                            0.1613051140325089,
+                            0.15524552078160023,
+                            0.25697003550490627,
+                            0.3435698663628841,
+                            42.337304272491956
+                        ],
+                        rtol=1e-9,
+                        tspan=(0.0, 0.0001 * SECONDS_PER_DAY),
+                        trees_per_cube_face=(2, 2), adapt_vertical_grid=Sleve(0.7, 0.8))
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 end

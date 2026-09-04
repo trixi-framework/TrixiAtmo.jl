@@ -50,7 +50,7 @@ solver = DGSEM(polydeg, surface_flux, volume_integral)
 initial_refinement_level = 6
 mesh = TreeMesh(coordinates_min, coordinates_max,
                 initial_refinement_level = initial_refinement_level,
-                periodicity = (true, false), n_cells_max = 1_000_000)
+                periodicity = (true, false))
 
 semi = SemidiscretizationHyperbolicParabolic(mesh, (equations, equations_parabolic),
                                              initial_condition_rainy, solver;
@@ -91,5 +91,5 @@ stage_limiter! = NonlinearSolveDG(saturation_residual, saturation_residual_jacob
 
 ###############################################################################
 # run the simulation
-sol = solve(ode, SSPRK43(stage_limiter!); ode_default_options()...,
+sol = solve(ode, SSPRK43(; stage_limiter! = stage_limiter!); ode_default_options()...,
             maxiters = 1.0e7, save_everystep = false, callback = callbacks);
