@@ -12,7 +12,7 @@ EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler/dry_air/tests")
                         tspan=(0.0, 0.4), atol=1.2e-4)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_tec" begin
@@ -24,7 +24,7 @@ end
                         atol=2e-5)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_etec" begin
@@ -36,7 +36,7 @@ end
                         atol=2e-5)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_well_balanced_1d" begin
@@ -56,7 +56,7 @@ end
                         ], atol=1e-5)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 @trixi_testset "elixir_potential_temperature_well_balanced_1d" begin
@@ -78,7 +78,7 @@ end
                         volume_flux=(flux_etec, flux_nonconservative_souza_etal), atol=1e-5)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs!, semi, sol, 100)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
 end

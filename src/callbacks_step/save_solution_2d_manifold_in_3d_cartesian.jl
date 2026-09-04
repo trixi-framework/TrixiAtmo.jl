@@ -6,8 +6,8 @@ function convert_variables(u, solution_variables, mesh::P4estMesh{2},
                            equations::AbstractEquations{3},
                            dg, cache)
     (; contravariant_vectors) = cache.elements
-    # Extract the number of solution variables to be output 
-    # (may be different than the number of conservative variables) 
+    # Extract the number of solution variables to be output
+    # (may be different than the number of conservative variables)
     n_vars = length(Trixi.varnames(solution_variables, equations))
 
     # Allocate storage for output

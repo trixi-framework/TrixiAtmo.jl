@@ -1,8 +1,7 @@
-# An idealized baroclinic instability test case
-# For optimal results consider increasing the resolution to 16x16x8 trees per cube face, i.e.,
-# set `trees_per_cube_face = (16, 8)` below.
-#
-# This elixir takes about 8 hours, using 16 threads of an AMD Ryzen 7 7800X3D.
+# An idealized baroclinic instability test case, using the specialization that combines
+# conservative and nonconservative fluxes in a single kernel, see
+# `Trixi.combine_conservative_and_nonconservative_fluxes`.
+# For optimal results consider increasing the resolution to 16x16x8 trees per cube face.
 #
 # References:
 # - Paul A. Ullrich, Thomas Melvin, Christiane Jablonowski, Andrew Staniforth (2013)
@@ -12,9 +11,9 @@
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
-equations = CompressibleEulerEnergyEquationsWithGravity3D(c_p = 1004,
-                                                          c_v = 717,
-                                                          gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004,
+                                                                        c_v = 717,
+                                                                        gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 
 initial_condition = initial_condition_baroclinic_instability
 
@@ -22,12 +21,15 @@ boundary_conditions = (; inside = boundary_condition_slip_wall,
                        outside = boundary_condition_slip_wall)
 
 polydeg = 5
-surface_flux = (FluxLMARS(340), flux_zero)
-volume_flux = (flux_ranocha, flux_nonconservative_waruszewski_etal)
+# The surface flux is equivalent to `(FluxLMARS(340), flux_zero)`, but returns both
+# contributions from a single kernel. The volume flux is equivalent to
+# `(flux_kennedy_gruber, flux_nonconservative_souza_etal)`, but `FluxTurbo` selects a
+# SIMD-vectorized implementation of the flux differencing volume integral.
+surface_flux = flux_lmars_combined
+volume_flux = FluxTurbo(flux_kennedy_gruber, flux_nonconservative_souza_etal)
 
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
-
 trees_per_cube_face = (8, 4)
 mesh = P4estMeshCubedSphereTopography(trees_per_cube_face..., EARTH_RADIUS, 30000,
                                       polydeg = polydeg, initial_refinement_level = 0)

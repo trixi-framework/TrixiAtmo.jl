@@ -1,41 +1,6 @@
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
-"""
-	initial_condition_gravity_waves(x, t,
-                                        equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
-
-Test cases for linearized analytical solution by
--  Baldauf, Michael and Brdar, Slavko (2013)
-   An analytic solution for linear gravity waves in a channel as a test
-   for numerical models using the non-hydrostatic, compressible {E}uler equations
-   [DOI: 10.1002/qj.2105] (https://doi.org/10.1002/qj.2105)
-"""
-function initial_condition_gravity_waves(x, t,
-                                         equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
-    g = equations.g
-    c_p = equations.c_p
-    c_v = equations.c_v
-    # center of perturbation
-    x_c = 100_000.0
-    a = 5_000
-    H = 10_000
-    R = c_p - c_v    # gas constant (dry air)
-    T0 = 250
-    delta = g / (R * T0)
-    DeltaT = 0.001
-    Tb = DeltaT * sinpi(x[2] / H) * exp(-(x[1] - x_c)^2 / a^2)
-    ps = 100_000  # reference pressure
-    rhos = ps / (T0 * R)
-    rho_b = rhos * (-Tb / T0)
-    p = ps * exp(-delta * x[2])
-    rho = rhos * exp(-delta * x[2]) + rho_b * exp(-0.5 * delta * x[2])
-    v1 = 20
-    v2 = 0
-
-    return prim2cons(SVector(rho, v1, v2, p, g * x[2]), equations)
-end
-
 equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004,
                                                                         c_v = 717,
                                                                         gravity = EARTH_GRAVITATIONAL_ACCELERATION)
@@ -84,7 +49,7 @@ callbacks = CallbackSet(summary_callback,
                         stepsize_callback)
 
 sol = solve(ode,
-            SSPRK43(thread = Trixi.True());
+            SSPRK43(thread = Trixi.Threaded());
             maxiters = 1.0e7,
             dt = 1e-1, # solve needs some value here but it will be overwritten by the stepsize_callback
             save_everystep = false, callback = callbacks, adaptive = false)

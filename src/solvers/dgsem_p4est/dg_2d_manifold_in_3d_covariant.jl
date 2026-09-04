@@ -1,15 +1,15 @@
 @muladd begin
 #! format: noindent
 
-# Custom rhs! method for equations in covariant form. This differs from the standard 
-# P4estMesh rhs! only in the fact that prolong2mortars! and calc_mortar_flux! are not 
-# called, as we do not currently support nonconforming (i.e. adaptive) meshes in the 
+# Custom rhs_hyperbolic! method for equations in covariant form. This differs from the standard
+# P4estMesh rhs_hyperbolic! only in the fact that prolong2mortars! and calc_mortar_flux! are not
+# called, as we do not currently support nonconforming (i.e. adaptive) meshes in the
 # covariant solver, and thus appropriate methods have not been implemented for mortars.
-function Trixi.rhs!(du, u, t,
-                    mesh::P4estMesh{2},
-                    equations::AbstractCovariantEquations{2},
-                    boundary_conditions, source_terms::Source,
-                    dg::DG, cache) where {Source}
+function Trixi.rhs_hyperbolic!(backend::Nothing, du, u, t,
+                               mesh::P4estMesh{2},
+                               equations::AbstractCovariantEquations{2},
+                               boundary_conditions, source_terms::Source,
+                               dg::DG, cache) where {Source}
     backend = trixi_backend(u)
 
     # Reset du
@@ -36,16 +36,17 @@ function Trixi.rhs!(du, u, t,
 
     # Prolong solution to boundaries
     Trixi.@trixi_timeit Trixi.timer() "prolong2boundaries" begin
-        Trixi.prolong2boundaries!(cache, u, mesh, equations, dg)
+        Trixi.prolong2boundaries!(backend, cache, u, mesh, equations, dg)
     end
 
     # Calculate boundary fluxes
     Trixi.@trixi_timeit Trixi.timer() "boundary flux" begin
-        Trixi.calc_boundary_flux!(cache, t, boundary_conditions, mesh, equations,
+        Trixi.calc_boundary_flux!(backend, cache, t, boundary_conditions, mesh,
+                                  equations,
                                   dg.surface_integral, dg)
     end
 
-    # In Trixi.jl's standard P4est solver, prolong2mortars! and calc_mortar_flux! would be 
+    # In Trixi.jl's standard P4est solver, prolong2mortars! and calc_mortar_flux! would be
     # called here.
 
     # Calculate surface integrals
@@ -94,7 +95,7 @@ function Trixi.compute_coefficients!(backend::Nothing, u, func, t, mesh::P4estMe
     end
 end
 
-# Weak form kernel which uses contravariant flux components, passing the geometric 
+# Weak form kernel which uses contravariant flux components, passing the geometric
 # information contained in the auxiliary variables to the flux function
 @inline function Trixi.weak_form_kernel!(du, u, element, ::Type{<:P4estMesh{2}},
                                          nonconservative_terms::False,
@@ -112,7 +113,7 @@ end
         flux1 = flux(u_node, aux_node, 1, equations)
         flux2 = flux(u_node, aux_node, 2, equations)
 
-        # Apply weak form derivative with respect to ξ¹ 
+        # Apply weak form derivative with respect to ξ¹
         for ii in eachnode(dg)
             Trixi.multiply_add_to_node_vars!(du, alpha * derivative_hat[ii, i],
                                              flux1, equations, dg, ii, j, element)
@@ -128,7 +129,7 @@ end
     return nothing
 end
 
-# Flux differencing kernel which uses contravariant flux components, passing the geometric 
+# Flux differencing kernel which uses contravariant flux components, passing the geometric
 # information contained in the auxiliary variables to the flux function
 @inline function Trixi.flux_differencing_kernel!(du, u, element, ::Type{<:P4estMesh{2}},
                                                  nonconservative_terms::False,
@@ -181,8 +182,8 @@ end
     return nothing
 end
 
-# Non-conservative flux differencing kernel which uses contravariant flux components, 
-# passing the geometric information contained in the auxiliary variables to the flux 
+# Non-conservative flux differencing kernel which uses contravariant flux components,
+# passing the geometric information contained in the auxiliary variables to the flux
 # function
 @inline function Trixi.flux_differencing_kernel!(du, u, element,
                                                  MeshT::Type{<:P4estMesh{2}},
@@ -232,8 +233,8 @@ end
     return nothing
 end
 
-# Calculate the interface flux directly in the local coordinate system. This function 
-# differs from the standard approach in Trixi.jl in that one does not need to pass the 
+# Calculate the interface flux directly in the local coordinate system. This function
+# differs from the standard approach in Trixi.jl in that one does not need to pass the
 # normal vector to the pointwise flux calculation.
 function Trixi.calc_interface_flux!(backend::Nothing, surface_flux_values,
                                     mesh::P4estMesh{2},
@@ -251,7 +252,7 @@ function Trixi.calc_interface_flux!(backend::Nothing, surface_flux_values,
         primary_indices = node_indices[1, interface]
         primary_direction = Trixi.indices2direction(primary_indices)
 
-        # Create the local i,j indexing on the primary element used to pull normal 
+        # Create the local i,j indexing on the primary element used to pull normal
         # direction information
         i_primary_start, i_primary_step = Trixi.index_to_start_step_2d(primary_indices[1],
                                                                        index_range)

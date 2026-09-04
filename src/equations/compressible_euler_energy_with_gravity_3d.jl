@@ -31,7 +31,7 @@ The compressible Euler equations with gravity
 \end{pmatrix}
 =
 \begin{pmatrix}
-	0 \\ -\rho \frac{\partial}{\partial x} \phi \\ -\rho \frac{\partial}{\partial y} \phi \\ -\rho \frac{\partial}{\partial z} \\  -\rho v_1 \frac{\partial}{\partial x} \phi  -\rho v_2 \frac{\partial}{\partial y} \phi  -\rho v_3 \frac{\partial}{\partial z} \phi
+    0 \\ -\rho \frac{\partial}{\partial x} \phi \\ -\rho \frac{\partial}{\partial y} \phi \\ -\rho \frac{\partial}{\partial z} \\  -\rho v_1 \frac{\partial}{\partial x} \phi  -\rho v_2 \frac{\partial}{\partial y} \phi  -\rho v_3 \frac{\partial}{\partial z} \phi
 \end{pmatrix}
 ```
 for an ideal gas with ratio of specific heats `gamma`
@@ -116,9 +116,9 @@ end
 end
 
 """
-	flux_nonconservative_waruszewski_etal(u_ll, u_rr,
-										 normal_direction::AbstractVector,
-										 	equations::CompressibleEulerEulerEquationsWithGravity3D)
+    flux_nonconservative_waruszewski_etal(u_ll, u_rr,
+                                          normal_direction::AbstractVector,
+                                          equations::CompressibleEulerEulerEquationsWithGravity3D)
 
 Well-balanced gravity term for isothermal background state
 -  Maciej Waruszewski and Jeremy E. Kozdon and Lucas C. Wilcox and Thomas H. Gibson and Francis X. Giraldo (2022),
@@ -159,9 +159,9 @@ The well balanced on curvilinear coordinates was proven by
 end
 
 """
-	flux_nonconservative_artiano_etal(u_ll, u_rr,
-									  normal_direction::AbstractVector,
-									  equations::CompressibleEulerEnergyEquationsWithGravity3D)
+    flux_nonconservative_artiano_etal(u_ll, u_rr,
+                                      normal_direction::AbstractVector,
+                                      equations::CompressibleEulerEnergyEquationsWithGravity3D)
 
 Well-balanced gravity term for constant potential temperature background state by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
@@ -196,7 +196,7 @@ Well-balanced gravity term for constant potential temperature background state b
 end
 
 """
-	flux_nonconservative_souza_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerEnergyEquationsWithGravity3D)
+    flux_nonconservative_souza_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerEnergyEquationsWithGravity3D)
 
 -  Souza et al.
    The Flux-Differencing Discontinuous {G}alerkin Method Applied to

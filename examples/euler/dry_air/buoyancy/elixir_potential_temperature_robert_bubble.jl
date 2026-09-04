@@ -91,5 +91,5 @@ callbacks = CallbackSet(summary_callback,
                         alive_callback)
 
 sol = solve(ode,
-            SSPRK43(thread = Trixi.True());
+            SSPRK43(thread = Trixi.Threaded());
             maxiters = 1.0e7, ode_default_options()..., callback = callbacks)

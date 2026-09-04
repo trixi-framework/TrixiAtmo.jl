@@ -28,20 +28,20 @@ The mesh will have no boundaries.
   adaptivity independent of domain partitioning. Should be `false` for static meshes to
   permit more fine-grained partitioning.
 - `element_local_mapping::Bool`: option to use the alternative element-local mapping from
-  Appendix A of [Guba et al. (2014)](https://doi.org/10.5194/gmd-7-2803-2014). If set to 
-  `true`, the four corner vertex positions for each element will be obtained through an 
+  Appendix A of [Guba et al. (2014)](https://doi.org/10.5194/gmd-7-2803-2014). If set to
+  `true`, the four corner vertex positions for each element will be obtained through an
   equiangular gnomonic projection [(Ronchi et al. 1996)](https://doi.org/10.1006/jcph.1996.
-  0047), and the tree node coordinates within the element (i.e. the field 
-  `tree_node_coordinates`) will be obtained by first using a bilinear mapping based on the 
-  four corner vertices, and then projecting the bilinearly mapped nodes onto the spherical 
-  surface by normalizing the resulting Cartesian coordinates and scaling by  `radius`. If 
-  set to `false`, the equiangular gnomonic projection will be used for all tree node 
+  0047), and the tree node coordinates within the element (i.e. the field
+  `tree_node_coordinates`) will be obtained by first using a bilinear mapping based on the
+  four corner vertices, and then projecting the bilinearly mapped nodes onto the spherical
+  surface by normalizing the resulting Cartesian coordinates and scaling by  `radius`. If
+  set to `false`, the equiangular gnomonic projection will be used for all tree node
   coordinates.
 
-!!! warning 
-    Adaptivity and MPI parallelization are not yet supported for equations in covariant 
-    form, and we require `initial_refinement_level = 0` for such cases. Furthermore, the 
-    calculation of the metric terms for the covariant form currently requires `polydeg` to 
+!!! warning
+    Adaptivity and MPI parallelization are not yet supported for equations in covariant
+    form, and we require `initial_refinement_level = 0` for such cases. Furthermore, the
+    calculation of the metric terms for the covariant form currently requires `polydeg` to
     be equal to the polynomial degree of the solver, and `element_local_mapping = true`.
 """
 function P4estMeshCubedSphere2D(trees_per_face_dimension, radius;
@@ -298,8 +298,8 @@ function connectivity_cubed_sphere_2D(trees_per_face_dimension)
     return connectivity
 end
 
-# Calculate physical coordinates of each node of a 2D cubed sphere mesh by mapping 
-# the LGL quadrature nodes onto a Cartesian element grid, then using the equiangular 
+# Calculate physical coordinates of each node of a 2D cubed sphere mesh by mapping
+# the LGL quadrature nodes onto a Cartesian element grid, then using the equiangular
 # gnomonic mapping to place the nodes on the spherical surface
 function calc_tree_node_coordinates_cubed_sphere_standard!(node_coordinates::AbstractArray{<:Any,
                                                                                            4},
