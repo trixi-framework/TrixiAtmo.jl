@@ -42,7 +42,7 @@ function initial_condition_gravity_waves(x, t,
     return SVector(rho, v1, v2, p)
 end
 
-function geopotential(x, equations::CovariantEulerEnergyEquations2D)
+@inline function geopotential(x, equations::CovariantEulerEnergyEquations2D)
     return equations.gravity * x[2]
 end
 
