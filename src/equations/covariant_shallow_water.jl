@@ -60,7 +60,7 @@ components $G_{ij}$ as
 
 !!! note
     When solving problems with variable bottom topography as well as when using
-    entropy-stable schemes, [SplitCovariantShallowWaterEquations2D](@ref) should be used
+    entropy-stable schemes, [`SplitCovariantShallowWaterEquations2D`](@ref) should be used
     instead.
 """
 struct CovariantShallowWaterEquations2D{GlobalCoordinateSystem, RealT <: Real} <:

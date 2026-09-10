@@ -11,7 +11,7 @@ TrixiTest = "0a316866-cbd0-4425-8bcb-08103b2c1f26"
 [compat]
 LinearAlgebra = "1"
 MPI = "0.20.6"
-NLsolve = "4.5.1"
+NLsolve = "4.5.1, 5.0"
 OrdinaryDiffEqLowStorageRK = "1.2, 2, 3"
 OrdinaryDiffEqSSPRK = "1.2, 2, 3"
 Test = "1"
