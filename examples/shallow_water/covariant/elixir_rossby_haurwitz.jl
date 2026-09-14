@@ -38,10 +38,10 @@ solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
 initial_condition_transformed = transform_initial_condition(initial_condition, equations)
 
 # A semidiscretization collects data structures and functions for the spatial discretization.
-# Even though `metric_terms = MetricTermsCovariantSphere()` is default, we pass it here
+# Even though `metric_terms = MetricTermsCovariant()` is default, we pass it here
 # explicitly, such that `metric_terms` can be adjusted from the `trixi_include()` call in the tests
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, solver,
-                                    metric_terms = MetricTermsCovariantSphere(),
+                                    metric_terms = MetricTermsCovariant(),
                                     source_terms = source_terms_geometric_coriolis,
                                     boundary_conditions = boundary_condition_periodic)
 

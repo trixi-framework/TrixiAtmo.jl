@@ -35,7 +35,7 @@ mesh = DGMultiMeshTriIcosahedron2D(dg, EARTH_RADIUS;
 initial_condition_transformed = transform_initial_condition(initial_condition, equations)
 
 # A semidiscretization collects data structures and functions for the spatial discretization
-metric_terms = MetricTermsCovariantSphere(christoffel_symbols = ChristoffelSymbolsAutodiff())
+metric_terms = MetricTermsCovariant(christoffel_symbols = ChristoffelSymbolsAutodiff())
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_transformed, dg,
                                     metric_terms = metric_terms,
                                     source_terms = source_terms_geometric_coriolis)

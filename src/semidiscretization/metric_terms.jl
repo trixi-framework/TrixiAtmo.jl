@@ -27,19 +27,29 @@ struct MetricTermsInvariantCurl end
 """
     MetricTermsCovariantSphere(christoffel_symbols = ChristoffelSymbolsAutodiff())
 
-Struct specifying options for computing geometric information for discretizations in
-covariant form based on an exact representation of the spherical geometry.  Currently, the
-only field is `christoffel_symbols`, specifying the approach used to compute the
+Struct specifying options for computing geometric information for discretizations
+in covariant form based on an exact representation of the geometry. The first field
+`manifold` must fit the geometry of the mesh, which can be either `SphericalManifold` or
+`FlatManifold`.
+The field `christoffel_symbols` determines the approach used to compute the
 Christoffel symbols, for which the options are [`ChristoffelSymbolsAutodiff`](@ref) or
 [`ChristoffelSymbolsCollocationDerivative`](@ref).
 """
-struct MetricTermsCovariantSphere{ChristoffelSymbols}
+struct MetricTermsCovariant{Manifold, ChristoffelSymbols}
+    manifold::Manifold
     christoffel_symbols::ChristoffelSymbols
-    function MetricTermsCovariantSphere(;
-                                        christoffel_symbols::ChristoffelSymbols = ChristoffelSymbolsAutodiff()) where {ChristoffelSymbols}
-        return new{ChristoffelSymbols}(christoffel_symbols)
+    function MetricTermsCovariant(;
+                                  manifold::Manifold = SphericalManifold(),
+                                  christoffel_symbols::ChristoffelSymbols = ChristoffelSymbolsAutodiff()) where {
+                                                                                                                 Manifold,
+                                                                                                                 ChristoffelSymbols
+                                                                                                                 }
+        return new{Manifold, ChristoffelSymbols}(manifold, christoffel_symbols)
     end
 end
+struct FlatManifold end
+
+struct SphericalManifold end
 
 @doc raw"""
     ChristoffelSymbolsAutodiff()

@@ -26,7 +26,7 @@ function initial_condition_well_balancedness(x, t, equations::ShallowWaterEquati
     v1 = v2 = v3 = 0.0
 
     # Non-constant topography
-    b = bottom_topography_isolated_mountain(x)
+    b = bottom_topography_isolated_mountain(x, equations)
 
     return prim2cons(SVector(H, v1, v2, v3, b), equations)
 end
