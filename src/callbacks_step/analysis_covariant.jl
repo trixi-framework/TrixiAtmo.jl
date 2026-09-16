@@ -207,11 +207,13 @@ function Trixi.calc_error_norms(func, u, t, analyzer,
     component_linf_errors = zero(eltype(u_values))
     total_volume = zero(eltype(u_values[1]))
     for i in Trixi.each_quad_node_global(mesh, dg, cache)
+        aux_i = aux_quad_values[i]
         u_exact = initial_condition(SVector(getindex.(md.xyzq, i)), t,
-                                    aux_quad_values[i], equations)
-        error_at_node = func(u_values[i], equations) - func(u_exact, equations)
+                                    aux_i, equations)
+        error_at_node = func(u_values[i], aux_i, equations) -
+                        func(u_exact, aux_i, equations)
         ref_index = mod(i - 1, rd.Nq) + 1
-        node_weight = rd.wq[ref_index] * area_element(aux_quad_values[i], equations)
+        node_weight = rd.wq[ref_index] * area_element(aux_i, equations)
         component_l2_errors += node_weight * error_at_node .^ 2
         component_linf_errors = max.(component_linf_errors, abs.(error_at_node))
         total_volume += node_weight
