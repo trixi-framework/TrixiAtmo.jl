@@ -210,7 +210,8 @@ function Trixi.calc_error_norms(func, u, t, analyzer,
         aux_i = aux_quad_values[i]
         u_exact = initial_condition(SVector(getindex.(md.xyzq, i)), t,
                                     aux_i, equations)
-        error_at_node = func(u_values[i], aux_i, equations) - func(u_exact, aux_i, equations)
+        error_at_node = func(u_values[i], aux_i, equations) -
+                        func(u_exact, aux_i, equations)
         ref_index = mod(i - 1, rd.Nq) + 1
         node_weight = rd.wq[ref_index] * area_element(aux_i, equations)
         component_l2_errors += node_weight * error_at_node .^ 2
