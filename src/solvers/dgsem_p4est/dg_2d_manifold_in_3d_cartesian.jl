@@ -1,6 +1,20 @@
 @muladd begin
 #! format: noindent
 
+# `u` has only 2 local dimensions here, since 3D equations are solved on a 2D manifold,
+# whereas Trixi.jl's generic method takes them from `ndims(equations)`.
+@inline function Trixi.check_axes(u::AbstractArray,
+                                  equations::ShallowWaterEquations3D,
+                                  solver::DG, cache)
+    axes_correct = axes(u) == (eachvariable(equations),
+                    eachnode(solver),
+                    eachnode(solver),
+                    eachelement(solver, cache))
+    if !axes_correct
+        throw(DimensionMismatch())
+    end
+end
+
 function Trixi.rhs_hyperbolic!(backend::Nothing, du, u, t,
                                mesh::Union{P4estMesh{2}, T8codeMesh{2}},
                                equations::AbstractEquations{3},
