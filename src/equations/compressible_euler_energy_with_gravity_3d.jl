@@ -76,7 +76,7 @@ have_nonconservative_terms(::CompressibleEulerEnergyEquationsWithGravity3D) = Tr
 # Calculate 1D flux for a single point
 @inline function flux(u, normal_direction::AbstractVector,
                       equations::CompressibleEulerEnergyEquationsWithGravity3D)
-    rho_e = last(u)
+    rho_e = energy_total(u, equations)
     rho, v1, v2, v3, p = cons2prim(u, equations)
 
     v_normal = v1 * normal_direction[1] + v2 * normal_direction[2] +
@@ -289,8 +289,8 @@ Kinetic energy preserving two-point flux by
 @inline function flux_kennedy_gruber(u_ll, u_rr, normal_direction::AbstractVector,
                                      equations::CompressibleEulerEnergyEquationsWithGravity3D)
     # Unpack left and right state
-    rho_e_ll = u_ll[5]
-    rho_e_rr = u_rr[5]
+    rho_e_ll = energy_total(u_ll, equations)
+    rho_e_rr = energy_total(u_rr, equations)
     rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
     rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
 
