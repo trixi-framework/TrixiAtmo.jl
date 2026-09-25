@@ -6,7 +6,7 @@
 # be passed into flux functions and treated as "variable coefficients") rather than in
 # `cache.elements` (the contents of which are inaccessible to the flux functions).
 struct P4estElementContainerCovariant{NDIMS, RealT <: Real, uEltype <: Real,
-                                      NDIMSP2} <: Trixi.AbstractContainer
+                                      NDIMSP2} <: Trixi.AbstractElementContainer
     # Physical coordinates at each node
     node_coordinates::Array{RealT, NDIMSP2}   # [orientation, node_i, node_j, node_k, element]
     # Buffer for calculated surface flux
