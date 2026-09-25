@@ -9,7 +9,7 @@ mutable struct P4estElementContainerPtrArray{NDIMS, RealT <: Real, uEltype <: Re
                                              ContravariantVectors <:
                                              AbstractArray{RealT,
                                                            NDIMSP3}} <:
-               Trixi.AbstractContainer
+               Trixi.AbstractElementContainer
     # Physical coordinates at each node
     node_coordinates::Array{RealT, NDIMSP2}   # [orientation, node_i, node_j, node_k, element]
     # Jacobian matrix of the transformation
