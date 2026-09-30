@@ -610,7 +610,7 @@ function cubed_sphere_mapping_topography(xi, eta, zeta, inner_radius, thickness,
     r = sqrt(1 + x^2 + y^2)
 
     unit_pt = cube_coordinates[direction] / r
-    lat = asin(unit_pt[3] / r)
+    lat = asin(unit_pt[3])
     lon = atan(unit_pt[2], unit_pt[1])
     z_topography = initial_topography(lat, lon)
 
