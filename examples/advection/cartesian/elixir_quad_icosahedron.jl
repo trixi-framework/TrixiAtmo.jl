@@ -45,17 +45,17 @@ end
 # This works only because we have a constant bottom topography, so the equations are effectively
 # conservative. Note that the weak form kernel is NOT equal to the flux differencing kernel
 # with central fluxes because of the curved geometry!
-@inline function Trixi.weak_form_kernel!(du, u,
-                                         element,
-                                         MeshT::Type{<:Union{StructuredMesh{2},
-                                                             StructuredMeshView{2},
-                                                             UnstructuredMesh2D,
-                                                             P4estMesh{2},
-                                                             P4estMeshView{2},
-                                                             T8codeMesh{2}}},
-                                         nonconservative_terms::Trixi.True,
-                                         equations::Trixi.AbstractEquations{3},
-                                         dg::DGSEM, cache, alpha = true)
+Base.@propagate_inbounds function Trixi.weak_form_kernel!(du, u,
+                                                          element,
+                                                          MeshT::Type{<:Union{StructuredMesh{2},
+                                                                              StructuredMeshView{2},
+                                                                              UnstructuredMesh2D,
+                                                                              P4estMesh{2},
+                                                                              P4estMeshView{2},
+                                                                              T8codeMesh{2}}},
+                                                          nonconservative_terms::Trixi.True,
+                                                          equations::Trixi.AbstractEquations{3},
+                                                          dg::DGSEM, cache, alpha = true)
     Trixi.weak_form_kernel!(du, u, element, MeshT, Trixi.False(), equations, dg, cache,
                             alpha)
 end
