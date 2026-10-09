@@ -1,11 +1,4 @@
-module TestThreaded
-
-include("test_trixiatmo.jl")
-
-@testset verbose=true showtiming=true "Threaded tests" begin
-#! format: noindent
-
-@trixi_testset "elixir_gemein_bubble moist" begin
+@testitem "Threaded: elixir_gemein_bubble moist" setup=[Setup] tags=[:threaded] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "euler/moist_air/buoyancy",
                                  "elixir_gemein_bubble.jl"),
                         l2=[
@@ -32,7 +25,7 @@ include("test_trixiatmo.jl")
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 5000)
 end
 
-@trixi_testset "elixir_tri_barotropic_instability threaded" begin
+@testitem "Threaded: elixir_tri_barotropic_instability" setup=[Setup] tags=[:threaded] begin
     @test_trixi_include(abspath(joinpath(EXAMPLES_DIR, "shallow_water/covariant",
                                          "elixir_tri_barotropic_instability.jl")),
                         l2=[39.45640433491504, 0.04471194818811316,
@@ -49,5 +42,3 @@ end
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 5000)
 end
-end
-end # module

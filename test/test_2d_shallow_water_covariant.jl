@@ -1,10 +1,11 @@
-module TestShallowWaterCovariant
+@testsnippet ShallowWaterCovariant2D begin
+    EXAMPLES_DIR = joinpath(examples_dir(), "shallow_water/covariant")
+end
 
-include("test_trixiatmo.jl")
-
-EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "shallow_water/covariant")
-
-@trixi_testset "elixir_geostrophic_balance" begin
+@testitem "Shallow water 2D covariant: elixir_geostrophic_balance" setup=[
+    Setup,
+    ShallowWaterCovariant2D
+] tags=[:shallow_water_2d_covariant, :upstream] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_geostrophic_balance.jl"),
                         l2=[
@@ -25,7 +26,10 @@ EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "shallow_water/covariant")
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_rossby_haurwitz" begin
+@testitem "Shallow water 2D covariant: elixir_rossby_haurwitz" setup=[
+    Setup,
+    ShallowWaterCovariant2D
+] tags=[:shallow_water_2d_covariant, :upstream] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_rossby_haurwitz.jl"),
                         l2=[265.9818260977567, 0.17644364627357362, 0.2535621726719579],
@@ -39,7 +43,10 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_isolated_mountain" begin
+@testitem "Shallow water 2D covariant: elixir_isolated_mountain" setup=[
+    Setup,
+    ShallowWaterCovariant2D
+] tags=[:shallow_water_2d_covariant, :upstream] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_isolated_mountain.jl"),
                         l2=[13.18894432799001, 0.005698447961168719, 0.007624217062402512],
@@ -52,7 +59,10 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_unsteady_solid_body_rotation_EC" begin
+@testitem "Shallow water 2D covariant: elixir_unsteady_solid_body_rotation_EC" setup=[
+    Setup,
+    ShallowWaterCovariant2D
+] tags=[:shallow_water_2d_covariant, :upstream] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_unsteady_solid_body_rotation_EC.jl"),
                         l2=[
@@ -75,7 +85,10 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_barotropic_instability" begin
+@testitem "Shallow water 2D covariant: elixir_barotropic_instability" setup=[
+    Setup,
+    ShallowWaterCovariant2D
+] tags=[:shallow_water_2d_covariant, :upstream] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_barotropic_instability.jl"),
                         l2=[21.08826693663232, 0.03006187671520436, 0.023421745045307123],
@@ -88,7 +101,10 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_well_balanced" begin
+@testitem "Shallow water 2D covariant: elixir_well_balanced" setup=[
+    Setup,
+    ShallowWaterCovariant2D
+] tags=[:shallow_water_2d_covariant, :upstream] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_well_balanced.jl"),
                         l2=[0.0, 0.0, 0.0], linf=[0.0, 0.0, 0.0],
@@ -100,7 +116,10 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_tri_barotropic_instability" begin
+@testitem "Shallow water 2D covariant: elixir_tri_barotropic_instability" setup=[
+    Setup,
+    ShallowWaterCovariant2D
+] tags=[:shallow_water_2d_covariant, :upstream] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_tri_barotropic_instability.jl"),
                         l2=[
@@ -122,7 +141,10 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_tri_unsteady_solid_body_rotation_EC" begin
+@testitem "Shallow water 2D covariant: elixir_tri_unsteady_solid_body_rotation_EC" setup=[
+    Setup,
+    ShallowWaterCovariant2D
+] tags=[:shallow_water_2d_covariant, :upstream] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_tri_unsteady_solid_body_rotation_EC.jl"),
                         l2=[
@@ -142,5 +164,3 @@ end
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
-
-end # module

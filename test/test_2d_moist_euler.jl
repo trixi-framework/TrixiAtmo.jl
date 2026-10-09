@@ -1,10 +1,8 @@
-module TestExamples2DMoistEuler
+@testsnippet MoistEuler2D begin
+    EXAMPLES_DIR = joinpath(examples_dir(), "euler")
+end
 
-include("test_trixiatmo.jl")
-
-EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler")
-
-@trixi_testset "elixir_gemein_bubble dry" begin
+@testitem "Moist Euler 2D: elixir_gemein_bubble dry" setup=[Setup, MoistEuler2D] tags=[:moist_euler] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "dry_air/buoyancy",
                                  "elixir_gemein_bubble.jl"),
                         l2=[
@@ -29,7 +27,7 @@ EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler")
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_gemein_bubble moist" begin
+@testitem "Moist Euler 2D: elixir_gemein_bubble moist" setup=[Setup, MoistEuler2D] tags=[:moist_euler] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "moist_air/buoyancy",
                                  "elixir_gemein_bubble.jl"),
                         l2=[
@@ -56,7 +54,10 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_gemein_nonhydrostatic_gravity_waves" begin
+@testitem "Moist Euler 2D: elixir_gemein_nonhydrostatic_gravity_waves" setup=[
+    Setup,
+    MoistEuler2D
+] tags=[:moist_euler] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "dry_air/buoyancy",
                                  "elixir_gemein_nonhydrostatic_gravity_waves.jl"),
                         l2=[
@@ -83,7 +84,7 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_gemein_source_terms dry" begin
+@testitem "Moist Euler 2D: elixir_gemein_source_terms dry" setup=[Setup, MoistEuler2D] tags=[:moist_euler] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "dry_air/tests",
                                  "elixir_gemein_source_terms.jl"),
                         l2=[
@@ -110,7 +111,7 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_gemein_source_terms moist" begin
+@testitem "Moist Euler 2D: elixir_gemein_source_terms moist" setup=[Setup, MoistEuler2D] tags=[:moist_euler] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "moist_air/tests",
                                  "elixir_gemein_source_terms.jl"),
                         l2=[
@@ -136,5 +137,3 @@ end
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
-
-end # module

@@ -1,10 +1,11 @@
-module TestShallowWaterCartesian
+@testsnippet ShallowWaterCartesian3D begin
+    EXAMPLES_DIR = joinpath(examples_dir(), "shallow_water/cartesian")
+end
 
-include("test_trixiatmo.jl")
-
-EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "shallow_water/cartesian")
-
-@trixi_testset "elixir_unsteady_solid_body_rotation_EC_correction" begin
+@testitem "Shallow water 3D Cartesian: elixir_unsteady_solid_body_rotation_EC_correction" setup=[
+    Setup,
+    ShallowWaterCartesian3D
+] tags=[:shallow_water_3d, :upstream] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_unsteady_solid_body_rotation_EC_correction.jl"),
                         l2=[
@@ -29,7 +30,10 @@ EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "shallow_water/cartesian")
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_unsteady_solid_body_rotation_EC_projection" begin
+@testitem "Shallow water 3D Cartesian: elixir_unsteady_solid_body_rotation_EC_projection" setup=[
+    Setup,
+    ShallowWaterCartesian3D
+] tags=[:shallow_water_3d, :upstream] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_unsteady_solid_body_rotation_EC_projection.jl"),
                         l2=[
@@ -54,7 +58,10 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_unsteady_solid_body_rotation_EC_projection (ES)" begin
+@testitem "Shallow water 3D Cartesian: elixir_unsteady_solid_body_rotation_EC_projection (ES)" setup=[
+    Setup,
+    ShallowWaterCartesian3D
+] tags=[:shallow_water_3d, :upstream] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_unsteady_solid_body_rotation_EC_projection.jl"),
                         l2=[
@@ -82,7 +89,10 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_well_balanced" begin
+@testitem "Shallow water 3D Cartesian: elixir_well_balanced" setup=[
+    Setup,
+    ShallowWaterCartesian3D
+] tags=[:shallow_water_3d, :upstream] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_well_balanced.jl"),
                         l2=[0.0, 0.0, 0.0, 0.0, 0.0],
@@ -93,7 +103,10 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_geostrophic_balance (naive)" begin
+@testitem "Shallow water 3D Cartesian: elixir_geostrophic_balance (naive)" setup=[
+    Setup,
+    ShallowWaterCartesian3D
+] tags=[:shallow_water_3d, :upstream] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_geostrophic_balance.jl"),
                         l2=[0.27676841776660904,
@@ -116,7 +129,10 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_isolated_mountain" begin
+@testitem "Shallow water 3D Cartesian: elixir_isolated_mountain" setup=[
+    Setup,
+    ShallowWaterCartesian3D
+] tags=[:shallow_water_3d, :upstream] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_isolated_mountain.jl"),
                         l2=[
@@ -140,5 +156,3 @@ end
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
-
-end # module

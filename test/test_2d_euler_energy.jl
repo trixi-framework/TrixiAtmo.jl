@@ -1,10 +1,11 @@
-module TestExamples2DEulerEnergy
+@testsnippet EulerEnergy2D begin
+    EXAMPLES_DIR = joinpath(examples_dir(), "euler/dry_air")
+end
 
-include("test_trixiatmo.jl")
-
-EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler/dry_air")
-
-@trixi_testset "elixir_energy_inertia_gravity_waves" begin
+@testitem "Euler energy 2D: elixir_energy_inertia_gravity_waves" setup=[
+    Setup,
+    EulerEnergy2D
+] tags=[:euler_energy_2d] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "buoyancy",
                                  "elixir_energy_inertia_gravity_waves.jl"),
                         l2=[
@@ -26,7 +27,10 @@ EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler/dry_air")
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_covariant_energy_inertia_gravity_waves" begin
+@testitem "Euler energy 2D: elixir_covariant_energy_inertia_gravity_waves" setup=[
+    Setup,
+    EulerEnergy2D
+] tags=[:euler_energy_2d] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "buoyancy",
                                  "elixir_covariant_energy_inertia_gravity_waves.jl"),
                         l2=[
@@ -41,5 +45,4 @@ end
                             5.332369591815093e-7,
                             0.18741797714028507
                         ], tspan=(0.0, 10.0))
-end
 end

@@ -51,12 +51,20 @@ jobs:
         uses: julia-actions/julia-runtest@v1
         with:
           coverage: false
+        env:
+          # Print every `@testitem` (with its run time) in the test summary, so per-testitem
+          # timings show up in the job logs.
+          TRIXI_TEST_VERBOSE: "true"
 
       - name: Run tests with coverage
         if: ${{ matrix.os == 'ubuntu-latest' }}
         uses: julia-actions/julia-runtest@v1
         with:
           coverage: true
+        env:
+          # Print every `@testitem` (with its run time) in the test summary, so per-testitem
+          # timings show up in the job logs.
+          TRIXI_TEST_VERBOSE: "true"
 
       - name: Process Julia coverage data
         if: ${{ matrix.os == 'ubuntu-latest' }}

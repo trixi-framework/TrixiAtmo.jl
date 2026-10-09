@@ -1,10 +1,11 @@
-module TestExamples3DEulerEnergy
+@testsnippet EulerEnergy3D begin
+    EXAMPLES_DIR = joinpath(examples_dir(), "euler/dry_air")
+end
 
-include("test_trixiatmo.jl")
-
-EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler/dry_air")
-
-@trixi_testset "elixir_energy_baroclinic_instability" begin
+@testitem "Euler energy 3D: elixir_energy_baroclinic_instability" setup=[
+    Setup,
+    EulerEnergy3D
+] tags=[:euler_energy_3d] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
                                  "elixir_energy_baroclinic_instability.jl"),
                         l2=[
@@ -26,6 +27,4 @@ EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler/dry_air")
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
-end
-
 end

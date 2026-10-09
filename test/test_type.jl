@@ -1,16 +1,4 @@
-module TestTypeStable
-
-using TrixiAtmo
-using Trixi
-using Test
-
-include("test_trixiatmo.jl")
-
-# Start with a clean environment: remove Trixi.jl output directory if it exists
-outdir = "out"
-isdir(outdir) && rm(outdir, recursive = true)
-
-@timed_testset "Compressible Euler Potential Temperature 1D" begin
+@testitem "Type stability: Compressible Euler Potential Temperature 1D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
         equations = @inferred CompressibleEulerPotentialTemperatureEquations1D(c_p = RealT(1004),
                                                                                c_v = RealT(717))
@@ -40,7 +28,7 @@ isdir(outdir) && rm(outdir, recursive = true)
     end
 end
 
-@timed_testset "Compressible Euler Potential Temperature With Gravity 1D" begin
+@testitem "Type stability: Compressible Euler Potential Temperature With Gravity 1D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
         equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity1D(c_p = RealT(1004),
                                                                                           c_v = RealT(717),
@@ -99,7 +87,7 @@ end
     end
 end
 
-@timed_testset "Compressible Euler Potential Temperature 2D" begin
+@testitem "Type stability: Compressible Euler Potential Temperature 2D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
         equations = @inferred CompressibleEulerPotentialTemperatureEquations2D(c_p = RealT(1004),
                                                                                c_v = RealT(717))
@@ -147,7 +135,7 @@ end
     end
 end
 
-@timed_testset "Compressible Euler Potential Temperature With Gravity 2D" begin
+@testitem "Type stability: Compressible Euler Potential Temperature With Gravity 2D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
         equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = RealT(1004),
                                                                                           c_v = RealT(717),
@@ -198,7 +186,7 @@ end
     end
 end
 
-@timed_testset "Compressible Euler Potential Temperature 3D" begin
+@testitem "Type stability: Compressible Euler Potential Temperature 3D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
         equations = @inferred CompressibleEulerPotentialTemperatureEquations3D(c_p = RealT(1004),
                                                                                c_v = RealT(717))
@@ -240,7 +228,7 @@ end
                                              equations)) == RealT
     end
 end
-@timed_testset "Compressible Euler Potential Temperature With Gravity 3D" begin
+@testitem "Type stability: Compressible Euler Potential Temperature With Gravity 3D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
         equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = RealT(1004),
                                                                                           c_v = RealT(717),
@@ -295,7 +283,7 @@ end
     end
 end
 
-@timed_testset "Compressible Euler Moist Euler 2D" begin
+@testitem "Type stability: Compressible Euler Moist Euler 2D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
         equations = @inferred CompressibleMoistEulerEquations2D(c_pd = RealT(2.1),
                                                                 c_vd = RealT(2),
@@ -351,7 +339,7 @@ end
     end
 end
 
-@timed_testset "Compressible Rainy Euler" begin
+@testitem "Type stability: Compressible Rainy Euler" setup=[Setup] tags=[:type_stable_tests] begin
     using TrixiAtmo: boundary_condition_simple_slip_wall, cons2eq_pot_temp,
                      cons2nonlinearsystemsol, cons2speeds, densities, velocities,
                      energy_density, speed_of_sound, terminal_velocity_rain,
@@ -429,7 +417,7 @@ end
     end
 end
 
-@timed_testset "Shallow Water 3D" begin
+@testitem "Type stability: Shallow Water 3D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
         equations = @inferred ShallowWaterEquations3D(gravity = RealT(1),
                                                       rotation_rate = RealT(1),
@@ -458,7 +446,7 @@ end
     end
 end
 
-@timed_testset "Compressible Euler Energy With Gravity 2D" begin
+@testitem "Type stability: Compressible Euler Energy With Gravity 2D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
         equations = @inferred CompressibleEulerEnergyEquationsWithGravity2D(c_p = RealT(1004),
                                                                             c_v = RealT(717),
@@ -532,7 +520,7 @@ end
     end
 end
 
-@timed_testset "Compressible Euler Energy With Gravity 3D" begin
+@testitem "Type stability: Compressible Euler Energy With Gravity 3D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
         equations = @inferred CompressibleEulerEnergyEquationsWithGravity3D(c_p = RealT(1004),
                                                                             c_v = RealT(717),
@@ -593,7 +581,7 @@ end
     end
 end
 
-@timed_testset "Compressible Euler Internal Energy With Gravity 2D" begin
+@testitem "Type stability: Compressible Euler Internal Energy With Gravity 2D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
         equations = @inferred CompressibleEulerInternalEnergyEquationsWithGravity2D(c_p = RealT(1004),
                                                                                     c_v = RealT(717),
@@ -641,5 +629,4 @@ end
         @test typeof(@inferred max_abs_speed(u_ll, u_rr, normal_direction,
                                              equations)) == RealT
     end
-end
 end
