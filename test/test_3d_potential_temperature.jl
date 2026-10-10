@@ -1,10 +1,11 @@
-module TestExamples3DEulerPotentialTemperature
+@testsnippet EulerPotentialTemperature3D begin
+    EXAMPLES_DIR = joinpath(examples_dir(), "euler", "dry_air")
+end
 
-include("test_trixiatmo.jl")
-
-EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler/dry_air")
-
-@trixi_testset "elixir_potential_temperature_taylor_green_vortex" begin
+@testitem "Euler potential temperature 3D: elixir_potential_temperature_taylor_green_vortex" setup=[
+    Setup,
+    EulerPotentialTemperature3D
+] tags=[:euler_potential_temperature_3d] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "tests",
                                  "elixir_potential_temperature_taylor_green_vortex.jl"),
                         l2=[
@@ -27,7 +28,10 @@ EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler/dry_air")
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_potential_temperature_taylor_green_vortex" begin
+@testitem "Euler potential temperature 3D: elixir_potential_temperature_taylor_green_vortex with flux_ec" setup=[
+    Setup,
+    EulerPotentialTemperature3D
+] tags=[:euler_potential_temperature_3d] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "tests",
                                  "elixir_potential_temperature_taylor_green_vortex.jl"),
                         l2=[
@@ -50,7 +54,10 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_potential_temperature_taylor_green_vortex" begin
+@testitem "Euler potential temperature 3D: elixir_potential_temperature_taylor_green_vortex with flux_tec" setup=[
+    Setup,
+    EulerPotentialTemperature3D
+] tags=[:euler_potential_temperature_3d] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "tests",
                                  "elixir_potential_temperature_taylor_green_vortex.jl"),
                         l2=[
@@ -73,7 +80,10 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_potential_temperature_taylor_green_vortex" begin
+@testitem "Euler potential temperature 3D: elixir_potential_temperature_taylor_green_vortex with FluxLMARS/flux_tec" setup=[
+    Setup,
+    EulerPotentialTemperature3D
+] tags=[:euler_potential_temperature_3d] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "tests",
                                  "elixir_potential_temperature_taylor_green_vortex.jl"),
                         l2=[
@@ -97,7 +107,10 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_potential_temperature_baroclinic_instability Souza" begin
+@testitem "Euler potential temperature 3D: elixir_potential_temperature_baroclinic_instability Souza" setup=[
+    Setup,
+    EulerPotentialTemperature3D
+] tags=[:euler_potential_temperature_3d] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
                                  "elixir_potential_temperature_baroclinic_instability.jl"),
                         l2=[
@@ -123,7 +136,10 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_potential_temperature_baroclinic_instability Waruszewski" begin
+@testitem "Euler potential temperature 3D: elixir_potential_temperature_baroclinic_instability Waruszewski" setup=[
+    Setup,
+    EulerPotentialTemperature3D
+] tags=[:euler_potential_temperature_3d] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
                                  "elixir_potential_temperature_baroclinic_instability.jl"),
                         l2=[
@@ -149,7 +165,10 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_potential_temperature_baroclinic_instability Artiano" begin
+@testitem "Euler potential temperature 3D: elixir_potential_temperature_baroclinic_instability Artiano" setup=[
+    Setup,
+    EulerPotentialTemperature3D
+] tags=[:euler_potential_temperature_3d] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
                                  "elixir_potential_temperature_baroclinic_instability.jl"),
                         l2=[
@@ -176,7 +195,10 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_potential_temperature_baroclinic_instability with combined fluxes" begin
+@testitem "Euler potential temperature 3D: elixir_potential_temperature_baroclinic_instability with combined fluxes" setup=[
+    Setup,
+    EulerPotentialTemperature3D
+] tags=[:euler_potential_temperature_3d] begin
     trixi_include(@__MODULE__,
                   joinpath(EXAMPLES_DIR, "global_circulation",
                            "elixir_potential_temperature_baroclinic_instability_turbo.jl"),
@@ -207,12 +229,14 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_potential_temperature_held_suarez" begin
-    import ..CI_ON_MACOS
+@testitem "Euler potential temperature 3D: elixir_potential_temperature_held_suarez" setup=[
+    Setup,
+    EulerPotentialTemperature3D
+] tags=[:euler_potential_temperature_3d] begin
     if CI_ON_MACOS
-        global _rtol = 7e-8  # increased error tolerance
+        _rtol = 7e-8  # increased error tolerance
     else
-        global _rtol = sqrt(eps(Float64))  # default
+        _rtol = sqrt(eps(Float64))  # default
     end
 
     @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
@@ -241,7 +265,10 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_potential_temperature_vortex_shedding" begin
+@testitem "Euler potential temperature 3D: elixir_potential_temperature_vortex_shedding" setup=[
+    Setup,
+    EulerPotentialTemperature3D
+] tags=[:euler_potential_temperature_3d] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
                                  "elixir_potential_temperature_vortex_shedding.jl"),
                         l2=[
@@ -268,7 +295,10 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_potential_temperature_vortex_shedding with Sleve" begin
+@testitem "Euler potential temperature 3D: elixir_potential_temperature_vortex_shedding with Sleve" setup=[
+    Setup,
+    EulerPotentialTemperature3D
+] tags=[:euler_potential_temperature_3d] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
                                  "elixir_potential_temperature_vortex_shedding.jl"),
                         l2=[
@@ -293,6 +323,4 @@ end
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
-end
-
 end

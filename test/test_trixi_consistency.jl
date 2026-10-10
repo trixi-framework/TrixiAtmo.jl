@@ -1,13 +1,7 @@
-module TestTrixiConsistency
-
-include("test_trixiatmo.jl")
-
-# Start with a clean environment: remove Trixi.jl output directory if it exists
-outdir = "out"
-isdir(outdir) && rm(outdir, recursive = true)
-
-@trixi_testset "Euler bubble" begin
-    using Trixi
+@testitem "Trixi.jl consistency: Euler bubble" setup=[Setup] tags=[
+    :trixi_consistency,
+    :upstream
+] begin
     using TrixiAtmo: CompressibleMoistEulerEquations2D
 
     # Dry air warm bubble test case in Trixi.jl
@@ -39,7 +33,7 @@ isdir(outdir) && rm(outdir, recursive = true)
     end
 
     # Now use the elixir in TrixiAtmo
-    elixir_atmo = joinpath(EXAMPLES_DIR, "euler/dry_air/buoyancy",
+    elixir_atmo = joinpath(EXAMPLES_DIR, "euler", "dry_air", "buoyancy",
                            "elixir_gemein_bubble.jl")
 
     # Override initial condition, maxiters,
@@ -58,6 +52,4 @@ isdir(outdir) && rm(outdir, recursive = true)
     for (error_trixi, error_atmo) in zip(errors_trixi.linf, errors_atmo.linf)
         @test isapprox(error_trixi, error_atmo, rtol = 1.1e-10)
     end
-end
-
 end

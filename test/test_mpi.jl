@@ -1,18 +1,5 @@
-module TestMPI
-
-using Trixi: Trixi
-
-include("test_trixiatmo.jl")
-
-# Start with a clean environment: remove Trixi.jl output directory if it exists
-outdir = "out"
-Trixi.mpi_isroot() && isdir(outdir) && rm(outdir, recursive = true)
-Trixi.MPI.Barrier(Trixi.mpi_comm())
-
-@testset verbose=true showtiming=true "MPI tests" begin
-#! format: noindent
-@trixi_testset "elixir_gemein_bubble" begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "euler/dry_air/buoyancy",
+@testitem "MPI: elixir_gemein_bubble" setup=[Setup] tags=[:mpi] begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "euler", "dry_air", "buoyancy",
                                  "elixir_gemein_bubble.jl"),
                         l2=[
                             9.104437114458848e-7,
@@ -36,7 +23,7 @@ Trixi.MPI.Barrier(Trixi.mpi_comm())
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 1000)
 end
 
-@trixi_testset "elixir_potential_temperature_vortex_shedding with Sleve" begin
+@testitem "MPI: elixir_potential_temperature_vortex_shedding with Sleve" setup=[Setup] tags=[:mpi] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "euler", "dry_air", "global_circulation",
                                  "elixir_potential_temperature_vortex_shedding.jl"),
                         l2=[
@@ -71,10 +58,3 @@ end
     @assert nelems_min == 26
     @assert nelems_max == 28
 end
-end
-
-# Clean up afterwards: delete Trixi.jl output directory
-Trixi.mpi_isroot() && @test_nowarn rm(outdir, recursive = true)
-Trixi.MPI.Barrier(Trixi.mpi_comm())
-
-end # module
