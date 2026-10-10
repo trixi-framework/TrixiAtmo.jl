@@ -531,3 +531,84 @@ end
         @test equal == expected
     end
 end
+
+@testitem "Unit: check_axes for 2D manifolds in 3D" setup=[Setup] tags=[
+    :unit_check_axes,
+    :upstream
+] begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "shallow_water", "cartesian",
+                                 "elixir_unsteady_solid_body_rotation_EC_correction.jl"),
+                        cells_per_dimension=(3, 3), maxiters=1)
+
+    @testset "Cartesian form" begin
+        mesh, equations, dg, cache = Trixi.mesh_equations_solver_cache(semi)
+        u = Trixi.wrap_array(Trixi.compute_coefficients(0.0, semi), semi)
+
+        @test Trixi.check_axes(u, mesh, equations, dg, cache) === nothing
+
+        u_too_few = similar(u, size(u)[1:(end - 1)]..., size(u, ndims(u)) - 1)
+        u_too_many = similar(u, size(u)[1:(end - 1)]..., size(u, ndims(u)) + 1)
+        @test_throws DimensionMismatch Trixi.check_axes(u_too_few, mesh, equations, dg,
+                                                        cache)
+        @test_throws DimensionMismatch Trixi.check_axes(u_too_many, mesh, equations, dg,
+                                                        cache)
+
+        @test Trixi.ninterfaces(dg, cache) > 0
+        for container in (cache.elements, cache.interfaces, cache.boundaries,
+                          cache.mortars)
+            @test Trixi.check_axes(container, equations, dg, cache) === nothing
+        end
+
+        # The element container of TrixiAtmo.jl is really checked, i.e., it does not use
+        # the no-op fallback of Trixi.jl
+        dg_wrong = DGSEM(polydeg = Trixi.polydeg(dg) + 1)
+        @test_throws DimensionMismatch Trixi.check_axes(cache.elements, equations,
+                                                        dg_wrong, cache)
+
+        # Explicit bounds checks of TrixiAtmo.jl before assuming inbounds access
+        @test_throws DimensionMismatch TrixiAtmo.calc_sources_2d_manifold_in_3d!(u_too_few,
+                                                                                 u, 0.0,
+                                                                                 semi.source_terms,
+                                                                                 equations,
+                                                                                 dg, cache)
+    end
+
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "shallow_water", "covariant",
+                                 "elixir_unsteady_solid_body_rotation_EC.jl"),
+                        cells_per_dimension=(3, 3), maxiters=1)
+
+    @testset "Covariant form" begin
+        mesh, equations, dg, cache = Trixi.mesh_equations_solver_cache(semi)
+        u = Trixi.wrap_array(Trixi.compute_coefficients(0.0, semi), semi)
+
+        @test Trixi.check_axes(u, mesh, equations, dg, cache) === nothing
+
+        u_too_few = similar(u, size(u)[1:(end - 1)]..., size(u, ndims(u)) - 1)
+        u_too_many = similar(u, size(u)[1:(end - 1)]..., size(u, ndims(u)) + 1)
+        @test_throws DimensionMismatch Trixi.check_axes(u_too_few, mesh, equations, dg,
+                                                        cache)
+        @test_throws DimensionMismatch Trixi.check_axes(u_too_many, mesh, equations, dg,
+                                                        cache)
+
+        @test Trixi.ninterfaces(dg, cache) > 0
+        for container in (cache.elements, cache.interfaces, cache.boundaries,
+                          cache.auxiliary_variables)
+            @test Trixi.check_axes(container, equations, dg, cache) === nothing
+        end
+
+        # The containers of TrixiAtmo.jl are really checked, i.e., the element container
+        # does not use the no-op fallback of Trixi.jl
+        dg_wrong = DGSEM(polydeg = Trixi.polydeg(dg) + 1)
+        @test_throws DimensionMismatch Trixi.check_axes(cache.elements, equations,
+                                                        dg_wrong, cache)
+        @test_throws DimensionMismatch Trixi.check_axes(cache.auxiliary_variables,
+                                                        equations, dg_wrong, cache)
+
+        # Explicit bounds checks of TrixiAtmo.jl before assuming inbounds access
+        @test_throws DimensionMismatch Trixi.apply_jacobian!(nothing, u_too_few, mesh,
+                                                             equations, dg, cache)
+        @test_throws DimensionMismatch Trixi.calc_sources!(u_too_few, u, 0.0,
+                                                           semi.source_terms, equations,
+                                                           dg, cache)
+    end
+end

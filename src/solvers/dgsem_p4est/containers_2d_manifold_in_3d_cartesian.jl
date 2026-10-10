@@ -43,21 +43,55 @@ end
     return uEltype
 end
 
+# Check whether the arrays in `elements` have the axes we assume they must have in the
+# inner loops of Trixi.jl and TrixiAtmo.jl. Note that the dimension of the ambient space
+# (three) differs from the dimension `NDIMS` of the manifold (two).
+function Trixi.check_axes(elements::P4estElementContainerPtrArray{NDIMS}, equations,
+                          solver::DG, cache) where {NDIMS}
+    NDIMS_AMBIENT = 3 # dimension of the ambient space, see `init_elements`
+    node_axes = ntuple(_ -> eachnode(solver), NDIMS)
+    Trixi.check_axes(elements.node_coordinates,
+                     (Base.OneTo(NDIMS_AMBIENT),
+                      node_axes...,
+                      eachelement(solver, cache)))
+    Trixi.check_axes(elements.jacobian_matrix,
+                     (Base.OneTo(NDIMS_AMBIENT), Base.OneTo(NDIMS),
+                      node_axes...,
+                      eachelement(solver, cache)))
+    Trixi.check_axes(elements.contravariant_vectors,
+                     (Base.OneTo(NDIMS_AMBIENT), Base.OneTo(NDIMS_AMBIENT),
+                      node_axes...,
+                      eachelement(solver, cache)))
+    Trixi.check_axes(elements.inverse_jacobian,
+                     (node_axes...,
+                      eachelement(solver, cache)))
+    Trixi.check_axes(elements.surface_flux_values,
+                     (eachvariable(equations),
+                      ntuple(_ -> eachnode(solver), NDIMS - 1)...,
+                      Base.OneTo(2 * NDIMS),
+                      eachelement(solver, cache)))
+    return nothing
+end
+
 # Extract contravariant vector Ja^i (i = index) as SVector. This function dispatches on the
 # type of contravariant_vectors, specializing for NDIMS = 2 and NDIMS_AMBIENT = 3 by using
 # the fact that the second type parameter of PtrArray is NDIMS + 3, and the fourth type
 # parameter of PtrArray is Tuple{StaticInt{NDIMS_AMBIENT}, Vararg{IntT, NDIMS + 2}}.
-@inline function Trixi.get_contravariant_vector(index,
-                                                contravariant_vectors::PtrArray{RealT,
-                                                                                5,
-                                                                                <:Any,
-                                                                                Tuple{Trixi.StaticInt{3},
-                                                                                      IntT,
-                                                                                      IntT,
-                                                                                      IntT,
-                                                                                      IntT}},
-                                                indices...) where {RealT, IntT}
-    return SVector(ntuple(@inline(dim->contravariant_vectors[dim, index, indices...]),
+Base.@propagate_inbounds function Trixi.get_contravariant_vector(index,
+                                                                 contravariant_vectors::PtrArray{<:Any,
+                                                                                                 5,
+                                                                                                 <:Any,
+                                                                                                 Tuple{Trixi.StaticInt{3},
+                                                                                                       IntT,
+                                                                                                       IntT,
+                                                                                                       IntT,
+                                                                                                       IntT}},
+                                                                 indices...) where {IntT}
+    # Explicit bounds check, which can be removed by calling this function with `@inbounds`
+    @boundscheck checkbounds(contravariant_vectors, 1:3, index, indices...)
+    # Assume inbounds access now
+    return SVector(ntuple(@inline(dim->@inbounds contravariant_vectors[dim, index,
+                                                                       indices...]),
                           3))
 end
 
