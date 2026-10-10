@@ -270,7 +270,7 @@ function Trixi.calc_interface_flux!(backend::Nothing, surface_flux_values,
         # Initiate the secondary index to be used in the surface for loop.
         # This index on the primary side will always run forward but
         # the secondary index might need to run backwards for flipped sides.
-        if :i_backward in secondary_indices
+        if NodeIndex.IBackward in secondary_indices
             node_secondary = index_end
             node_secondary_step = -1
         else
