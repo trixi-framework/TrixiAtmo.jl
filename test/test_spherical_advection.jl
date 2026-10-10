@@ -91,7 +91,7 @@ end
 # The covariant flux-differencing form should be equivalent to the weak form when the
 # arithmetic mean is used as the two-point flux
 @testitem "Spherical advection, covariant flux-differencing, central/LLF" setup=[Setup] tags=[:spherical_advection] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/covariant",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection", "covariant",
                                  "elixir_cubed_sphere.jl"),
                         l2=[1.0007043506351412, 0.0, 0.0],
                         linf=[14.23590568150928, 0.0, 0.0],
