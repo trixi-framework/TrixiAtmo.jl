@@ -58,7 +58,7 @@ end
     Setup,
     MoistEuler2D
 ] tags=[:moist_euler] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "dry_air" "buoyancy",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "dry_air""buoyancy",
                                  "elixir_gemein_nonhydrostatic_gravity_waves.jl"),
                         l2=[
                             3.54205348345642e-5,
