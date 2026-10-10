@@ -1,5 +1,5 @@
 @testitem "MPI: elixir_gemein_bubble" setup=[Setup] tags=[:mpi] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "euler/dry_air/buoyancy",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "euler", "dry_air", "buoyancy",
                                  "elixir_gemein_bubble.jl"),
                         l2=[
                             9.104437114458848e-7,

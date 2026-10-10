@@ -1,5 +1,5 @@
 @testsnippet EulerPotentialTemperature2D begin
-    EXAMPLES_DIR = joinpath(examples_dir(), "euler/dry_air")
+    EXAMPLES_DIR = joinpath(examples_dir(), "euler", "dry_air")
 end
 
 @testitem "Euler potential temperature 2D: elixir_potential_temperature_inertia_gravity_waves" setup=[

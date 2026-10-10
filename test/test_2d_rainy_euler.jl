@@ -3,7 +3,7 @@
 end
 
 @testitem "Rainy Euler 2D: convergence_test" setup=[Setup, RainyEuler2D] tags=[:rainy_euler] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "precipitation/tests",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "precipitation", "tests",
                                  "convergence_test.jl"),
                         l2=[
                             2.39895785368954e-6,
@@ -38,7 +38,7 @@ end
 end
 
 @testitem "Rainy Euler 2D: elixir_hoeck_bubble moist" setup=[Setup, RainyEuler2D] tags=[:rainy_euler] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "moist_air/buoyancy",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "moist_air", "buoyancy",
                                  "elixir_hoeck_bubble.jl"),
                         l2=[
                             0.0031469268543095233,
@@ -75,7 +75,7 @@ end
 end
 
 @testitem "Rainy Euler 2D: elixir_hoeck_bubble rainy" setup=[Setup, RainyEuler2D] tags=[:rainy_euler] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "precipitation/buoyancy",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "precipitation", "buoyancy",
                                  "elixir_hoeck_bubble.jl"),
                         l2=[
                             7.959523735914366e-5,
@@ -114,7 +114,7 @@ end
 # For unknown reasons, github's macos runners produce results exceeding the default
 # tolerance
 @testitem "Rainy Euler 2D: elixir_hoeck_bubble_diffusion rainy" setup=[Setup, RainyEuler2D] tags=[:rainy_euler] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "precipitation/buoyancy",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "precipitation", "buoyancy",
                                  "elixir_hoeck_bubble_diffusion.jl"),
                         l2=[
                             8.025606283886885e-5,

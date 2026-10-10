@@ -1,5 +1,5 @@
 @testitem "Spherical advection (cubed sphere), Cartesian weak form, LLF surface flux" setup=[Setup] tags=[:spherical_advection] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/cartesian",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection", "cartesian",
                                  "elixir_cubed_sphere.jl"),
                         l2=[
                             0.796321633847963,
@@ -22,7 +22,7 @@
 end
 
 @testitem "Spherical advection (quad icosahedron), Cartesian weak form, LLF surface flux" setup=[Setup] tags=[:spherical_advection] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/cartesian",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection", "cartesian",
                                  "elixir_quad_icosahedron.jl"),
                         l2=[
                             0.45702277148770143,
@@ -45,7 +45,7 @@ end
 end
 
 @testitem "Spherical advection, Cartesian weak form, element-local mapping" setup=[Setup] tags=[:spherical_advection] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/cartesian",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection", "cartesian",
                                  "elixir_cubed_sphere.jl"),
                         l2=[
                             0.893342967293854,
@@ -68,7 +68,7 @@ end
 end
 
 @testitem "Spherical advection, covariant weak form, LLF surface flux" setup=[Setup] tags=[:spherical_advection] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/covariant",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection", "covariant",
                                  "elixir_cubed_sphere.jl"),
                         l2=[1.0007043506351705, 0.0, 0.0],
                         linf=[14.235905681508598, 0.0, 0.0])
@@ -78,7 +78,7 @@ end
 end
 
 @testitem "Spherical advection, covariant weak form, LLF surface flux, global spherical coords" setup=[Setup] tags=[:spherical_advection] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/covariant",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection", "covariant",
                                  "elixir_cubed_sphere.jl"),
                         l2=[1.0007043506351705, 0.0, 0.0],
                         linf=[14.235905681508598, 0.0, 0.0],
@@ -103,7 +103,7 @@ end
 
 # Version with arithmetic mean used for both the volume and surface fluxes
 @testitem "Spherical advection, covariant flux-differencing, central/central" setup=[Setup] tags=[:spherical_advection] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/covariant",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection", "covariant",
                                  "elixir_cubed_sphere.jl"),
                         l2=[2.499889861385917, 0.0, 0.0],
                         linf=[38.085244441156085, 0.0, 0.0],
@@ -115,7 +115,7 @@ end
 end
 
 @testitem "Spherical advection on quad icosahedral grid, covariant weak form, LLF surface flux" setup=[Setup] tags=[:spherical_advection] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/covariant",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection", "covariant",
                                  "elixir_quad_icosahedron.jl"),
                         l2=[0.5183886767005157, 0.0, 0.0],
                         linf=[13.54834739856517, 0.0, 0.0])
@@ -125,7 +125,7 @@ end
 end
 
 @testitem "Spherical advection on tri icosahedral grid, covariant weak form, LLF surface flux" setup=[Setup] tags=[:spherical_advection] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection/covariant",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "advection", "covariant",
                                  "elixir_tri_icosahedron.jl"),
                         l2=[
                             0.00037441291907931983,

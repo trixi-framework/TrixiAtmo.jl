@@ -33,7 +33,7 @@
     end
 
     # Now use the elixir in TrixiAtmo
-    elixir_atmo = joinpath(EXAMPLES_DIR, "euler/dry_air/buoyancy",
+    elixir_atmo = joinpath(EXAMPLES_DIR, "euler", "dry_air", "buoyancy",
                            "elixir_gemein_bubble.jl")
 
     # Override initial condition, maxiters,

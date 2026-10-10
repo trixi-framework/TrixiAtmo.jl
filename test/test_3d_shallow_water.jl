@@ -1,5 +1,5 @@
 @testsnippet ShallowWaterCartesian3D begin
-    EXAMPLES_DIR = joinpath(examples_dir(), "shallow_water/cartesian")
+    EXAMPLES_DIR = joinpath(examples_dir(), "shallow_water", "cartesian")
 end
 
 @testitem "Shallow water 3D Cartesian: elixir_unsteady_solid_body_rotation_EC_correction" setup=[

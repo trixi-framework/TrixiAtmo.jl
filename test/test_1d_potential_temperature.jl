@@ -1,5 +1,5 @@
 @testsnippet EulerPotentialTemperature1D begin
-    EXAMPLES_DIR = joinpath(examples_dir(), "euler/dry_air/tests")
+    EXAMPLES_DIR = joinpath(examples_dir(), "euler", "dry_air", "tests")
 end
 
 @testitem "Euler potential temperature 1D: elixir_potential_temperature_ec" setup=[

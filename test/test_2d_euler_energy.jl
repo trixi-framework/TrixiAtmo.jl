@@ -1,5 +1,5 @@
 @testsnippet EulerEnergy2D begin
-    EXAMPLES_DIR = joinpath(examples_dir(), "euler/dry_air")
+    EXAMPLES_DIR = joinpath(examples_dir(), "euler", "dry_air")
 end
 
 @testitem "Euler energy 2D: elixir_energy_inertia_gravity_waves" setup=[

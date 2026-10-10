@@ -3,7 +3,7 @@
 end
 
 @testitem "Moist Euler 2D: elixir_gemein_bubble dry" setup=[Setup, MoistEuler2D] tags=[:moist_euler] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "dry_air/buoyancy",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "dry_air", "buoyancy",
                                  "elixir_gemein_bubble.jl"),
                         l2=[
                             9.104437114458848e-7,
@@ -28,7 +28,7 @@ end
 end
 
 @testitem "Moist Euler 2D: elixir_gemein_bubble moist" setup=[Setup, MoistEuler2D] tags=[:moist_euler] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "moist_air/buoyancy",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "moist_air", "buoyancy",
                                  "elixir_gemein_bubble.jl"),
                         l2=[
                             7.3515680983123215e-6,
@@ -58,7 +58,7 @@ end
     Setup,
     MoistEuler2D
 ] tags=[:moist_euler] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "dry_air/buoyancy",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "dry_air" "buoyancy",
                                  "elixir_gemein_nonhydrostatic_gravity_waves.jl"),
                         l2=[
                             3.54205348345642e-5,
@@ -85,7 +85,7 @@ end
 end
 
 @testitem "Moist Euler 2D: elixir_gemein_source_terms dry" setup=[Setup, MoistEuler2D] tags=[:moist_euler] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "dry_air/tests",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "dry_air", "tests",
                                  "elixir_gemein_source_terms.jl"),
                         l2=[
                             1.3992076791281227e-5,
@@ -112,7 +112,7 @@ end
 end
 
 @testitem "Moist Euler 2D: elixir_gemein_source_terms moist" setup=[Setup, MoistEuler2D] tags=[:moist_euler] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "moist_air/tests",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "moist_air", "tests",
                                  "elixir_gemein_source_terms.jl"),
                         l2=[
                             0.0001480393714768623,

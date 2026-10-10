@@ -1,5 +1,5 @@
 @testitem "Threaded: elixir_gemein_bubble moist" setup=[Setup] tags=[:threaded] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "euler/moist_air/buoyancy",
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "euler", "moist_air", "buoyancy",
                                  "elixir_gemein_bubble.jl"),
                         l2=[
                             7.3515680983123215e-6,
@@ -26,7 +26,7 @@
 end
 
 @testitem "Threaded: elixir_tri_barotropic_instability" setup=[Setup] tags=[:threaded] begin
-    @test_trixi_include(abspath(joinpath(EXAMPLES_DIR, "shallow_water/covariant",
+    @test_trixi_include(abspath(joinpath(EXAMPLES_DIR, "shallow_water", "covariant",
                                          "elixir_tri_barotropic_instability.jl")),
                         l2=[39.45640433491504, 0.04471194818811316,
                             0.032035624788988415],

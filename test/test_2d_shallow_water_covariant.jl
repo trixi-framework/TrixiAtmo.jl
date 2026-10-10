@@ -1,5 +1,5 @@
 @testsnippet ShallowWaterCovariant2D begin
-    EXAMPLES_DIR = joinpath(examples_dir(), "shallow_water/covariant")
+    EXAMPLES_DIR = joinpath(examples_dir(), "shallow_water", "covariant")
 end
 
 @testitem "Shallow water 2D covariant: elixir_geostrophic_balance" setup=[
