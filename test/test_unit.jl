@@ -1,15 +1,4 @@
-module TestUnit
-
-using TrixiAtmo
-using Trixi
-
-include("test_trixiatmo.jl")
-
-# Start with a clean environment: remove Trixi.jl output directory if it exists
-outdir = "out"
-isdir(outdir) && rm(outdir, recursive = true)
-
-@timed_testset "Consistency check for EC flux with Potential Temperature: CEPTE" begin
+@testitem "Unit: Consistency check for EC flux with Potential Temperature: CEPTE" setup=[Setup] tags=[:unit_fluxes] begin
     # Set up equations and dummy conservative variables state
     equations = CompressibleEulerPotentialTemperatureEquations2D(c_p = 1004.0, c_v = 717.0)
     u = SVector(1.1, -0.5, 2.34, 330.0)
@@ -68,7 +57,7 @@ isdir(outdir) && rm(outdir, recursive = true)
     @test flux_1d ≈ flux_3d[[1, 2, 5]]
 end
 
-@timed_testset "Consistency check for TEC flux with Potential Temperature: CEPTE" begin
+@testitem "Unit: Consistency check for TEC flux with Potential Temperature: CEPTE" setup=[Setup] tags=[:unit_fluxes] begin
     # Set up equations and dummy conservative variables state
     equations = CompressibleEulerPotentialTemperatureEquations2D(c_p = 1004.0, c_v = 717.0)
     u = SVector(1.1, -0.5, 2.34, 330.0)
@@ -127,7 +116,7 @@ end
     @test flux_1d ≈ flux_3d[[1, 2, 5]]
 end
 
-@timed_testset "Consistency check for ETEC flux with Potential Temperature: CEPTE" begin
+@testitem "Unit: Consistency check for ETEC flux with Potential Temperature: CEPTE" setup=[Setup] tags=[:unit_fluxes] begin
     # Set up equations and dummy conservative variables state
     equations = CompressibleEulerPotentialTemperatureEquations2D(c_p = 1004.0, c_v = 717.0)
     u = SVector(1.1, -0.5, 2.34, 330.0)
@@ -186,7 +175,7 @@ end
     @test flux_1d ≈ flux_3d[[1, 2, 5]]
 end
 
-@timed_testset "Consistency check for LMARS flux with Potential Temperature: CEPTE" begin
+@testitem "Unit: Consistency check for LMARS flux with Potential Temperature: CEPTE" setup=[Setup] tags=[:unit_fluxes] begin
     # Set up equations and dummy conservative variables state
     equations = CompressibleEulerPotentialTemperatureEquations2D(c_p = 1004.0, c_v = 717.0)
     flux_lmars = FluxLMARS(340)
@@ -240,7 +229,7 @@ end
     @test flux_1d ≈ flux_3d[[1, 2, 5]]
 end
 
-@timed_testset "Consistency check for EC flux with Potential Temperature with gravity: CEPTEWG" begin
+@testitem "Unit: Consistency check for EC flux with Potential Temperature with gravity: CEPTEWG" setup=[Setup] tags=[:unit_fluxes] begin
     # Set up equations and dummy conservative variables state
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004.0,
                                                                             c_v = 717.0,
@@ -304,7 +293,7 @@ end
     @test flux_1d ≈ flux_3d[[1, 2, 5, 6]]
 end
 
-@timed_testset "Consistency check for TEC flux with Potential Temperature with gravity: CEPTEWG" begin
+@testitem "Unit: Consistency check for TEC flux with Potential Temperature with gravity: CEPTEWG" setup=[Setup] tags=[:unit_fluxes] begin
     # Set up equations and dummy conservative variables state
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004.0,
                                                                             c_v = 717.0,
@@ -368,7 +357,7 @@ end
     @test flux_1d ≈ flux_3d[[1, 2, 5, 6]]
 end
 
-@timed_testset "Consistency check for ETEC flux with Potential Temperature with gravity: CEPTEWG" begin
+@testitem "Unit: Consistency check for ETEC flux with Potential Temperature with gravity: CEPTEWG" setup=[Setup] tags=[:unit_fluxes] begin
     # Set up equations and dummy conservative variables state
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004.0,
                                                                             c_v = 717.0,
@@ -432,7 +421,7 @@ end
     @test flux_1d ≈ flux_3d[[1, 2, 5, 6]]
 end
 
-@timed_testset "Consistency check for LMARS flux with Potential Temperature with gravity: CEPTEWG" begin
+@testitem "Unit: Consistency check for LMARS flux with Potential Temperature with gravity: CEPTEWG" setup=[Setup] tags=[:unit_fluxes] begin
     # Set up equations and dummy conservative variables state
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004.0,
                                                                             c_v = 717.0,
@@ -490,7 +479,7 @@ end
     @test flux_1d ≈ flux_3d[[1, 2, 5, 6]]
 end
 
-@timed_testset "Consistency check for 3D shallow water fluxes: SWE" begin
+@testitem "Unit: Consistency check for 3D shallow water fluxes: SWE" setup=[Setup] tags=[:unit_fluxes] begin
     # Set up equations and dummy conservative variables state
     equations = ShallowWaterEquations3D(gravity = 1.0)
     u = SVector(1.1, -0.5, 2.34, -3.5, 120.0)
@@ -512,7 +501,7 @@ end
     end
 end
 
-@timed_testset "Consistency check for split covariant shallow water fluxes: SWE" begin
+@testitem "Unit: Consistency check for split covariant shallow water fluxes: SWE" setup=[Setup] tags=[:unit_fluxes] begin
     # Set up equations and dummy conservative variables state
     equations = SplitCovariantShallowWaterEquations2D(EARTH_GRAVITATIONAL_ACCELERATION,
                                                       EARTH_ROTATION_RATE)
@@ -523,7 +512,7 @@ end
           flux(u, aux_vars, orientation, equations)
 end
 
-@testset "Consistency check for EC flux with Rainy Euler" begin
+@testitem "Unit: Consistency check for EC flux with Rainy Euler" setup=[Setup] tags=[:unit_fluxes] begin
     # Set up equations and dummy conservative variables state
     equations = CompressibleRainyEulerEquations2D()
     # Example state vector (ρ_d, ρ_m, ρ_r, ρu, ρv, ρe, ρq_v, ρq_c, T)
@@ -541,5 +530,4 @@ end
         expected = [true, true, true, true, true, false, true, true, true]
         @test equal == expected
     end
-end
 end

@@ -1,8 +1,10 @@
-# Testing uses TrixiTest.jl
-# Collect everything needed here and include from test_*.jl
+# Testing uses TrixiTest.jl. Everything collected here is made available in each
+# `@testitem` listing `setup=[Setup]` via the `@testsnippet Setup` in `runtests.jl`.
 
-using Test
+using Test: @test, @testset
 using TrixiTest
+using Trixi
+# Both Trixi.jl and TrixiAtmo.jl export `examples_dir`; we want the one of TrixiAtmo.jl
 using TrixiAtmo: examples_dir
 
 EXAMPLES_DIR = examples_dir()

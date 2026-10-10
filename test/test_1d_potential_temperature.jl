@@ -1,10 +1,11 @@
-module TestExamples1DEulerPotentialTemperature
+@testsnippet EulerPotentialTemperature1D begin
+    EXAMPLES_DIR = joinpath(examples_dir(), "euler", "dry_air", "tests")
+end
 
-include("test_trixiatmo.jl")
-
-EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler/dry_air/tests")
-
-@trixi_testset "elixir_potential_temperature_ec" begin
+@testitem "Euler potential temperature 1D: elixir_potential_temperature_ec" setup=[
+    Setup,
+    EulerPotentialTemperature1D
+] tags=[:euler_potential_temperature_1d] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_potential_temperature_ec.jl"),
                         l2=[1.5370166271447887, 1.5370166326302963, 8.204456414321612e-7],
@@ -15,7 +16,10 @@ EXAMPLES_DIR = joinpath(EXAMPLES_DIR, "euler/dry_air/tests")
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_potential_temperature_tec" begin
+@testitem "Euler potential temperature 1D: elixir_potential_temperature_tec" setup=[
+    Setup,
+    EulerPotentialTemperature1D
+] tags=[:euler_potential_temperature_1d] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_potential_temperature_ec.jl"),
                         l2=[1.537016627436546, 1.537016627247785, 1.9668131414528186e-7],
@@ -27,7 +31,10 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_potential_temperature_etec" begin
+@testitem "Euler potential temperature 1D: elixir_potential_temperature_etec" setup=[
+    Setup,
+    EulerPotentialTemperature1D
+] tags=[:euler_potential_temperature_1d] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_potential_temperature_ec.jl"),
                         l2=[1.5370166265639917, 1.5370166276315467, 4.6312969205197763e-7],
@@ -39,7 +46,10 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_potential_temperature_well_balanced_1d" begin
+@testitem "Euler potential temperature 1D: elixir_potential_temperature_well_balanced_1d" setup=[
+    Setup,
+    EulerPotentialTemperature1D
+] tags=[:euler_potential_temperature_1d] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_potential_temperature_well_balanced.jl"),
                         l2=[
@@ -59,7 +69,10 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@trixi_testset "elixir_potential_temperature_well_balanced_1d" begin
+@testitem "Euler potential temperature 1D: elixir_potential_temperature_well_balanced_1d with Waruszewski/Souza fluxes" setup=[
+    Setup,
+    EulerPotentialTemperature1D
+] tags=[:euler_potential_temperature_1d] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_potential_temperature_well_balanced.jl"),
                         l2=[
@@ -79,6 +92,4 @@ end
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
-end
-
 end
