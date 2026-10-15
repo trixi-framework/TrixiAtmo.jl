@@ -128,14 +128,14 @@ function rosenbrock_stage!(integrator::RosenbrockIntegrator, stage, gamma_dt)
     c_row = tableau.c[stage, :] * inv(dt)
     res = stages[stage]
 
-    @trixi_timeit_ext backend timer() "stage combination" rosenbrock_stage_combination!(backend,
-                                                                                        u_tmp,
-                                                                                        res,
-                                                                                        u,
-                                                                                        stages,
-                                                                                        a_row,
-                                                                                        c_row,
-                                                                                        Val(N))
+    @trixi_timeit_ext backend timer() "internal stage" rosenbrock_internal_stage!(backend,
+                                                                                  u_tmp,
+                                                                                  res,
+                                                                                  u,
+                                                                                  stages,
+                                                                                  a_row,
+                                                                                  c_row,
+                                                                                  Val(N))
 
     integrator.f(du, u_tmp, p, t + tableau.c_stage[stage] * dt)
 
@@ -148,11 +148,11 @@ function rosenbrock_stage!(integrator::RosenbrockIntegrator, stage, gamma_dt)
                                                                        p, gamma_dt)
 
     if stage == N
-        @trixi_timeit_ext backend timer() "final combination" rosenbrock_final_combination!(backend,
-                                                                                            u,
-                                                                                            stages,
-                                                                                            tableau.m,
-                                                                                            Val(N))
+        @trixi_timeit_ext backend timer() "final stage" rosenbrock_final_stage!(backend,
+                                                                                u,
+                                                                                stages,
+                                                                                tableau.m,
+                                                                                Val(N))
     end
 
     return nothing
@@ -165,8 +165,8 @@ end
 # carry a zero coefficient.
 
 # u = u_n + sum_j a_j stages[j] and res = sum_j c_j stages[j] in one sweep
-function rosenbrock_stage_combination!(backend::Nothing, u, res, u_n, stages, a_row,
-                                       c_row, ::Val{N}) where {N}
+function rosenbrock_internal_stage!(backend::Nothing, u, res, u_n, stages, a_row,
+                                    c_row, ::Val{N}) where {N}
     @threaded for i in eachindex(u)
         u_i = u_n[i]
         res_i = zero(eltype(res))
@@ -181,9 +181,9 @@ function rosenbrock_stage_combination!(backend::Nothing, u, res, u_n, stages, a_
     return nothing
 end
 
-function rosenbrock_stage_combination!(backend::Backend, u, res, u_n, stages, a_row,
-                                       c_row, ::Val{N}) where {N}
-    kernel! = rosenbrock_stage_combination_KAkernel!(backend)
+function rosenbrock_internal_stage!(backend::Backend, u, res, u_n, stages, a_row,
+                                    c_row, ::Val{N}) where {N}
+    kernel! = rosenbrock_internal_stage_KAkernel!(backend)
     kernel!(u, res, u_n, stages, a_row, c_row, Val(N), ndrange = length(u))
     return nothing
 end
@@ -202,8 +202,8 @@ function rosenbrock_stage_residual!(backend::Backend, res, du)
 end
 
 # u = u + sum_j m_j stages[j]
-function rosenbrock_final_combination!(backend::Nothing, u, stages, m,
-                                       ::Val{N}) where {N}
+function rosenbrock_final_stage!(backend::Nothing, u, stages, m,
+                                 ::Val{N}) where {N}
     @threaded for i in eachindex(u)
         u_i = u[i]
         for j in 1:N
@@ -214,9 +214,9 @@ function rosenbrock_final_combination!(backend::Nothing, u, stages, m,
     return nothing
 end
 
-function rosenbrock_final_combination!(backend::Backend, u, stages, m,
-                                       ::Val{N}) where {N}
-    kernel! = rosenbrock_final_combination_KAkernel!(backend)
+function rosenbrock_final_stage!(backend::Backend, u, stages, m,
+                                 ::Val{N}) where {N}
+    kernel! = rosenbrock_final_stage_KAkernel!(backend)
     kernel!(u, stages, m, Val(N), ndrange = length(u))
     return nothing
 end
@@ -224,8 +224,8 @@ end # @muladd
 
 # The loads of the stages with a zero coefficient (the stages after the current one) are
 # skipped, which saves memory traffic; the branch is uniform across the whole grid.
-@kernel function rosenbrock_stage_combination_KAkernel!(u, res, u_n, stages, a_row, c_row,
-                                                        ::Val{N}) where {N}
+@kernel function rosenbrock_internal_stage_KAkernel!(u, res, u_n, stages, a_row, c_row,
+                                                     ::Val{N}) where {N}
     i = @index(Global)
     @inbounds begin
         u_i = u_n[i]
@@ -242,7 +242,7 @@ end # @muladd
     end
 end
 
-@kernel function rosenbrock_final_combination_KAkernel!(u, stages, m, ::Val{N}) where {N}
+@kernel function rosenbrock_final_stage_KAkernel!(u, stages, m, ::Val{N}) where {N}
     i = @index(Global)
     @inbounds begin
         u_i = u[i]
