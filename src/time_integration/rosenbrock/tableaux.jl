@@ -41,7 +41,7 @@ end
     SSPRW32()
 
 Three-stage, second-order, L-stable Rosenbrock-W method, whose explicit part
-is the SSPRK(3,3) method of.
+is the SSPRK(3,3) method of Shu and Osher.
 
 ## References
 
@@ -49,6 +49,9 @@ is the SSPRK(3,3) method of.
   GPU-Accelerated Nested Schur-Complement Solvers for Atmospheric Flow Simulations using
   Horizontally-Explicit, Vertically-Implicit Schemes and Discontinuous Galerkin Methods
   [arXiv:2610.15775](https://arxiv.org/abs/2610.15775)
+- Chi-Wang Shu, Stanley Osher (1988)
+  "Efficient Implementation of Essentially Non-oscillatory Shock-Capturing Schemes" (Eq. 2.18)
+  [DOI: 10.1016/0021-9991(88)90177-5](https://doi.org/10.1016/0021-9991(88)90177-5)
 """
 struct SSPRW32 <: AbstractRosenbrockAlgorithm{3} end
 
