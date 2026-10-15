@@ -36,6 +36,16 @@ using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
 
 using Trixi: ln_mean, stolarsky_mean, inv_ln_mean
 
+# Time integration
+using Trixi: AbstractTimeIntegrator, AbstractTimeIntegrationAlgorithm,
+             SimpleIntegratorSSPOptions, ODEProblem, @threaded, @trixi_timeit,
+             @trixi_timeit_ext, timer, limit_dt!, initialize_callbacks!,
+             handle_callbacks!, check_max_iter!
+import Trixi: init, step!, add_tstop!, get_tmp_cache, terminate!,
+              derivative_discontinuity!
+using KernelAbstractions: @kernel, @index, Backend
+using StaticArrays: @SMatrix
+
 # DGMulti Solvers
 using StartUpDG: MeshData, RefElemData
 
@@ -46,6 +56,7 @@ include("semidiscretization/semidiscretization.jl")
 include("solvers/solvers.jl")
 include("callbacks_step/callbacks_step.jl")
 include("callbacks_stage/callbacks_stage.jl")
+include("time_integration/time_integration.jl")
 
 export CompressibleMoistEulerEquations2D,
        CompressibleRainyEulerEquations2D,
@@ -65,6 +76,8 @@ export CompressibleMoistEulerEquations2D,
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
 export NonlinearSolveDG
+
+export SSPRW32
 
 export flux_chandrashekar, FluxLMARS
 
