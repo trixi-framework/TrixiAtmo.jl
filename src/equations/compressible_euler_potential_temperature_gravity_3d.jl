@@ -706,7 +706,7 @@ end # @muladd
 # `FluxTurbo(flux_ec, flux_nonconservative_waruszewski_etal)`.
 const FluxKennedyGruberSouzaEtal = Tuple{typeof(flux_kennedy_gruber),
                                          typeof(flux_nonconservative_souza_etal)}
-const FluxEC = Tuple{typeof(flux_ec), typeof(flux_nonconservative_waruszewski_etal)}
+const FluxECIsothermal = Tuple{typeof(flux_ec), typeof(flux_nonconservative_waruszewski_etal)}
 
 # We precompute `rho, v1, v2, v3, theta, p, phi`, i.e., one quantity more than the number
 # of variables. Both fluxes use the same precomputed variables.
@@ -717,7 +717,7 @@ const FluxEC = Tuple{typeof(flux_ec), typeof(flux_nonconservative_waruszewski_et
 end
 
 @inline function Trixi.cons2turbo(::Union{FluxKennedyGruberSouzaEtal,
-                                          FluxEC},
+                                          FluxECIsothermal},
                                   rho, rho_v1, rho_v2, rho_v3, rho_theta, phi,
                                   equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     v1 = rho_v1 / rho
@@ -772,7 +772,7 @@ end
 #   Structure-Preserving High-Order Methods for the Compressible Euler Equations
 #   in Potential Temperature Formulation for Atmospheric Flows
 #   (https://arxiv.org/abs/2509.10311)
-@inline function Trixi.flux_turbo(::FluxEC,
+@inline function Trixi.flux_turbo(::FluxECIsothermal,
                                   rho_ll, v1_ll, v2_ll, v3_ll, theta_ll, p_ll, phi_ll,
                                   rho_rr, v1_rr, v2_rr, v3_rr, theta_rr, p_rr, phi_rr,
                                   normal_direction_1, normal_direction_2,
