@@ -38,13 +38,13 @@ using Trixi: ln_mean, stolarsky_mean, inv_ln_mean
 
 # Time integration
 using Trixi: AbstractTimeIntegrator, AbstractTimeIntegrationAlgorithm,
-             SimpleIntegratorSSPOptions, ODEProblem, @threaded, @trixi_timeit,
+             ODEProblem, @threaded, @trixi_timeit,
              @trixi_timeit_ext, timer, limit_dt!, initialize_callbacks!,
              handle_callbacks!, check_max_iter!
 import Trixi: init, step!, add_tstop!, get_tmp_cache, terminate!,
               derivative_discontinuity!
+using DataStructures: BinaryHeap, FasterForward
 using KernelAbstractions: @kernel, @index, Backend
-using StaticArrays: @SMatrix
 
 # DGMulti Solvers
 using StartUpDG: MeshData, RefElemData

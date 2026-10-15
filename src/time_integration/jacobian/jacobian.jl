@@ -11,8 +11,8 @@
     update_jacobian!(jacobian, u_ode, semi, gamma_dt)
 
 Assemble (and factorize) the approximate Jacobian `jacobian` of the right-hand side of the
-semidiscretization `semi` at the solution `u_ode` for the Rosenbrock-W method
-[`AbstractRosenbrockAlgorithm`](@ref), such that [`solve_jacobian!`](@ref) can solve linear systems with the
+semidiscretization `semi` at the solution `u_ode` for the Rosenbrock-W methods, e.g.,
+[`SSPRW32`](@ref), such that [`solve_jacobian!`](@ref) can solve linear systems with the
 matrix `I / gamma_dt - J`, where `gamma_dt = gamma * dt`. For `jacobian = nothing`,
 nothing is done.
 """

@@ -11,10 +11,35 @@
 # i.e., `Trixi.solve`, `Trixi.solve!`, the handling of the callbacks
 # (`initialize_callbacks!`, `handle_callbacks!`, `finalize_callbacks`), of the final time
 # step (`limit_dt!`), and of the maximal number of iterations (`check_max_iter!`), as well
-# as the options `SimpleIntegratorSSPOptions` and the solution `TimeIntegratorSolution`.
+# as the solution `TimeIntegratorSolution`.
 # The parts of the integrator interface of SciMLBase.jl that Trixi.jl defines for each
 # of its integrators separately are defined here once for all time integrators of
 # TrixiAtmo.jl; a method only specializes them if it needs something different.
+
+# This struct is needed to fake https://github.com/SciML/OrdinaryDiffEq.jl/blob/0c2048a502101647ac35faabd80da8a5645beac7/src/integrators/type.jl#L1
+# It is the same as the options of the time integrators of Trixi.jl, e.g.,
+# `Trixi.SimpleIntegratorSSPOptions`.
+mutable struct TimeIntegratorOptions{Callback, TStops}
+    callback::Callback # callbacks; used in Trixi.jl
+    const adaptive::Bool # whether the algorithm is adaptive; ignored
+    dtmax::Float64 # ignored
+    const maxiters::Int # maximal number of time steps
+    tstops::TStops # tstops from https://diffeq.sciml.ai/v6.8/basics/common_solver_opts/#Output-Control-1; ignored
+end
+
+function TimeIntegratorOptions(callback, tspan; maxiters = typemax(Int), kwargs...)
+    tstops_internal = BinaryHeap{eltype(tspan)}(FasterForward())
+    # We add last(tspan) to make sure that the time integration stops at the end time
+    push!(tstops_internal, last(tspan))
+    # We add 2 * last(tspan) because add_tstop!(integrator, t) is only called by DiffEqCallbacks.jl if tstops contains a time that is larger than t
+    # (https://github.com/SciML/DiffEqCallbacks.jl/blob/025dfe99029bd0f30a2e027582744528eb92cd24/src/iterative_and_periodic.jl#L92)
+    push!(tstops_internal, 2 * last(tspan))
+    return TimeIntegratorOptions{typeof(callback), typeof(tstops_internal)}(callback,
+                                                                            false,
+                                                                            Inf,
+                                                                            maxiters,
+                                                                            tstops_internal)
+end
 
 """
     add_tstop!(integrator::AbstractTimeIntegrator, t)

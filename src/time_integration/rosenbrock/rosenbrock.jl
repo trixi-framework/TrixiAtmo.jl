@@ -5,31 +5,11 @@
 @muladd begin
 #! format: noindent
 
-"""
-    AbstractRosenbrockAlgorithm{N}
-
-Abstract supertype of the Rosenbrock-W methods with `N` stages of TrixiAtmo.jl, e.g.,
-[`SSPRW32`](@ref). The methods are implemented in the transformed form of Hairer and
-Wanner (1996), Section IV.7, eq. (7.25): a concrete algorithm provides the coefficients
-`a = alpha * inv(Gamma)` and `c = inv(diag(Gamma)) - inv(Gamma)` (strictly lower
-triangular), `m = transpose(b) * inv(Gamma)`, the stage times `c_stage`, the constant
-diagonal `gamma` of `Gamma`, and the approximate `jacobian` of the right-hand side.
-In every stage, one linear system with the matrix `I / (gamma * dt) - J` is solved by
-[`solve_jacobian!`](@ref), where `J` is assembled once per time step by
-[`update_jacobian!`](@ref), and no product with the Jacobian is needed. The methods are
-of second order for any approximation of the Jacobian (W-methods). With
-`jacobian = nothing`, `J = 0` and the method reduces to its explicit part.
-
-## References
-
-- Marco Artiano, Andrés Rueda-Ramírez, Oswald Knoth, Hendrik Ranocha, Gregor Gassner (2026)
-  GPU-Accelerated Nested Schur-Complement Solvers for Atmospheric Flow Simulations using
-  Horizontally-Explicit, Vertically-Implicit Schemes and Discontinuous Galerkin Methods
-  [arXiv:2610.15775](https://arxiv.org/abs/2610.15775)
-- Ernst Hairer, Gerhard Wanner (1996)
-  Solving Ordinary Differential Equations II, Section IV.7
-  [DOI: 10.1007/978-3-642-05221-7](https://doi.org/10.1007/978-3-642-05221-7)
-"""
+# Abstract base type for the Rosenbrock-W methods with `N` stages, implemented in the
+# transformed form of Hairer and Wanner (1996), Section IV.7: every stage solves one linear
+# system with the matrix `I / (gamma * dt) - J`, where `J` is the approximate Jacobian of
+# the right-hand side passed to `Trixi.solve` (`jacobian.jl`), and no product with the
+# Jacobian is needed.
 abstract type AbstractRosenbrockAlgorithm{N} <: AbstractTimeIntegrationAlgorithm end
 
 nstages(::AbstractRosenbrockAlgorithm{N}) where {N} = N
@@ -37,9 +17,10 @@ nstages(::AbstractRosenbrockAlgorithm{N}) where {N} = N
 # This struct is needed to fake https://github.com/SciML/OrdinaryDiffEq.jl/blob/0c2048a502101647ac35faabd80da8a5645beac7/src/integrators/type.jl#L77
 # This implements the interface components described at
 # https://diffeq.sciml.ai/v6.8/basics/integrator/#Handing-Integrators-1
-# which are used in Trixi.jl. The options are those of the SSP integrators of Trixi.jl.
+# which are used in Trixi.jl.
 mutable struct RosenbrockIntegrator{RealT <: Real, uType, Params, Sol, F, Alg,
-                                    Options, NSTAGES} <: AbstractTimeIntegrator
+                                    Options, NSTAGES, Jacobian} <:
+               AbstractTimeIntegrator
     u::uType
     du::uType
     u_tmp::uType
@@ -54,6 +35,7 @@ mutable struct RosenbrockIntegrator{RealT <: Real, uType, Params, Sol, F, Alg,
     sol::Sol # faked
     const f::F # right-hand side of the semidiscretization
     const alg::Alg # AbstractRosenbrockAlgorithm
+    const jacobian::Jacobian # approximate Jacobian of the right-hand side, see `jacobian.jl`
     opts::Options
     finalstep::Bool # added for convenience
     const dtchangeable::Bool
@@ -61,7 +43,8 @@ mutable struct RosenbrockIntegrator{RealT <: Real, uType, Params, Sol, F, Alg,
 end
 
 function init(ode::ODEProblem, alg::AbstractRosenbrockAlgorithm;
-              dt, callback::Union{CallbackSet, Nothing} = nothing, kwargs...)
+              dt, callback::Union{CallbackSet, Nothing} = nothing, jacobian = nothing,
+              kwargs...)
     u = copy(ode.u0)
     du = similar(u)
     u_tmp = similar(u)
@@ -74,9 +57,9 @@ function init(ode::ODEProblem, alg::AbstractRosenbrockAlgorithm;
     tdir = sign(ode.tspan[end] - ode.tspan[1])
     iter = 0
     integrator = RosenbrockIntegrator(u, du, u_tmp, stages, t, tdir, dt, dt, iter,
-                                      ode.p, (prob = ode,), ode.f, alg,
-                                      SimpleIntegratorSSPOptions(callback, ode.tspan;
-                                                                 kwargs...),
+                                      ode.p, (prob = ode,), ode.f, alg, jacobian,
+                                      TimeIntegratorOptions(callback, ode.tspan;
+                                                            kwargs...),
                                       false, true, false)
 
     # Standard callbacks
@@ -101,7 +84,8 @@ function step!(integrator::RosenbrockIntegrator)
     # The matrix `I / (gamma dt) - J` of the stages is assembled once per time step. It
     # follows `dt` if `limit_dt!` shortens the last step.
     gamma_dt = alg.gamma * integrator.dt
-    @trixi_timeit timer() "update Jacobian" update_jacobian!(alg.jacobian, integrator.u,
+    @trixi_timeit timer() "update Jacobian" update_jacobian!(integrator.jacobian,
+                                                             integrator.u,
                                                              integrator.p, gamma_dt)
 
     for stage in 1:nstages(alg)
@@ -132,10 +116,8 @@ function rosenbrock_stage!(integrator::RosenbrockIntegrator, stage, gamma_dt)
     backend = trixi_backend(u)
     N = nstages(alg)
 
-    # Rows of the coefficients in the real type of the solution
-    RealT = eltype(u)
-    a_row = RealT.(alg.a[stage, :])
-    c_row = RealT.(alg.c[stage, :]) * inv(dt)
+    a_row = alg.a[stage, :]
+    c_row = alg.c[stage, :] * inv(dt)
     res = stages[stage]
 
     # Single fused sweep: u_tmp = u + sum_j a_sj stages_j, res = sum_j (c_sj / dt) stages_j
@@ -153,12 +135,12 @@ function rosenbrock_stage!(integrator::RosenbrockIntegrator, stage, gamma_dt)
                                                                             res, du)
 
     @trixi_timeit_ext backend timer() "solve Jacobian" solve_jacobian!(res,
-                                                                       alg.jacobian,
+                                                                       integrator.jacobian,
                                                                        p, gamma_dt)
 
     if stage == N
         # Single sweep: u = u + sum_j m_j stages_j (reads each stage once)
-        m = RealT.(alg.m)
+        m = alg.m
         @trixi_timeit_ext backend timer() "stage finalization" rosenbrock_finalize!(backend,
                                                                                     u,
                                                                                     stages,
