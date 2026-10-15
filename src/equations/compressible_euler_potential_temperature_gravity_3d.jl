@@ -761,8 +761,8 @@ end
     g4 = normal_direction_3 * gravity
 
     zero_ = zero(eltype(rho_ll))
-    flux_left = (f1, f2 + g2, f3 + g3, f4 + g4, f5, zero_)
-    flux_right = (f1, f2 - g2, f3 - g3, f4 - g4, f5, zero_)
+    flux_left = SVector(f1, f2 + g2, f3 + g3, f4 + g4, f5, zero_)
+    flux_right = SVector(f1, f2 - g2, f3 - g3, f4 - g4, f5, zero_)
 
     return flux_left, flux_right
 end
@@ -807,8 +807,8 @@ end
     g4 = normal_direction_3 * gravity
 
     zero_ = zero(eltype(rho_ll))
-    flux_left = (f1, f2 + g2, f3 + g3, f4 + g4, f5, zero_)
-    flux_right = (f1, f2 - g2, f3 - g3, f4 - g4, f5, zero_)
+    flux_left = SVector(f1, f2 + g2, f3 + g3, f4 + g4, f5, zero_)
+    flux_right = SVector(f1, f2 - g2, f3 - g3, f4 - g4, f5, zero_)
 
     return flux_left, flux_right
 end
