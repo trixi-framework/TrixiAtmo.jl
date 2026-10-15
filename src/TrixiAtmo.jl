@@ -16,7 +16,7 @@ using Printf: @sprintf
 using Static: True, False
 using StrideArrays: PtrArray
 using StaticArrayInterface: static_size
-using LinearAlgebra: Diagonal, I, cross, norm, dot, det, diagm
+using LinearAlgebra: Diagonal, I, UpperTriangular, cross, norm, dot, det, diagm
 using Reexport: @reexport
 using LoopVectorization: @turbo
 using QuadGK: quadgk

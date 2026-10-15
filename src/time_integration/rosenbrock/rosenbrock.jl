@@ -216,33 +216,31 @@ function rosenbrock_final_stage!(backend::Backend, u, stages, m,
 end
 end # @muladd
 
-@kernel inbounds=true function rosenbrock_internal_stage_KAkernel!(u, res, u_n, stages, a_row, c_row,
-                                                     ::Val{N}) where {N}
+@kernel inbounds=true function rosenbrock_internal_stage_KAkernel!(u, res, u_n, stages,
+                                                                   a_row, c_row,
+                                                                   ::Val{N}) where {N}
     i = @index(Global)
-    @inbounds begin
-        u_i = u_n[i]
-        res_i = zero(eltype(res))
-        for j in 1:N
-            if !iszero(a_row[j]) || !iszero(c_row[j])
-                stage_ji = stages[j][i]
-                u_i = u_i + a_row[j] * stage_ji
-                res_i = res_i + c_row[j] * stage_ji
-            end
+    u_i = u_n[i]
+    res_i = zero(eltype(res))
+    for j in 1:N
+        if !iszero(a_row[j]) || !iszero(c_row[j])
+            stage_ji = stages[j][i]
+            u_i = u_i + a_row[j] * stage_ji
+            res_i = res_i + c_row[j] * stage_ji
         end
-        u[i] = u_i
-        res[i] = res_i
     end
+    u[i] = u_i
+    res[i] = res_i
 end
 
-@kernel inbounds=true function rosenbrock_final_stage_KAkernel!(u, stages, m, ::Val{N}) where {N}
+@kernel inbounds=true function rosenbrock_final_stage_KAkernel!(u, stages, m,
+                                                                ::Val{N}) where {N}
     i = @index(Global)
-    @inbounds begin
-        u_i = u[i]
-        for j in 1:N
-            u_i = u_i + m[j] * stages[j][i]
-        end
-        u[i] = u_i
+    u_i = u[i]
+    for j in 1:N
+        u_i = u_i + m[j] * stages[j][i]
     end
+    u[i] = u_i
 end
 
 include("tableaux.jl")
