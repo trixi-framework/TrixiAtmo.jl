@@ -38,6 +38,15 @@ semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_terms_coriolis,
                                     boundary_conditions = boundary_conditions)
 
+# Setting `real_type` allows to change the real number type, e.g., to `Float32`.
+# This is particularly useful when changing the `storage_type` to a GPU array
+# type such as `ROCArray` (AMD) or `CuArray` (NVIDIA CUDA).
+# On such backends, `flux_differencing_kernel` selects the kernel used for the
+# flux differencing volume integral, one of `HalfSweep()` (default), `FullSweep()`,
+# or `FullSweepGlobal()`.
+semi = trixi_adapt(semi; real_type = nothing, storage_type = nothing,
+                   flux_differencing_kernel = nothing)
+
 ###############################################################################
 # ODE solvers, callbacks etc.
 T = 10 # 10 days

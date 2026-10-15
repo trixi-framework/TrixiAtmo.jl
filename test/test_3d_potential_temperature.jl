@@ -229,6 +229,43 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
+@testitem "Euler potential temperature 3D: elixir_potential_temperature_baroclinic_instability_turbo (Float32)" setup=[
+    Setup,
+    EulerPotentialTemperature3D
+] tags=[:euler_potential_temperature_3d] begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
+                                 "elixir_potential_temperature_baroclinic_instability_turbo.jl"),
+                        l2=Float32[0.0005262429,
+                                   0.016053239,
+                                   0.014937877,
+                                   0.014429507,
+                                   0.14226119,
+                                   101.35988],
+                        linf=Float32[0.0044714212,
+                                     1.1531469,
+                                     0.69583094,
+                                     1.1175765,
+                                     1.0573425,
+                                     380.0],
+                        tspan=(0.0, 100.0), trees_per_cube_face=(2, 2),
+                        RealT_for_test_tolerances=Float32,
+                        real_type=Float32)
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
+    # The elixir uses the adapted `semi` for the ODE problem and the time
+    @test semi === ode.p
+    @test eltype(ode.tspan) == Float32
+    @test sol.t[end] isa Float32
+    @test eltype(sol.u[end]) == Float32
+    @test real(semi.solver) == Float32
+    @test real(semi.solver.basis) == Float32
+    @test real(semi.solver.mortar) == Float32
+    @test typeof(semi.equations.c_p) == Float32
+    # TODO: `mesh` is currently not `adapt`ed correctly
+    @test real(semi.mesh) == Float64
+end
+
 @testitem "Euler potential temperature 3D: elixir_potential_temperature_held_suarez" setup=[
     Setup,
     EulerPotentialTemperature3D
