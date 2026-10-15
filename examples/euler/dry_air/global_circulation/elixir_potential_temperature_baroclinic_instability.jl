@@ -1,7 +1,7 @@
 # An idealized baroclinic instability test case, integrated with a Rosenbrock-W method and a
 # vertically implicit Jacobian (horizontally explicit, vertically implicit time integration)
 #
-# This elixir takes about 5 minutes on an NVIDIA GH200 GPU.
+# This elixir takes about 2 minutes on an NVIDIA GH200 GPU.
 #
 # References:
 # - Paul A. Ullrich, Thomas Melvin, Christiane Jablonowski, Andrew Staniforth (2013)
