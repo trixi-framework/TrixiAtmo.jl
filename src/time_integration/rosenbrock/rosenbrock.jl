@@ -158,12 +158,6 @@ function rosenbrock_stage!(integrator::RosenbrockIntegrator, stage, gamma_dt)
     return nothing
 end
 
-# The sweeps over the solution vector below are the only parts of the integrator that are
-# implemented for the CPU (`backend::Nothing`, `@threaded` loops) and for GPUs
-# (`backend::Backend`, KernelAbstractions.jl kernels). They run over all `N` stages, which
-# unrolls the loops since `N` is a compile-time constant; the stages after the current one
-# carry a zero coefficient.
-
 # u = u_n + sum_j a_j stages[j] and res = sum_j c_j stages[j] in one sweep
 function rosenbrock_internal_stage!(backend::Nothing, u, res, u_n, stages, a_row,
                                     c_row, ::Val{N}) where {N}
@@ -222,9 +216,7 @@ function rosenbrock_final_stage!(backend::Backend, u, stages, m,
 end
 end # @muladd
 
-# The loads of the stages with a zero coefficient (the stages after the current one) are
-# skipped, which saves memory traffic; the branch is uniform across the whole grid.
-@kernel function rosenbrock_internal_stage_KAkernel!(u, res, u_n, stages, a_row, c_row,
+@kernel inbounds=true function rosenbrock_internal_stage_KAkernel!(u, res, u_n, stages, a_row, c_row,
                                                      ::Val{N}) where {N}
     i = @index(Global)
     @inbounds begin
@@ -242,7 +234,7 @@ end # @muladd
     end
 end
 
-@kernel function rosenbrock_final_stage_KAkernel!(u, stages, m, ::Val{N}) where {N}
+@kernel inbounds=true function rosenbrock_final_stage_KAkernel!(u, stages, m, ::Val{N}) where {N}
     i = @index(Global)
     @inbounds begin
         u_i = u[i]
