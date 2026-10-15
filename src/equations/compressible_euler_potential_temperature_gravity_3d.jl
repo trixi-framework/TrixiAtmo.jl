@@ -798,7 +798,6 @@ end
     f4 = f1 * v3_avg + p_avg * normal_direction_3
     f5 = f1 * inv_ln_mean(1 / theta_ll, 1 / theta_rr)
 
-    # Nonconservative part, i.e., `flux_nonconservative_waruszewski_etal`, scaled by 0.5.
     # Since this flux is antisymmetric, the right contribution is obtained by flipping the
     # sign.
     gravity = 0.5f0 * rho_mean * (phi_rr - phi_ll)
