@@ -170,6 +170,10 @@ end
               RealT
         @test eltype(@inferred flux_etec(u_ll, u_rr, normal_direction, equations)) ==
               RealT
+        for i in 1:2
+            @test eltype(@inferred flux_es(u_ll, u_rr, normal_direction, equations)[i]) ==
+                  RealT
+        end
 
         @test eltype(@inferred cons2prim(u, equations)) == RealT
         @test eltype(@inferred prim2cons(u, equations)) == RealT
@@ -267,6 +271,18 @@ end
                                                                   normal_direction,
                                                                   equations)[i]) ==
                   RealT
+            @test eltype(@inferred flux_es(u_ll, u_rr, normal_direction, equations)[i]) ==
+                  RealT
+        end
+        for volume_flux in ((flux_kennedy_gruber, flux_nonconservative_souza_etal),
+                            (flux_ec, flux_nonconservative_waruszewski_etal))
+            turbo = @inferred Trixi.cons2turbo(volume_flux, u..., equations)
+            @test eltype(turbo) == RealT
+            for i in 1:2
+                @test eltype(@inferred Trixi.flux_turbo(volume_flux, turbo..., turbo...,
+                                                        normal_direction..., equations)[i]) ==
+                      RealT
+            end
         end
         @test eltype(@inferred cons2prim(u, equations)) == RealT
         @test eltype(@inferred prim2cons(u, equations)) == RealT
@@ -280,6 +296,13 @@ end
                                                    equations)) == RealT
         @test typeof(@inferred max_abs_speed(u_ll, u_rr, normal_direction,
                                              equations)) == RealT
+
+        # Adapt the real type, e.g., to move a semidiscretization to a GPU
+        equations_float64 = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
+                                                                                        c_v = 717.0,
+                                                                                        gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+        @test typeof(@inferred similar(equations_float64, RealT)) == typeof(equations)
+        @test similar(equations_float64, RealT).K ≈ equations.K
     end
 end
 

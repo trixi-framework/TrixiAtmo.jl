@@ -16,7 +16,7 @@ using Printf: @sprintf
 using Static: True, False
 using StrideArrays: PtrArray
 using StaticArrayInterface: static_size
-using LinearAlgebra: Diagonal, I, cross, norm, dot, det, diagm
+using LinearAlgebra: Diagonal, I, UpperTriangular, cross, norm, dot, det, diagm
 using Reexport: @reexport
 using LoopVectorization: @turbo
 using QuadGK: quadgk
@@ -36,6 +36,20 @@ using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
 
 using Trixi: ln_mean, stolarsky_mean, inv_ln_mean
 
+# Time integration
+using Trixi: AbstractTimeIntegrator, AbstractTimeIntegrationAlgorithm,
+             ODEProblem, @threaded, @trixi_timeit,
+             @trixi_timeit_ext, timer, limit_dt!, initialize_callbacks!,
+             handle_callbacks!, check_max_iter!
+import Trixi: init, step!, add_tstop!, get_tmp_cache, terminate!,
+              derivative_discontinuity!
+using DataStructures: BinaryHeap, FasterForward
+using KernelAbstractions: KernelAbstractions, @kernel, @index, @Const, @uniform, @ndrange,
+                          Backend, get_backend
+using StaticArrays: MVector, MMatrix
+using Adapt: Adapt
+using Trixi: wrap_array, get_node_coords, get_contravariant_vector
+
 # DGMulti Solvers
 using StartUpDG: MeshData, RefElemData
 
@@ -46,6 +60,7 @@ include("semidiscretization/semidiscretization.jl")
 include("solvers/solvers.jl")
 include("callbacks_step/callbacks_step.jl")
 include("callbacks_stage/callbacks_stage.jl")
+include("time_integration/time_integration.jl")
 
 export CompressibleMoistEulerEquations2D,
        CompressibleRainyEulerEquations2D,
@@ -66,6 +81,8 @@ export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
 export NonlinearSolveDG
 
+export SSPRW32, VerticalJacobianTwoSided
+
 export flux_chandrashekar, FluxLMARS
 
 export flux_nonconservative_zeros, flux_nonconservative_ec,
@@ -77,7 +94,7 @@ export flux_nonconservative_zeros, flux_nonconservative_ec,
        flux_ec_rain, flux_LMARS, flux_nonconservative_es, flux_conservative_es,
        flux_conservative_etec, flux_nonconservative_etec
 
-export flux_lmars_combined, flux_kennedy_gruber_souza_etal
+export flux_lmars_combined, flux_kennedy_gruber_souza_etal, flux_es
 
 export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!
 
