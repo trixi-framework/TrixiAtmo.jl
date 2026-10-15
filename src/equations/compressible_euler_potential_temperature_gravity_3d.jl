@@ -701,18 +701,23 @@ end
 end
 end # @muladd
 
-# Specializations of the `FluxTurbo` interface of Trixi.jl.
+# Specializations of the `FluxTurbo` interface of Trixi.jl for the volume fluxes
+# `FluxTurbo(flux_kennedy_gruber, flux_nonconservative_souza_etal)` and
+# `FluxTurbo(flux_ec, flux_nonconservative_waruszewski_etal)`.
 const FluxKennedyGruberSouzaEtal = Tuple{typeof(flux_kennedy_gruber),
                                          typeof(flux_nonconservative_souza_etal)}
+const FluxEC = Tuple{typeof(flux_ec), typeof(flux_nonconservative_waruszewski_etal)}
 
 # We precompute `rho, v1, v2, v3, theta, p, phi`, i.e., one quantity more than the number
-# of variables.
-@inline function Trixi.nturbovars(::FluxKennedyGruberSouzaEtal,
+# of variables. Both fluxes use the same precomputed variables.
+@inline function Trixi.nturbovars(::Union{FluxKennedyGruberSouzaEtal,
+                                          FluxEC},
                                   ::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     return Val(7)
 end
 
-@inline function Trixi.cons2turbo(::FluxKennedyGruberSouzaEtal,
+@inline function Trixi.cons2turbo(::Union{FluxKennedyGruberSouzaEtal,
+                                          FluxEC},
                                   rho, rho_v1, rho_v2, rho_v3, rho_theta, phi,
                                   equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     v1 = rho_v1 / rho
@@ -751,6 +756,52 @@ end
     # Nonconservative part, i.e., `flux_nonconservative_souza_etal`, scaled by 0.5. Since this
     # flux is antisymmetric, the right contribution is obtained by flipping the sign.
     gravity = 0.5f0 * rho_avg * (phi_rr - phi_ll)
+    g2 = normal_direction_1 * gravity
+    g3 = normal_direction_2 * gravity
+    g4 = normal_direction_3 * gravity
+
+    zero_ = zero(eltype(rho_ll))
+    flux_left = (f1, f2 + g2, f3 + g3, f4 + g4, f5, zero_)
+    flux_right = (f1, f2 - g2, f3 - g3, f4 - g4, f5, zero_)
+
+    return flux_left, flux_right
+end
+
+# Fused version of `flux_ec` and `flux_nonconservative_waruszewski_etal`, see
+# - Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
+#   Structure-Preserving High-Order Methods for the Compressible Euler Equations
+#   in Potential Temperature Formulation for Atmospheric Flows
+#   (https://arxiv.org/abs/2509.10311)
+@inline function Trixi.flux_turbo(::FluxEC,
+                                  rho_ll, v1_ll, v2_ll, v3_ll, theta_ll, p_ll, phi_ll,
+                                  rho_rr, v1_rr, v2_rr, v3_rr, theta_rr, p_rr, phi_rr,
+                                  normal_direction_1, normal_direction_2,
+                                  normal_direction_3,
+                                  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+    v_dot_n_ll = v1_ll * normal_direction_1 + v2_ll * normal_direction_2 +
+                 v3_ll * normal_direction_3
+    v_dot_n_rr = v1_rr * normal_direction_1 + v2_rr * normal_direction_2 +
+                 v3_rr * normal_direction_3
+
+    # Compute the necessary mean values
+    rho_mean = ln_mean(rho_ll, rho_rr)
+    v1_avg = 0.5f0 * (v1_ll + v1_rr)
+    v2_avg = 0.5f0 * (v2_ll + v2_rr)
+    v3_avg = 0.5f0 * (v3_ll + v3_rr)
+    p_avg = 0.5f0 * (p_ll + p_rr)
+
+    # Conservative part, i.e., `flux_ec`. Since `rho / rho_theta = 1 / theta`, the
+    # potential temperature flux uses the same mean value as in `flux_ec`.
+    f1 = rho_mean * 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
+    f2 = f1 * v1_avg + p_avg * normal_direction_1
+    f3 = f1 * v2_avg + p_avg * normal_direction_2
+    f4 = f1 * v3_avg + p_avg * normal_direction_3
+    f5 = f1 * inv_ln_mean(1 / theta_ll, 1 / theta_rr)
+
+    # Nonconservative part, i.e., `flux_nonconservative_waruszewski_etal`, scaled by 0.5.
+    # Since this flux is antisymmetric, the right contribution is obtained by flipping the
+    # sign.
+    gravity = 0.5f0 * rho_mean * (phi_rr - phi_ll)
     g2 = normal_direction_1 * gravity
     g3 = normal_direction_2 * gravity
     g4 = normal_direction_3 * gravity
