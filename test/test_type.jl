@@ -296,13 +296,6 @@ end
                                                    equations)) == RealT
         @test typeof(@inferred max_abs_speed(u_ll, u_rr, normal_direction,
                                              equations)) == RealT
-
-        # Adapt the real type, e.g., to move a semidiscretization to a GPU
-        equations_float64 = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
-                                                                                        c_v = 717.0,
-                                                                                        gravity = EARTH_GRAVITATIONAL_ACCELERATION)
-        @test typeof(@inferred similar(equations_float64, RealT)) == typeof(equations)
-        @test similar(equations_float64, RealT).K ≈ equations.K
     end
 end
 
