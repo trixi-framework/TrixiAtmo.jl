@@ -5,16 +5,15 @@
 @muladd begin
 #! format: noindent
 
-# Interface of the approximate Jacobians of the linearly implicit time integration methods
+# Interface of the approximate Jacobians of the implicit time integration methods
 
 """
     update_jacobian!(jacobian, u_ode, semi, gamma_dt)
 
 Assemble (and factorize) the approximate Jacobian `jacobian` of the right-hand side of the
-semidiscretization `semi` at the solution `u_ode` for the Rosenbrock-W methods, e.g.,
-[`SSPRW32`](@ref), such that [`solve_jacobian!`](@ref) can solve linear systems with the
-matrix `I / gamma_dt - J`, where `gamma_dt = gamma * dt`. For `jacobian = nothing`,
-nothing is done.
+semidiscretization `semi` at the solution `u_ode`, such that [`solve_jacobian!`](@ref) can
+solve linear systems with the matrix `I / gamma_dt - J`. For `jacobian = nothing`, nothing
+is done.
 """
 update_jacobian!(::Nothing, u_ode, semi, gamma_dt) = nothing
 

@@ -5,11 +5,12 @@
 @muladd begin
 #! format: noindent
 
-# Abstract base type for the Rosenbrock-W methods with `N` stages, implemented in the
-# transformed form of Hairer and Wanner (1996), Section IV.7: every stage solves one linear
-# system with the matrix `I / (gamma * dt) - J`, where `J` is the approximate Jacobian of
-# the right-hand side passed to `Trixi.solve` (`jacobian.jl`), and no product with the
-# Jacobian is needed.
+# Abstract base type for time integration schemes of Rosenbrock-W methods with `N` stages.
+# They are implemented in the transformed form of Hairer and Wanner (1996), Section IV.7,
+# see `RosenbrockTableau`: every stage solves one linear system with the matrix
+# `I / (gamma * dt) - J`, where `J` is the approximate Jacobian of the right-hand side
+# passed to `Trixi.solve` (see `jacobian.jl`), and no product with the Jacobian is needed.
+# A concrete method provides `tableau(alg, RealT)`.
 abstract type AbstractRosenbrockAlgorithm{N} <: AbstractTimeIntegrationAlgorithm end
 
 nstages(::AbstractRosenbrockAlgorithm{N}) where {N} = N
@@ -19,13 +20,12 @@ nstages(::AbstractRosenbrockAlgorithm{N}) where {N} = N
 # https://diffeq.sciml.ai/v6.8/basics/integrator/#Handing-Integrators-1
 # which are used in Trixi.jl.
 mutable struct RosenbrockIntegrator{RealT <: Real, uType, Params, Sol, F, Alg,
-                                    Options, NSTAGES, Jacobian} <:
+                                    Tableau, Options, NSTAGES, Jacobian} <:
                AbstractTimeIntegrator
     u::uType
     du::uType
     u_tmp::uType
-    # Stage vectors; `stages[i]` holds the i-th stage of the transformed form
-    stages::NTuple{NSTAGES, uType}
+    stages::NTuple{NSTAGES, uType} # stage vectors of the transformed form
     t::RealT
     tdir::RealT # DIRection of time integration, i.e., if one marches forward or backward in time
     dt::RealT # current time step
@@ -35,7 +35,10 @@ mutable struct RosenbrockIntegrator{RealT <: Real, uType, Params, Sol, F, Alg,
     sol::Sol # faked
     const f::F # right-hand side of the semidiscretization
     const alg::Alg # AbstractRosenbrockAlgorithm
+    const tableau::Tableau # RosenbrockTableau of `alg` in the real type of `u`
     const jacobian::Jacobian # approximate Jacobian of the right-hand side, see `jacobian.jl`
+    const update_interval::Int # number of time steps between two updates of the Jacobian
+    dt_jacobian::RealT # time step of the current factorization of the Jacobian
     opts::Options
     finalstep::Bool # added for convenience
     const dtchangeable::Bool
@@ -44,20 +47,21 @@ end
 
 function init(ode::ODEProblem, alg::AbstractRosenbrockAlgorithm;
               dt, callback::Union{CallbackSet, Nothing} = nothing, jacobian = nothing,
-              kwargs...)
+              update_interval = 1, kwargs...)
     u = copy(ode.u0)
     du = similar(u)
     u_tmp = similar(u)
-    # The stage vectors must be initialized to zero, not just allocated: the stage
-    # combination sweeps run over all stages and multiply the stages not computed yet
-    # by a zero coefficient, and `0 * NaN` would poison the result.
+    # The stage vectors are initialized to zero since the stage combinations run over all
+    # stages, multiplying the stages not computed yet by a zero coefficient
     stages = ntuple(_ -> zero(u), Val(nstages(alg)))
+    tableau_ = tableau(alg, eltype(u))
     t = first(ode.tspan)
     t, dt = promote(t, dt)
     tdir = sign(ode.tspan[end] - ode.tspan[1])
     iter = 0
     integrator = RosenbrockIntegrator(u, du, u_tmp, stages, t, tdir, dt, dt, iter,
-                                      ode.p, (prob = ode,), ode.f, alg, jacobian,
+                                      ode.p, (prob = ode,), ode.f, alg, tableau_,
+                                      jacobian, update_interval, zero(dt),
                                       TimeIntegratorOptions(callback, ode.tspan;
                                                             kwargs...),
                                       false, true, false)
@@ -70,7 +74,7 @@ end
 
 function step!(integrator::RosenbrockIntegrator)
     @unpack prob = integrator.sol
-    @unpack alg = integrator
+    @unpack alg, tableau = integrator
     t_end = last(prob.tspan)
     callbacks = integrator.opts.callback
 
@@ -81,12 +85,17 @@ function step!(integrator::RosenbrockIntegrator)
 
     limit_dt!(integrator, t_end)
 
-    # The matrix `I / (gamma dt) - J` of the stages is assembled once per time step. It
-    # follows `dt` if `limit_dt!` shortens the last step.
-    gamma_dt = alg.gamma * integrator.dt
-    @trixi_timeit timer() "update Jacobian" update_jacobian!(integrator.jacobian,
-                                                             integrator.u,
-                                                             integrator.p, gamma_dt)
+    # The matrix `I / (gamma dt) - J` of the stages is assembled every `update_interval`
+    # time steps and whenever the time step changes (e.g., if `limit_dt!` shortens the
+    # last step), since it depends on `dt`
+    gamma_dt = tableau.gamma * integrator.dt
+    if integrator.iter % integrator.update_interval == 0 ||
+       integrator.dt != integrator.dt_jacobian
+        @trixi_timeit timer() "update Jacobian" update_jacobian!(integrator.jacobian,
+                                                                 integrator.u,
+                                                                 integrator.p, gamma_dt)
+        integrator.dt_jacobian = integrator.dt
+    end
 
     for stage in 1:nstages(alg)
         rosenbrock_stage!(integrator, stage, gamma_dt)
@@ -102,145 +111,146 @@ function step!(integrator::RosenbrockIntegrator)
     return nothing
 end
 
-# One stage of the transformed form (Hairer and Wanner, 1996, eq. (7.25)):
-#   u_s = u_n + sum_j a_sj stages_j
-#   (I / (gamma dt) - J) stages_s = f(u_s, t + c_s dt) + sum_j (c_sj / dt) stages_j.
-# After the last stage, u_{n+1} = u_n + sum_j m_j stages_j is written to `integrator.u`.
-# The stage vector is assembled in place in `stages[stage]`: `res` is only an alias, so no
-# separate residual vector is needed. This is safe because the tableau is strictly lower
-# triangular, so the stage combination never uses `stages[stage]` (the GPU kernel skips the
-# load of stages with a zero coefficient, and the CPU loop reads `stages[j][i]` for all `j`
-# before writing `res[i]`).
+# One stage of the transformed form (Hairer and Wanner, 1996, eq. (7.25)),
+#   u_s = u_n + sum_j a_sj stages_j,
+#   (I / (gamma dt) - J) stages_s = f(u_s, t + c_s dt) + sum_j (c_sj / dt) stages_j,
+# and, after the last stage, u_{n+1} = u_n + sum_j m_j stages_j.
+# The stage vector is assembled in place in `stages[stage]` (`res`), which is possible since
+# the tableau is strictly lower triangular: the stage combination never uses `stages[stage]`
+# (the GPU kernel skips the stages with a zero coefficient and the CPU loop reads
+# `stages[j][i]` for all `j` before writing `res[i]`).
 function rosenbrock_stage!(integrator::RosenbrockIntegrator, stage, gamma_dt)
-    (; u, du, u_tmp, stages, p, t, dt, alg) = integrator
+    (; u, du, u_tmp, stages, p, t, dt, alg, tableau) = integrator
     backend = trixi_backend(u)
     N = nstages(alg)
 
-    a_row = alg.a[stage, :]
-    c_row = alg.c[stage, :] * inv(dt)
+    a_row = tableau.a[stage, :]
+    c_row = tableau.c[stage, :] * inv(dt)
     res = stages[stage]
 
-    # Single fused sweep: u_tmp = u + sum_j a_sj stages_j, res = sum_j (c_sj / dt) stages_j
-    @trixi_timeit_ext backend timer() "stage combination" rosenbrock_combine!(backend,
-                                                                              u_tmp,
-                                                                              res, u,
-                                                                              stages,
-                                                                              a_row,
-                                                                              c_row,
-                                                                              Val(N))
+    @trixi_timeit_ext backend timer() "stage combination" rosenbrock_stage_combination!(backend,
+                                                                                        u_tmp,
+                                                                                        res,
+                                                                                        u,
+                                                                                        stages,
+                                                                                        a_row,
+                                                                                        c_row,
+                                                                                        Val(N))
 
-    integrator.f(du, u_tmp, p, t + alg.c_stage[stage] * dt)
+    integrator.f(du, u_tmp, p, t + tableau.c_stage[stage] * dt)
 
-    @trixi_timeit_ext backend timer() "stage residual" rosenbrock_residual!(backend,
-                                                                            res, du)
+    @trixi_timeit_ext backend timer() "stage residual" rosenbrock_stage_residual!(backend,
+                                                                                  res,
+                                                                                  du)
 
     @trixi_timeit_ext backend timer() "solve Jacobian" solve_jacobian!(res,
                                                                        integrator.jacobian,
                                                                        p, gamma_dt)
 
     if stage == N
-        # Single sweep: u = u + sum_j m_j stages_j (reads each stage once)
-        m = alg.m
-        @trixi_timeit_ext backend timer() "stage finalization" rosenbrock_finalize!(backend,
-                                                                                    u,
-                                                                                    stages,
-                                                                                    m,
-                                                                                    Val(N))
+        @trixi_timeit_ext backend timer() "final combination" rosenbrock_final_combination!(backend,
+                                                                                            u,
+                                                                                            stages,
+                                                                                            tableau.m,
+                                                                                            Val(N))
     end
 
     return nothing
 end
 
-# ---------------------------------------------------------------------------------------
-# Full-field sweeps. These run over the whole solution vector and are the only parts of the
-# integrator that touch `u` element by element, so they are the only parts that need a GPU
-# counterpart. `trixi_backend(u)` returns `nothing` for a plain `Array` (threaded CPU loop)
-# and a `KernelAbstractions.Backend` otherwise.
-#
-# The stage coefficients `a` and `c` are strictly lower triangular, so the sweeps always
-# run over all `N` stages: the entries beyond the current stage are zero. This keeps the
-# loop bound a compile-time constant, which lets it unroll on the GPU.
-# ---------------------------------------------------------------------------------------
+# The sweeps over the solution vector below are the only parts of the integrator that are
+# implemented for the CPU (`backend::Nothing`, `@threaded` loops) and for GPUs
+# (`backend::Backend`, KernelAbstractions.jl kernels). They run over all `N` stages, which
+# unrolls the loops since `N` is a compile-time constant; the stages after the current one
+# carry a zero coefficient.
 
-# u = u_n + sum_j a_j stages[j] and res = sum_j c_j stages[j], in one sweep
-function rosenbrock_combine!(backend::Nothing, u, res, u_n, stages, a_row, c_row,
-                             ::Val{N}) where {N}
+# u = u_n + sum_j a_j stages[j] and res = sum_j c_j stages[j] in one sweep
+function rosenbrock_stage_combination!(backend::Nothing, u, res, u_n, stages, a_row,
+                                       c_row, ::Val{N}) where {N}
     @threaded for i in eachindex(u)
-        acc_u = u_n[i]
-        acc_res = zero(eltype(res))
+        u_i = u_n[i]
+        res_i = zero(eltype(res))
         for j in 1:N
             stage_ji = stages[j][i]
-            acc_u = acc_u + a_row[j] * stage_ji
-            acc_res = acc_res + c_row[j] * stage_ji
+            u_i = u_i + a_row[j] * stage_ji
+            res_i = res_i + c_row[j] * stage_ji
         end
-        u[i] = acc_u
-        res[i] = acc_res
+        u[i] = u_i
+        res[i] = res_i
     end
     return nothing
 end
 
-function rosenbrock_combine!(backend::Backend, u, res, u_n, stages, a_row, c_row,
-                             ::Val{N}) where {N}
-    kernel! = rosenbrock_combine_KAkernel!(backend)
+function rosenbrock_stage_combination!(backend::Backend, u, res, u_n, stages, a_row,
+                                       c_row, ::Val{N}) where {N}
+    kernel! = rosenbrock_stage_combination_KAkernel!(backend)
     kernel!(u, res, u_n, stages, a_row, c_row, Val(N), ndrange = length(u))
     return nothing
 end
 
 # res = res + du
-function rosenbrock_residual!(backend::Nothing, res, du)
+function rosenbrock_stage_residual!(backend::Nothing, res, du)
     @threaded for i in eachindex(res)
         res[i] = res[i] + du[i]
     end
     return nothing
 end
 
-function rosenbrock_residual!(backend::Backend, res, du)
+function rosenbrock_stage_residual!(backend::Backend, res, du)
     res .+= du
     return nothing
 end
 
-# u = u + sum_j m_j stages[j], the final stage combination (in place)
-function rosenbrock_finalize!(backend::Nothing, u, stages, m, ::Val{N}) where {N}
+# u = u + sum_j m_j stages[j]
+function rosenbrock_final_combination!(backend::Nothing, u, stages, m,
+                                       ::Val{N}) where {N}
     @threaded for i in eachindex(u)
-        acc = u[i]
+        u_i = u[i]
         for j in 1:N
-            acc = acc + m[j] * stages[j][i]
+            u_i = u_i + m[j] * stages[j][i]
         end
-        u[i] = acc
+        u[i] = u_i
     end
     return nothing
 end
 
-function rosenbrock_finalize!(backend::Backend, u, stages, m, ::Val{N}) where {N}
-    kernel! = rosenbrock_finalize_KAkernel!(backend)
+function rosenbrock_final_combination!(backend::Backend, u, stages, m,
+                                       ::Val{N}) where {N}
+    kernel! = rosenbrock_final_combination_KAkernel!(backend)
     kernel!(u, stages, m, Val(N), ndrange = length(u))
     return nothing
 end
 end # @muladd
 
-# sum_{j=1}^{J} coeffs[j] * stages[j][i], unrolled at compile time. The stages after the
-# current one carry a zero coefficient; skipping the load rather than multiplying by zero
-# saves the memory traffic, and the branch is uniform across the whole grid.
-@inline function fold_stages(stages, coeffs, i, ::Val{J}) where {J}
-    if J == 0
-        return zero(eltype(coeffs))
-    else
-        previous = fold_stages(stages, coeffs, i, Val(J - 1))
-        coeff = coeffs[J]
-        return iszero(coeff) ? previous : coeff * (@inbounds stages[J][i]) + previous
+# The loads of the stages with a zero coefficient (the stages after the current one) are
+# skipped, which saves memory traffic; the branch is uniform across the whole grid.
+@kernel function rosenbrock_stage_combination_KAkernel!(u, res, u_n, stages, a_row, c_row,
+                                                        ::Val{N}) where {N}
+    i = @index(Global)
+    @inbounds begin
+        u_i = u_n[i]
+        res_i = zero(eltype(res))
+        for j in 1:N
+            if !iszero(a_row[j]) || !iszero(c_row[j])
+                stage_ji = stages[j][i]
+                u_i = u_i + a_row[j] * stage_ji
+                res_i = res_i + c_row[j] * stage_ji
+            end
+        end
+        u[i] = u_i
+        res[i] = res_i
     end
 end
 
-@kernel function rosenbrock_combine_KAkernel!(u, res, u_n, stages, a_row, c_row,
-                                              ::Val{N}) where {N}
+@kernel function rosenbrock_final_combination_KAkernel!(u, stages, m, ::Val{N}) where {N}
     i = @index(Global)
-    @inbounds u[i] = u_n[i] + fold_stages(stages, a_row, i, Val(N))
-    @inbounds res[i] = fold_stages(stages, c_row, i, Val(N))
-end
-
-@kernel function rosenbrock_finalize_KAkernel!(u, stages, m, ::Val{N}) where {N}
-    i = @index(Global)
-    @inbounds u[i] = u[i] + fold_stages(stages, m, i, Val(N))
+    @inbounds begin
+        u_i = u[i]
+        for j in 1:N
+            u_i = u_i + m[j] * stages[j][i]
+        end
+        u[i] = u_i
+    end
 end
 
 include("tableaux.jl")
