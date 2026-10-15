@@ -97,10 +97,12 @@ end
 
 # Weak form kernel which uses contravariant flux components, passing the geometric
 # information contained in the auxiliary variables to the flux function
-@inline function Trixi.weak_form_kernel!(du, u, element, ::Type{<:P4estMesh{2}},
-                                         nonconservative_terms::False,
-                                         equations::AbstractCovariantEquations{2},
-                                         dg::DGSEM, cache, alpha = true)
+Base.@propagate_inbounds function Trixi.weak_form_kernel!(du, u, element,
+                                                          ::Type{<:P4estMesh{2}},
+                                                          nonconservative_terms::False,
+                                                          equations::AbstractCovariantEquations{2},
+                                                          dg::DGSEM, cache,
+                                                          alpha = true)
     (; derivative_hat) = dg.basis
     (; aux_node_vars) = cache.auxiliary_variables
 
@@ -131,11 +133,13 @@ end
 
 # Flux differencing kernel which uses contravariant flux components, passing the geometric
 # information contained in the auxiliary variables to the flux function
-@inline function Trixi.flux_differencing_kernel!(du, u, element, ::Type{<:P4estMesh{2}},
-                                                 nonconservative_terms::False,
-                                                 equations::AbstractCovariantEquations{2},
-                                                 volume_flux, dg::DGSEM, cache,
-                                                 alpha = true)
+Base.@propagate_inbounds function Trixi.flux_differencing_kernel!(du, u, element,
+                                                                  ::Type{<:P4estMesh{2}},
+                                                                  nonconservative_terms::False,
+                                                                  equations::AbstractCovariantEquations{2},
+                                                                  volume_flux,
+                                                                  dg::DGSEM,
+                                                                  cache, alpha = true)
     (; derivative_split) = dg.basis
     (; aux_node_vars) = cache.auxiliary_variables
 
@@ -185,12 +189,13 @@ end
 # Non-conservative flux differencing kernel which uses contravariant flux components,
 # passing the geometric information contained in the auxiliary variables to the flux
 # function
-@inline function Trixi.flux_differencing_kernel!(du, u, element,
-                                                 MeshT::Type{<:P4estMesh{2}},
-                                                 nonconservative_terms::True,
-                                                 equations::AbstractCovariantEquations{2},
-                                                 volume_flux, dg::DGSEM, cache,
-                                                 alpha = true)
+Base.@propagate_inbounds function Trixi.flux_differencing_kernel!(du, u, element,
+                                                                  MeshT::Type{<:P4estMesh{2}},
+                                                                  nonconservative_terms::True,
+                                                                  equations::AbstractCovariantEquations{2},
+                                                                  volume_flux,
+                                                                  dg::DGSEM,
+                                                                  cache, alpha = true)
     (; derivative_split) = dg.basis
     (; aux_node_vars) = cache.auxiliary_variables
     symmetric_flux, nonconservative_flux = volume_flux
@@ -246,51 +251,61 @@ function Trixi.calc_interface_flux!(backend::Nothing, surface_flux_values,
     index_range = eachnode(dg)
     index_end = last(index_range)
 
+    # Explicit bounds check, which allows us to assume inbounds access below
+    @boundscheck begin
+        Trixi.check_axes(cache.interfaces, equations, dg, cache)
+        Trixi.check_axes(cache.auxiliary_variables, equations, dg, cache)
+        Trixi.check_axes_surface_flux_values(surface_flux_values, mesh, equations, dg,
+                                             cache)
+    end
+
     Trixi.@threaded for interface in Trixi.eachinterface(dg, cache)
-        # Get element and side index information on the primary element
-        primary_element = neighbor_ids[1, interface]
-        primary_indices = node_indices[1, interface]
-        primary_direction = Trixi.indices2direction(primary_indices)
+        @inbounds begin
+            # Get element and side index information on the primary element
+            primary_element = neighbor_ids[1, interface]
+            primary_indices = node_indices[1, interface]
+            primary_direction = Trixi.indices2direction(primary_indices)
 
-        # Create the local i,j indexing on the primary element used to pull normal
-        # direction information
-        i_primary_start, i_primary_step = Trixi.index_to_start_step_2d(primary_indices[1],
-                                                                       index_range)
-        j_primary_start, j_primary_step = Trixi.index_to_start_step_2d(primary_indices[2],
-                                                                       index_range)
+            # Create the local i,j indexing on the primary element used to pull normal
+            # direction information
+            i_primary_start, i_primary_step = Trixi.index_to_start_step_2d(primary_indices[1],
+                                                                           index_range)
+            j_primary_start, j_primary_step = Trixi.index_to_start_step_2d(primary_indices[2],
+                                                                           index_range)
 
-        i_primary = i_primary_start
-        j_primary = j_primary_start
+            i_primary = i_primary_start
+            j_primary = j_primary_start
 
-        # Get element and side index information on the secondary element
-        secondary_element = neighbor_ids[2, interface]
-        secondary_indices = node_indices[2, interface]
-        secondary_direction = Trixi.indices2direction(secondary_indices)
+            # Get element and side index information on the secondary element
+            secondary_element = neighbor_ids[2, interface]
+            secondary_indices = node_indices[2, interface]
+            secondary_direction = Trixi.indices2direction(secondary_indices)
 
-        # Initiate the secondary index to be used in the surface for loop.
-        # This index on the primary side will always run forward but
-        # the secondary index might need to run backwards for flipped sides.
-        if :i_backward in secondary_indices
-            node_secondary = index_end
-            node_secondary_step = -1
-        else
-            node_secondary = 1
-            node_secondary_step = 1
-        end
+            # Initiate the secondary index to be used in the surface for loop.
+            # This index on the primary side will always run forward but
+            # the secondary index might need to run backwards for flipped sides.
+            if :i_backward in secondary_indices
+                node_secondary = index_end
+                node_secondary_step = -1
+            else
+                node_secondary = 1
+                node_secondary_step = 1
+            end
 
-        for node in eachnode(dg)
-            Trixi.calc_interface_flux!(surface_flux_values, mesh, nonconservative_terms,
-                                       equations, surface_integral, dg, cache,
-                                       interface, node, primary_direction,
-                                       primary_element,
-                                       node_secondary, secondary_direction,
-                                       secondary_element)
+            for node in eachnode(dg)
+                Trixi.calc_interface_flux!(surface_flux_values, mesh,
+                                           nonconservative_terms, equations,
+                                           surface_integral, dg, cache, interface,
+                                           node, primary_direction, primary_element,
+                                           node_secondary, secondary_direction,
+                                           secondary_element)
 
-            # Increment primary element indices to pull the normal direction
-            i_primary += i_primary_step
-            j_primary += j_primary_step
-            # Increment the surface node index along the secondary element
-            node_secondary += node_secondary_step
+                # Increment primary element indices to pull the normal direction
+                i_primary += i_primary_step
+                j_primary += j_primary_step
+                # Increment the surface node index along the secondary element
+                node_secondary += node_secondary_step
+            end
         end
     end
 
@@ -298,18 +313,20 @@ function Trixi.calc_interface_flux!(backend::Nothing, surface_flux_values,
 end
 
 # Pointwise interface flux in local coordinates for problems without nonconservative terms
-@inline function Trixi.calc_interface_flux!(surface_flux_values, mesh::P4estMesh{2},
-                                            nonconservative_terms::False,
-                                            equations::AbstractCovariantEquations{2},
-                                            surface_integral,
-                                            dg::DGSEM{<:LobattoLegendreBasis}, cache,
-                                            interface_index,
-                                            primary_node_index,
-                                            primary_direction_index,
-                                            primary_element_index,
-                                            secondary_node_index,
-                                            secondary_direction_index,
-                                            secondary_element_index)
+Base.@propagate_inbounds function Trixi.calc_interface_flux!(surface_flux_values,
+                                                             mesh::P4estMesh{2},
+                                                             nonconservative_terms::False,
+                                                             equations::AbstractCovariantEquations{2},
+                                                             surface_integral,
+                                                             dg::DGSEM{<:LobattoLegendreBasis},
+                                                             cache,
+                                                             interface_index,
+                                                             primary_node_index,
+                                                             primary_direction_index,
+                                                             primary_element_index,
+                                                             secondary_node_index,
+                                                             secondary_direction_index,
+                                                             secondary_element_index)
     (; u) = cache.interfaces
     (; aux_surface_node_vars) = cache.auxiliary_variables
     (; surface_flux) = surface_integral
@@ -360,18 +377,20 @@ end
 end
 
 # Pointwise interface flux in local coordinates for problems with nonconservative terms
-@inline function Trixi.calc_interface_flux!(surface_flux_values, mesh::P4estMesh{2},
-                                            nonconservative_terms::True,
-                                            equations::AbstractCovariantEquations{2},
-                                            surface_integral,
-                                            dg::DGSEM{<:LobattoLegendreBasis}, cache,
-                                            interface_index,
-                                            primary_node_index,
-                                            primary_direction_index,
-                                            primary_element_index,
-                                            secondary_node_index,
-                                            secondary_direction_index,
-                                            secondary_element_index)
+Base.@propagate_inbounds function Trixi.calc_interface_flux!(surface_flux_values,
+                                                             mesh::P4estMesh{2},
+                                                             nonconservative_terms::True,
+                                                             equations::AbstractCovariantEquations{2},
+                                                             surface_integral,
+                                                             dg::DGSEM{<:LobattoLegendreBasis},
+                                                             cache,
+                                                             interface_index,
+                                                             primary_node_index,
+                                                             primary_direction_index,
+                                                             primary_element_index,
+                                                             secondary_node_index,
+                                                             secondary_direction_index,
+                                                             secondary_element_index)
     (; u) = cache.interfaces
     (; aux_surface_node_vars) = cache.auxiliary_variables
     surface_flux, nonconservative_flux = surface_integral.surface_flux
@@ -436,15 +455,24 @@ function Trixi.calc_sources!(du, u, t, source_terms,
                              equations::AbstractCovariantEquations{2}, dg::DG, cache)
     (; aux_node_vars) = cache.auxiliary_variables
 
+    # Explicit bounds check, which allows us to assume inbounds access below
+    @boundscheck begin
+        Trixi.check_axes(u, Val(ndims(cache.elements)), equations, dg, cache)
+        Trixi.check_axes(du, Val(ndims(cache.elements)), equations, dg, cache)
+        Trixi.check_axes(cache.elements, equations, dg, cache)
+    end
+
     Trixi.@threaded for element in eachelement(dg, cache)
-        for j in eachnode(dg), i in eachnode(dg)
-            u_local = Trixi.get_node_vars(u, equations, dg, i, j, element)
-            x_local = Trixi.get_node_coords(cache.elements.node_coordinates, equations,
-                                            dg,
-                                            i, j, element)
-            aux_local = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
-            du_local = source_terms(u_local, x_local, t, aux_local, equations)
-            Trixi.add_to_node_vars!(du, du_local, equations, dg, i, j, element)
+        @inbounds begin
+            for j in eachnode(dg), i in eachnode(dg)
+                u_local = Trixi.get_node_vars(u, equations, dg, i, j, element)
+                x_local = Trixi.get_node_coords(cache.elements.node_coordinates,
+                                                equations, dg, i, j, element)
+                aux_local = get_node_aux_vars(aux_node_vars, equations, dg,
+                                              i, j, element)
+                du_local = source_terms(u_local, x_local, t, aux_local, equations)
+                Trixi.add_to_node_vars!(du, du_local, equations, dg, i, j, element)
+            end
         end
     end
 
@@ -463,13 +491,22 @@ function Trixi.apply_jacobian!(backend::Nothing, du, mesh::P4estMesh{2},
                                dg::DG, cache)
     (; aux_node_vars) = cache.auxiliary_variables
 
-    Trixi.@threaded for element in eachelement(dg, cache)
-        for j in eachnode(dg), i in eachnode(dg)
-            aux_node = get_node_aux_vars(aux_node_vars, equations, dg, i, j, element)
-            factor = -1 / area_element(aux_node, equations)
+    # Explicit bounds check, which allows us to assume inbounds access below
+    @boundscheck begin
+        Trixi.check_axes(du, mesh, equations, dg, cache)
+        Trixi.check_axes(cache.auxiliary_variables, equations, dg, cache)
+    end
 
-            for v in eachvariable(equations)
-                du[v, i, j, element] *= factor
+    Trixi.@threaded for element in eachelement(dg, cache)
+        @inbounds begin
+            for j in eachnode(dg), i in eachnode(dg)
+                aux_node = get_node_aux_vars(aux_node_vars, equations, dg,
+                                             i, j, element)
+                factor = -1 / area_element(aux_node, equations)
+
+                for v in eachvariable(equations)
+                    du[v, i, j, element] *= factor
+                end
             end
         end
     end

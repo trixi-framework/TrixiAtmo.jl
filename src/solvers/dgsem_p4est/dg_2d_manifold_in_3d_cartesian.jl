@@ -77,17 +77,18 @@ function Trixi.rhs_hyperbolic!(backend::Nothing, du, u, t,
 end
 
 # Weak-form kernel for 3D equations solved in 2D manifolds
-@inline function Trixi.weak_form_kernel!(du, u,
-                                         element,
-                                         ::Type{<:Union{StructuredMesh{2},
-                                                        StructuredMeshView{2},
-                                                        UnstructuredMesh2D,
-                                                        P4estMesh{2},
-                                                        P4estMeshView{2},
-                                                        T8codeMesh{2}}},
-                                         nonconservative_terms::False,
-                                         equations::AbstractEquations{3},
-                                         dg::DGSEM, cache, alpha = true)
+Base.@propagate_inbounds function Trixi.weak_form_kernel!(du, u,
+                                                          element,
+                                                          ::Type{<:Union{StructuredMesh{2},
+                                                                         StructuredMeshView{2},
+                                                                         UnstructuredMesh2D,
+                                                                         P4estMesh{2},
+                                                                         P4estMeshView{2},
+                                                                         T8codeMesh{2}}},
+                                                          nonconservative_terms::False,
+                                                          equations::AbstractEquations{3},
+                                                          dg::DGSEM, cache,
+                                                          alpha = true)
     # true * [some floating point value] == [exactly the same floating point value]
     # This can (hopefully) be optimized away due to constant propagation.
     @unpack derivative_hat = dg.basis
@@ -102,9 +103,8 @@ end
 
         # Compute the contravariant flux by taking the scalar product of the
         # first contravariant vector Ja^1 and the flux vector
-        Ja11, Ja12, Ja13 = Trixi.get_contravariant_vector(1, contravariant_vectors, i,
-                                                          j,
-                                                          element)
+        Ja11, Ja12, Ja13 = Trixi.get_contravariant_vector(1, contravariant_vectors,
+                                                          i, j, element)
         contravariant_flux1 = Ja11 * flux1 + Ja12 * flux2 + Ja13 * flux3
         for ii in eachnode(dg)
             Trixi.multiply_add_to_node_vars!(du, alpha * derivative_hat[ii, i],
@@ -114,9 +114,8 @@ end
 
         # Compute the contravariant flux by taking the scalar product of the
         # second contravariant vector Ja^2 and the flux vector
-        Ja21, Ja22, Ja23 = Trixi.get_contravariant_vector(2, contravariant_vectors, i,
-                                                          j,
-                                                          element)
+        Ja21, Ja22, Ja23 = Trixi.get_contravariant_vector(2, contravariant_vectors,
+                                                          i, j, element)
         contravariant_flux2 = Ja21 * flux1 + Ja22 * flux2 + Ja23 * flux3
         for jj in eachnode(dg)
             Trixi.multiply_add_to_node_vars!(du, alpha * derivative_hat[jj, j],
@@ -137,20 +136,29 @@ function calc_sources_2d_manifold_in_3d!(du, u, t, source_terms,
                                          equations::AbstractEquations{3}, dg::DG, cache)
     @unpack node_coordinates, contravariant_vectors, inverse_jacobian = cache.elements
 
+    # Explicit bounds check, which allows us to assume inbounds access below.
+    # Note that the number of spatial dimensions is taken from `cache.elements` (two),
+    # not from the `equations` (three).
+    @boundscheck begin
+        Trixi.check_axes(u, Val(ndims(cache.elements)), equations, dg, cache)
+        Trixi.check_axes(du, Val(ndims(cache.elements)), equations, dg, cache)
+        Trixi.check_axes(cache.elements, equations, dg, cache)
+    end
+
     Trixi.@threaded for element in eachelement(dg, cache)
-        for j in eachnode(dg), i in eachnode(dg)
-            u_local = Trixi.get_node_vars(u, equations, dg, i, j, element)
-            du_local = Trixi.get_node_vars(du, equations, dg, i, j, element)
-            x_local = Trixi.get_node_coords(node_coordinates, equations, dg,
-                                            i, j, element)
-            contravariant_normal_vector = Trixi.get_contravariant_vector(3,
-                                                                         contravariant_vectors,
-                                                                         i, j,
-                                                                         element) *
-                                          inverse_jacobian[i, j, element]
-            source = source_terms(u_local, du_local, x_local, t, equations,
-                                  contravariant_normal_vector)
-            Trixi.add_to_node_vars!(du, source, equations, dg, i, j, element)
+        @inbounds begin
+            for j in eachnode(dg), i in eachnode(dg)
+                u_local = Trixi.get_node_vars(u, equations, dg, i, j, element)
+                du_local = Trixi.get_node_vars(du, equations, dg, i, j, element)
+                x_local = Trixi.get_node_coords(node_coordinates, equations, dg,
+                                                i, j, element)
+                Ja3 = Trixi.get_contravariant_vector(3, contravariant_vectors,
+                                                     i, j, element)
+                contravariant_normal_vector = Ja3 * inverse_jacobian[i, j, element]
+                source = source_terms(u_local, du_local, x_local, t, equations,
+                                      contravariant_normal_vector)
+                Trixi.add_to_node_vars!(du, source, equations, dg, i, j, element)
+            end
         end
     end
 

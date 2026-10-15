@@ -41,18 +41,66 @@ end
     return uEltype
 end
 
+# Check whether the arrays in `elements` have the axes we assume they must have in the
+# inner loops of Trixi.jl and TrixiAtmo.jl. Since most of the geometric information of
+# the covariant form is stored in `cache.auxiliary_variables` instead of `elements`
+# (see above), we check the auxiliary variables here as well. This is required since
+# generic functions of Trixi.jl such as `calc_volume_integral!` only check
+# `cache.elements` before calling the volume kernels with `@inbounds`.
+function Trixi.check_axes(elements::P4estElementContainerCovariant{NDIMS},
+                          equations::AbstractCovariantEquations{NDIMS, NDIMS_AMBIENT},
+                          solver::DG, cache) where {NDIMS, NDIMS_AMBIENT}
+    Trixi.check_axes(elements.node_coordinates,
+                     (Base.OneTo(NDIMS_AMBIENT),
+                      ntuple(_ -> eachnode(solver), NDIMS)...,
+                      eachelement(solver, cache)))
+    Trixi.check_axes(elements.surface_flux_values,
+                     (eachvariable(equations),
+                      ntuple(_ -> eachnode(solver), NDIMS - 1)...,
+                      Base.OneTo(2 * NDIMS),
+                      eachelement(solver, cache)))
+    Trixi.check_axes(cache.auxiliary_variables, equations, solver, cache)
+    return nothing
+end
+
+# Check whether the arrays in `auxiliary_variables` have the axes we assume they must
+# have in the inner loops of TrixiAtmo.jl
+function Trixi.check_axes(auxiliary_variables::P4estAuxiliaryNodeVariableContainer{NDIMS},
+                          equations, solver::DG, cache) where {NDIMS}
+    Trixi.check_axes(auxiliary_variables.aux_node_vars,
+                     (Base.OneTo(n_aux_node_vars(equations)),
+                      ntuple(_ -> eachnode(solver), NDIMS)...,
+                      eachelement(solver, cache)))
+    Trixi.check_axes(auxiliary_variables.aux_surface_node_vars,
+                     (Base.OneTo(2), Base.OneTo(n_aux_node_vars(equations)),
+                      ntuple(_ -> eachnode(solver), NDIMS - 1)...,
+                      Trixi.eachinterface(solver, cache)))
+    return nothing
+end
+
 # Return the auxiliary variables at a given volume node index
-@inline function get_node_aux_vars(aux_node_vars, equations, ::DG, indices...)
-    return SVector(ntuple(@inline(v->aux_node_vars[v, indices...]),
+Base.@propagate_inbounds function get_node_aux_vars(aux_node_vars, equations, ::DG,
+                                                    indices...)
+    # Explicit bounds check, which can be removed by calling this function with `@inbounds`
+    @boundscheck checkbounds(aux_node_vars, 1:n_aux_node_vars(equations), indices...)
+    # Assume inbounds access now
+    return SVector(ntuple(@inline(v->@inbounds aux_node_vars[v, indices...]),
                           Val(n_aux_node_vars(equations))))
 end
 
 # Return the auxiliary variables at a given surface node index
-@inline function get_surface_node_aux_vars(aux_surface_node_vars, equations, ::DG,
-                                           indices...)
-    aux_vars_ll = SVector(ntuple(@inline(v->aux_surface_node_vars[1, v, indices...]),
+Base.@propagate_inbounds function get_surface_node_aux_vars(aux_surface_node_vars,
+                                                            equations, ::DG,
+                                                            indices...)
+    # Explicit bounds check, which can be removed by calling this function with `@inbounds`
+    @boundscheck checkbounds(aux_surface_node_vars,
+                             1:2, 1:n_aux_node_vars(equations), indices...)
+    # Assume inbounds access now
+    aux_vars_ll = SVector(ntuple(@inline(v->@inbounds aux_surface_node_vars[1, v,
+                                                                            indices...]),
                                  Val(n_aux_node_vars(equations))))
-    aux_vars_rr = SVector(ntuple(@inline(v->aux_surface_node_vars[2, v, indices...]),
+    aux_vars_rr = SVector(ntuple(@inline(v->@inbounds aux_surface_node_vars[2, v,
+                                                                            indices...]),
                                  Val(n_aux_node_vars(equations))))
     return aux_vars_ll, aux_vars_rr
 end
@@ -199,12 +247,15 @@ end
 
 # Get Cartesian node positions for the covariant form, dispatching on the dimension of the
 # manifold as well as the ambient dimension
-@inline function Trixi.get_node_coords(x,
-                                       ::AbstractCovariantEquations{NDIMS,
-                                                                    NDIMS_AMBIENT},
-                                       ::DG,
-                                       indices...) where {NDIMS, NDIMS_AMBIENT}
-    return SVector(ntuple(@inline(idx->x[idx, indices...]), NDIMS_AMBIENT))
+Base.@propagate_inbounds function Trixi.get_node_coords(x,
+                                                        ::AbstractCovariantEquations{<:Any,
+                                                                                     NDIMS_AMBIENT},
+                                                        ::DG,
+                                                        indices...) where {NDIMS_AMBIENT}
+    # Explicit bounds check, which can be removed by calling this function with `@inbounds`
+    @boundscheck checkbounds(x, 1:NDIMS_AMBIENT, indices...)
+    # Assume inbounds access now
+    return SVector(ntuple(@inline(idx->@inbounds x[idx, indices...]), NDIMS_AMBIENT))
 end
 
 # Compute the auxiliary metric terms for the covariant form, assuming that the
