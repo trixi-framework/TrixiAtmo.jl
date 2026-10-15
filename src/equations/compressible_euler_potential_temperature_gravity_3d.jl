@@ -294,12 +294,86 @@ end
 
 @inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_lmars_combined), ::CompressibleEulerPotentialTemperatureEquationsWithGravity3D) = Trixi.True()
 
+"""
+    flux_es(u_ll, u_rr, normal_direction,
+            equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+
+Entropy-stable and well-balanced version of the low Mach number approximate Riemann solver
+[`FluxLMARS`](@ref) by
+- Marco Artiano, Kieran Ricardo, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2026)
+  Entropy-Stable and Well-Balanced Discontinuous Galerkin Methods for the Compressible
+  Euler Equations in Vector-Invariant Form
+  (https://arxiv.org/abs/2610.05820)
+
+Like [`flux_lmars_combined`](@ref), it returns the conservative and the nonconservative
+contribution of the surface flux as a tuple, see
+[`Trixi.combine_conservative_and_nonconservative_fluxes`](@ref).
+"""
+@inline function flux_es(u_ll, u_rr, normal_direction::AbstractVector,
+                         equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+    # Unpack left and right state
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+    _, _, _, _, rho_theta_ll = u_ll
+    _, _, _, _, rho_theta_rr = u_rr
+
+    v_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2] +
+           v3_ll * normal_direction[3]
+    v_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2] +
+           v3_rr * normal_direction[3]
+
+    norm_ = norm(normal_direction)
+
+    # Arithmetic mean of the local speeds of sound instead of a constant
+    c_ll = sqrt(equations.gamma * p_ll / rho_ll)
+    c_rr = sqrt(equations.gamma * p_rr / rho_rr)
+    c_avg = 0.5f0 * (c_ll + c_rr)
+
+    rho_avg = 0.5f0 * (rho_ll + rho_rr)
+    rho_mean = ln_mean(rho_ll, rho_rr)
+
+    p_interface = 0.5f0 * (p_ll + p_rr) -
+                  0.5f0 * c_avg * rho_avg * (v_rr - v_ll) / norm_
+    v_interface = 0.5f0 * (v_ll + v_rr) -
+                  0.5f0 / (c_avg * rho_mean) * (p_rr - p_ll) * norm_
+
+    # Upwinded mass and momentum fluxes
+    if v_interface > 0
+        f1, f2, f3, f4 = u_ll * v_interface
+        sign_v = one(f1)
+    else
+        f1, f2, f3, f4 = u_rr * v_interface
+        sign_v = -one(f1)
+    end
+
+    # Entropy-stable flux of the potential temperature: the entropy-conservative mean
+    # `1 / {{1/theta}}_ln` of `flux_ec` and an upwind correction scaled by the jump
+    theta_ll = rho_theta_ll / rho_ll
+    theta_rr = rho_theta_rr / rho_rr
+    theta_mean = inv_ln_mean(rho_ll / rho_theta_ll, rho_rr / rho_theta_rr)
+    theta_min = min(theta_ll, theta_rr)
+    theta_avg = 0.5f0 * (theta_ll + theta_rr)
+    f5 = f1 *
+         (theta_mean - theta_min / (2 * theta_avg) * (theta_rr - theta_ll) * sign_v)
+
+    flux = SVector(f1,
+                   f2 + p_interface * normal_direction[1],
+                   f3 + p_interface * normal_direction[2],
+                   f4 + p_interface * normal_direction[3],
+                   f5, zero(eltype(u_ll)))
+
+    return flux, flux
+end
+
+@inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_es), ::CompressibleEulerPotentialTemperatureEquationsWithGravity3D) = Trixi.True()
+
 # The boundary condition must also be specialized for a combined surface flux such that it
 # returns only the first contribution of the surface flux.
 @inline function boundary_condition_slip_wall(u_inner,
                                               normal_direction::AbstractVector,
                                               x, t,
-                                              surface_flux_function::typeof(flux_lmars_combined),
+                                              surface_flux_function::Union{typeof(flux_lmars_combined),
+                                                                           typeof(flux_es)},
                                               equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     # normalize the outward pointing direction
     normal = normal_direction / norm(normal_direction)
