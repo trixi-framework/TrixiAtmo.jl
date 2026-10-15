@@ -113,7 +113,7 @@ end
 
 # One stage of the transformed form (Hairer and Wanner, 1996, eq. (7.25)),
 #   u_i = u_n + sum_j a_ij stages_j,
-#   (I / (gamma dt) - J) stages_s = f(u_i, t + c_i dt) + sum_j (c_ij / dt) stages_j,
+#   (I / (gamma dt) - J) stages_i = f(u_i, t + c_i dt) + sum_j (c_ij / dt) stages_j,
 # and, after the last stage, u_{n+1} = u_n + sum_j m_j stages_j.
 function rosenbrock_stage!(integrator::RosenbrockIntegrator, stage, gamma_dt)
     (; u, du, u_tmp, stages, p, t, dt, alg, tableau) = integrator
