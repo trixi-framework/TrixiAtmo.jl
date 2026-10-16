@@ -711,7 +711,7 @@ const FluxECIsothermal = Tuple{typeof(flux_ec), typeof(flux_nonconservative_waru
 # We precompute `rho, v1, v2, v3, theta, p, phi`, i.e., one quantity more than the number
 # of variables. Both fluxes use the same precomputed variables.
 @inline function Trixi.nturbovars(::Union{FluxKennedyGruberSouzaEtal,
-                                          FluxEC},
+                                          FluxECIsothermal},
                                   ::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     return Val(7)
 end
