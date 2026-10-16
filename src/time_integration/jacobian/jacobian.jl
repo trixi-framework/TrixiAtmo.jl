@@ -183,10 +183,12 @@ end
 # columns `[column, v, node, layer]`, with the variables `1 => rho`, `2 => rho_w` (vertical
 # momentum), and `3 => rho_theta`
 
-# Copy `factor` times the vertical variables of the node `(i, j, k, element)` of `u`
-#TODO: Cosa è factor?
-    # TODO: cosa è nu1? Puoi dare nomi descrittivi che rispettano lo stile di Trixi?
-Base.@propagate_inbounds function copy_node_to_columns!(u_vertical, u, factor,
+# Copy the vertical variables of the node `(i, j, k, element)` of `u`, multiplied by
+# `scaling`, where the vertical momentum is the component of the momentum in the
+# `vertical_direction` `nu` (see `compute_vertical_frame`). The `scaling` is one for the
+# state and the normalized norm `n` for the right-hand side of the linear system, i.e.,
+# the diagonal similarity transformation `N` of the vertical operator.
+Base.@propagate_inbounds function copy_node_to_columns!(u_vertical, u, scaling,
                                                         vertical_frame,
                                                         horizontal_index_of_element,
                                                         vertical_index_of_element,
@@ -195,19 +197,20 @@ Base.@propagate_inbounds function copy_node_to_columns!(u_vertical, u, factor,
     column = (horizontal_index_of_element[element] - 1) * nnodes * nnodes +
              (j - 1) * nnodes + i
     layer = vertical_index_of_element[element]
-    nu_1 = vertical_frame[1, i, j, k, element]
-    nu_2 = vertical_frame[2, i, j, k, element]
-    nu_3 = vertical_frame[3, i, j, k, element]
-    rho, rho_v1, rho_v2, rho_v3, rho_theta = (u[v, i, j, k, element] for v in 1:5)
-    u_vertical[column, 1, k, layer] = factor * rho
-    u_vertical[column, 2, k, layer] = factor *
-                                      (nu_1 * rho_v1 + nu_2 * rho_v2 + nu_3 * rho_v3)
-    u_vertical[column, 3, k, layer] = factor * rho_theta
+    vertical_direction = SVector(vertical_frame[1, i, j, k, element],
+                                 vertical_frame[2, i, j, k, element],
+                                 vertical_frame[3, i, j, k, element])
+    rho_v = SVector(u[2, i, j, k, element], u[3, i, j, k, element],
+                    u[4, i, j, k, element])
+    u_vertical[column, 1, k, layer] = scaling * u[1, i, j, k, element]
+    u_vertical[column, 2, k, layer] = scaling * dot(vertical_direction, rho_v)
+    u_vertical[column, 3, k, layer] = scaling * u[5, i, j, k, element]
     return nothing
 end
 
-# The solution of the linear system replaces the vertical components; the horizontal
-# components of the momentum are multiplied by `gamma_dt`, i.e., solved with `J = 0`.
+# Copy the solution of the linear system, divided by the normalized norm `n`, to `b`. The
+# horizontal components of the momentum are multiplied by `gamma_dt`, i.e., solved with
+# `J = 0`, and the component in the `vertical_direction` is replaced by the solution.
 Base.@propagate_inbounds function copy_node_from_columns!(b, u_vertical, vertical_frame,
                                                           horizontal_index_of_element,
                                                           vertical_index_of_element,
@@ -216,19 +219,19 @@ Base.@propagate_inbounds function copy_node_from_columns!(b, u_vertical, vertica
     column = (horizontal_index_of_element[element] - 1) * nnodes * nnodes +
              (j - 1) * nnodes + i
     layer = vertical_index_of_element[element]
-    nu_1 = vertical_frame[1, i, j, k, element]
-    nu_2 = vertical_frame[2, i, j, k, element]
-    nu_3 = vertical_frame[3, i, j, k, element]
+    vertical_direction = SVector(vertical_frame[1, i, j, k, element],
+                                 vertical_frame[2, i, j, k, element],
+                                 vertical_frame[3, i, j, k, element])
     inv_area = inv(vertical_frame[4, i, j, k, element])
-    rho_v1 = b[2, i, j, k, element]
-    rho_v2 = b[3, i, j, k, element]
-    rho_v3 = b[4, i, j, k, element]
-    rho_w = inv_area * u_vertical[column, 2, k, layer] -
-            gamma_dt * (nu_1 * rho_v1 + nu_2 * rho_v2 + nu_3 * rho_v3)
+    rho_v = SVector(b[2, i, j, k, element], b[3, i, j, k, element],
+                    b[4, i, j, k, element])
+    rho_w = inv_area * u_vertical[column, 2, k, layer]
+    rho_v = gamma_dt * rho_v +
+            (rho_w - gamma_dt * dot(vertical_direction, rho_v)) * vertical_direction
     b[1, i, j, k, element] = inv_area * u_vertical[column, 1, k, layer]
-    b[2, i, j, k, element] = gamma_dt * rho_v1 + rho_w * nu_1
-    b[3, i, j, k, element] = gamma_dt * rho_v2 + rho_w * nu_2
-    b[4, i, j, k, element] = gamma_dt * rho_v3 + rho_w * nu_3
+    b[2, i, j, k, element] = rho_v[1]
+    b[3, i, j, k, element] = rho_v[2]
+    b[4, i, j, k, element] = rho_v[3]
     b[5, i, j, k, element] = inv_area * u_vertical[column, 3, k, layer]
     return nothing
 end
@@ -279,8 +282,8 @@ function copy_state_to_columns!(backend::Backend, u_vertical, u, jacobian, semi)
     return nothing
 end
 
-# Copy the right-hand side `b` of the linear system, multiplied by the area factor, to the
-# columns
+# Copy the right-hand side `b` of the linear system, multiplied by the normalized norm
+# `n`, to the columns
 function copy_rhs_to_columns!(backend::Backend, u_vertical, b, jacobian, semi)
     (; solver) = semi
     (; vertical_frame, horizontal_index_of_element, vertical_index_of_element) = jacobian
@@ -292,8 +295,8 @@ function copy_rhs_to_columns!(backend::Backend, u_vertical, b, jacobian, semi)
     return nothing
 end
 
-# Copy the solution of the linear system, divided by the area factor, from the columns
-# to `b`
+# Copy the solution of the linear system, divided by the normalized norm `n`, from the
+# columns to `b`
 function copy_solution_from_columns!(backend::Backend, b, u_vertical, jacobian, semi,
                                      gamma_dt)
     (; solver) = semi
