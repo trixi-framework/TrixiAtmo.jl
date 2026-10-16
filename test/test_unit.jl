@@ -293,6 +293,43 @@ end
     @test flux_1d ≈ flux_3d[[1, 2, 5, 6]]
 end
 
+@testitem "Unit: Consistency check for FluxTurbo EC flux with Potential Temperature with gravity: CEPTEWG" setup=[Setup] tags=[:unit_fluxes] begin
+    # The `FluxTurbo` specialization of `(flux_ec, flux_nonconservative_waruszewski_etal)`
+    # must return the same left and right contributions as the fused evaluation of the
+    # conservative and the nonconservative flux.
+    equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
+                                                                            c_v = 717.0,
+                                                                            gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+    volume_flux = (flux_ec, flux_nonconservative_waruszewski_etal)
+    u_ll = SVector(1.1, -0.5, 2.34, 2.4, 330.0, 1500.0)
+    u_rr = SVector(0.9, 0.3, -1.2, 1.7, 280.5, 1700.0)
+
+    normal_directions = [SVector(1.0, 0.0, 0.0),
+        SVector(0.0, 1.0, 0.0),
+        SVector(0.0, 0.0, 1.0),
+        SVector(0.5, -0.5, 0.2),
+        SVector(-1.2, 0.3, 1.4)]
+
+    @test Trixi.nturbovars(volume_flux, equations) == Val(7)
+    turbo_ll = Trixi.cons2turbo(volume_flux, u_ll..., equations)
+    turbo_rr = Trixi.cons2turbo(volume_flux, u_rr..., equations)
+    @test length(turbo_ll) == 7
+    # rho, v1, v2, v3, theta, p, phi
+    @test SVector(turbo_ll[1], turbo_ll[2], turbo_ll[3], turbo_ll[4], turbo_ll[6],
+                  turbo_ll[7]) ≈ cons2prim(u_ll, equations)
+    @test turbo_ll[5] ≈ u_ll[5] / u_ll[1]
+
+    for normal_direction in normal_directions
+        flux_left, flux_right = Trixi.flux_turbo(volume_flux, turbo_ll..., turbo_rr...,
+                                                 normal_direction..., equations)
+        flux_cons = flux_ec(u_ll, u_rr, normal_direction, equations)
+        flux_noncons = flux_nonconservative_waruszewski_etal(u_ll, u_rr,
+                                                             normal_direction, equations)
+        @test SVector(flux_left) ≈ flux_cons + 0.5 * flux_noncons
+        @test SVector(flux_right) ≈ flux_cons - 0.5 * flux_noncons
+    end
+end
+
 @testitem "Unit: Consistency check for TEC flux with Potential Temperature with gravity: CEPTEWG" setup=[Setup] tags=[:unit_fluxes] begin
     # Set up equations and dummy conservative variables state
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004.0,

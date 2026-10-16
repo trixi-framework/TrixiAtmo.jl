@@ -274,6 +274,16 @@ end
             @test eltype(@inferred flux_es(u_ll, u_rr, normal_direction, equations)[i]) ==
                   RealT
         end
+        for volume_flux in ((flux_kennedy_gruber, flux_nonconservative_souza_etal),
+                            (flux_ec, flux_nonconservative_waruszewski_etal))
+            turbo = @inferred Trixi.cons2turbo(volume_flux, u..., equations)
+            @test eltype(turbo) == RealT
+            for i in 1:2
+                @test eltype(@inferred Trixi.flux_turbo(volume_flux, turbo..., turbo...,
+                                                        normal_direction..., equations)[i]) ==
+                      RealT
+            end
+        end
         @test eltype(@inferred cons2prim(u, equations)) == RealT
         @test eltype(@inferred prim2cons(u, equations)) == RealT
         @test eltype(@inferred cons2entropy(u, equations)) == RealT
