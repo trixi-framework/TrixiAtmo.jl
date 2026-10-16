@@ -108,7 +108,8 @@ makedocs(;
                                   prettyurls = get(ENV, "CI", "false") == "true",
                                   canonical = "https://trixi-framework.github.io/TrixiAtmo.jl",
                                   edit_link = "main",
-                                  assets = String[],),
+                                  assets = String[],
+                                  size_threshold_ignore = ["reference.md"]),
          # Improve code blocks in the documentation by using DocumenterCodeBlocks.jl
          # and render links to documentation from other repositories nicely
          plugins = [CodeBlocks(), links, fallbacks],
