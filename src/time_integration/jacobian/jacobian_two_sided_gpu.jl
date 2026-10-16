@@ -49,33 +49,33 @@ struct VerticalJacobianTwoSided{NLAYERS, NNODES, RealT <: Real, BackendType,
     # Unit contravariant direction `nu` of the vertical reference coordinate (slots 1:3)
     # and normalized norm `n = |Ja^3|` (slot 4), laid out [slot, i, j, k, element]
     vertical_frame::ArrayRealT5
-    # Metric factor `n / J`, laid out [column, node, layer]
+    # Metric factor `n / J`, [column, node, layer]
     metric_factor::ArrayRealT3
-    # Pointwise gravity `g (nu . r_hat)`, laid out [column, node, layer]
+    # Pointwise gravity `g (nu . r_hat)`, [column, node, layer]
     gravity::ArrayRealT3
     # Column and layer of every element to copy data to and from the columns
     horizontal_index_of_element::VectorInt
     vertical_index_of_element::VectorInt
     derivative_hat::DerivativeMatrix
     # Vertical state with the variables `1 => rho`, `2 => rho_w` (vertical momentum), and
-    # `3 => rho_theta`, laid out [column, v, node, layer]; also used as right-hand side
+    # `3 => rho_theta`, [column, v, node, layer]; also used as right-hand side
     # and solution of the linear system
     u_vertical::ArrayRealT4
-    # Potential temperature and dp/d(rho theta), laid out [column, node, layer]
+    # Potential temperature and dp/d(rho theta), [column, node, layer]
     theta::ArrayRealT3
     dpdrhotheta::ArrayRealT3
-    # Entries of the coupling blocks between neighboring elements, laid out
+    # Entries of the coupling blocks between neighboring elements,
     # [column, entry, layer] and [column, layer]
     B1m_34::ArrayRealT3
     B1_1::MatrixRealT
     B1_4::MatrixRealT
     B1p_12::ArrayRealT3
     # LU factors of the local Schur complements `S_e` of the elements in the interior
-    # nodes, laid out [column, node, node, layer]
+    # nodes, [column, node, node, layer]
     schur_element::ArrayRealT4
     # Global Schur complement `S`, a band matrix with 7 diagonals laid out
     # [column, diagonal, row], and the right-hand side and solution of the condensed
-    # system, laid out [column, row]
+    # system, [column, row]
     schur_band::ArrayRealT3
     schur_rhs::MatrixRealT
 end
