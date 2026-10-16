@@ -293,6 +293,43 @@ end
     @test flux_1d ≈ flux_3d[[1, 2, 5, 6]]
 end
 
+@testitem "Unit: Consistency check for FluxTurbo EC flux with Potential Temperature with gravity: CEPTEWG" setup=[Setup] tags=[:unit_fluxes] begin
+    # The `FluxTurbo` specialization of `(flux_ec, flux_nonconservative_waruszewski_etal)`
+    # must return the same left and right contributions as the fused evaluation of the
+    # conservative and the nonconservative flux.
+    equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
+                                                                            c_v = 717.0,
+                                                                            gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+    volume_flux = (flux_ec, flux_nonconservative_waruszewski_etal)
+    u_ll = SVector(1.1, -0.5, 2.34, 2.4, 330.0, 1500.0)
+    u_rr = SVector(0.9, 0.3, -1.2, 1.7, 280.5, 1700.0)
+
+    normal_directions = [SVector(1.0, 0.0, 0.0),
+        SVector(0.0, 1.0, 0.0),
+        SVector(0.0, 0.0, 1.0),
+        SVector(0.5, -0.5, 0.2),
+        SVector(-1.2, 0.3, 1.4)]
+
+    @test Trixi.nturbovars(volume_flux, equations) == Val(7)
+    turbo_ll = Trixi.cons2turbo(volume_flux, u_ll..., equations)
+    turbo_rr = Trixi.cons2turbo(volume_flux, u_rr..., equations)
+    @test length(turbo_ll) == 7
+    # rho, v1, v2, v3, theta, p, phi
+    @test SVector(turbo_ll[1], turbo_ll[2], turbo_ll[3], turbo_ll[4], turbo_ll[6],
+                  turbo_ll[7]) ≈ cons2prim(u_ll, equations)
+    @test turbo_ll[5] ≈ u_ll[5] / u_ll[1]
+
+    for normal_direction in normal_directions
+        flux_left, flux_right = Trixi.flux_turbo(volume_flux, turbo_ll..., turbo_rr...,
+                                                 normal_direction..., equations)
+        flux_cons = flux_ec(u_ll, u_rr, normal_direction, equations)
+        flux_noncons = flux_nonconservative_waruszewski_etal(u_ll, u_rr,
+                                                             normal_direction, equations)
+        @test SVector(flux_left) ≈ flux_cons + 0.5 * flux_noncons
+        @test SVector(flux_right) ≈ flux_cons - 0.5 * flux_noncons
+    end
+end
+
 @testitem "Unit: Consistency check for TEC flux with Potential Temperature with gravity: CEPTEWG" setup=[Setup] tags=[:unit_fluxes] begin
     # Set up equations and dummy conservative variables state
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004.0,
@@ -477,6 +514,69 @@ end
     flux_3d = flux_lmars(u_3d, u_3d, normal_3d, equations_3d)
     flux_1d = normal_1d[1] * flux_lmars(u_1d, u_1d, 1, equations_1d)
     @test flux_1d ≈ flux_3d[[1, 2, 5, 6]]
+end
+
+@testitem "Unit: Consistency check for entropy-stable LMARS flux with Potential Temperature with gravity: CEPTEWG" setup=[Setup] tags=[:unit_fluxes] begin
+    # Set up equations and dummy conservative variables state
+    equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004.0,
+                                                                            c_v = 717.0,
+                                                                            gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+    u = SVector(1.1, -0.5, 2.34, 330.0, 1700)
+    u_rr = SVector(0.9, 0.3, -1.2, 280.5, 1500)
+
+    normal_directions = [SVector(1.0, 0.0),
+        SVector(0.0, 1.0),
+        SVector(0.5, -0.5),
+        SVector(-1.2, 0.3)]
+
+    for normal_direction in normal_directions
+        # consistency with the physical flux
+        for i in 1:2
+            @test flux_es(u, u, normal_direction, equations)[i] ≈
+                  flux(u, normal_direction, equations)
+        end
+        # both contributions coincide since the geopotential is continuous, and the flux
+        # is homogeneous of degree one in the normal direction
+        flux_left, flux_right = flux_es(u, u_rr, normal_direction, equations)
+        @test flux_left == flux_right
+        @test flux_es(u, u_rr, 2.5 * normal_direction, equations)[1] ≈ 2.5 * flux_left
+    end
+
+    # check consistency for the 3D flux
+    equations_3d = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
+                                                                               c_v = 717.0,
+                                                                               gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+    u_3d = SVector(1.1, -0.5, 2.34, 2.4, 330.0, 1700)
+    u_rr_3d = SVector(0.9, 0.3, -1.2, 1.7, 280.5, 1500)
+
+    normal_directions_3d = [SVector(1.0, 0.0, 0.0),
+        SVector(0.0, 1.0, 0.0),
+        SVector(0.0, 0.0, 1.0),
+        SVector(0.5, -0.5, 0.2),
+        SVector(-1.2, 0.3, 1.4)]
+
+    for normal_direction in normal_directions_3d
+        for i in 1:2
+            @test flux_es(u_3d, u_3d, normal_direction, equations_3d)[i] ≈
+                  flux(u_3d, normal_direction, equations_3d)
+        end
+        flux_left, flux_right = flux_es(u_3d, u_rr_3d, normal_direction, equations_3d)
+        @test flux_left == flux_right
+        @test flux_es(u_3d, u_rr_3d, 2.5 * normal_direction, equations_3d)[1] ≈
+              2.5 * flux_left
+    end
+
+    # check consistency between the 2D and 3D fluxes for different left and right states
+    u_3d = SVector(u[1], u[2], u[3], 0.0, u[4], u[5])
+    u_rr_3d = SVector(u_rr[1], u_rr[2], u_rr[3], 0.0, u_rr[4], u_rr[5])
+    for normal_direction in normal_directions
+        normal_3d = SVector(normal_direction[1], normal_direction[2], 0.0)
+        flux_2d = flux_es(u, u_rr, normal_direction, equations)
+        flux_3d = flux_es(u_3d, u_rr_3d, normal_3d, equations_3d)
+        for i in 1:2
+            @test flux_2d[i] ≈ flux_3d[i][[1, 2, 3, 5, 6]]
+        end
+    end
 end
 
 @testitem "Unit: Consistency check for 3D shallow water fluxes: SWE" setup=[Setup] tags=[:unit_fluxes] begin

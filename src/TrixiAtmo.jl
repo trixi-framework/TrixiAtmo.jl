@@ -44,7 +44,11 @@ using Trixi: AbstractTimeIntegrator, AbstractTimeIntegrationAlgorithm,
 import Trixi: init, step!, add_tstop!, get_tmp_cache, terminate!,
               derivative_discontinuity!
 using DataStructures: BinaryHeap, FasterForward
-using KernelAbstractions: @kernel, @index, Backend
+using KernelAbstractions: KernelAbstractions, @kernel, @index, @Const, @uniform, @ndrange,
+                          Backend, get_backend
+using StaticArrays: MVector, MMatrix
+using Adapt: Adapt
+using Trixi: wrap_array, get_node_coords, get_contravariant_vector
 
 # DGMulti Solvers
 using StartUpDG: MeshData, RefElemData
@@ -77,7 +81,7 @@ export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
 export NonlinearSolveDG
 
-export SSPRW32
+export SSPRW32, VerticalJacobianTwoSided
 
 export flux_chandrashekar, FluxLMARS
 
@@ -90,7 +94,7 @@ export flux_nonconservative_zeros, flux_nonconservative_ec,
        flux_ec_rain, flux_LMARS, flux_nonconservative_es, flux_conservative_es,
        flux_conservative_etec, flux_nonconservative_etec
 
-export flux_lmars_combined, flux_kennedy_gruber_souza_etal
+export flux_lmars_combined, flux_kennedy_gruber_souza_etal, flux_es
 
 export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!
 
