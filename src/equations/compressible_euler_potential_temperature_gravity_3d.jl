@@ -706,7 +706,8 @@ end # @muladd
 # `FluxTurbo(flux_ec, flux_nonconservative_waruszewski_etal)`.
 const FluxKennedyGruberSouzaEtal = Tuple{typeof(flux_kennedy_gruber),
                                          typeof(flux_nonconservative_souza_etal)}
-const FluxECIsothermal = Tuple{typeof(flux_ec), typeof(flux_nonconservative_waruszewski_etal)}
+const FluxECIsothermal = Tuple{typeof(flux_ec),
+                               typeof(flux_nonconservative_waruszewski_etal)}
 
 # We precompute `rho, v1, v2, v3, theta, p, phi`, i.e., one quantity more than the number
 # of variables. Both fluxes use the same precomputed variables.
