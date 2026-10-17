@@ -77,7 +77,7 @@ export flux_nonconservative_zeros, flux_nonconservative_ec,
        flux_ec_rain, flux_LMARS, flux_nonconservative_es, flux_conservative_es,
        flux_conservative_etec, flux_nonconservative_etec
 
-export flux_lmars_combined, flux_kennedy_gruber_souza_etal
+export flux_lmars_combined, flux_kennedy_gruber_souza_etal, flux_es
 
 export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!
 

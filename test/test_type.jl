@@ -170,6 +170,10 @@ end
               RealT
         @test eltype(@inferred flux_etec(u_ll, u_rr, normal_direction, equations)) ==
               RealT
+        for i in 1:2
+            @test eltype(@inferred flux_es(u_ll, u_rr, normal_direction, equations)[i]) ==
+                  RealT
+        end
 
         @test eltype(@inferred cons2prim(u, equations)) == RealT
         @test eltype(@inferred prim2cons(u, equations)) == RealT
@@ -266,6 +270,8 @@ end
             @test eltype(@inferred flux_kennedy_gruber_souza_etal(u_ll, u_rr,
                                                                   normal_direction,
                                                                   equations)[i]) ==
+                  RealT
+            @test eltype(@inferred flux_es(u_ll, u_rr, normal_direction, equations)[i]) ==
                   RealT
         end
         for volume_flux in ((flux_kennedy_gruber, flux_nonconservative_souza_etal),
