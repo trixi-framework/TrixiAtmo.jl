@@ -9,22 +9,48 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR, "buoyancy",
                                  "elixir_potential_temperature_inertia_gravity_waves.jl"),
                         l2=[
-                            5.360162314066379e-7,
-                            0.00013097436752903342,
-                            7.172813096420895e-5,
-                            3.560199562542724e-5,
-                            9.251160452856857e-12
+                            5.368255320277407e-7,
+                            0.00013168228515039588,
+                            6.980897717202787e-5,
+                            3.700138344100214e-5,
+                            8.738544195667257e-12
                         ],
                         linf=[
-                            3.7348732354614e-6,
-                            0.0005402594042358544,
-                            0.00023237719913361634,
-                            0.00015331821185782246,
+                            3.7341484546704606e-6,
+                            0.0005486985487159757,
+                            0.00022641115906779307,
+                            0.00014530934379308746,
                             4.3655745685100555e-11
-                        ], tspan=(0.0, 1800.0), atol=1e-5)
+                        ], tspan=(0.0, 1800.0), atol=1e-10)
     # Ensure that we do not have excessive memory allocations
-    # (e.g., from type instabilities)
+    # (e.g., from type instabilities). `Trixi.solve!` calls the right-hand side inside the
+    # timer section "main loop", so the first call outside of it creates new timer
+    # sections, which allocates.
+    TrixiAtmo.Trixi.rhs_hyperbolic!(similar(sol.u[end]), sol.u[end], semi, sol.t[end])
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
+
+    # Check that the total mass and the total mass-weighted potential temperature are
+    # conserved up to round-off errors. The explicit part of the scheme is conservative, and
+    # the implicit stages are conservative as well since the vertical Jacobian uses the same
+    # metric terms as the semidiscretization.
+    for v in (1, 4)
+        integral_initial = Trixi.integrate((u, equations) -> u[v], ode.u0, semi)
+        integral_final = Trixi.integrate((u, equations) -> u[v], sol.u[end], semi)
+        @test isapprox(integral_final, integral_initial, rtol = 1e-13)
+    end
+
+    # The columns of the vertical Jacobian require a mesh that is not periodic in the
+    # vertical direction
+    mesh_periodic = P4estMesh((4, 2), polydeg = 3, coordinates_min = coordinates_min,
+                              coordinates_max = coordinates_max,
+                              periodicity = (true, true))
+    semi_periodic = SemidiscretizationHyperbolic(mesh_periodic, equations,
+                                                 initial_condition, solver,
+                                                 boundary_conditions = boundary_condition_periodic)
+    @test_throws ArgumentError TrixiAtmo.create_jacobian_cache(VerticalJacobianTwoSided(),
+                                                               semi_periodic,
+                                                               Trixi.compute_coefficients(0.0,
+                                                                                          semi_periodic))
 end
 
 @testitem "Euler potential temperature 2D: elixir_potential_temperature_linear_hydrostatic" setup=[

@@ -1,7 +1,7 @@
 # An idealized baroclinic instability test case, integrated with a Rosenbrock-W method and a
 # vertically implicit Jacobian (horizontally explicit, vertically implicit time integration)
 #
-# This elixir takes about 2 minutes on an NVIDIA GH200 GPU.
+# With `storage_type = CuArray`, this elixir takes about 2 minutes on an NVIDIA GH200 GPU.
 #
 # References:
 # - Paul A. Ullrich, Thomas Melvin, Christiane Jablonowski, Andrew Staniforth (2013)
@@ -56,14 +56,18 @@ analysis_callback = AnalysisCallback(semi, interval = analysis_interval)
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
+save_solution = SaveSolutionCallback(dt = 100, save_initial_solution = true,
+                                     save_final_solution = true)
+
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,
-                        alive_callback)
+                        alive_callback,
+                        save_solution)
 
 ###############################################################################
 # Use a Rosenbrock-W method with the vertically implicit Jacobian, such that the time step
 # is restricted by the horizontal dynamics only
-jacobian = VerticalJacobianTwoSided(semi; c = 340)
+jacobian = VerticalJacobianTwoSided(c = 340)
 
 dt = 85.0 # seconds
 sol = Trixi.solve(ode, SSPRW32(); dt = dt, callback = callbacks, jacobian = jacobian)

@@ -132,19 +132,20 @@ end
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
                         polydeg=3, dt=20.0)
     # Ensure that we do not have excessive memory allocations
-    # (e.g., from type instabilities). The time integrators of Trixi.jl call the
-    # right-hand side inside the timer section "main loop", so the first call outside of it
-    # creates new timer sections, which allocates.
+    # (e.g., from type instabilities). `Trixi.solve!` calls the right-hand side inside the
+    # timer section "main loop", so the first call outside of it creates new timer
+    # sections, which allocates.
     TrixiAtmo.Trixi.rhs_hyperbolic!(similar(sol.u[end]), sol.u[end], semi, sol.t[end])
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 
-    # The implicit stages conserve the mass and the mass-weighted potential temperature
-    # (up to round-off errors) since the vertical Jacobian carries the metric of the
-    # scheme; the explicit part conserves them as well
+    # Check that the total mass and the total mass-weighted potential temperature are
+    # conserved up to round-off errors. The explicit part of the scheme is conservative, and
+    # the implicit stages are conservative as well since the vertical Jacobian uses the same
+    # metric terms as the semidiscretization.
     for v in (1, 5)
-        mass_initial = Trixi.integrate((u, equations) -> u[v], ode.u0, semi)
-        mass_final = Trixi.integrate((u, equations) -> u[v], sol.u[end], semi)
-        @test isapprox(mass_final, mass_initial, rtol = 1e-13)
+        integral_initial = Trixi.integrate((u, equations) -> u[v], ode.u0, semi)
+        integral_final = Trixi.integrate((u, equations) -> u[v], sol.u[end], semi)
+        @test isapprox(integral_final, integral_initial, rtol = 1e-13)
     end
 end
 
@@ -174,9 +175,9 @@ end
                         polydeg=3, dt=20.0,
                         volume_flux=(flux_tec, flux_nonconservative_souza_etal))
     # Ensure that we do not have excessive memory allocations
-    # (e.g., from type instabilities). The time integrators of Trixi.jl call the
-    # right-hand side inside the timer section "main loop", so the first call outside of it
-    # creates new timer sections, which allocates.
+    # (e.g., from type instabilities). `Trixi.solve!` calls the right-hand side inside the
+    # timer section "main loop", so the first call outside of it creates new timer
+    # sections, which allocates.
     TrixiAtmo.Trixi.rhs_hyperbolic!(similar(sol.u[end]), sol.u[end], semi, sol.t[end])
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
@@ -207,9 +208,9 @@ end
                         polydeg=3, dt=20.0,
                         volume_flux=(flux_ec, flux_nonconservative_waruszewski_etal))
     # Ensure that we do not have excessive memory allocations
-    # (e.g., from type instabilities). The time integrators of Trixi.jl call the
-    # right-hand side inside the timer section "main loop", so the first call outside of it
-    # creates new timer sections, which allocates.
+    # (e.g., from type instabilities). `Trixi.solve!` calls the right-hand side inside the
+    # timer section "main loop", so the first call outside of it creates new timer
+    # sections, which allocates.
     TrixiAtmo.Trixi.rhs_hyperbolic!(similar(sol.u[end]), sol.u[end], semi, sol.t[end])
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
@@ -240,9 +241,9 @@ end
                         polydeg=3, dt=20.0,
                         volume_flux=(flux_etec, flux_nonconservative_artiano_etal))
     # Ensure that we do not have excessive memory allocations
-    # (e.g., from type instabilities). The time integrators of Trixi.jl call the
-    # right-hand side inside the timer section "main loop", so the first call outside of it
-    # creates new timer sections, which allocates.
+    # (e.g., from type instabilities). `Trixi.solve!` calls the right-hand side inside the
+    # timer section "main loop", so the first call outside of it creates new timer
+    # sections, which allocates.
     TrixiAtmo.Trixi.rhs_hyperbolic!(similar(sol.u[end]), sol.u[end], semi, sol.t[end])
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
