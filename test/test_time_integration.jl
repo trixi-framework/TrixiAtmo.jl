@@ -31,4 +31,12 @@ end
     end
     # The solution changed, i.e., the stages were actually computed
     @test !(view(u_rosenbrock, 2, ..) ≈ view(u_initial, 2, ..))
+
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities). `Trixi.solve!` calls the right-hand side inside the
+    # timer section "main loop", so the first call outside of it creates new timer
+    # sections, which allocates.
+    TrixiAtmo.Trixi.rhs_hyperbolic!(similar(sol_rosenbrock.u[end]), sol_rosenbrock.u[end],
+                                    semi, sol_rosenbrock.t[end])
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol_rosenbrock, 100)
 end

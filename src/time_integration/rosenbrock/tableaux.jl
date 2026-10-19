@@ -6,7 +6,7 @@
 #! format: noindent
 
 # Coefficients of a Rosenbrock-W method in the transformed form of Hairer and Wanner (1996),
-# Section IV.7, eq. (7.25): `a = alpha * inv(Gamma)`, `c = inv(diag(Gamma)) - inv(Gamma)`,
+# Section IV.7, Eq. (7.25): `a = alpha * inv(Gamma)`, `c = inv(diag(Gamma)) - inv(Gamma)`,
 # `m = transpose(b) * inv(Gamma)`, the stage times `c_stage` (the row sums of `alpha`), and
 # the constant diagonal `gamma` of `Gamma`. Both `a` and `c` are strictly lower triangular.
 struct RosenbrockTableau{RealT <: Real, MatrixT, VectorT}
@@ -43,14 +43,19 @@ end
 Three-stage, second-order, L-stable Rosenbrock-W method, whose explicit part
 is the SSPRK(3,3) method of Shu and Osher.
 
+The approximate Jacobian `J` of the right-hand side is passed as keyword argument
+`jacobian` to `Trixi.solve`, and its arrays are created by `Trixi.init` for the
+semidiscretization of the ODE problem. The default `jacobian = nothing` corresponds to
+`J = 0`, i.e., the explicit SSPRK(3,3) method.
+
 ## References
 
 - Marco Artiano, Andrés Rueda-Ramírez, Oswald Knoth, Hendrik Ranocha, Gregor Gassner (2026)
   GPU-Accelerated Nested Schur-Complement Solvers for Atmospheric Flow Simulations using
   Horizontally-Explicit, Vertically-Implicit Schemes and Discontinuous Galerkin Methods
-  [arXiv:2610.15775](https://arxiv.org/abs/2610.15775)
+  [arXiv: 2610.15775](https://arxiv.org/abs/2610.15775)
 - Chi-Wang Shu, Stanley Osher (1988)
-  "Efficient Implementation of Essentially Non-oscillatory Shock-Capturing Schemes" (Eq. 2.18)
+  Efficient Implementation of Essentially Non-oscillatory Shock-Capturing Schemes (Eq. 2.18)
   [DOI: 10.1016/0021-9991(88)90177-5](https://doi.org/10.1016/0021-9991(88)90177-5)
 """
 struct SSPRW32 <: AbstractRosenbrockAlgorithm{3} end
