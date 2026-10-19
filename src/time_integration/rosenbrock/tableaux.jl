@@ -62,8 +62,6 @@ function tableau(::SSPRW32, RealT)
                                  0, 0, 0)
     b = SVector{3, RealT}(1 // 6, 1 // 6, 2 // 3)
 
-    # Implicit part. `gamma21 = -3 gamma` cancels the third-order W-residual
-    # `e1 = sum b_i alpha_ij gamma_j`.
     sqrt2 = sqrt(convert(RealT, 2))
     gamma = 1 - 1 / sqrt2
     gamma21 = -3 * gamma
