@@ -43,11 +43,6 @@ end
 Three-stage, second-order, L-stable Rosenbrock-W method, whose explicit part
 is the SSPRK(3,3) method of Shu and Osher.
 
-The approximate Jacobian `J` of the right-hand side is passed as keyword argument
-`jacobian` to `Trixi.solve`, and its arrays are created by `Trixi.init` for the
-semidiscretization of the ODE problem. The default `jacobian = nothing` corresponds to
-`J = 0`, i.e., the explicit SSPRK(3,3) method.
-
 ## References
 
 - Marco Artiano, Andrés Rueda-Ramírez, Oswald Knoth, Hendrik Ranocha, Gregor Gassner (2026)
