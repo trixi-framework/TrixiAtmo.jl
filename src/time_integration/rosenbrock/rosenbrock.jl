@@ -9,7 +9,7 @@
 # They are implemented in the transformed form of Hairer and Wanner (1996), Section IV.7,
 # see `RosenbrockTableau`: every stage solves one linear system with the matrix
 # `I / (gamma * dt) - J`, where `J` is the approximate Jacobian of the right-hand side
-# passed to `Trixi.solve` (see `jacobian.jl`), and no product with the Jacobian is needed.
+# passed to `Trixi.solve` (see `jacobian.jl`), and no matrix-vector product with the Jacobian is needed.
 # A concrete method provides `tableau(alg, RealT)`.
 abstract type AbstractRosenbrockAlgorithm{N} <: AbstractTimeIntegrationAlgorithm end
 
