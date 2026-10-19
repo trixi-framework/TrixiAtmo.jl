@@ -93,6 +93,7 @@ end
         # Adapt the real type, e.g., to move a semidiscretization to a GPU
         equations_float64 = @inferred similar(equations, Float64)
         @test typeof(equations_float64.c_p) == Float64
+        @test typeof(equations_float64.g) == Float64
         @test typeof(@inferred similar(equations_float64, RealT)) == typeof(equations)
     end
 end
@@ -202,6 +203,7 @@ end
         # Adapt the real type, e.g., to move a semidiscretization to a GPU
         equations_float64 = @inferred similar(equations, Float64)
         @test typeof(equations_float64.c_p) == Float64
+        @test typeof(equations_float64.g) == Float64
         @test typeof(@inferred similar(equations_float64, RealT)) == typeof(equations)
     end
 end
@@ -319,6 +321,7 @@ end
         # Adapt the real type, e.g., to move a semidiscretization to a GPU
         equations_float64 = @inferred similar(equations, Float64)
         @test typeof(equations_float64.c_p) == Float64
+        @test typeof(equations_float64.g) == Float64
         @test typeof(@inferred similar(equations_float64, RealT)) == typeof(equations)
     end
 end

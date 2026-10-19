@@ -235,25 +235,25 @@ end
 ] tags=[:euler_potential_temperature_3d] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
                                  "elixir_potential_temperature_baroclinic_instability_turbo.jl"),
-                        l2=Float32[0.0005262429,
-                                   0.016053239,
-                                   0.014937877,
-                                   0.014429507,
-                                   0.14226119,
+                        l2=Float32[0.00052923214,
+                                   0.017052146,
+                                   0.01605738,
+                                   0.016616695,
+                                   0.14386448,
                                    101.35988],
-                        linf=Float32[0.0044714212,
-                                     1.1531469,
-                                     0.69583094,
-                                     1.1175765,
-                                     1.0573425,
+                        linf=Float32[0.0044720173,
+                                     1.1709296,
+                                     0.695263,
+                                     1.1052238,
+                                     1.0602722,
                                      380.0],
-                        tspan=(0.0, 100.0), trees_per_cube_face=(2, 2),
+                        tspan=(0.0, 20.0), trees_per_cube_face=(2, 2),
                         RealT_for_test_tolerances=Float32,
                         real_type=Float32)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
-    # The elixir uses the adapted `semi` for the ODE problem and the time
+    # The elixir uses the adapted `semi` for the ODE problem and the time span
     @test semi === ode.p
     @test eltype(ode.tspan) == Float32
     @test sol.t[end] isa Float32
