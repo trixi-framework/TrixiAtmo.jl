@@ -516,7 +516,7 @@ end
     @test flux_1d ≈ flux_3d[[1, 2, 5, 6]]
 end
 
-@testitem "Unit: Consistency check for entropy-stable LMARS flux with Potential Temperature with gravity: CEPTEWG" setup=[Setup] tags=[:unit_fluxes] begin
+@testitem "Unit: Consistency check for ES LMARS flux with Potential Temperature with gravity: CEPTEWG" setup=[Setup] tags=[:unit_fluxes] begin
     # Set up equations and dummy conservative variables state
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004.0,
                                                                             c_v = 717.0,
@@ -530,19 +530,20 @@ end
         SVector(-1.2, 0.3)]
 
     for normal_direction in normal_directions
-        # consistency with the physical flux
+        # Consistency with the physical flux
         for i in 1:2
             @test flux_es(u, u, normal_direction, equations)[i] ≈
                   flux(u, normal_direction, equations)
         end
-        # both contributions coincide since the geopotential is continuous, and the flux
-        # is homogeneous of degree one in the normal direction
+        # Both contributions coincide since `flux_es` neglects the jump of the geopotential,
+        # which vanishes for a continuous geopotential, and the flux is homogeneous of
+        # degree one in the normal direction
         flux_left, flux_right = flux_es(u, u_rr, normal_direction, equations)
         @test flux_left == flux_right
         @test flux_es(u, u_rr, 2.5 * normal_direction, equations)[1] ≈ 2.5 * flux_left
     end
 
-    # check consistency for the 3D flux
+    # Check consistency for the 3D flux
     equations_3d = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
                                                                                c_v = 717.0,
                                                                                gravity = EARTH_GRAVITATIONAL_ACCELERATION)
@@ -566,7 +567,7 @@ end
               2.5 * flux_left
     end
 
-    # check consistency between the 2D and 3D fluxes for different left and right states
+    # Check consistency between the 2D and 3D fluxes for different left and right states
     u_3d = SVector(u[1], u[2], u[3], 0.0, u[4], u[5])
     u_rr_3d = SVector(u_rr[1], u_rr[2], u_rr[3], 0.0, u_rr[4], u_rr[5])
     for normal_direction in normal_directions

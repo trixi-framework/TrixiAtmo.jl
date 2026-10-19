@@ -254,7 +254,7 @@ Entropy-stable and well-balanced version of the low Mach number approximate Riem
 - Marco Artiano, Kieran Ricardo, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2026)
   Entropy-Stable and Well-Balanced Discontinuous Galerkin Methods for the Compressible
   Euler Equations in Vector-Invariant Form
-  (https://arxiv.org/abs/2610.05820)
+  [arXiv: 2610.05820](https://arxiv.org/abs/2610.05820)
 
 It returns the conservative and the nonconservative contribution of the surface flux as a
 tuple, see [`Trixi.combine_conservative_and_nonconservative_fluxes`](@ref).

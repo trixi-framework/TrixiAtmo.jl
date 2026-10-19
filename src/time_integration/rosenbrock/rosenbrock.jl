@@ -36,7 +36,7 @@ mutable struct RosenbrockIntegrator{RealT <: Real, uType, Params, Sol, F, Alg,
     const f::F # right-hand side of the semidiscretization
     const alg::Alg # AbstractRosenbrockAlgorithm
     const tableau::Tableau # RosenbrockTableau of `alg` in the real type of `u`
-    const jacobian::Jacobian # approximate Jacobian of the right-hand side, see `jacobian.jl`
+    const jacobian::Jacobian # arrays of the approximate Jacobian, see `jacobian.jl`
     const update_interval::Int # number of time steps between two updates of the Jacobian
     dt_jacobian::RealT # time step of the current factorization of the Jacobian
     opts::Options
@@ -59,9 +59,12 @@ function init(ode::ODEProblem, alg::AbstractRosenbrockAlgorithm;
     t, dt = promote(t, dt)
     tdir = sign(ode.tspan[end] - ode.tspan[1])
     iter = 0
+    # The arrays of the approximate Jacobian are created for the semidiscretization and the
+    # array type of the solution
+    jacobian_cache = create_jacobian_cache(jacobian, ode.p, u)
     integrator = RosenbrockIntegrator(u, du, u_tmp, stages, t, tdir, dt, dt, iter,
                                       ode.p, (prob = ode,), ode.f, alg, tableau_,
-                                      jacobian, update_interval, zero(dt),
+                                      jacobian_cache, update_interval, zero(dt),
                                       TimeIntegratorOptions(callback, ode.tspan;
                                                             kwargs...),
                                       false, true, false)
@@ -111,7 +114,7 @@ function step!(integrator::RosenbrockIntegrator)
     return nothing
 end
 
-# One stage of the transformed form (Hairer and Wanner, 1996, eq. (7.25)),
+# One stage of the transformed form (Hairer and Wanner, 1996, Eq. (7.25)),
 #   u_i = u_n + sum_j a_ij stages_j,
 #   (I / (gamma dt) - J) stages_i = f(u_i, t + c_i dt) + sum_j (c_ij / dt) stages_j,
 # and, after the last stage, u_{n+1} = u_n + sum_j m_j stages_j.
@@ -173,6 +176,14 @@ end
 
 function rosenbrock_internal_stage!(backend::Backend, u, res, u_n, stages, a_row,
                                     c_row, ::Val{N}) where {N}
+    # Explicit bounds check, which allows us to assume inbounds access in the kernel
+    @boundscheck begin
+        Trixi.check_axes(res, axes(u))
+        Trixi.check_axes(u_n, axes(u))
+        for stage in stages
+            Trixi.check_axes(stage, axes(u))
+        end
+    end
     kernel! = rosenbrock_internal_stage_KAkernel!(backend)
     kernel!(u, res, u_n, stages, a_row, c_row, Val(N), ndrange = length(u))
     return nothing
@@ -206,11 +217,16 @@ end
 
 function rosenbrock_final_stage!(backend::Backend, u, stages, m,
                                  ::Val{N}) where {N}
+    # Explicit bounds check, which allows us to assume inbounds access in the kernel
+    @boundscheck begin
+        for stage in stages
+            Trixi.check_axes(stage, axes(u))
+        end
+    end
     kernel! = rosenbrock_final_stage_KAkernel!(backend)
     kernel!(u, stages, m, Val(N), ndrange = length(u))
     return nothing
 end
-end # @muladd
 
 @kernel inbounds=true function rosenbrock_internal_stage_KAkernel!(u, res, u_n, stages,
                                                                    a_row, c_row,
@@ -238,5 +254,6 @@ end
     end
     u[i] = u_i
 end
+end # @muladd
 
 include("tableaux.jl")

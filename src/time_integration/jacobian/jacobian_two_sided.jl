@@ -11,13 +11,13 @@
 # element edges form a band matrix with 7 diagonals (`schur_band`), factorized by a
 # banded LU.
 # The vertical operator is the one of Eq. (34) of the reference below, transformed by the
-# diagonal matrix of the norms `n = |Ja^3|` (see `copy_node_to_columns!`), with the unit
-# contravariant direction `nu = Ja^3 / n` (`compute_vertical_frame`) and the metric
-# factor `n / J` (`compute_metric_factor`). It conserves mass and mass-weighted
-# potential temperature.
+# diagonal matrix of the norms `n = |Ja^3|` (see `copy_node_to_columns!` in
+# `jacobian_3d_gpu.jl`), with the unit contravariant direction `nu = Ja^3 / n`
+# (`compute_vertical_frame`) and the metric factor `n / J` (`compute_metric_factor`).
+# It conserves mass and mass-weighted potential temperature.
 
 """
-    VerticalJacobianTwoSided(semi; c = 340)
+    VerticalJacobianTwoSided(; c = 340)
 
 Approximate Jacobian of the vertical dynamics (vertically propagating acoustic waves and
 gravity) of the [`CompressibleEulerPotentialTemperatureEquationsWithGravity3D`](@ref) on a
@@ -27,19 +27,31 @@ condensation (banded reduced system) of
 - Marco Artiano, Andrés Rueda-Ramírez, Oswald Knoth, Hendrik Ranocha, Gregor Gassner (2026)
   GPU-Accelerated Nested Schur-Complement Solvers for Atmospheric Flow Simulations using
   Horizontally-Explicit, Vertically-Implicit Schemes and Discontinuous Galerkin Methods
-  [arXiv:2610.15775](https://arxiv.org/abs/2610.15775)
+  [arXiv: 2610.15775](https://arxiv.org/abs/2610.15775)
 
-The Jacobian decouples into independent linear systems for each vertical column of nodes,
-which are solved with the array type of the semidiscretization `semi`.
-The dissipation of the vertical acoustic waves is based on the constant speed of sound `c`.
+Pass it as keyword argument `jacobian` to `Trixi.solve` with an implicit time integration
+method, e.g., `Trixi.solve(ode, SSPRW32(); dt, jacobian = VerticalJacobianTwoSided())`. Its
+arrays are created by `Trixi.init` for the semidiscretization of the ODE problem, with the
+array type of the solution, so that it runs on the same backend (CPU or GPU) as the
+semidiscretization. The Jacobian decouples into independent linear systems for each
+vertical column of nodes. The dissipation of the vertical acoustic waves is based on the
+constant speed of sound `c`.
 """
-struct VerticalJacobianTwoSided{NLAYERS, NNODES, RealT <: Real, BackendType,
-                                MatrixRealT <: DenseMatrix{RealT},
-                                ArrayRealT3 <: DenseArray{RealT, 3},
-                                ArrayRealT4 <: DenseArray{RealT, 4},
-                                ArrayRealT5 <: DenseArray{RealT, 5},
-                                VectorInt <: DenseVector{Int},
-                                DerivativeMatrix <: AbstractMatrix{RealT}}
+struct VerticalJacobianTwoSided{RealT <: Real}
+    speed_of_sound::RealT
+end
+
+VerticalJacobianTwoSided(; c = 340) = VerticalJacobianTwoSided(c)
+
+# Arrays of the `VerticalJacobianTwoSided` for a semidiscretization, created by
+# `create_jacobian_cache`
+struct VerticalJacobianTwoSidedCache{NLAYERS, NNODES, RealT <: Real, BackendType,
+                                     MatrixRealT <: DenseMatrix{RealT},
+                                     ArrayRealT3 <: DenseArray{RealT, 3},
+                                     ArrayRealT4 <: DenseArray{RealT, 4},
+                                     ArrayRealT5 <: DenseArray{RealT, 5},
+                                     VectorInt <: DenseVector{Int},
+                                     DerivativeMatrix <: AbstractMatrix{RealT}}
     ncolumns::Int
     speed_of_sound::RealT
     # Inverse quadrature weight `1 / w_1 = 1 / w_M` of the edge nodes; the weights of the
@@ -47,50 +59,51 @@ struct VerticalJacobianTwoSided{NLAYERS, NNODES, RealT <: Real, BackendType,
     inv_boundary_weight::RealT
     backend::BackendType # `KernelAbstractions.Backend` of the arrays
     # Unit contravariant direction `nu` of the vertical reference coordinate (slots 1:3)
-    # and normalized norm `n = |Ja^3|` (slot 4), laid out [slot, i, j, k, element]
+    # and normalized norm `n = |Ja^3|` (slot 4), laid out `[slot, i, j, k, element]`
     vertical_frame::ArrayRealT5
-    # Metric factor `n / J`, [column, node, layer]
+    # Metric factor `n / J`, `[column, node, layer]`
     metric_factor::ArrayRealT3
-    # Pointwise gravity `g (nu . r_hat)`, [column, node, layer]
+    # Pointwise gravity `g (nu . r_hat)`, `[column, node, layer]`
     gravity::ArrayRealT3
     # Column and layer of every element to copy data to and from the columns
     horizontal_index_of_element::VectorInt
     vertical_index_of_element::VectorInt
     derivative_hat::DerivativeMatrix
     # Vertical state with the variables `1 => rho`, `2 => rho_w` (vertical momentum), and
-    # `3 => rho_theta`, [column, v, node, layer]; also used as right-hand side
+    # `3 => rho_theta`, `[column, v, node, layer]`; also used as right-hand side
     # and solution of the linear system
     u_vertical::ArrayRealT4
-    # Potential temperature and dp/d(rho theta), [column, node, layer]
+    # Potential temperature and `dp/d(rho_theta)`, `[column, node, layer]`
     theta::ArrayRealT3
     dpdrhotheta::ArrayRealT3
     # Entries of the coupling blocks between neighboring elements,
-    # [column, entry, layer] and [column, layer]
+    # `[column, entry, layer]` and `[column, layer]`
     B1m_34::ArrayRealT3
     B1_1::MatrixRealT
     B1_4::MatrixRealT
     B1p_12::ArrayRealT3
     # LU factors of the local Schur complements `S_e` of the elements in the interior
-    # nodes, [column, node, node, layer]
+    # nodes, `[column, node, node, layer]`
     schur_element::ArrayRealT4
     # Global Schur complement `S`, a band matrix with 7 diagonals laid out
-    # [column, diagonal, row], and the right-hand side and solution of the condensed
-    # system, [column, row]
+    # `[column, diagonal, row]`, and the right-hand side and solution of the condensed
+    # system, `[column, row]`
     schur_band::ArrayRealT3
     schur_rhs::MatrixRealT
 end
 
-@inline function number_of_layers(::VerticalJacobianTwoSided{NLAYERS}) where {NLAYERS}
+@inline function number_of_layers(::VerticalJacobianTwoSidedCache{NLAYERS}) where {NLAYERS}
     return NLAYERS
 end
 
-@inline function number_of_nodes(::VerticalJacobianTwoSided{NLAYERS,
-                                                            NNODES}) where {NLAYERS,
-                                                                            NNODES}
+@inline function number_of_nodes(::VerticalJacobianTwoSidedCache{NLAYERS,
+                                                                 NNODES}) where {
+                                                                                 NLAYERS,
+                                                                                 NNODES}
     return NNODES
 end
 
-function VerticalJacobianTwoSided(semi; c = 340)
+function create_jacobian_cache(jacobian::VerticalJacobianTwoSided, semi, u_ode)
     (; mesh, equations, solver, cache) = semi
     if !(equations isa CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
         throw(ArgumentError("`VerticalJacobianTwoSided` requires the " *
@@ -141,28 +154,33 @@ function VerticalJacobianTwoSided(semi; c = 340)
     schur_band = KernelAbstractions.zeros(backend, RealT, ncolumns, 7, 4 * nlayers)
     schur_rhs = KernelAbstractions.zeros(backend, RealT, ncolumns, 4 * nlayers)
 
-    return VerticalJacobianTwoSided{nlayers, nnodes_, RealT, typeof(backend),
-                                    typeof(B1_1), typeof(gravity),
-                                    typeof(schur_element),
-                                    typeof(vertical_frame),
-                                    typeof(horizontal_index_of_element),
-                                    typeof(derivative_hat)}(ncolumns, convert(RealT, c),
-                                                            inv_boundary_weight,
-                                                            backend,
-                                                            vertical_frame,
-                                                            metric_factor,
-                                                            gravity,
-                                                            horizontal_index_of_element,
-                                                            vertical_index_of_element,
-                                                            derivative_hat, u_vertical,
-                                                            theta, dpdrhotheta, B1m_34,
-                                                            B1_1, B1_4, B1p_12,
-                                                            schur_element,
-                                                            schur_band, schur_rhs)
+    return VerticalJacobianTwoSidedCache{nlayers, nnodes_, RealT, typeof(backend),
+                                         typeof(B1_1), typeof(gravity),
+                                         typeof(schur_element),
+                                         typeof(vertical_frame),
+                                         typeof(horizontal_index_of_element),
+                                         typeof(derivative_hat)}(ncolumns,
+                                                                 convert(RealT,
+                                                                         jacobian.speed_of_sound),
+                                                                 inv_boundary_weight,
+                                                                 backend,
+                                                                 vertical_frame,
+                                                                 metric_factor,
+                                                                 gravity,
+                                                                 horizontal_index_of_element,
+                                                                 vertical_index_of_element,
+                                                                 derivative_hat,
+                                                                 u_vertical,
+                                                                 theta, dpdrhotheta,
+                                                                 B1m_34,
+                                                                 B1_1, B1_4, B1p_12,
+                                                                 schur_element,
+                                                                 schur_band, schur_rhs)
 end
 
 # Assemble and factorize `I / gamma_dt - J` from the state `u_ode`, see `jacobian.jl`
-function update_jacobian!(jacobian::VerticalJacobianTwoSided, u_ode, semi, gamma_dt)
+function update_jacobian!(jacobian::VerticalJacobianTwoSidedCache, u_ode, semi,
+                          gamma_dt)
     (; backend, u_vertical) = jacobian
     u = wrap_array(u_ode, semi)
 
@@ -182,7 +200,7 @@ function update_jacobian!(jacobian::VerticalJacobianTwoSided, u_ode, semi, gamma
 end
 
 # Solve `(I / gamma_dt - J) x = b_ode` in place, see `jacobian.jl`
-function solve_jacobian!(b_ode, jacobian::VerticalJacobianTwoSided, semi, gamma_dt)
+function solve_jacobian!(b_ode, jacobian::VerticalJacobianTwoSidedCache, semi, gamma_dt)
     (; backend, u_vertical) = jacobian
     b = wrap_array(b_ode, semi)
 
@@ -192,7 +210,7 @@ function solve_jacobian!(b_ode, jacobian::VerticalJacobianTwoSided, semi, gamma_
                                                                                   jacobian,
                                                                                   semi)
 
-    # Right-hand side of the condensed system, schur_rhs = b_D - C * A^{-1} * b_A
+    # Right-hand side of the condensed system, `schur_rhs = b_D - C * A^{-1} * b_A`
     @trixi_timeit_ext backend timer() "forward substitution" ldiv_interior_forward!(backend,
                                                                                     jacobian,
                                                                                     u_vertical,
@@ -217,7 +235,7 @@ function solve_jacobian!(b_ode, jacobian::VerticalJacobianTwoSided, semi, gamma_
 end
 
 ###############################################################################
-# Fill of the Jacobian: the potential temperature and dp/d(rho theta) per node, the LU
+# Fill of the Jacobian: the potential temperature and `dp/d(rho_theta)` per node, the LU
 # factors `schur_element` of the local Schur complements, the coupling entries between
 # neighboring elements, and the direct contributions to the boundary Schur complement
 # `schur_band`
@@ -253,8 +271,8 @@ Base.@propagate_inbounds function fill_jacobian_element!(layer, column, nlayers,
         dpdrhotheta[column, i, layer] = dpdrhotheta_element[i]
     end
 
-    # Local Schur complement; the derivative blocks A13, A23, and A32 are computed from
-    # `derivative_hat`, `theta_element`, `dpdrhotheta_element`, and `metric_factor`
+    # Local Schur complement; the derivative blocks `A13`, `A23`, and `A32` are computed
+    # from `derivative_hat`, `theta_element`, `dpdrhotheta_element`, and `metric_factor`
     for i in 1:(NNODES - 2)
         gravity_i = gravity[column, i + 1, layer]
         for j in 1:(NNODES - 2)
@@ -282,6 +300,7 @@ Base.@propagate_inbounds function fill_jacobian_element!(layer, column, nlayers,
     end
     lu_dense!(layer, column, schur_element, Val(NNODES - 2))
 
+    # `B1_1` of the lowest and `B1_4` of the highest layer are zero
     if layer > 1
         B1m_34[column, 1, layer] = -0.5f0 *
                                    metric_factor[column, 1, layer] *
@@ -291,10 +310,7 @@ Base.@propagate_inbounds function fill_jacobian_element!(layer, column, nlayers,
         B1m_34[column, 2, layer] = -dpdrhotheta_m * inv_speed_of_sound *
                                    inv_boundary_weight * 0.5f0 *
                                    metric_factor[column, 1, layer]
-    end
 
-    # `B1_1` of the lowest and `B1_4` of the highest layer are zero
-    if layer > 1
         B1_1[column, layer] = dpdrhotheta_element[1] * inv_speed_of_sound * 0.5f0 *
                               metric_factor[column, 1, layer] *
                               inv_boundary_weight
@@ -304,9 +320,7 @@ Base.@propagate_inbounds function fill_jacobian_element!(layer, column, nlayers,
         B1_4[column, layer] = dpdrhotheta_element[NNODES] * inv_speed_of_sound * 0.5f0 *
                               metric_factor[column, NNODES, layer] *
                               inv_boundary_weight
-    end
 
-    if layer < nlayers
         dpdrhotheta_p = dp_factor *
                         u_vertical[column, 3, 1, layer + 1]^dp_exponent
         B1p_12[column, 1, layer] = -dpdrhotheta_p * inv_speed_of_sound *
@@ -321,11 +335,11 @@ Base.@propagate_inbounds function fill_jacobian_element!(layer, column, nlayers,
                   u_vertical[column, 1, NNODES, layer - 1]
         dpdrhotheta_m = dp_factor *
                         u_vertical[column, 3, NNODES, layer - 1]^dp_exponent
-        # Interface potential temperature of the dissipative rho*theta_element flux
+        # Interface potential temperature of the dissipative flux of `rho_theta`
         theta_interface = 0.5f0 * (theta_m + theta_element[1])
-        # Factors of the last node of the layer below (rows index_boundary-2 and
-        # index_boundary-1) and of the first node of this layer (rows index_boundary and
-        # index_boundary+1)
+        # Factors of the last node of the layer below (rows `index_boundary - 2` and
+        # `index_boundary - 1`) and of the first node of this layer (rows `index_boundary`
+        # and `index_boundary + 1`)
         fM = 0.5f0 * metric_factor[column, NNODES, layer - 1]
         f1 = 0.5f0 * metric_factor[column, 1, layer]
         # (index_boundary-1,index_boundary-1)
@@ -421,6 +435,7 @@ Base.@propagate_inbounds function fill_jacobian_element!(layer, column, nlayers,
                                                      speed_of_sound *
                                                      inv_boundary_weight
     end
+    return nothing
 end
 
 @kernel inbounds=true function fill_jacobian_KAkernel!(nlayers, B1m_34, B1_1,
@@ -434,33 +449,31 @@ end
                                                        inv_boundary_weight, dp_factor,
                                                        dp_exponent, inv_gamma_dt,
                                                        gamma_dt,
-                                                       gravity, theta,
+                                                       @Const(gravity), theta,
                                                        dpdrhotheta,
                                                        ::Val{NNODES}) where {NNODES}
     column = @index(Global)
-    ncolumns = @uniform @ndrange()[1]
     theta_element = MVector{NNODES, eltype(u_vertical)}(undef)
     dpdrhotheta_element = MVector{NNODES, eltype(u_vertical)}(undef)
     schur_correction = MMatrix{NNODES, NNODES, eltype(u_vertical)}(undef)
 
-    if column <= ncolumns
-        for layer in 1:nlayers
-            fill_jacobian_element!(layer, column, nlayers, Val(NNODES), theta_element,
-                                   dpdrhotheta_element, schur_correction,
-                                   B1m_34, B1_1, B1_4, B1p_12,
-                                   schur_element, schur_band, u_vertical,
-                                   metric_factor,
-                                   derivative_hat,
-                                   speed_of_sound, inv_speed_of_sound,
-                                   inv_boundary_weight,
-                                   dp_factor, dp_exponent, inv_gamma_dt, gamma_dt,
-                                   gravity,
-                                   theta, dpdrhotheta)
-        end
+    for layer in 1:nlayers
+        fill_jacobian_element!(layer, column, nlayers, Val(NNODES), theta_element,
+                               dpdrhotheta_element, schur_correction,
+                               B1m_34, B1_1, B1_4, B1p_12,
+                               schur_element, schur_band, u_vertical,
+                               metric_factor,
+                               derivative_hat,
+                               speed_of_sound, inv_speed_of_sound,
+                               inv_boundary_weight,
+                               dp_factor, dp_exponent, inv_gamma_dt, gamma_dt,
+                               gravity,
+                               theta, dpdrhotheta)
     end
 end
 
-function fill_jacobian!(backend::Backend, jacobian::VerticalJacobianTwoSided, equations,
+function fill_jacobian!(backend::Backend, jacobian::VerticalJacobianTwoSidedCache,
+                        equations,
                         gamma_dt)
     (; B1m_34, B1_1, B1_4, B1p_12, schur_element, schur_band, gravity, theta,
     dpdrhotheta, ncolumns, metric_factor, derivative_hat, inv_boundary_weight,
@@ -505,7 +518,8 @@ end
 # are then overwritten by those of `x`; `x_rho_1` and `x_rho_M` hold the density in the
 # first and the last node, and `schur_update` the resulting entries `-C x`.
 Base.@propagate_inbounds function schur_complement_boundary_element!(layer, column,
-                                                                     nlayers, nnodes,
+                                                                     nlayers,
+                                                                     ::Val{NNODES},
                                                                      x_rho,
                                                                      x_rho_theta,
                                                                      x_rho_w, x_rho_1,
@@ -519,7 +533,7 @@ Base.@propagate_inbounds function schur_complement_boundary_element!(layer, colu
                                                                      gravity, theta,
                                                                      dpdrhotheta,
                                                                      metric_factor,
-                                                                     derivative_hat)
+                                                                     derivative_hat) where {NNODES}
     RealT = eltype(schur_band)
     zero_ = zero(RealT)
     # Offset of the 4 boundary unknowns of this layer in the condensed system
@@ -527,24 +541,24 @@ Base.@propagate_inbounds function schur_complement_boundary_element!(layer, colu
     # Columns of `rho_theta` of the first and the last node: `b_rho_w = A32[:, 1]` and
     # `A32[:, M]`, `b_rho_theta = 0`, and the density entries `B1_1` and `B1_4` in the edge
     # nodes, where `A31` vanishes; thus, `S_e x_rho_w = b_rho_w`
-    for i in 1:(nnodes - 2)
+    for i in 1:(NNODES - 2)
         x_rho_w[i, 1] = (metric_factor[column, i + 1, layer] *
                          derivative_hat[i + 1, 1] *
                          dpdrhotheta[column, 1, layer])
         x_rho_w[i, 2] = (metric_factor[column, i + 1, layer] *
-                         derivative_hat[i + 1, nnodes] *
-                         dpdrhotheta[column, nnodes, layer])
+                         derivative_hat[i + 1, NNODES] *
+                         dpdrhotheta[column, NNODES, layer])
     end
 
     # Solve with the LU factors of `S_e` in place: forward substitution
-    for k in 1:(nnodes - 3)
-        for i in (k + 1):(nnodes - 2)
+    for k in 1:(NNODES - 3)
+        for i in (k + 1):(NNODES - 2)
             x_rho_w[i, 1] -= schur_element[column, i, k, layer] * x_rho_w[k, 1]
             x_rho_w[i, 2] -= schur_element[column, i, k, layer] * x_rho_w[k, 2]
         end
     end
     # Backward substitution
-    for k in (nnodes - 2):-1:1
+    for k in (NNODES - 2):-1:1
         x_rho_w[k, 1] /= schur_element[column, k, k, layer]
         x_rho_w[k, 2] /= schur_element[column, k, k, layer]
         for i in 1:(k - 1)
@@ -558,16 +572,16 @@ Base.@propagate_inbounds function schur_complement_boundary_element!(layer, colu
     x_rho_1[2] = zero_
     x_rho_M[1] = zero_
     x_rho_M[2] = -B1_4[column, layer]
-    for j in 1:(nnodes - 2)
+    for j in 1:(NNODES - 2)
         x_rho_1[1] += (metric_factor[column, 1, layer] *
                        derivative_hat[1, j + 1]) * x_rho_w[j, 1]
         x_rho_1[2] += (metric_factor[column, 1, layer] *
                        derivative_hat[1, j + 1]) * x_rho_w[j, 2]
-        x_rho_M[1] += (metric_factor[column, nnodes, layer] *
-                       derivative_hat[nnodes, j + 1]) *
+        x_rho_M[1] += (metric_factor[column, NNODES, layer] *
+                       derivative_hat[NNODES, j + 1]) *
                       x_rho_w[j, 1]
-        x_rho_M[2] += (metric_factor[column, nnodes, layer] *
-                       derivative_hat[nnodes, j + 1]) *
+        x_rho_M[2] += (metric_factor[column, NNODES, layer] *
+                       derivative_hat[NNODES, j + 1]) *
                       x_rho_w[j, 2]
     end
     x_rho_1[1] *= -gamma_dt
@@ -576,10 +590,10 @@ Base.@propagate_inbounds function schur_complement_boundary_element!(layer, colu
     x_rho_M[2] *= -gamma_dt
 
     # Interior potential temperature density with `b_rho_theta = 0`
-    for i in 1:(nnodes - 2)
+    for i in 1:(NNODES - 2)
         x_rho_theta[i, 1] = zero_
         x_rho_theta[i, 2] = zero_
-        for j in 1:(nnodes - 2)
+        for j in 1:(NNODES - 2)
             x_rho_theta[i, 1] += (metric_factor[column, i + 1, layer] *
                                   derivative_hat[i + 1, j + 1] *
                                   theta[column, j + 1, layer]) * x_rho_w[j, 1]
@@ -600,18 +614,18 @@ Base.@propagate_inbounds function schur_complement_boundary_element!(layer, colu
     schur_update[2, 2] = zero_
     schur_update[3, 2] = zero_
     schur_update[4, 2] = zero_
-    for j in 1:(nnodes - 2)
+    for j in 1:(NNODES - 2)
         schur_update[1, 1] += -(metric_factor[column, 1, layer] *
                                 derivative_hat[1, j + 1] *
                                 theta[column, j + 1, layer]) * x_rho_w[j, 1]
         schur_update[1, 2] += -(metric_factor[column, 1, layer] *
                                 derivative_hat[1, j + 1] *
                                 theta[column, j + 1, layer]) * x_rho_w[j, 2]
-        schur_update[4, 1] += -(metric_factor[column, nnodes, layer] *
-                                derivative_hat[nnodes, j + 1] *
+        schur_update[4, 1] += -(metric_factor[column, NNODES, layer] *
+                                derivative_hat[NNODES, j + 1] *
                                 theta[column, j + 1, layer]) * x_rho_w[j, 1]
-        schur_update[4, 2] += -(metric_factor[column, nnodes, layer] *
-                                derivative_hat[nnodes, j + 1] *
+        schur_update[4, 2] += -(metric_factor[column, NNODES, layer] *
+                                derivative_hat[NNODES, j + 1] *
                                 theta[column, j + 1, layer]) * x_rho_w[j, 2]
         schur_update[2, 1] += -(metric_factor[column, 1, layer] *
                                 derivative_hat[1, j + 1] *
@@ -619,15 +633,15 @@ Base.@propagate_inbounds function schur_complement_boundary_element!(layer, colu
         schur_update[2, 2] += -(metric_factor[column, 1, layer] *
                                 derivative_hat[1, j + 1] *
                                 dpdrhotheta[column, j + 1, layer]) * x_rho_theta[j, 2]
-        schur_update[3, 1] += -(metric_factor[column, nnodes, layer] *
-                                derivative_hat[nnodes, j + 1] *
+        schur_update[3, 1] += -(metric_factor[column, NNODES, layer] *
+                                derivative_hat[NNODES, j + 1] *
                                 dpdrhotheta[column, j + 1, layer]) * x_rho_theta[j, 1]
-        schur_update[3, 2] += -(metric_factor[column, nnodes, layer] *
-                                derivative_hat[nnodes, j + 1] *
+        schur_update[3, 2] += -(metric_factor[column, NNODES, layer] *
+                                derivative_hat[NNODES, j + 1] *
                                 dpdrhotheta[column, j + 1, layer]) * x_rho_theta[j, 2]
     end
     gravity_1 = gravity[column, 1, layer]
-    gravity_M = gravity[column, nnodes, layer]
+    gravity_M = gravity[column, NNODES, layer]
     schur_update[2, 1] = schur_update[2, 1] - gravity_1 * x_rho_1[1]
     schur_update[2, 2] = schur_update[2, 2] - gravity_1 * x_rho_1[2]
     schur_update[3, 1] = schur_update[3, 1] - gravity_M * x_rho_M[1]
@@ -641,26 +655,26 @@ Base.@propagate_inbounds function schur_complement_boundary_element!(layer, colu
     # `A13[:, M]`, whose diagonal entries vanish at the interfaces between elements since
     # `S / 2` has a zero diagonal, `b_rho_theta = A23[:, 1]` and `A23[:, M]`, and
     # `b_rho_w = 0`
-    for i in 1:nnodes
+    for i in 1:NNODES
         x_rho[i, 1] = ((layer > 1 && i == 1) ? zero_ :
                        metric_factor[column, i, layer] * derivative_hat[i, 1])
-        x_rho[i, 2] = ((layer < nlayers && i == nnodes) ? zero_ :
+        x_rho[i, 2] = ((layer < nlayers && i == NNODES) ? zero_ :
                        metric_factor[column, i, layer] *
-                       derivative_hat[i, nnodes])
+                       derivative_hat[i, NNODES])
     end
-    for i in 1:(nnodes - 2)
+    for i in 1:(NNODES - 2)
         x_rho_theta[i, 1] = (metric_factor[column, i + 1, layer] *
                              derivative_hat[i + 1, 1] *
                              theta[column, 1, layer])
         x_rho_theta[i, 2] = (metric_factor[column, i + 1, layer] *
-                             derivative_hat[i + 1, nnodes] *
-                             theta[column, nnodes, layer])
+                             derivative_hat[i + 1, NNODES] *
+                             theta[column, NNODES, layer])
     end
     # Right-hand side of `S_e x_rho_w`
-    for i in 1:(nnodes - 2)
+    for i in 1:(NNODES - 2)
         x_rho_w[i, 1] = gravity[column, i + 1, layer] * x_rho[i + 1, 1]
         x_rho_w[i, 2] = gravity[column, i + 1, layer] * x_rho[i + 1, 2]
-        for j in 1:(nnodes - 2)
+        for j in 1:(NNODES - 2)
             x_rho_w[i, 1] += (metric_factor[column, i + 1, layer] *
                               derivative_hat[i + 1, j + 1] *
                               dpdrhotheta[column, j + 1, layer]) * x_rho_theta[j, 1]
@@ -673,14 +687,14 @@ Base.@propagate_inbounds function schur_complement_boundary_element!(layer, colu
     end
 
     # Solve with the LU factors of `S_e` in place: forward substitution
-    for k in 1:(nnodes - 3)
-        for i in (k + 1):(nnodes - 2)
+    for k in 1:(NNODES - 3)
+        for i in (k + 1):(NNODES - 2)
             x_rho_w[i, 1] -= schur_element[column, i, k, layer] * x_rho_w[k, 1]
             x_rho_w[i, 2] -= schur_element[column, i, k, layer] * x_rho_w[k, 2]
         end
     end
     # Backward substitution
-    for k in (nnodes - 2):-1:1
+    for k in (NNODES - 2):-1:1
         x_rho_w[k, 1] /= schur_element[column, k, k, layer]
         x_rho_w[k, 2] /= schur_element[column, k, k, layer]
         for i in 1:(k - 1)
@@ -692,18 +706,18 @@ Base.@propagate_inbounds function schur_complement_boundary_element!(layer, colu
     # Density in the edge nodes
     x_rho_1[1] = x_rho[1, 1]
     x_rho_1[2] = x_rho[1, 2]
-    x_rho_M[1] = x_rho[nnodes, 1]
-    x_rho_M[2] = x_rho[nnodes, 2]
-    for j in 1:(nnodes - 2)
+    x_rho_M[1] = x_rho[NNODES, 1]
+    x_rho_M[2] = x_rho[NNODES, 2]
+    for j in 1:(NNODES - 2)
         x_rho_1[1] += -(metric_factor[column, 1, layer] *
                         derivative_hat[1, j + 1]) * x_rho_w[j, 1]
         x_rho_1[2] += -(metric_factor[column, 1, layer] *
                         derivative_hat[1, j + 1]) * x_rho_w[j, 2]
-        x_rho_M[1] += -(metric_factor[column, nnodes, layer] *
-                        derivative_hat[nnodes, j + 1]) *
+        x_rho_M[1] += -(metric_factor[column, NNODES, layer] *
+                        derivative_hat[NNODES, j + 1]) *
                       x_rho_w[j, 1]
-        x_rho_M[2] += -(metric_factor[column, nnodes, layer] *
-                        derivative_hat[nnodes, j + 1]) *
+        x_rho_M[2] += -(metric_factor[column, NNODES, layer] *
+                        derivative_hat[NNODES, j + 1]) *
                       x_rho_w[j, 2]
     end
     x_rho_1[1] *= gamma_dt
@@ -712,8 +726,8 @@ Base.@propagate_inbounds function schur_complement_boundary_element!(layer, colu
     x_rho_M[2] *= gamma_dt
 
     # Interior potential temperature density
-    for i in 1:(nnodes - 2)
-        for j in 1:(nnodes - 2)
+    for i in 1:(NNODES - 2)
+        for j in 1:(NNODES - 2)
             x_rho_theta[i, 1] += -(metric_factor[column, i + 1, layer] *
                                    derivative_hat[i + 1, j + 1] *
                                    theta[column, j + 1, layer]) * x_rho_w[j, 1]
@@ -732,18 +746,18 @@ Base.@propagate_inbounds function schur_complement_boundary_element!(layer, colu
     schur_update[2, 2] = zero_
     schur_update[3, 2] = zero_
     schur_update[4, 2] = zero_
-    for j in 1:(nnodes - 2)
+    for j in 1:(NNODES - 2)
         schur_update[1, 1] += -(metric_factor[column, 1, layer] *
                                 derivative_hat[1, j + 1] *
                                 theta[column, j + 1, layer]) * x_rho_w[j, 1]
         schur_update[1, 2] += -(metric_factor[column, 1, layer] *
                                 derivative_hat[1, j + 1] *
                                 theta[column, j + 1, layer]) * x_rho_w[j, 2]
-        schur_update[4, 1] += -(metric_factor[column, nnodes, layer] *
-                                derivative_hat[nnodes, j + 1] *
+        schur_update[4, 1] += -(metric_factor[column, NNODES, layer] *
+                                derivative_hat[NNODES, j + 1] *
                                 theta[column, j + 1, layer]) * x_rho_w[j, 1]
-        schur_update[4, 2] += -(metric_factor[column, nnodes, layer] *
-                                derivative_hat[nnodes, j + 1] *
+        schur_update[4, 2] += -(metric_factor[column, NNODES, layer] *
+                                derivative_hat[NNODES, j + 1] *
                                 theta[column, j + 1, layer]) * x_rho_w[j, 2]
         schur_update[2, 1] += -(metric_factor[column, 1, layer] *
                                 derivative_hat[1, j + 1] *
@@ -751,11 +765,11 @@ Base.@propagate_inbounds function schur_complement_boundary_element!(layer, colu
         schur_update[2, 2] += -(metric_factor[column, 1, layer] *
                                 derivative_hat[1, j + 1] *
                                 dpdrhotheta[column, j + 1, layer]) * x_rho_theta[j, 2]
-        schur_update[3, 1] += -(metric_factor[column, nnodes, layer] *
-                                derivative_hat[nnodes, j + 1] *
+        schur_update[3, 1] += -(metric_factor[column, NNODES, layer] *
+                                derivative_hat[NNODES, j + 1] *
                                 dpdrhotheta[column, j + 1, layer]) * x_rho_theta[j, 1]
-        schur_update[3, 2] += -(metric_factor[column, nnodes, layer] *
-                                derivative_hat[nnodes, j + 1] *
+        schur_update[3, 2] += -(metric_factor[column, NNODES, layer] *
+                                derivative_hat[NNODES, j + 1] *
                                 dpdrhotheta[column, j + 1, layer]) * x_rho_theta[j, 2]
     end
 
@@ -781,6 +795,7 @@ Base.@propagate_inbounds function schur_complement_boundary_element!(layer, colu
         schur_band[column, 1, offset_boundary + 6] += -gravity_M * gamma_dt *
                                                       B1p_12[column, 2, layer]
     end
+    return nothing
 end
 
 @kernel inbounds=true function schur_complement_boundary_KAkernel!(nlayers,
@@ -790,14 +805,14 @@ end
                                                                    @Const(B1_1),
                                                                    @Const(schur_element),
                                                                    schur_band,
-                                                                   gamma_dt, gravity,
+                                                                   gamma_dt,
+                                                                   @Const(gravity),
                                                                    @Const(theta),
                                                                    @Const(dpdrhotheta),
                                                                    @Const(metric_factor),
                                                                    @Const(derivative_hat),
                                                                    ::Val{NNODES}) where {NNODES}
     column = @index(Global)
-    ncolumns = @uniform @ndrange()[1]
     RealT = eltype(schur_band)
     x_rho = MMatrix{NNODES, 2, RealT}(undef)
     x_rho_theta = MMatrix{NNODES - 2, 2, RealT}(undef)
@@ -806,23 +821,22 @@ end
     x_rho_M = MVector{2, RealT}(undef)
     schur_update = MMatrix{4, 2, RealT}(undef)
 
-    if column <= ncolumns
-        for layer in 1:nlayers
-            schur_complement_boundary_element!(layer, column, nlayers, NNODES, x_rho,
-                                               x_rho_theta,
-                                               x_rho_w, x_rho_1, x_rho_M, schur_update,
-                                               B1m_34, B1p_12,
-                                               B1_4, B1_1, schur_element, schur_band,
-                                               gamma_dt, gravity, theta,
-                                               dpdrhotheta,
-                                               metric_factor,
-                                               derivative_hat)
-        end
+    for layer in 1:nlayers
+        schur_complement_boundary_element!(layer, column, nlayers, Val(NNODES),
+                                           x_rho,
+                                           x_rho_theta,
+                                           x_rho_w, x_rho_1, x_rho_M, schur_update,
+                                           B1m_34, B1p_12,
+                                           B1_4, B1_1, schur_element, schur_band,
+                                           gamma_dt, gravity, theta,
+                                           dpdrhotheta,
+                                           metric_factor,
+                                           derivative_hat)
     end
 end
 
 function schur_complement_boundary!(backend::Backend,
-                                    jacobian::VerticalJacobianTwoSided,
+                                    jacobian::VerticalJacobianTwoSidedCache,
                                     gamma_dt)
     (; B1m_34, B1p_12, B1_4, B1_1, schur_element, ncolumns, schur_band, gravity, theta,
     dpdrhotheta, metric_factor, derivative_hat) = jacobian
@@ -857,18 +871,16 @@ Base.@propagate_inbounds function lu_band_column!(column, A, l, u, ::Val{N}) whe
             end
         end
     end
+    return nothing
 end
 
 @kernel inbounds=true function lu_band_KAkernel!(schur_band, ::Val{N}) where {N}
     column = @index(Global)
-    ncolumns = @uniform @ndrange()[1]
 
-    if column <= ncolumns
-        lu_band_column!(column, schur_band, 3, 3, Val(N))
-    end
+    lu_band_column!(column, schur_band, 3, 3, Val(N))
 end
 
-function lu_band!(backend::Backend, jacobian::VerticalJacobianTwoSided)
+function lu_band!(backend::Backend, jacobian::VerticalJacobianTwoSidedCache)
     (; ncolumns, schur_band) = jacobian
     kernel! = lu_band_KAkernel!(backend)
     kernel!(schur_band, Val(4 * number_of_layers(jacobian));
@@ -895,19 +907,17 @@ Base.@propagate_inbounds function ldiv_band_column!(column, A, b, l, u,
             b[column, i] -= A[column, up1 + i - k, k] * b[column, k]
         end
     end
+    return nothing
 end
 
 @kernel inbounds=true function ldiv_band_KAkernel!(@Const(schur_band), schur_rhs,
                                                    ::Val{N}) where {N}
     column = @index(Global)
-    ncolumns = @uniform @ndrange()[1]
 
-    if column <= ncolumns
-        ldiv_band_column!(column, schur_band, schur_rhs, 3, 3, Val(N))
-    end
+    ldiv_band_column!(column, schur_band, schur_rhs, 3, 3, Val(N))
 end
 
-function ldiv_band!(backend::Backend, jacobian::VerticalJacobianTwoSided)
+function ldiv_band!(backend::Backend, jacobian::VerticalJacobianTwoSidedCache)
     (; ncolumns, schur_band, schur_rhs) = jacobian
     kernel! = ldiv_band_KAkernel!(backend)
     kernel!(schur_band, schur_rhs, Val(4 * number_of_layers(jacobian));
@@ -917,14 +927,16 @@ end
 
 ###############################################################################
 # Forward substitution: the right-hand side of the condensed system
-#   schur_rhs = b_D - C * A^{-1} * b_A,
-# where A is the block of the interior and D the block of the boundary degrees of freedom
+#   `schur_rhs = b_D - C * A^{-1} * b_A`,
+# where `A` is the block of the interior and `D` the block of the boundary degrees of
+# freedom
 
 # Entries of `schur_rhs` of element `layer` of the column `column`, following the
-# implementation in CGDycore.jl by Oswald Knoth. `x_rho`, `x_rho_theta`, and `x_rho_w`
-# hold the components of `A^{-1} b_A` of the three variables, `x_rho_1` and `x_rho_M`
-# those of the density in the first and the last node, and `schur_rhs_element` the
-# entries of `b_D - C A^{-1} b_A`.
+# implementation in CGDycore.jl by Oswald Knoth
+# (https://github.com/CliMA/CGDycore.jl). `x_rho`, `x_rho_theta`, and `x_rho_w` hold the
+# components of `A^{-1} b_A` of the three variables, `x_rho_1` and `x_rho_M` those of the
+# density in the first and the last node, and `schur_rhs_element` the entries of
+# `b_D - C A^{-1} b_A`.
 Base.@propagate_inbounds function ldiv_interior_forward_element!(layer, column, nlayers,
                                                                  ::Val{NNODES},
                                                                  x_rho, x_rho_theta,
@@ -1001,13 +1013,14 @@ Base.@propagate_inbounds function ldiv_interior_forward_element!(layer, column, 
     schur_rhs[column, offset_boundary + 2] = schur_rhs_element[2]
     schur_rhs[column, offset_boundary + 3] = schur_rhs_element[3]
     schur_rhs[column, offset_boundary + 4] = schur_rhs_element[4]
+    return nothing
 end
 
 @kernel inbounds=true function ldiv_interior_forward_KAkernel!(nlayers,
                                                                @Const(schur_element),
                                                                @Const(b), schur_rhs,
                                                                gamma_dt,
-                                                               gravity,
+                                                               @Const(gravity),
                                                                @Const(theta),
                                                                @Const(dpdrhotheta),
                                                                @Const(metric_factor),
@@ -1027,7 +1040,8 @@ end
                                    derivative_hat)
 end
 
-function ldiv_interior_forward!(backend::Backend, jacobian::VerticalJacobianTwoSided, b,
+function ldiv_interior_forward!(backend::Backend,
+                                jacobian::VerticalJacobianTwoSidedCache, b,
                                 gamma_dt)
     (; schur_rhs, schur_element, ncolumns, theta, dpdrhotheta, metric_factor, derivative_hat,
     gravity) = jacobian
@@ -1037,7 +1051,7 @@ function ldiv_interior_forward!(backend::Backend, jacobian::VerticalJacobianTwoS
     kernel! = ldiv_interior_forward_KAkernel!(backend)
     kernel!(nlayers, schur_element, b, schur_rhs, gamma_dt, gravity, theta, dpdrhotheta,
             metric_factor, derivative_hat, Val(nnodes_);
-            ndrange = (ncolumns, nlayers), level_kernel_workgroupsize()...)
+            ndrange = (ncolumns, nlayers), layer_kernel_workgroupsize()...)
     return nothing
 end
 
@@ -1154,6 +1168,7 @@ Base.@propagate_inbounds function ldiv_interior_backward_element!(layer, column,
         b[column, 3, i + 1, layer] = x_rho_theta[i]
         b[column, 2, i + 1, layer] = x_rho_w[i]
     end
+    return nothing
 end
 
 @kernel inbounds=true function ldiv_interior_backward_KAkernel!(nlayers,
@@ -1164,7 +1179,8 @@ end
                                                                 @Const(schur_element),
                                                                 @Const(schur_rhs),
                                                                 b,
-                                                                gamma_dt, gravity,
+                                                                gamma_dt,
+                                                                @Const(gravity),
                                                                 @Const(theta),
                                                                 @Const(dpdrhotheta),
                                                                 @Const(metric_factor),
@@ -1185,7 +1201,8 @@ end
                                     derivative_hat)
 end
 
-function ldiv_interior_backward!(backend::Backend, jacobian::VerticalJacobianTwoSided,
+function ldiv_interior_backward!(backend::Backend,
+                                 jacobian::VerticalJacobianTwoSidedCache,
                                  b,
                                  gamma_dt)
     (; B1m_34, B1_1, B1_4, B1p_12, schur_element, schur_rhs, ncolumns, gravity, theta,
@@ -1198,7 +1215,44 @@ function ldiv_interior_backward!(backend::Backend, jacobian::VerticalJacobianTwo
             gravity,
             theta,
             dpdrhotheta, metric_factor, derivative_hat, Val(nnodes_);
-            ndrange = (ncolumns, nlayers), level_kernel_workgroupsize()...)
+            ndrange = (ncolumns, nlayers), layer_kernel_workgroupsize()...)
+    return nothing
+end
+
+###############################################################################
+# Dense LU factorization and solve of the local Schur complement `S_e` of one element
+# (indexed `[column, i, j, layer]`, `N = nnodes - 2`)
+Base.@propagate_inbounds function lu_dense!(layer, column, A, ::Val{N}) where {N}
+    for j in 1:(N - 1)
+        # One division and `N - j` multiplications instead of `N - j` divisions
+        inv_jj = inv(A[column, j, j, layer])
+        for i in (j + 1):N
+            A[column, i, j, layer] *= inv_jj
+        end
+        for k in (j + 1):N
+            a_jk = A[column, j, k, layer]
+            @simd for i in (j + 1):N
+                A[column, i, k, layer] -= A[column, i, j, layer] * a_jk
+            end
+        end
+    end
+    return nothing
+end
+
+Base.@propagate_inbounds function ldiv_dense!(layer, column, A, b, ::Val{N}) where {N}
+    # Forward loop
+    for k in 1:(N - 1)
+        for i in (k + 1):N
+            b[i] -= A[column, i, k, layer] * b[k]
+        end
+    end
+    # Backward loop
+    for k in N:-1:1
+        b[k] /= A[column, k, k, layer]
+        for i in 1:(k - 1)
+            b[i] -= A[column, i, k, layer] * b[k]
+        end
+    end
     return nothing
 end
 end # @muladd
