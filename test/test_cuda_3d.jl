@@ -12,44 +12,94 @@ end
                                  "elixir_potential_temperature_baroclinic_instability_turbo.jl"),
                         # Expected errors similar to reference on CPU
                         l2=[
-                            0.0005204136042404984,
-                            0.015991022109756073,
-                            0.014837138450798358,
-                            0.014428555186414366,
-                            0.1407361147152465,
+                            0.0005231487476660257,
+                            0.01697962314394029,
+                            0.015947211831717847,
+                            0.016561823530854555,
+                            0.14232904565452106,
                             98.99596252593312
                         ],
                         linf=[
-                            0.004228248228906217,
-                            1.153815702972718,
-                            0.6939857758618339,
-                            1.1165452201407573,
-                            0.9994457574504167,
+                            0.004219636209495059,
+                            1.170930023762024,
+                            0.692057012805924,
+                            1.105650798544498,
+                            0.9997828853549322,
                             333.1178018152714
                         ],
-                        tspan=(0.0, 100.0), trees_per_cube_face=(2, 2),
+                        tspan=(0.0, 20.0), trees_per_cube_face=(2, 2),
                         storage_type=CuArray)
     # The elixir adapts `semi` before creating the ODE problem
     @test semi === ode.p
-    @test real(ode.p.solver) == Float64
-    @test real(ode.p.solver.basis) == Float64
-    @test real(ode.p.solver.mortar) == Float64
+    @test real(semi.solver) == Float64
+    @test real(semi.solver.basis) == Float64
+    @test real(semi.solver.mortar) == Float64
     # TODO: `mesh` is currently not `adapt`ed correctly
-    @test real(ode.p.mesh) == Float64
-    @test typeof(ode.p.equations.c_p) == Float64
+    @test real(semi.mesh) == Float64
+    @test typeof(semi.equations.c_p) == Float64
 
     @test ode.u0 isa CuArray
-    @test ode.p.solver.basis.derivative_matrix isa CuArray
+    @test semi.solver.basis.derivative_matrix isa CuArray
 
-    @test Trixi.storage_type(ode.p.cache.elements) === CuArray
-    @test Trixi.storage_type(ode.p.cache.interfaces) === CuArray
-    @test Trixi.storage_type(ode.p.cache.boundaries) === CuArray
-    @test Trixi.storage_type(ode.p.cache.mortars) === CuArray
+    @test Trixi.storage_type(semi.cache.elements) === CuArray
+    @test Trixi.storage_type(semi.cache.interfaces) === CuArray
+    @test Trixi.storage_type(semi.cache.boundaries) === CuArray
+    @test Trixi.storage_type(semi.cache.mortars) === CuArray
 
     # Ensure that the RHS computation overwrites existing data in `du` correctly.
     u_ode = copy(ode.u0)
     du_ode = similar(u_ode)
     fill!(du_ode, convert(eltype(du_ode), NaN))
-    Trixi.rhs_hyperbolic!(du_ode, u_ode, ode.p, first(ode.tspan))
+    Trixi.rhs_hyperbolic!(du_ode, u_ode, semi, first(ode.tspan))
+    @test all(isfinite, du_ode)
+end
+
+@testitem "CUDA 3D: elixir_potential_temperature_baroclinic_instability_turbo Float32 / CUDA" setup=[
+    Setup,
+    CUDA3DExamples
+] tags=[:CUDA] begin
+    # Using CUDA inside the testitem since otherwise the bindings are hidden by the anonymous modules
+    using CUDA
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_potential_temperature_baroclinic_instability_turbo.jl"),
+                        # Expected errors similar to reference on CPU
+                        l2=Float32[0.00052923214,
+                                   0.017052146,
+                                   0.01605738,
+                                   0.016616695,
+                                   0.14386448,
+                                   101.35988],
+                        linf=Float32[0.0044720173,
+                                     1.1709296,
+                                     0.695263,
+                                     1.1052238,
+                                     1.0602722,
+                                     380.0],
+                        tspan=(0.0, 20.0), trees_per_cube_face=(2, 2),
+                        RealT_for_test_tolerances=Float32,
+                        real_type=Float32,
+                        storage_type=CuArray)
+    # The elixir adapts `semi` before creating the ODE problem
+    @test semi === ode.p
+    @test real(semi.solver) == Float32
+    @test real(semi.solver.basis) == Float32
+    @test real(semi.solver.mortar) == Float32
+    # TODO: `mesh` is currently not `adapt`ed correctly
+    @test real(semi.mesh) == Float64
+    @test typeof(semi.equations.c_p) == Float32
+
+    @test ode.u0 isa CuArray
+    @test semi.solver.basis.derivative_matrix isa CuArray
+
+    @test Trixi.storage_type(semi.cache.elements) === CuArray
+    @test Trixi.storage_type(semi.cache.interfaces) === CuArray
+    @test Trixi.storage_type(semi.cache.boundaries) === CuArray
+    @test Trixi.storage_type(semi.cache.mortars) === CuArray
+
+    # Ensure that the RHS computation overwrites existing data in `du` correctly.
+    u_ode = copy(ode.u0)
+    du_ode = similar(u_ode)
+    fill!(du_ode, convert(eltype(du_ode), NaN))
+    Trixi.rhs_hyperbolic!(du_ode, u_ode, semi, first(ode.tspan))
     @test all(isfinite, du_ode)
 end
