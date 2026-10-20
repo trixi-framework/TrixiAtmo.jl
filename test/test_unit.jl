@@ -532,13 +532,13 @@ end
     for normal_direction in normal_directions
         # Consistency with the physical flux
         for i in 1:2
-            @test flux_es(u, u, normal_direction, equations)[i] ≈
+            @test flux_lmars_es(u, u, normal_direction, equations)[i] ≈
                   flux(u, normal_direction, equations)
         end
 
-        flux_left, flux_right = flux_es(u, u_rr, normal_direction, equations)
+        flux_left, flux_right = flux_lmars_es(u, u_rr, normal_direction, equations)
         @test flux_left == flux_right
-        @test flux_es(u, u_rr, 2.5 * normal_direction, equations)[1] ≈ 2.5 * flux_left
+        @test flux_lmars_es(u, u_rr, 2.5 * normal_direction, equations)[1] ≈ 2.5 * flux_left
     end
 
     # Check consistency for the 3D flux
@@ -556,12 +556,12 @@ end
 
     for normal_direction in normal_directions_3d
         for i in 1:2
-            @test flux_es(u_3d, u_3d, normal_direction, equations_3d)[i] ≈
+            @test flux_lmars_es(u_3d, u_3d, normal_direction, equations_3d)[i] ≈
                   flux(u_3d, normal_direction, equations_3d)
         end
-        flux_left, flux_right = flux_es(u_3d, u_rr_3d, normal_direction, equations_3d)
+        flux_left, flux_right = flux_lmars_es(u_3d, u_rr_3d, normal_direction, equations_3d)
         @test flux_left == flux_right
-        @test flux_es(u_3d, u_rr_3d, 2.5 * normal_direction, equations_3d)[1] ≈
+        @test flux_lmars_es(u_3d, u_rr_3d, 2.5 * normal_direction, equations_3d)[1] ≈
               2.5 * flux_left
     end
 
@@ -570,8 +570,8 @@ end
     u_rr_3d = SVector(u_rr[1], u_rr[2], u_rr[3], 0.0, u_rr[4], u_rr[5])
     for normal_direction in normal_directions
         normal_3d = SVector(normal_direction[1], normal_direction[2], 0.0)
-        flux_2d = flux_es(u, u_rr, normal_direction, equations)
-        flux_3d = flux_es(u_3d, u_rr_3d, normal_3d, equations_3d)
+        flux_2d = flux_lmars_es(u, u_rr, normal_direction, equations)
+        flux_3d = flux_lmars_es(u_3d, u_rr_3d, normal_3d, equations_3d)
         for i in 1:2
             @test flux_2d[i] ≈ flux_3d[i][[1, 2, 3, 5, 6]]
         end
