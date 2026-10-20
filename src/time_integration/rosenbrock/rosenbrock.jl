@@ -192,9 +192,11 @@ function rosenbrock_internal_stage!(backend::Nothing, u, res, u_n, stages, a_row
         u_i = u_n[i]
         res_i = zero(eltype(res))
         for j in 1:N
-            stage_ji = stages[j][i]
-            u_i = u_i + a_row[j] * stage_ji
-            res_i = res_i + c_row[j] * stage_ji
+            if !iszero(a_row[j]) || !iszero(c_row[j])
+                stage_ji = stages[j][i]
+                u_i = u_i + a_row[j] * stage_ji
+                res_i = res_i + c_row[j] * stage_ji
+            end
         end
         u[i] = u_i
         res[i] = res_i
@@ -215,6 +217,23 @@ function rosenbrock_internal_stage!(backend::Backend, u, res, u_n, stages, a_row
     kernel! = rosenbrock_internal_stage_KAkernel!(backend)
     kernel!(u, res, u_n, stages, a_row, c_row, Val(N), ndrange = length(u))
     return nothing
+end
+
+@kernel inbounds=true function rosenbrock_internal_stage_KAkernel!(u, res, u_n, stages,
+                                                                   a_row, c_row,
+                                                                   ::Val{N}) where {N}
+    i = @index(Global)
+    u_i = u_n[i]
+    res_i = zero(eltype(res))
+    for j in 1:N
+        if !iszero(a_row[j]) || !iszero(c_row[j])
+            stage_ji = stages[j][i]
+            u_i = u_i + a_row[j] * stage_ji
+            res_i = res_i + c_row[j] * stage_ji
+        end
+    end
+    u[i] = u_i
+    res[i] = res_i
 end
 
 # res = res + du
@@ -254,23 +273,6 @@ function rosenbrock_final_stage!(backend::Backend, u, stages, m,
     kernel! = rosenbrock_final_stage_KAkernel!(backend)
     kernel!(u, stages, m, Val(N), ndrange = length(u))
     return nothing
-end
-
-@kernel inbounds=true function rosenbrock_internal_stage_KAkernel!(u, res, u_n, stages,
-                                                                   a_row, c_row,
-                                                                   ::Val{N}) where {N}
-    i = @index(Global)
-    u_i = u_n[i]
-    res_i = zero(eltype(res))
-    for j in 1:N
-        if !iszero(a_row[j]) || !iszero(c_row[j])
-            stage_ji = stages[j][i]
-            u_i = u_i + a_row[j] * stage_ji
-            res_i = res_i + c_row[j] * stage_ji
-        end
-    end
-    u[i] = u_i
-    res[i] = res_i
 end
 
 @kernel inbounds=true function rosenbrock_final_stage_KAkernel!(u, stages, m,
