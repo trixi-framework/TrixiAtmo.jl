@@ -22,6 +22,12 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 StrideArrays = "d1fa6d79-ef01-42a6-86c9-f7c551f8593b"
 Trixi = "a7f1ee26-1774-49b1-8366-f1abc58fbfcb"
 
+[weakdeps]
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+
+[extensions]
+TrixiAtmoMakieExt = "Makie"
+
 [compat]
 Accessors = "0.1.44"
 ForwardDiff = "0.10.36, 1"
@@ -29,6 +35,7 @@ GilbertCurves = "0.1.0"
 HDF5 = "0.16.10, 0.17"
 LinearAlgebra = "1"
 LoopVectorization = "0.12.118"
+Makie = "0.24.14"
 MuladdMacro = "0.2.2"
 NLsolve = "4.5.1, 5.0"
 Printf = "1"

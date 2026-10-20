@@ -46,6 +46,7 @@ include("semidiscretization/semidiscretization.jl")
 include("solvers/solvers.jl")
 include("callbacks_step/callbacks_step.jl")
 include("callbacks_stage/callbacks_stage.jl")
+include("visualization/visualization.jl")
 
 export CompressibleMoistEulerEquations2D,
        CompressibleRainyEulerEquations2D,
@@ -116,6 +117,8 @@ export bottom_topography_isolated_mountain, bottom_topography_unsteady_solid_bod
 export AtmosphereLayers, AtmosphereLayersRainyBubble
 
 export P4estMeshCubedSphereTopography, GalChen, Sleve
+
+export PlotDataSphere
 
 export examples_dir
 
