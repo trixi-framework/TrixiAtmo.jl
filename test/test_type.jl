@@ -59,9 +59,9 @@ end
               RealT
         @test eltype(@inferred flux_etec(u_ll, u_rr, orientation, equations)) ==
               RealT
-        @test eltype(@inferred flux_nonconservative_waruszewski_etal(u_ll, u_rr,
-                                                                     orientation,
-                                                                     equations)) ==
+        @test eltype(@inferred flux_nonconservative_isothermal(u_ll, u_rr,
+                                                               orientation,
+                                                               equations)) ==
               RealT
         @test eltype(@inferred flux_nonconservative_artiano_etal(u_ll, u_rr,
                                                                  orientation,
@@ -269,7 +269,7 @@ end
                   RealT
         end
         for volume_flux in ((flux_kennedy_gruber, flux_nonconservative_souza_etal),
-                            (flux_ec, flux_nonconservative_waruszewski_etal))
+                            (flux_ec, flux_nonconservative_isothermal))
             turbo = @inferred Trixi.cons2turbo(volume_flux, u..., equations)
             @test eltype(turbo) == RealT
             for i in 1:2

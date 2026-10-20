@@ -294,13 +294,13 @@ end
 end
 
 @testitem "Unit: Consistency check for FluxTurbo EC flux with Potential Temperature with gravity: CEPTEWG" setup=[Setup] tags=[:unit_fluxes] begin
-    # The `FluxTurbo` specialization of `(flux_ec, flux_nonconservative_waruszewski_etal)`
+    # The `FluxTurbo` specialization of `(flux_ec, flux_nonconservative_isothermal)`
     # must return the same left and right contributions as the fused evaluation of the
     # conservative and the nonconservative flux.
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
                                                                             c_v = 717.0,
                                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION)
-    volume_flux = (flux_ec, flux_nonconservative_waruszewski_etal)
+    volume_flux = (flux_ec, flux_nonconservative_isothermal)
     u_ll = SVector(1.1, -0.5, 2.34, 2.4, 330.0, 1500.0)
     u_rr = SVector(0.9, 0.3, -1.2, 1.7, 280.5, 1700.0)
 
@@ -323,8 +323,8 @@ end
         flux_left, flux_right = Trixi.flux_turbo(volume_flux, turbo_ll..., turbo_rr...,
                                                  normal_direction..., equations)
         flux_cons = flux_ec(u_ll, u_rr, normal_direction, equations)
-        flux_noncons = flux_nonconservative_waruszewski_etal(u_ll, u_rr,
-                                                             normal_direction, equations)
+        flux_noncons = flux_nonconservative_isothermal(u_ll, u_rr,
+                                                       normal_direction, equations)
         @test SVector(flux_left) ≈ flux_cons + 0.5 * flux_noncons
         @test SVector(flux_right) ≈ flux_cons - 0.5 * flux_noncons
     end

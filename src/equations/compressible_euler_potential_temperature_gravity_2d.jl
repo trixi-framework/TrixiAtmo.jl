@@ -138,23 +138,20 @@ end
 end
 
 """
-    flux_nonconservative_waruszewski_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+    flux_nonconservative_isothermal(u_ll, u_rr, normal_direction::AbstractVector,
+                                    equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
 
-Well-balanced gravity term for isothermal background state
--  Maciej Waruszewski and Jeremy E. Kozdon and Lucas C. Wilcox and Thomas H. Gibson and Francis X. Giraldo (2022)
-   Entropy stable discontinuous {G}alerkin methods for balance laws
-   in non-conservative form: Applications to the {E}uler equations with gravity
-   [DOI: 10.1016/j.jcp.2022.111507](https://doi.org/10.1016/j.jcp.2022.111507)
-
-The well balanced on curvilinear coordinates was proven by
+Well-balanced gravity term for an isothermal background state
+for the [`CompressibleEulerPotentialTemperatureEquationsWithGravity2D`](@ref)
+developed by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
    Structure-Preserving High-Order Methods for the Compressible Euler Equations
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)
 """
-@inline function flux_nonconservative_waruszewski_etal(u_ll, u_rr,
-                                                       normal_direction::AbstractVector,
-                                                       equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+@inline function flux_nonconservative_isothermal(u_ll, u_rr,
+                                                 normal_direction::AbstractVector,
+                                                 equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     rho_ll, _, _, _, phi_ll = u_ll
     rho_rr, _, _, _, phi_rr = u_rr
     rho_avg = ln_mean(rho_ll, rho_rr)
