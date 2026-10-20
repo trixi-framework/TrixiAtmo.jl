@@ -90,20 +90,25 @@ function step!(integrator::RosenbrockIntegrator)
 
     limit_dt!(integrator, t_end)
 
-    # The matrix `I / (gamma dt) - J` of the stages is assembled every `update_interval`
-    # time steps and whenever the time step changes (e.g., if a time stop or `limit_dt!`
-    # shortens the step), since it depends on `dt`
-    gamma_dt = tableau.gamma * integrator.dt
-    if integrator.iter % integrator.update_interval == 0 ||
-       integrator.dt != integrator.dt_jacobian
-        @trixi_timeit timer() "update Jacobian" update_jacobian!(integrator.jacobian,
-                                                                 integrator.u,
-                                                                 integrator.p, gamma_dt)
-        integrator.dt_jacobian = integrator.dt
-    end
+    # The stages divide by `dt`, so they are skipped for a vanishing time step, e.g., for
+    # `tspan = (0.0, 0.0)`, which leaves the solution unchanged
+    if !iszero(integrator.dt)
+        # The matrix `I / (gamma dt) - J` of the stages is assembled every
+        # `update_interval` time steps and whenever the time step changes (e.g., if a time
+        # stop or `limit_dt!` shortens the step), since it depends on `dt`
+        gamma_dt = tableau.gamma * integrator.dt
+        if integrator.iter % integrator.update_interval == 0 ||
+           integrator.dt != integrator.dt_jacobian
+            @trixi_timeit timer() "update Jacobian" update_jacobian!(integrator.jacobian,
+                                                                     integrator.u,
+                                                                     integrator.p,
+                                                                     gamma_dt)
+            integrator.dt_jacobian = integrator.dt
+        end
 
-    for stage in 1:nstages(alg)
-        rosenbrock_stage!(integrator, stage, gamma_dt)
+        for stage in 1:nstages(alg)
+            rosenbrock_stage!(integrator, stage, gamma_dt)
+        end
     end
 
     integrator.iter += 1

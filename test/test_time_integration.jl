@@ -83,3 +83,23 @@ end
           new_size
     @test all(stage -> length(stage) == new_size && iszero(stage), integrator.stages)
 end
+
+@testitem "Time integration: SSPRW32 with tspan = (0.0, 0.0)" setup=[
+    Setup,
+    TimeIntegration
+] tags=[:time_integration] begin
+    # A vanishing time span is convenient to get a `sol` object with minimal costs. The
+    # stages divide by `dt` and must be skipped, such that the solution does not change.
+    trixi_include(@__MODULE__,
+                  joinpath(EXAMPLES_DIR, "global_circulation",
+                           "elixir_potential_temperature_baroclinic_instability_turbo.jl"),
+                  tspan = (0.0, 0.0), trees_per_cube_face = (2, 2), sol = nothing)
+
+    # As for the time integrators of Trixi.jl, the `SaveSolutionCallback` with `dt` does
+    # not support a vanishing time span
+    sol = Trixi.solve(ode, SSPRW32(); dt = 0.5,
+                      callback = CallbackSet(summary_callback, analysis_callback,
+                                             alive_callback))
+    @test sol.t[end] == 0.0
+    @test sol.u[end] == ode.u0
+end
