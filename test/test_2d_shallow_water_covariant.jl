@@ -59,12 +59,12 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@testitem "Shallow water 2D covariant: elixir_unsteady_solid_body_rotation_EC" setup=[
+@testitem "Shallow water 2D covariant: elixir_unsteady_solid_body_rotation_ec" setup=[
     Setup,
     ShallowWaterCovariant2D
 ] tags=[:shallow_water_2d_covariant, :upstream] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_unsteady_solid_body_rotation_EC.jl"),
+                                 "elixir_unsteady_solid_body_rotation_ec.jl"),
                         l2=[
                             0.25500246412246835,
                             0.0002703652960705074,
@@ -141,12 +141,12 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@testitem "Shallow water 2D covariant: elixir_tri_unsteady_solid_body_rotation_EC" setup=[
+@testitem "Shallow water 2D covariant: elixir_tri_unsteady_solid_body_rotation_ec" setup=[
     Setup,
     ShallowWaterCovariant2D
 ] tags=[:shallow_water_2d_covariant, :upstream] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_tri_unsteady_solid_body_rotation_EC.jl"),
+                                 "elixir_tri_unsteady_solid_body_rotation_ec.jl"),
                         l2=[
                             6.040588371552571,
                             0.0032869884499344493,
