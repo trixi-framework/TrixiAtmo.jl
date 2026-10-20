@@ -73,4 +73,30 @@ function tableau(::SSPRW32, RealT)
 
     return RosenbrockTableau(alpha, b, Gamma)
 end
+
+@doc raw"""
+    ROS2()
+
+Two-stage, second-order Rosenbrock-W method with the diagonal parameter
+``\gamma = (1 + 1/\sqrt{3})/2``, as in Theseus.jl.
+
+## References
+
+- Ernst Hairer, Gerhard Wanner (1996)
+  Solving Ordinary Differential Equations II: Stiff and Differential-Algebraic Problems
+  [DOI: 10.1007/978-3-642-05221-7](https://doi.org/10.1007/978-3-642-05221-7)
+"""
+struct ROS2 <: AbstractRosenbrockAlgorithm{2} end
+
+function tableau(::ROS2, RealT)
+    alpha = SMatrix{2, 2, RealT}(0, 2 // 3,
+                                 0, 0)
+    b = SVector{2, RealT}(1 // 4, 3 // 4)
+
+    gamma = (1 + 1 / sqrt(convert(RealT, 3))) / 2
+    Gamma = SMatrix{2, 2, RealT}(gamma, -4 * gamma / 3,
+                                 0, gamma)
+
+    return RosenbrockTableau(alpha, b, Gamma)
+end
 end # @muladd

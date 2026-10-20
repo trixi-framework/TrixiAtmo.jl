@@ -103,3 +103,21 @@ end
     @test sol.t[end] == 0.0
     @test sol.u[end] == ode.u0
 end
+
+@testitem "Time integration: convergence of Rosenbrock-W methods" setup=[Setup] tags=[:time_integration] begin
+    # Linear test problem `y' = lambda y` with the exact solution `exp(lambda t)`. Without
+    # Jacobian, the Rosenbrock-W methods reduce to their explicit parts, i.e., `SSPRW32` to
+    # the third-order SSPRK(3,3) method and `ROS2` to a second-order method.
+    lambda = -2.0
+    rhs!(du, u, p, t) = (du .= lambda .* u; nothing)
+    ode = TrixiAtmo.ODEProblem(rhs!, [1.0], (0.0, 1.0))
+
+    for (alg, order_expected) in ((SSPRW32(), 3), (ROS2(), 2))
+        errors = map((0.05, 0.025, 0.0125)) do dt
+            sol = Trixi.solve(ode, alg; dt = dt)
+            return abs(sol.u[end][1] - exp(lambda))
+        end
+        orders = log2.(errors[1:(end - 1)] ./ errors[2:end])
+        @test all(order -> isapprox(order, order_expected, atol = 0.1), orders)
+    end
+end
