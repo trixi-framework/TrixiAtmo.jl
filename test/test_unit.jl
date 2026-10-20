@@ -636,7 +636,7 @@ end
     :upstream
 ] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR, "shallow_water", "cartesian",
-                                 "elixir_unsteady_solid_body_rotation_EC_correction.jl"),
+                                 "elixir_unsteady_solid_body_rotation_ec_correction.jl"),
                         cells_per_dimension=(3, 3), maxiters=1)
 
     @testset "Cartesian form" begin
@@ -673,7 +673,7 @@ end
     end
 
     @test_trixi_include(joinpath(EXAMPLES_DIR, "shallow_water", "covariant",
-                                 "elixir_unsteady_solid_body_rotation_EC.jl"),
+                                 "elixir_unsteady_solid_body_rotation_ec.jl"),
                         cells_per_dimension=(3, 3), maxiters=1)
 
     @testset "Covariant form" begin
