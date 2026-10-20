@@ -192,6 +192,7 @@ function rosenbrock_internal_stage!(backend::Nothing, u, res, u_n, stages, a_row
         u_i = u_n[i]
         res_i = zero(eltype(res))
         for j in 1:N
+            # Skip the stages not computed yet
             if !iszero(a_row[j]) || !iszero(c_row[j])
                 stage_ji = stages[j][i]
                 u_i = u_i + a_row[j] * stage_ji
@@ -226,6 +227,7 @@ end
     u_i = u_n[i]
     res_i = zero(eltype(res))
     for j in 1:N
+        # Skip the stages not computed yet
         if !iszero(a_row[j]) || !iszero(c_row[j])
             stage_ji = stages[j][i]
             u_i = u_i + a_row[j] * stage_ji
@@ -238,7 +240,7 @@ end
 
 # res = res + du
 function rosenbrock_stage_residual!(backend::Nothing, res, du)
-    @threaded for i in eachindex(res)
+    @threaded for i in eachindex(res, du)
         res[i] = res[i] + du[i]
     end
     return nothing
