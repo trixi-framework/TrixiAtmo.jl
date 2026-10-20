@@ -38,11 +38,18 @@ using Trixi: ln_mean, stolarsky_mean, inv_ln_mean
 
 # Time integration
 using Trixi: AbstractTimeIntegrator, AbstractTimeIntegrationAlgorithm,
-             ODEProblem, @threaded, @trixi_timeit,
+             @threaded, @trixi_timeit,
              @trixi_timeit_ext, timer, limit_dt!, initialize_callbacks!,
              handle_callbacks!, check_max_iter!
-import Trixi: init, step!, add_tstop!, get_tmp_cache, terminate!,
-              derivative_discontinuity!
+using SciMLBase: SciMLBase, CallbackSet, ODEProblem
+import SciMLBase: init, step!, add_tstop!, get_tmp_cache, terminate!
+# To keep backwards compatibility with SciMLBase v2 as in Trixi.jl, see
+# https://github.com/trixi-framework/Trixi.jl/pull/2918#issuecomment-4233720339
+@static if isdefined(SciMLBase, :derivative_discontinuity!)
+    import SciMLBase: derivative_discontinuity!
+else
+    const derivative_discontinuity! = SciMLBase.u_modified!
+end
 using DataStructures: BinaryHeap, FasterForward
 using KernelAbstractions: @kernel, @index, Backend
 
