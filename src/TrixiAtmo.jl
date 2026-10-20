@@ -37,12 +37,12 @@ using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
 using Trixi: ln_mean, stolarsky_mean, inv_ln_mean
 
 # Time integration
-using Trixi: AbstractTimeIntegrator, AbstractTimeIntegrationAlgorithm,
-             @threaded, @trixi_timeit,
-             @trixi_timeit_ext, timer, limit_dt!, initialize_callbacks!,
-             handle_callbacks!, check_max_iter!
+using Trixi: AbstractTimeIntegrationAlgorithm, TimeIntegratorSolution,
+             @threaded, @trixi_timeit, @trixi_timeit_ext, timer
 using SciMLBase: SciMLBase, CallbackSet, ODEProblem
-import SciMLBase: init, step!, add_tstop!, get_tmp_cache, terminate!
+import SciMLBase: init, step!, add_tstop!, get_tmp_cache, terminate!, get_du,
+                  get_proposed_dt, set_proposed_dt!
+using DiffEqBase: DiffEqBase, get_tstops, get_tstops_array
 # To keep backwards compatibility with SciMLBase v2 as in Trixi.jl, see
 # https://github.com/trixi-framework/Trixi.jl/pull/2918#issuecomment-4233720339
 @static if isdefined(SciMLBase, :derivative_discontinuity!)

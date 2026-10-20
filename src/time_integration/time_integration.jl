@@ -5,16 +5,17 @@
 @muladd begin
 #! format: noindent
 
-# The time integrators of TrixiAtmo.jl follow the ones of Trixi.jl: the algorithms are
-# subtypes of `Trixi.AbstractTimeIntegrationAlgorithm` and the integrators subtypes of
-# `Trixi.AbstractTimeIntegrator`, such that everything generic is reused from Trixi.jl,
-# i.e., `Trixi.solve`, `Trixi.solve!`, the handling of the callbacks
-# (`initialize_callbacks!`, `handle_callbacks!`, `finalize_callbacks`), of the final time
-# step (`limit_dt!`), and of the maximal number of iterations (`check_max_iter!`), as well
-# as the solution `TimeIntegratorSolution`.
-# The parts of the integrator interface of SciMLBase.jl that Trixi.jl defines for each
-# of its integrators separately are defined here once for all time integrators of
-# TrixiAtmo.jl; a method only specializes them if it needs something different.
+# The time integrators of TrixiAtmo.jl follow the ones of Trixi.jl and of Theseus.jl
+# (see https://github.com/NumericalMathematics/Ariadne.jl): the algorithms are subtypes of
+# `Trixi.AbstractTimeIntegrationAlgorithm`, such that they are used with `Trixi.solve`, and
+# the solution is a `Trixi.TimeIntegratorSolution`, such that it can be visualized with
+# Trixi.jl. The integrators are subtypes of the `AbstractTimeIntegrator` of TrixiAtmo.jl,
+# for which the main loop, the handling of the callbacks, and the integrator interface of
+# SciMLBase.jl are defined below once for all time integrators of TrixiAtmo.jl; a method
+# only specializes them if it needs something different.
+
+# Abstract supertype of the time integrators of TrixiAtmo.jl for dispatch
+abstract type AbstractTimeIntegrator end
 
 # This struct is needed to fake https://github.com/SciML/OrdinaryDiffEq.jl/blob/0c2048a502101647ac35faabd80da8a5645beac7/src/integrators/type.jl#L1
 # It is the same as the options of the time integrators of Trixi.jl, e.g.,
@@ -66,6 +67,123 @@ derivative_discontinuity!(integrator::AbstractTimeIntegrator, ::Bool) = false
 # stop the time integration
 function terminate!(integrator::AbstractTimeIntegrator)
     integrator.finalstep = true
+
+    return nothing
+end
+
+# get a cache where the RHS can be stored
+get_du(integrator::AbstractTimeIntegrator) = integrator.du
+
+# Forward integrator.stats.naccept to integrator.iter (see GitHub PR#771 of Trixi.jl)
+function Base.getproperty(integrator::AbstractTimeIntegrator, field::Symbol)
+    if field === :stats
+        return (naccept = getfield(integrator, :iter),)
+    end
+    # general fallback
+    return getfield(integrator, field)
+end
+
+# used by adaptive timestepping algorithms in DiffEq
+@inline function set_proposed_dt!(integrator::AbstractTimeIntegrator, dt)
+    (integrator.dt = dt; integrator.dtcache = dt)
+
+    return nothing
+end
+
+# Required e.g. for `glm_speed_callback`
+@inline function get_proposed_dt(integrator::AbstractTimeIntegrator)
+    return integrator.dt
+end
+
+@inline function limit_dt!(integrator::AbstractTimeIntegrator, t_end)
+    # if the next iteration would push the simulation beyond the end time, set dt accordingly
+    if integrator.t + integrator.dt > t_end ||
+       isapprox(integrator.t + integrator.dt, t_end)
+        integrator.dt = t_end - integrator.t
+        terminate!(integrator)
+    end
+
+    return nothing
+end
+
+function initialize_callbacks!(callbacks::Union{CallbackSet, Nothing},
+                               integrator::AbstractTimeIntegrator)
+    # initialize callbacks
+    if callbacks isa CallbackSet
+        foreach(callbacks.continuous_callbacks) do cb
+            throw(ArgumentError("Continuous callbacks are unsupported."))
+        end
+        foreach(callbacks.discrete_callbacks) do cb
+            return cb.initialize(cb, integrator.u, integrator.t, integrator)
+        end
+    end
+
+    return nothing
+end
+
+function handle_callbacks!(callbacks::Union{CallbackSet, Nothing},
+                           integrator::AbstractTimeIntegrator)
+    # handle callbacks
+    if callbacks isa CallbackSet
+        foreach(callbacks.discrete_callbacks) do cb
+            if cb.condition(integrator.u, integrator.t, integrator)
+                cb.affect!(integrator)
+            end
+            return nothing
+        end
+    end
+
+    return nothing
+end
+
+@inline function check_max_iter!(integrator::AbstractTimeIntegrator)
+    # respect maximum number of iterations
+    if integrator.iter >= integrator.opts.maxiters && !integrator.finalstep
+        @warn "Interrupted. Larger maxiters is needed."
+        terminate!(integrator)
+    end
+
+    return nothing
+end
+
+# Called by `Trixi.solve` after `init`
+function Trixi.solve!(integrator::AbstractTimeIntegrator)
+    (; prob) = integrator.sol
+
+    integrator.finalstep = false
+
+    @trixi_timeit timer() "main loop" while !integrator.finalstep
+        step!(integrator)
+    end
+
+    finalize_callbacks(integrator)
+
+    return TimeIntegratorSolution((first(prob.tspan), integrator.t),
+                                  (prob.u0, integrator.u), prob)
+end
+
+# Interface required by DiffEqCallbacks.jl
+function DiffEqBase.get_tstops(integrator::AbstractTimeIntegrator)
+    return integrator.opts.tstops
+end
+function DiffEqBase.get_tstops_array(integrator::AbstractTimeIntegrator)
+    return get_tstops(integrator).valtree
+end
+function DiffEqBase.get_tstops_max(integrator::AbstractTimeIntegrator)
+    return maximum(get_tstops_array(integrator))
+end
+
+function finalize_callbacks(integrator::AbstractTimeIntegrator)
+    callbacks = integrator.opts.callback
+
+    if callbacks isa CallbackSet
+        foreach(callbacks.discrete_callbacks) do cb
+            return cb.finalize(cb, integrator.u, integrator.t, integrator)
+        end
+        foreach(callbacks.continuous_callbacks) do cb
+            return cb.finalize(cb, integrator.u, integrator.t, integrator)
+        end
+    end
 
     return nothing
 end
