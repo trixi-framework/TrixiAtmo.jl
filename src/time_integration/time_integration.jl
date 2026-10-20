@@ -5,15 +5,6 @@
 @muladd begin
 #! format: noindent
 
-# The time integrators of TrixiAtmo.jl follow the ones of Trixi.jl and of Theseus.jl
-# (see https://github.com/NumericalMathematics/Ariadne.jl): the algorithms are subtypes of
-# `Trixi.AbstractTimeIntegrationAlgorithm`, such that they are used with `Trixi.solve`, and
-# the solution is a `Trixi.TimeIntegratorSolution`, such that it can be visualized with
-# Trixi.jl. The integrators are subtypes of the `AbstractTimeIntegrator` of TrixiAtmo.jl,
-# for which the main loop, the handling of the callbacks, and the integrator interface of
-# SciMLBase.jl are defined below once for all time integrators of TrixiAtmo.jl; a method
-# only specializes them if it needs something different.
-
 # Abstract supertype of the time integrators of TrixiAtmo.jl for dispatch
 abstract type AbstractTimeIntegrator end
 
