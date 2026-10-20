@@ -73,7 +73,7 @@ export flux_nonconservative_zeros, flux_nonconservative_ec,
        source_terms_coriolis, source_terms_coriolis_lagrange_multiplier,
        source_terms_gravity, flux_tec, flux_etec, flux_nonconservative_souza_etal,
        flux_nonconservative_artiano_etal,
-       flux_nonconservative_waruszewski_etal, flux_zero,
+       flux_nonconservative_waruszewski_etal, flux_nonconservative_isothermal, flux_zero,
        flux_ec_rain, flux_LMARS, flux_nonconservative_es, flux_conservative_es,
        flux_conservative_etec, flux_nonconservative_etec
 

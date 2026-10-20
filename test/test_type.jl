@@ -500,6 +500,10 @@ end
                                                                      normal_direction,
                                                                      equations)) ==
               RealT
+        @test eltype(@inferred flux_nonconservative_isothermal(u_ll, u_rr,
+                                                               normal_direction,
+                                                               equations)) ==
+              RealT
         @test eltype(@inferred flux_nonconservative_souza_etal(u_ll, u_rr,
                                                                normal_direction,
                                                                equations)) ==
@@ -568,6 +572,10 @@ end
         @test eltype(@inferred flux_nonconservative_waruszewski_etal(u_ll, u_rr,
                                                                      normal_direction,
                                                                      equations)) ==
+              RealT
+        @test eltype(@inferred flux_nonconservative_isothermal(u_ll, u_rr,
+                                                               normal_direction,
+                                                               equations)) ==
               RealT
         @test eltype(@inferred flux_nonconservative_souza_etal(u_ll, u_rr,
                                                                normal_direction,

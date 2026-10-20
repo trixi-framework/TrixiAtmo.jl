@@ -516,6 +516,45 @@ end
     @test flux_1d ≈ flux_3d[[1, 2, 5, 6]]
 end
 
+@testitem "Unit: Consistency check for gravity terms with energy with gravity: CEEEWG" setup=[Setup] tags=[:unit_fluxes] begin
+    # Set up equations and dummy conservative variables states with the same temperature
+    equations = CompressibleEulerEnergyEquationsWithGravity3D(c_p = 1004.0, c_v = 717.0,
+                                                              gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+    u_ll = prim2cons(SVector(1.1, 2.0, -1.5, 0.5, 9.0e4, 1700.0), equations)
+    u_rr = prim2cons(SVector(0.9, -1.0, 3.0, 1.2, 0.9 / 1.1 * 9.0e4, 2900.0), equations)
+
+    normal_directions = [SVector(1.0, 0.0, 0.0),
+        SVector(0.0, 1.0, 0.0),
+        SVector(0.0, 0.0, 1.0),
+        SVector(0.5, -0.5, 0.2),
+        SVector(-1.2, 0.3, 1.4)]
+
+    # Both gravity terms coincide for an isothermal state
+    for normal_direction in normal_directions
+        @test flux_nonconservative_waruszewski_etal(u_ll, u_rr, normal_direction,
+                                                    equations) ≈
+              flux_nonconservative_isothermal(u_ll, u_rr, normal_direction, equations)
+    end
+
+    # Check consistency between the 2D and 3D gravity terms
+    equations_2d = CompressibleEulerEnergyEquationsWithGravity2D(c_p = 1004.0, c_v = 717.0,
+                                                                 gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+    u_ll_2d = prim2cons(SVector(1.1, 2.0, -1.5, 9.0e4, 1700.0), equations_2d)
+    u_rr_2d = prim2cons(SVector(0.9, -1.0, 3.0, 7.5e4, 2900.0), equations_2d)
+    u_ll_3d = prim2cons(SVector(1.1, 2.0, -1.5, 0.0, 9.0e4, 1700.0), equations)
+    u_rr_3d = prim2cons(SVector(0.9, -1.0, 3.0, 0.0, 7.5e4, 2900.0), equations)
+    for normal_direction in (SVector(1.0, 0.0), SVector(0.0, 1.0), SVector(0.5, -0.5),
+                             SVector(-1.2, 0.3))
+        normal_direction_3d = SVector(normal_direction[1], normal_direction[2], 0.0)
+        for flux_gravity in (flux_nonconservative_waruszewski_etal,
+                             flux_nonconservative_isothermal)
+            @test flux_gravity(u_ll_2d, u_rr_2d, normal_direction, equations_2d) ≈
+                  flux_gravity(u_ll_3d, u_rr_3d, normal_direction_3d,
+                               equations)[[1, 2, 3, 5, 6]]
+        end
+    end
+end
+
 @testitem "Unit: Consistency check for 3D shallow water fluxes: SWE" setup=[Setup] tags=[:unit_fluxes] begin
     # Set up equations and dummy conservative variables state
     equations = ShallowWaterEquations3D(gravity = 1.0)
