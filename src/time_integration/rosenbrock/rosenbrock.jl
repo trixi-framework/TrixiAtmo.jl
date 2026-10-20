@@ -188,19 +188,29 @@ end
 # u = u_n + sum_j a_j stages[j] and res = sum_j c_j stages[j] in one sweep
 function rosenbrock_internal_stage!(backend::Nothing, u, res, u_n, stages, a_row,
                                     c_row, ::Val{N}) where {N}
-    @threaded for i in eachindex(u)
-        u_i = u_n[i]
-        res_i = zero(eltype(res))
-        for j in 1:N
-            # Skip the stages not computed yet
-            if !iszero(a_row[j]) || !iszero(c_row[j])
-                stage_ji = stages[j][i]
-                u_i = u_i + a_row[j] * stage_ji
-                res_i = res_i + c_row[j] * stage_ji
-            end
+    # Explicit bounds check, which allows us to assume inbounds access below
+    @boundscheck begin
+        Trixi.check_axes(res, axes(u))
+        Trixi.check_axes(u_n, axes(u))
+        for stage in stages
+            Trixi.check_axes(stage, axes(u))
         end
-        u[i] = u_i
-        res[i] = res_i
+    end
+    @threaded for i in eachindex(u)
+        @inbounds begin
+            u_i = u_n[i]
+            res_i = zero(eltype(res))
+            for j in 1:N
+                # Skip the stages not computed yet
+                if !iszero(a_row[j]) || !iszero(c_row[j])
+                    stage_ji = stages[j][i]
+                    u_i = u_i + a_row[j] * stage_ji
+                    res_i = res_i + c_row[j] * stage_ji
+                end
+            end
+            u[i] = u_i
+            res[i] = res_i
+        end
     end
     return nothing
 end
@@ -240,8 +250,10 @@ end
 
 # res = res + du
 function rosenbrock_stage_residual!(backend::Nothing, res, du)
+    # Explicit bounds check, which allows us to assume inbounds access below
+    @boundscheck Trixi.check_axes(du, axes(res))
     @threaded for i in eachindex(res, du)
-        res[i] = res[i] + du[i]
+        @inbounds res[i] = res[i] + du[i]
     end
     return nothing
 end
@@ -254,12 +266,20 @@ end
 # u = u + sum_j m_j stages[j]
 function rosenbrock_final_stage!(backend::Nothing, u, stages, m,
                                  ::Val{N}) where {N}
-    @threaded for i in eachindex(u)
-        u_i = u[i]
-        for j in 1:N
-            u_i = u_i + m[j] * stages[j][i]
+    # Explicit bounds check, which allows us to assume inbounds access below
+    @boundscheck begin
+        for stage in stages
+            Trixi.check_axes(stage, axes(u))
         end
-        u[i] = u_i
+    end
+    @threaded for i in eachindex(u)
+        @inbounds begin
+            u_i = u[i]
+            for j in 1:N
+                u_i = u_i + m[j] * stages[j][i]
+            end
+            u[i] = u_i
+        end
     end
     return nothing
 end
