@@ -116,6 +116,27 @@ function step!(integrator::RosenbrockIntegrator)
     return nothing
 end
 
+# used for AMR
+function Base.resize!(integrator::RosenbrockIntegrator, new_size)
+    # The arrays of the approximate Jacobian depend on the mesh
+    if !isnothing(integrator.jacobian)
+        throw(ArgumentError("resizing the integrator (e.g., for AMR) is not supported " *
+                            "with an approximate Jacobian"))
+    end
+
+    resize!(integrator.u, new_size)
+    resize!(integrator.du, new_size)
+    resize!(integrator.u_tmp, new_size)
+    # The stages must be zero, since the stage combinations multiply the stages not
+    # computed yet by a zero coefficient
+    for stage in integrator.stages
+        resize!(stage, new_size)
+        fill!(stage, zero(eltype(stage)))
+    end
+
+    return nothing
+end
+
 # One stage of the transformed form (Hairer and Wanner, 1996, Eq. (7.25)),
 #   u_i = u_n + sum_j a_ij stages_j,
 #   (I / (gamma dt) - J) stages_i = f(u_i, t + c_i dt) + sum_j (c_ij / dt) stages_j,

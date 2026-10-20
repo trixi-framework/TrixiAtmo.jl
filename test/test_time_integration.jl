@@ -68,3 +68,18 @@ end
         @test view(u_rosenbrock, v, ..) ≈ view(u_ssprk33, v, ..)
     end
 end
+
+@testitem "Time integration: SSPRW32 resize!" setup=[Setup, TimeIntegration] tags=[:time_integration] begin
+    trixi_include(@__MODULE__,
+                  joinpath(EXAMPLES_DIR, "global_circulation",
+                           "elixir_potential_temperature_baroclinic_instability_turbo.jl"),
+                  tspan = (0.0, 1.0), trees_per_cube_face = (2, 2), sol = nothing)
+
+    # Resizing the integrator, e.g., for AMR, resizes all vectors of the same length as `u`
+    integrator = Trixi.init(ode, SSPRW32(); dt = 0.5)
+    new_size = length(ode.u0) + 6
+    resize!(integrator, new_size)
+    @test length(integrator.u) == length(integrator.du) == length(integrator.u_tmp) ==
+          new_size
+    @test all(stage -> length(stage) == new_size && iszero(stage), integrator.stages)
+end
