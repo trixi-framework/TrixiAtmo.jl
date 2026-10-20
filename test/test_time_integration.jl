@@ -40,3 +40,31 @@ end
                                     semi, sol_rosenbrock.t[end])
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol_rosenbrock, 100)
 end
+
+@testitem "Time integration: SSPRW32 with time stops" setup=[
+    Setup,
+    TimeIntegration
+] tags=[:time_integration] begin
+    # `SaveSolutionCallback(dt = 0.75)` adds time stops, which shorten the time steps of
+    # `dt = 0.5` such that the solution is saved at the multiples of `0.75`. As for the
+    # `Trixi.SimpleSSPRK33`, the Rosenbrock-W method without Jacobian must respect them;
+    # otherwise, both methods use different time steps and their solutions differ.
+    trixi_include(@__MODULE__,
+                  joinpath(EXAMPLES_DIR, "global_circulation",
+                           "elixir_potential_temperature_baroclinic_instability_turbo.jl"),
+                  tspan = (0.0, 3.0), trees_per_cube_face = (2, 2), sol = nothing)
+
+    save_solution = SaveSolutionCallback(dt = 0.75, save_initial_solution = false,
+                                         save_final_solution = false)
+    sol_rosenbrock = Trixi.solve(ode, SSPRW32(); dt = 0.5,
+                                 callback = CallbackSet(save_solution))
+    sol_ssprk33 = Trixi.solve(ode, Trixi.SimpleSSPRK33(); dt = 0.5,
+                              callback = CallbackSet(save_solution))
+
+    @test sol_rosenbrock.t[end] == 3.0
+    u_rosenbrock = Trixi.wrap_array(sol_rosenbrock.u[end], semi)
+    u_ssprk33 = Trixi.wrap_array(sol_ssprk33.u[end], semi)
+    for v in eachvariable(equations)
+        @test view(u_rosenbrock, v, ..) ≈ view(u_ssprk33, v, ..)
+    end
+end

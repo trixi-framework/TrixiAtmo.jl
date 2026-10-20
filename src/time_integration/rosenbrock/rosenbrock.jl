@@ -86,11 +86,13 @@ function step!(integrator::RosenbrockIntegrator)
         error("time step size `dt` is NaN")
     end
 
+    modify_dt_for_tstops!(integrator)
+
     limit_dt!(integrator, t_end)
 
     # The matrix `I / (gamma dt) - J` of the stages is assembled every `update_interval`
-    # time steps and whenever the time step changes (e.g., if `limit_dt!` shortens the
-    # last step), since it depends on `dt`
+    # time steps and whenever the time step changes (e.g., if a time stop or `limit_dt!`
+    # shortens the step), since it depends on `dt`
     gamma_dt = tableau.gamma * integrator.dt
     if integrator.iter % integrator.update_interval == 0 ||
        integrator.dt != integrator.dt_jacobian

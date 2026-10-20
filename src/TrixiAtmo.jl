@@ -41,7 +41,7 @@ using Trixi: AbstractTimeIntegrationAlgorithm, TimeIntegratorSolution,
              @threaded, @trixi_timeit, @trixi_timeit_ext, timer
 using SciMLBase: SciMLBase, CallbackSet, ODEProblem
 import SciMLBase: init, step!, add_tstop!, get_tmp_cache, terminate!, get_du,
-                  get_proposed_dt, set_proposed_dt!
+                  get_proposed_dt, set_proposed_dt!, has_tstop, first_tstop
 using DiffEqBase: DiffEqBase, get_tstops, get_tstops_array
 # To keep backwards compatibility with SciMLBase v2 as in Trixi.jl, see
 # https://github.com/trixi-framework/Trixi.jl/pull/2918#issuecomment-4233720339

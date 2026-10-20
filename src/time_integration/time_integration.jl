@@ -58,6 +58,36 @@ function add_tstop!(integrator::AbstractTimeIntegrator, t)
     return push!(integrator.opts.tstops, integrator.tdir * t)
 end
 
+has_tstop(integrator::AbstractTimeIntegrator) = !isempty(integrator.opts.tstops)
+first_tstop(integrator::AbstractTimeIntegrator) = first(integrator.opts.tstops)
+
+"""
+    modify_dt_for_tstops!(integrator::AbstractTimeIntegrator)
+Modify the time-step size to match the time stops specified in integrator.opts.tstops.
+To avoid adding OrdinaryDiffEq to the dependencies, this routine is a copy of
+https://github.com/SciML/OrdinaryDiffEq.jl/blob/d76335281c540ee5a6d1bd8bb634713e004f62ee/src/integrators/integrator_utils.jl#L38-L54
+as in Trixi.jl.
+"""
+function modify_dt_for_tstops!(integrator::AbstractTimeIntegrator)
+    if has_tstop(integrator)
+        tdir_t = integrator.tdir * integrator.t
+        tdir_tstop = first_tstop(integrator)
+        if integrator.opts.adaptive
+            integrator.dt = integrator.tdir *
+                            min(abs(integrator.dt), abs(tdir_tstop - tdir_t)) # step! to the end
+        elseif iszero(integrator.dtcache) && integrator.dtchangeable
+            integrator.dt = integrator.tdir * abs(tdir_tstop - tdir_t)
+        elseif integrator.dtchangeable && !integrator.force_stepfail
+            # always try to step! with dtcache, but lower if a tstop
+            # however, if force_stepfail then don't set to dtcache, and no tstop worry
+            integrator.dt = integrator.tdir *
+                            min(abs(integrator.dtcache), abs(tdir_tstop - tdir_t)) # step! to the end
+        end
+    end
+
+    return nothing
+end
+
 # get a cache where the RHS can be stored
 get_tmp_cache(integrator::AbstractTimeIntegrator) = (integrator.u_tmp,)
 
