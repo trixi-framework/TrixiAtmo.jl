@@ -79,7 +79,7 @@ end
                                     equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
 
 Well-balanced gravity term for an isothermal background state
-for the [`CompressibleEulerPotentialTemperatureEquationsWithGravity1D`](@ref)
+for the `CompressibleEulerPotentialTemperatureEquationsWithGravity1D`
 developed by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
    Structure-Preserving High-Order Methods for the Compressible Euler Equations
