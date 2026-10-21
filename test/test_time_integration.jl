@@ -133,7 +133,7 @@ end
                            "elixir_potential_temperature_baroclinic_instability_turbo.jl"),
                   tspan = (0.0, 10.0), trees_per_cube_face = (2, 2), sol = nothing)
 
-    for alg in (ARK2(), ARS232())
+    for alg in (ARK2(), ARS232(), ARS343())
         # Explicit time step restricted by the vertical acoustic waves
         sol = Trixi.solve(ode, alg; dt = 0.5, callback = callbacks)
 
@@ -195,18 +195,21 @@ end
 
 @testitem "Time integration: convergence of linear IMEX methods" setup=[Setup] tags=[:time_integration] begin
     # Linear test problem `y' = lambda y` with the exact solution `exp(lambda t)`. Without
-    # Jacobian, the linear IMEX methods reduce to their explicit parts, whose stability
-    # polynomial is the one of the third-order SSPRK(3,3) method for both methods.
+    # Jacobian, the linear IMEX methods reduce to their explicit parts. The stability
+    # polynomial of the explicit parts of `ARK2` and `ARS232` is the one of the third-order
+    # SSPRK(3,3) method. The explicit part of `ARS343` is a third-order method whose
+    # stability polynomial is fourth-order accurate, so it converges with fourth order
+    # for this linear problem.
     lambda = -2.0
     rhs!(du, u, p, t) = (du .= lambda .* u; nothing)
     ode = TrixiAtmo.ODEProblem(rhs!, [1.0], (0.0, 1.0))
 
-    for alg in (ARK2(), ARS232())
+    for (alg, order_expected) in ((ARK2(), 3), (ARS232(), 3), (ARS343(), 4))
         errors = map((0.05, 0.025, 0.0125)) do dt
             sol = Trixi.solve(ode, alg; dt = dt)
             return abs(sol.u[end][1] - exp(lambda))
         end
         orders = log2.(errors[1:(end - 1)] ./ errors[2:end])
-        @test all(order -> isapprox(order, 3, atol = 0.1), orders)
+        @test all(order -> isapprox(order, order_expected, atol = 0.1), orders)
     end
 end

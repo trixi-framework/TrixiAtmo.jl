@@ -96,4 +96,50 @@ function tableau(::ARS232, RealT)
 
     return LinearIMEXTableau(a, b, a_im)
 end
+"""
+    ARS343()
+
+A third-order, four-stage type II IMEX method developed by Ascher, Ruuth, and Spiteri
+(1997). The implicit part is L-stable and stiffly accurate.
+
+## References
+
+- Uri M. Ascher, Steven J. Ruuth, Raymond J. Spiteri (1997)
+  Implicit-explicit Runge-Kutta methods for time-dependent partial differential equations
+  [DOI: 10.1016/S0168-9274(97)00056-1](https://doi.org/10.1016/S0168-9274(97)00056-1)
+"""
+struct ARS343 <: AbstractLinearIMEXAlgorithm{4} end
+
+function tableau(::ARS343, RealT)
+    # ARS(3,4,3) IMEX Runge-Kutta - Third order
+    # `gamma` is the middle root of `x^3 - 3 x^2 + 3/2 x - 1/6 = 0`, computed in `RealT`
+    # from the trigonometric solution of the cubic equation
+    sqrt2 = sqrt(convert(RealT, 2))
+    gamma = 1 + sqrt2 * cos((acos(2 * sqrt2 / 3) - 2 * convert(RealT, pi)) / 3)
+    c3 = (1 + gamma) / 2
+    b2 = -3 * gamma^2 / 2 + 4 * gamma - 1 / convert(RealT, 4)
+    b3 = 3 * gamma^2 / 2 - 5 * gamma + 5 / convert(RealT, 4)
+
+    # The explicit coefficients are given to ten digits by Ascher, Ruuth, and Spiteri
+    # (1997), Section 2.7. Only `a32` is taken from there: with `a42 = a43`, the remaining
+    # ones follow from the row sums `c` and the third-order condition `b' * a * c = 1/6`,
+    # which are thus satisfied to the precision of `RealT`.
+    a32 = convert(RealT, 0.3966543747)
+    a31 = c3 - a32
+    a42 = (1 / convert(RealT, 6) - b3 * a32 * gamma) / (gamma * (gamma + c3))
+    a43 = a42
+    a41 = 1 - a42 - a43
+    a = SMatrix{4, 4, RealT}(0, gamma, a31, a41,
+                             0, 0, a32, a42,
+                             0, 0, 0, a43,
+                             0, 0, 0, 0)
+    b = SVector{4, RealT}(0, b2, b3, gamma)
+
+    a_im = SMatrix{4, 4, RealT}(0, 0, 0, 0,
+                                0, gamma, (1 - gamma) / 2, b2,
+                                0, 0, gamma, b3,
+                                0, 0, 0, gamma)
+
+    return LinearIMEXTableau(a, b, a_im)
+end
 end # @muladd
