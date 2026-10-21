@@ -2,12 +2,12 @@
     EXAMPLES_DIR = joinpath(examples_dir(), "shallow_water", "cartesian")
 end
 
-@testitem "Shallow water 3D Cartesian: elixir_unsteady_solid_body_rotation_EC_correction" setup=[
+@testitem "Shallow water 3D Cartesian: elixir_unsteady_solid_body_rotation_ec_correction" setup=[
     Setup,
     ShallowWaterCartesian3D
 ] tags=[:shallow_water_3d, :upstream] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_unsteady_solid_body_rotation_EC_correction.jl"),
+                                 "elixir_unsteady_solid_body_rotation_ec_correction.jl"),
                         l2=[
                             1.1385840313142226,
                             464.8283750621118,
@@ -30,12 +30,12 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@testitem "Shallow water 3D Cartesian: elixir_unsteady_solid_body_rotation_EC_projection" setup=[
+@testitem "Shallow water 3D Cartesian: elixir_unsteady_solid_body_rotation_ec_projection" setup=[
     Setup,
     ShallowWaterCartesian3D
 ] tags=[:shallow_water_3d, :upstream] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_unsteady_solid_body_rotation_EC_projection.jl"),
+                                 "elixir_unsteady_solid_body_rotation_ec_projection.jl"),
                         l2=[
                             1.271506524857498,
                             598.6835303675092,
@@ -58,12 +58,12 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@testitem "Shallow water 3D Cartesian: elixir_unsteady_solid_body_rotation_EC_projection (ES)" setup=[
+@testitem "Shallow water 3D Cartesian: elixir_unsteady_solid_body_rotation_ec_projection (ES)" setup=[
     Setup,
     ShallowWaterCartesian3D
 ] tags=[:shallow_water_3d, :upstream] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_unsteady_solid_body_rotation_EC_projection.jl"),
+                                 "elixir_unsteady_solid_body_rotation_ec_projection.jl"),
                         l2=[
                             0.27440876588211627,
                             280.22773491124406,

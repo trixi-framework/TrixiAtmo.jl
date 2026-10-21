@@ -159,6 +159,34 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
+@testitem "Euler potential temperature 2D: elixir_potential_temperature_well_balanced_curvilinear with flux_lmars_es" setup=[
+    Setup,
+    EulerPotentialTemperature2D
+] tags=[:euler_potential_temperature_2d] begin
+    # The combined surface flux `flux_lmars_es` uses its own specialization of the free-slip
+    # boundary condition `boundary_condition_slip_wall`. The atmosphere stays at rest up to
+    # round-off errors.
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "tests",
+                                 "elixir_potential_temperature_well_balanced_curvilinear.jl"),
+                        l2=[
+                            1.963827258116934e-8,
+                            9.781039919469813e-13,
+                            9.901642220638016e-13,
+                            5.8914817741303825e-6,
+                            6.256813355477567e-13
+                        ],
+                        linf=[
+                            5.575406336610911e-8,
+                            1.5812657372404322e-11,
+                            1.5967695573500046e-11,
+                            1.6726218973417417e-5,
+                            3.637978807091713e-12
+                        ], surface_flux=flux_lmars_es, atol=1e-5)
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
+end
+
 @testitem "Euler potential temperature 2D: elixir_potential_temperature_robert_bubble" setup=[
     Setup,
     EulerPotentialTemperature2D
