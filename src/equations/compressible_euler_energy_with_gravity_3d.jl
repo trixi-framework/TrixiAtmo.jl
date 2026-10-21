@@ -127,6 +127,11 @@ developed by
    Structure-Preserving High-Order Methods for the Compressible Euler Equations
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)
+
+In contrast to [`flux_nonconservative_waruszewski_etal`](@ref), whose gravity term of the
+momentum depends on the inverse temperature ``b = \\varrho / (2 p)`` and is in general of
+the form "local * jump", this gravity term does not depend on ``b`` and is purely of the
+form "symmetric * jump", thus anti-symmetric.
 """
 @inline function flux_nonconservative_isothermal(u_ll, u_rr,
                                                  normal_direction::AbstractVector,
