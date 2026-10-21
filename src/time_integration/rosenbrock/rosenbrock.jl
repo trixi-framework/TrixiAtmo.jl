@@ -9,7 +9,7 @@
 # They are implemented in the transformed form of Hairer and Wanner (1996), Section IV.7,
 # see `RosenbrockTableau`: every stage solves one linear system with the matrix
 # `I / (gamma * dt) - J`, where `J` is the approximate Jacobian of the right-hand side
-# passed to `Trixi.solve` (see `jacobian.jl`), and no product with the Jacobian is needed.
+# passed to `Trixi.solve` (see `jacobian.jl`), and no matrix-vector product with the Jacobian is needed.
 # A concrete method provides `tableau(alg, RealT)`.
 abstract type AbstractRosenbrockAlgorithm{N} <: AbstractTimeIntegrationAlgorithm end
 
@@ -86,22 +86,29 @@ function step!(integrator::RosenbrockIntegrator)
         error("time step size `dt` is NaN")
     end
 
+    modify_dt_for_tstops!(integrator)
+
     limit_dt!(integrator, t_end)
 
-    # The matrix `I / (gamma dt) - J` of the stages is assembled every `update_interval`
-    # time steps and whenever the time step changes (e.g., if `limit_dt!` shortens the
-    # last step), since it depends on `dt`
-    gamma_dt = tableau.gamma * integrator.dt
-    if integrator.iter % integrator.update_interval == 0 ||
-       integrator.dt != integrator.dt_jacobian
-        @trixi_timeit timer() "update Jacobian" update_jacobian!(integrator.jacobian,
-                                                                 integrator.u,
-                                                                 integrator.p, gamma_dt)
-        integrator.dt_jacobian = integrator.dt
-    end
+    # The stages divide by `dt`, so they are skipped for a vanishing time step, e.g., for
+    # `tspan = (0.0, 0.0)`, which leaves the solution unchanged
+    if !iszero(integrator.dt)
+        # The matrix `I / (gamma dt) - J` of the stages is assembled every
+        # `update_interval` time steps and whenever the time step changes (e.g., if a time
+        # stop or `limit_dt!` shortens the step), since it depends on `dt`
+        gamma_dt = tableau.gamma * integrator.dt
+        if integrator.iter % integrator.update_interval == 0 ||
+           integrator.dt != integrator.dt_jacobian
+            @trixi_timeit timer() "update Jacobian" update_jacobian!(integrator.jacobian,
+                                                                     integrator.u,
+                                                                     integrator.p,
+                                                                     gamma_dt)
+            integrator.dt_jacobian = integrator.dt
+        end
 
-    for stage in 1:nstages(alg)
-        rosenbrock_stage!(integrator, stage, gamma_dt)
+        for stage in 1:nstages(alg)
+            rosenbrock_stage!(integrator, stage, gamma_dt)
+        end
     end
 
     integrator.iter += 1
@@ -110,6 +117,27 @@ function step!(integrator::RosenbrockIntegrator)
     @trixi_timeit timer() "Step-Callbacks" handle_callbacks!(callbacks, integrator)
 
     check_max_iter!(integrator)
+
+    return nothing
+end
+
+# used for AMR
+function Base.resize!(integrator::RosenbrockIntegrator, new_size)
+    # The arrays of the approximate Jacobian depend on the mesh
+    if !isnothing(integrator.jacobian)
+        throw(ArgumentError("resizing the integrator (e.g., for AMR) is not supported " *
+                            "with an approximate Jacobian"))
+    end
+
+    resize!(integrator.u, new_size)
+    resize!(integrator.du, new_size)
+    resize!(integrator.u_tmp, new_size)
+    # The stages must be zero, since the stage combinations multiply the stages not
+    # computed yet by a zero coefficient
+    for stage in integrator.stages
+        resize!(stage, new_size)
+        fill!(stage, zero(eltype(stage)))
+    end
 
     return nothing
 end
@@ -160,16 +188,29 @@ end
 # u = u_n + sum_j a_j stages[j] and res = sum_j c_j stages[j] in one sweep
 function rosenbrock_internal_stage!(backend::Nothing, u, res, u_n, stages, a_row,
                                     c_row, ::Val{N}) where {N}
-    @threaded for i in eachindex(u)
-        u_i = u_n[i]
-        res_i = zero(eltype(res))
-        for j in 1:N
-            stage_ji = stages[j][i]
-            u_i = u_i + a_row[j] * stage_ji
-            res_i = res_i + c_row[j] * stage_ji
+    # Explicit bounds check, which allows us to assume inbounds access below
+    @boundscheck begin
+        Trixi.check_axes(res, axes(u))
+        Trixi.check_axes(u_n, axes(u))
+        for stage in stages
+            Trixi.check_axes(stage, axes(u))
         end
-        u[i] = u_i
-        res[i] = res_i
+    end
+    @threaded for i in eachindex(u)
+        @inbounds begin
+            u_i = u_n[i]
+            res_i = zero(eltype(res))
+            for j in 1:N
+                # Skip the stages not computed yet
+                if !iszero(a_row[j]) || !iszero(c_row[j])
+                    stage_ji = stages[j][i]
+                    u_i = u_i + a_row[j] * stage_ji
+                    res_i = res_i + c_row[j] * stage_ji
+                end
+            end
+            u[i] = u_i
+            res[i] = res_i
+        end
     end
     return nothing
 end
@@ -189,10 +230,30 @@ function rosenbrock_internal_stage!(backend::Backend, u, res, u_n, stages, a_row
     return nothing
 end
 
+@kernel inbounds=true function rosenbrock_internal_stage_KAkernel!(u, res, u_n, stages,
+                                                                   a_row, c_row,
+                                                                   ::Val{N}) where {N}
+    i = @index(Global)
+    u_i = u_n[i]
+    res_i = zero(eltype(res))
+    for j in 1:N
+        # Skip the stages not computed yet
+        if !iszero(a_row[j]) || !iszero(c_row[j])
+            stage_ji = stages[j][i]
+            u_i = u_i + a_row[j] * stage_ji
+            res_i = res_i + c_row[j] * stage_ji
+        end
+    end
+    u[i] = u_i
+    res[i] = res_i
+end
+
 # res = res + du
 function rosenbrock_stage_residual!(backend::Nothing, res, du)
-    @threaded for i in eachindex(res)
-        res[i] = res[i] + du[i]
+    # Explicit bounds check, which allows us to assume inbounds access below
+    @boundscheck Trixi.check_axes(du, axes(res))
+    @threaded for i in eachindex(res, du)
+        @inbounds res[i] = res[i] + du[i]
     end
     return nothing
 end
@@ -205,12 +266,20 @@ end
 # u = u + sum_j m_j stages[j]
 function rosenbrock_final_stage!(backend::Nothing, u, stages, m,
                                  ::Val{N}) where {N}
-    @threaded for i in eachindex(u)
-        u_i = u[i]
-        for j in 1:N
-            u_i = u_i + m[j] * stages[j][i]
+    # Explicit bounds check, which allows us to assume inbounds access below
+    @boundscheck begin
+        for stage in stages
+            Trixi.check_axes(stage, axes(u))
         end
-        u[i] = u_i
+    end
+    @threaded for i in eachindex(u)
+        @inbounds begin
+            u_i = u[i]
+            for j in 1:N
+                u_i = u_i + m[j] * stages[j][i]
+            end
+            u[i] = u_i
+        end
     end
     return nothing
 end
@@ -226,23 +295,6 @@ function rosenbrock_final_stage!(backend::Backend, u, stages, m,
     kernel! = rosenbrock_final_stage_KAkernel!(backend)
     kernel!(u, stages, m, Val(N), ndrange = length(u))
     return nothing
-end
-
-@kernel inbounds=true function rosenbrock_internal_stage_KAkernel!(u, res, u_n, stages,
-                                                                   a_row, c_row,
-                                                                   ::Val{N}) where {N}
-    i = @index(Global)
-    u_i = u_n[i]
-    res_i = zero(eltype(res))
-    for j in 1:N
-        if !iszero(a_row[j]) || !iszero(c_row[j])
-            stage_ji = stages[j][i]
-            u_i = u_i + a_row[j] * stage_ji
-            res_i = res_i + c_row[j] * stage_ji
-        end
-    end
-    u[i] = u_i
-    res[i] = res_i
 end
 
 @kernel inbounds=true function rosenbrock_final_stage_KAkernel!(u, stages, m,

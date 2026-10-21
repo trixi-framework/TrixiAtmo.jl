@@ -43,12 +43,6 @@ end
 Three-stage, second-order, L-stable Rosenbrock-W method, whose explicit part
 is the SSPRK(3,3) method of Shu and Osher.
 
-The approximate Jacobian `J` of the right-hand side is passed as keyword argument
-`jacobian` to `Trixi.solve`, e.g.,
-`Trixi.solve(ode, SSPRW32(); dt, jacobian = VerticalJacobianTwoSided())`, and its arrays
-are created by `Trixi.init` for the semidiscretization of the ODE problem. The default
-`jacobian = nothing` corresponds to `J = 0`, i.e., the explicit SSPRK(3,3) method.
-
 ## References
 
 - Marco Artiano, Andrés Rueda-Ramírez, Oswald Knoth, Hendrik Ranocha, Gregor Gassner (2026)
@@ -68,8 +62,6 @@ function tableau(::SSPRW32, RealT)
                                  0, 0, 0)
     b = SVector{3, RealT}(1 // 6, 1 // 6, 2 // 3)
 
-    # Implicit part. `gamma21 = -3 gamma` cancels the third-order W-residual
-    # `e1 = sum b_i alpha_ij gamma_j`.
     sqrt2 = sqrt(convert(RealT, 2))
     gamma = 1 - 1 / sqrt2
     gamma21 = -3 * gamma
@@ -78,6 +70,32 @@ function tableau(::SSPRW32, RealT)
     Gamma = SMatrix{3, 3, RealT}(gamma, gamma21, gamma31,
                                  0, gamma, gamma32,
                                  0, 0, gamma)
+
+    return RosenbrockTableau(alpha, b, Gamma)
+end
+
+@doc raw"""
+    ROS2()
+
+Two-stage, second-order Rosenbrock-W method with the diagonal parameter
+``\gamma = (1 + 1/\sqrt{3})/2``, as in Theseus.jl.
+
+## References
+
+- Ernst Hairer, Gerhard Wanner (1996)
+  Solving Ordinary Differential Equations II: Stiff and Differential-Algebraic Problems
+  [DOI: 10.1007/978-3-642-05221-7](https://doi.org/10.1007/978-3-642-05221-7)
+"""
+struct ROS2 <: AbstractRosenbrockAlgorithm{2} end
+
+function tableau(::ROS2, RealT)
+    alpha = SMatrix{2, 2, RealT}(0, 2 // 3,
+                                 0, 0)
+    b = SVector{2, RealT}(1 // 4, 3 // 4)
+
+    gamma = (1 + 1 / sqrt(convert(RealT, 3))) / 2
+    Gamma = SMatrix{2, 2, RealT}(gamma, -4 * gamma / 3,
+                                 0, gamma)
 
     return RosenbrockTableau(alpha, b, Gamma)
 end

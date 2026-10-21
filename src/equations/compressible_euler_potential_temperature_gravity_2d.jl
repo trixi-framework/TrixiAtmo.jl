@@ -246,8 +246,8 @@ end
 end
 
 """
-    flux_es(u_ll, u_rr, normal_direction,
-            equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+    flux_lmars_es(u_ll, u_rr, normal_direction,
+                  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
 
 Entropy-stable and well-balanced version of the low Mach number approximate Riemann solver
 [`FluxLMARS`](@ref) by
@@ -259,8 +259,8 @@ Entropy-stable and well-balanced version of the low Mach number approximate Riem
 It returns the conservative and the nonconservative contribution of the surface flux as a
 tuple, see [`Trixi.combine_conservative_and_nonconservative_fluxes`](@ref).
 """
-@inline function flux_es(u_ll, u_rr, normal_direction::AbstractVector,
-                         equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+@inline function flux_lmars_es(u_ll, u_rr, normal_direction::AbstractVector,
+                               equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     # Unpack left and right state
     rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
     rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
@@ -287,10 +287,14 @@ tuple, see [`Trixi.combine_conservative_and_nonconservative_fluxes`](@ref).
 
     # Upwinded mass and momentum fluxes
     if v_interface > 0
-        f1, f2, f3 = u_ll * v_interface
+        f1 = u_ll[1] * v_interface
+        f2 = u_ll[2] * v_interface
+        f3 = u_ll[3] * v_interface
         sign_v = one(f1)
     else
-        f1, f2, f3 = u_rr * v_interface
+        f1 = u_rr[1] * v_interface
+        f2 = u_rr[2] * v_interface
+        f3 = u_rr[3] * v_interface
         sign_v = -one(f1)
     end
 
@@ -312,14 +316,14 @@ tuple, see [`Trixi.combine_conservative_and_nonconservative_fluxes`](@ref).
     return flux, flux
 end
 
-@inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_es), ::CompressibleEulerPotentialTemperatureEquationsWithGravity2D) = Trixi.True()
+@inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_lmars_es), ::CompressibleEulerPotentialTemperatureEquationsWithGravity2D) = Trixi.True()
 
 # The boundary condition must also be specialized for a combined surface flux such that it
 # returns only the first contribution of the surface flux.
 @inline function boundary_condition_slip_wall(u_inner,
                                               normal_direction::AbstractVector,
                                               x, t,
-                                              surface_flux_function::typeof(flux_es),
+                                              surface_flux_function::typeof(flux_lmars_es),
                                               equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     # normalize the outward pointing direction
     normal = normal_direction / norm(normal_direction)

@@ -20,7 +20,7 @@ boundary_conditions = (; inside = boundary_condition_slip_wall,
                        outside = boundary_condition_slip_wall)
 
 polydeg = 4
-surface_flux = flux_es
+surface_flux = flux_lmars_es
 volume_flux = FluxTurbo(flux_ec, flux_nonconservative_waruszewski_etal)
 
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
