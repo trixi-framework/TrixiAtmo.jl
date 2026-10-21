@@ -19,40 +19,6 @@
 # `jacobian_3d_gpu.jl`. The kernels launch one thread per node, i.e.,
 # `indices = (i, j, k, element)`.
 
-@kernel inbounds=true function copy_state_to_columns_KAkernel!(u_vertical, @Const(u),
-                                                               @Const(vertical_frame),
-                                                               @Const(horizontal_index_of_element),
-                                                               @Const(vertical_index_of_element),
-                                                               nnodes_)
-    indices = @index(Global, NTuple)
-    copy_node_to_columns!(u_vertical, u, one(eltype(u_vertical)), vertical_frame,
-                          horizontal_index_of_element, vertical_index_of_element,
-                          nnodes_, indices...)
-end
-
-@kernel inbounds=true function copy_rhs_to_columns_KAkernel!(u_vertical, @Const(b),
-                                                             @Const(vertical_frame),
-                                                             @Const(horizontal_index_of_element),
-                                                             @Const(vertical_index_of_element),
-                                                             nnodes_)
-    indices = @index(Global, NTuple)
-    # The last slot of the vertical frame holds the normalized norm `n`
-    copy_node_to_columns!(u_vertical, b, vertical_frame[end, indices...],
-                          vertical_frame, horizontal_index_of_element,
-                          vertical_index_of_element, nnodes_, indices...)
-end
-
-@kernel inbounds=true function copy_solution_from_columns_KAkernel!(b,
-                                                                    @Const(u_vertical),
-                                                                    @Const(vertical_frame),
-                                                                    @Const(horizontal_index_of_element),
-                                                                    @Const(vertical_index_of_element),
-                                                                    nnodes_, gamma_dt)
-    indices = @index(Global, NTuple)
-    copy_node_from_columns!(b, u_vertical, vertical_frame, horizontal_index_of_element,
-                            vertical_index_of_element, nnodes_, gamma_dt, indices...)
-end
-
 # Copy the state `u`, from which the Jacobian is assembled, to the columns
 function copy_state_to_columns!(backend::Backend, u_vertical, u, jacobian, semi)
     mesh, equations, solver, cache = Trixi.mesh_equations_solver_cache(semi)
@@ -65,6 +31,17 @@ function copy_state_to_columns!(backend::Backend, u_vertical, u, jacobian, semi)
             vertical_index_of_element, nnodes_;
             ndrange = Base.tail(size(u)))
     return nothing
+end
+
+@kernel inbounds=true function copy_state_to_columns_KAkernel!(u_vertical, @Const(u),
+                                                               @Const(vertical_frame),
+                                                               @Const(horizontal_index_of_element),
+                                                               @Const(vertical_index_of_element),
+                                                               nnodes_)
+    indices = @index(Global, NTuple)
+    copy_node_to_columns!(u_vertical, u, one(eltype(u_vertical)), vertical_frame,
+                          horizontal_index_of_element, vertical_index_of_element,
+                          nnodes_, indices...)
 end
 
 # Copy the right-hand side `b` of the linear system, multiplied by the normalized norm
@@ -82,6 +59,18 @@ function copy_rhs_to_columns!(backend::Backend, u_vertical, b, jacobian, semi)
     return nothing
 end
 
+@kernel inbounds=true function copy_rhs_to_columns_KAkernel!(u_vertical, @Const(b),
+                                                             @Const(vertical_frame),
+                                                             @Const(horizontal_index_of_element),
+                                                             @Const(vertical_index_of_element),
+                                                             nnodes_)
+    indices = @index(Global, NTuple)
+    # The last slot of the vertical frame holds the normalized norm `n`
+    copy_node_to_columns!(u_vertical, b, vertical_frame[end, indices...],
+                          vertical_frame, horizontal_index_of_element,
+                          vertical_index_of_element, nnodes_, indices...)
+end
+
 # Copy the solution of the linear system, divided by the normalized norm `n`, from the
 # columns to `b`
 function copy_solution_from_columns!(backend::Backend, b, u_vertical, jacobian, semi,
@@ -96,5 +85,16 @@ function copy_solution_from_columns!(backend::Backend, b, u_vertical, jacobian, 
             vertical_index_of_element, nnodes_, gamma_dt;
             ndrange = Base.tail(size(b)))
     return nothing
+end
+
+@kernel inbounds=true function copy_solution_from_columns_KAkernel!(b,
+                                                                    @Const(u_vertical),
+                                                                    @Const(vertical_frame),
+                                                                    @Const(horizontal_index_of_element),
+                                                                    @Const(vertical_index_of_element),
+                                                                    nnodes_, gamma_dt)
+    indices = @index(Global, NTuple)
+    copy_node_from_columns!(b, u_vertical, vertical_frame, horizontal_index_of_element,
+                            vertical_index_of_element, nnodes_, gamma_dt, indices...)
 end
 end # @muladd

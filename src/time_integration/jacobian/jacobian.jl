@@ -41,19 +41,6 @@ function solve_jacobian!(b_ode, ::Nothing, semi, gamma_dt)
     return nothing
 end
 
-###############################################################################
-# Infrastructure of the vertically implicit Jacobians. The Jacobians decouple into
-# independent systems for each vertical column of nodes, which are solved by
-# KernelAbstractions.jl kernels (also on CPUs). The files are organized as
-# - `jacobian_gpu.jl`: the launch parameters of the kernels and the kernels copying the
-#   data between Trixi.jl's layout and the columns,
-# - `jacobian_3d.jl`: the vertical layout of the degrees of freedom and the metric terms of
-#   the vertical operator of the
-#   `CompressibleEulerPotentialTemperatureEquationsWithGravity3D` on a
-#   `P4estMeshCubedSphereTopography`, computed once,
-# - `jacobian_3d_gpu.jl`: the copies of the data of one node,
-# - `jacobian_two_sided.jl`: the Jacobian `VerticalJacobianTwoSided` with its kernels.
-
 function number_of_layers(mesh::Trixi.AbstractMesh)
     throw(ArgumentError("the vertical Jacobians require a " *
                         "`P4estMeshCubedSphereTopography`"))

@@ -122,18 +122,17 @@ function create_jacobian_cache(jacobian::VerticalJacobianTwoSided, semi, u_ode)
     # The metric terms are computed on the CPU and moved to the storage type of the
     # semidiscretization
     storage = Trixi.storage_type(cache.elements)
-    vertical_indices = compute_vertical_mapping(nnodes_, nelements_, nlayers)
+    vertical_indices = compute_vertical_mapping(nlayers, solver, cache)
     vertical_line_indices, vertical_element_indices = vertical_indices
-    index_maps = compute_element_index_maps(vertical_indices..., nnodes_)
+    index_maps = compute_element_index_maps(vertical_indices..., solver, cache)
     horizontal_index_of_element = Adapt.adapt(storage, index_maps[1])
     vertical_index_of_element = Adapt.adapt(storage, index_maps[2])
     vertical_frame = Adapt.adapt(storage, compute_vertical_frame(semi))
-    metric_factor = compute_metric_factor(ncolumns, nnodes_,
-                                          nlayers, semi,
+    metric_factor = compute_metric_factor(ncolumns, nlayers, semi,
                                           vertical_line_indices,
                                           vertical_element_indices)
     metric_factor = Adapt.adapt(storage, metric_factor)
-    gravity = compute_gravity(ncolumns, nnodes_, nlayers, semi, vertical_line_indices,
+    gravity = compute_gravity(ncolumns, nlayers, semi, vertical_line_indices,
                               vertical_element_indices)
     gravity = Adapt.adapt(storage, gravity)
     inv_boundary_weight = solver.basis.inverse_weights[1]
@@ -1111,6 +1110,7 @@ Base.@propagate_inbounds function ldiv_interior_backward_element!(layer, column,
         end
         x_rho[i] -= b1 * rho_w_1 + b2 * rho_w_M
     end
+
     for i in 1:(NNODES - 2)
         x_rho_theta[i] -= (metric_factor[column, i + 1, layer] *
                            derivative_hat[i + 1, 1] * theta_1) *

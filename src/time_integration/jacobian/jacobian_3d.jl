@@ -28,14 +28,16 @@ end
 
 # Column and layer of every node. The trees of the cubed sphere are ordered such that the
 # layers of a column are consecutive, with the lowest layer first.
-function compute_vertical_mapping(nnodes_, nelements_, nlayers)
+function compute_vertical_mapping(nlayers, solver, cache)
+    nnodes_ = nnodes(solver)
+    nelements_ = nelements(solver, cache)
     vertical_line_indices = zeros(Int, nnodes_, nnodes_, nnodes_, nelements_)
     vertical_element_indices = zeros(Int, nnodes_, nnodes_, nnodes_, nelements_)
 
-    for element in 1:nelements_
+    for element in eachelement(solver, cache)
         layer = (element - 1) % nlayers + 1
         column_offset = ((element - 1) ÷ nlayers) * nnodes_^2
-        for k in 1:nnodes_, j in 1:nnodes_, i in 1:nnodes_
+        for k in eachnode(solver), j in eachnode(solver), i in eachnode(solver)
             vertical_line_indices[i, j, k, element] = column_offset +
                                                       (j - 1) * nnodes_ +
                                                       i
@@ -49,13 +51,16 @@ end
 # Per-element maps used to copy data between Trixi.jl's layout and the columns: the
 # horizontal column index and the layer, one per element instead of one per node.
 function compute_element_index_maps(vertical_line_indices, vertical_element_indices,
-                                    nnodes_)
-    nelements_ = size(vertical_line_indices, 4)
+                                    solver, cache)
+    nnodes_ = nnodes(solver)
     horizontal_index_of_element = [(vertical_line_indices[1, 1, 1, element] - 1) ÷
-                                   nnodes_^2 + 1 for element in 1:nelements_]
+                                   nnodes_^2 + 1
+                                   for element in eachelement(solver, cache)]
     vertical_index_of_element = [vertical_element_indices[1, 1, 1, element]
-                                 for element in 1:nelements_]
-    for element in 1:nelements_, k in 1:nnodes_, j in 1:nnodes_, i in 1:nnodes_
+                                 for element in eachelement(solver, cache)]
+    for element in eachelement(solver, cache), k in eachnode(solver),
+        j in eachnode(solver), i in eachnode(solver)
+
         @assert vertical_line_indices[i, j, k, element] ==
                 (horizontal_index_of_element[element] - 1) * nnodes_^2 +
                 (j - 1) * nnodes_ + i
@@ -71,14 +76,14 @@ end
 # global constant cancels in the similarity transformation `N` of the copies in
 # `jacobian_3d_gpu.jl`)
 function compute_vertical_frame(semi)
-    (; solver, equations) = semi
+    (; solver, equations, cache) = semi
     node_coordinates = Adapt.adapt(Array, semi.cache.elements.node_coordinates)
     contravariant_vectors = Adapt.adapt(Array,
                                         semi.cache.elements.contravariant_vectors)
     vertical_frame = zeros(eltype(node_coordinates), 4,
                            size(node_coordinates)[2:end]...)
     area_max = zero(eltype(node_coordinates))
-    for element in axes(node_coordinates, 5)
+    for element in eachelement(solver, cache)
         for k in eachnode(solver), j in eachnode(solver), i in eachnode(solver)
             Ja3 = get_contravariant_vector(3, contravariant_vectors, i, j, k, element)
             area = norm(Ja3)
@@ -96,16 +101,17 @@ end
 # Metric factor `n / J` of the vertical operator of every node, with the norm
 # `n = |Ja^3|` of the contravariant vector of the third reference coordinate and the
 # Jacobian `J`, laid out `[column, node, layer]`
-function compute_metric_factor(ncolumns, nnodes_, nlayers, semi,
-                               vertical_line_indices,
+function compute_metric_factor(ncolumns, nlayers, semi, vertical_line_indices,
                                vertical_element_indices)
+    (; solver, cache) = semi
+    nnodes_ = nnodes(solver)
     contravariant_vectors = Adapt.adapt(Array,
                                         semi.cache.elements.contravariant_vectors)
     inverse_jacobian = Adapt.adapt(Array, semi.cache.elements.inverse_jacobian)
     metric_factor = zeros(eltype(inverse_jacobian), ncolumns, nnodes_,
                           nlayers)
-    for element in axes(inverse_jacobian, 4), k in 1:nnodes_, j in 1:nnodes_,
-        i in 1:nnodes_
+    for element in eachelement(solver, cache), k in eachnode(solver),
+        j in eachnode(solver), i in eachnode(solver)
 
         Ja3 = get_contravariant_vector(3, contravariant_vectors, i, j, k, element)
         column = vertical_line_indices[i, j, k, element]
@@ -118,16 +124,16 @@ end
 
 # Consistent pointwise gravity `g * (nu . r_hat)`, the projection of the gravitational
 # acceleration on the unit contravariant direction `nu` of the third reference coordinate
-# (see `compute_vertical_frame`). On a sphere without orography, it reduces to `g`; with
-# terrain-following levels, `nu` deviates from the radial direction `r_hat`.
-function compute_gravity(ncolumns, nnodes_, nlayers, semi, vertical_line_indices,
+# (see `compute_vertical_frame`).
+function compute_gravity(ncolumns, nlayers, semi, vertical_line_indices,
                          vertical_element_indices)
-    (; solver, equations) = semi
+    (; solver, equations, cache) = semi
+    nnodes_ = nnodes(solver)
     node_coordinates = Adapt.adapt(Array, semi.cache.elements.node_coordinates)
     contravariant_vectors = Adapt.adapt(Array,
                                         semi.cache.elements.contravariant_vectors)
     gravity = zeros(eltype(node_coordinates), ncolumns, nnodes_, nlayers)
-    for element in axes(node_coordinates, 5)
+    for element in eachelement(solver, cache)
         for k in eachnode(solver), j in eachnode(solver), i in eachnode(solver)
             Ja3 = get_contravariant_vector(3, contravariant_vectors, i, j, k, element)
             x = get_node_coords(node_coordinates, equations, solver, i, j, k, element)
