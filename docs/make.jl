@@ -3,6 +3,7 @@ using DocumenterCodeBlocks: CodeBlocks
 using DocumenterInterLinks
 using TrixiAtmo
 using Literate
+using Changelog: Changelog
 
 # Fix for https://github.com/trixi-framework/Trixi.jl/issues/668
 if (get(ENV, "CI", nothing) != "true") &&
@@ -100,6 +101,24 @@ for tutorial in tutorial_list
     Literate.markdown(joinpath(tutorial_dir, tutorial), tutorial_dir)
 end
 
+# Create changelog
+Changelog.generate(Changelog.Documenter(),                        # output type
+                   joinpath(@__DIR__, "..", "NEWS.md"),           # input file
+                   joinpath(@__DIR__, "src", "changelog_tmp.md"); # output file
+                   repo = "trixi-framework/TrixiAtmo.jl",         # default repository for links
+                   branch = "main",)
+# Fix edit URL of changelog
+open(joinpath(@__DIR__, "src", "changelog.md"), "w") do io
+    for line in eachline(joinpath(@__DIR__, "src", "changelog_tmp.md"))
+        if startswith(line, "EditURL")
+            line = "EditURL = \"https://github.com/trixi-framework/TrixiAtmo.jl/blob/main/NEWS.md\""
+        end
+        println(io, line)
+    end
+end
+# Remove temporary file
+rm(joinpath(@__DIR__, "src", "changelog_tmp.md"))
+
 makedocs(;
          modules = [TrixiAtmo],
          repo = Remotes.GitHub("trixi-framework", "TrixiAtmo.jl"),
@@ -117,6 +136,7 @@ makedocs(;
          pages = ["Home" => "index.md",
              "Tutorials" => tutorial_pages,
              "Reference" => "reference.md",
+             "Changelog" => "changelog.md",
              "Authors" => "authors.md",
              "Contributing" => "contributing.md",
              "Code of Conduct" => "code_of_conduct.md",

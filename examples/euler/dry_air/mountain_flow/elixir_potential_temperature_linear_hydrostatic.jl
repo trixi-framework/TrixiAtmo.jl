@@ -41,7 +41,7 @@ polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
 
 surface_flux = (FluxLMARS(cs), flux_zero)
-volume_flux = (flux_tec, flux_nonconservative_waruszewski_etal)
+volume_flux = (flux_tec, flux_nonconservative_isothermal)
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
 solver = DGSEM(basis, surface_flux, volume_integral)
