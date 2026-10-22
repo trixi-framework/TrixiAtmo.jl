@@ -10,7 +10,7 @@ equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 10
 # cs = sqrt(gamma * R * T0)
 cs = sqrt(equations.gamma * equations.R * 250)
 surface_flux = (FluxLMARS(cs), flux_zero)
-volume_flux = (flux_tec, flux_nonconservative_waruszewski_etal)
+volume_flux = (flux_tec, flux_nonconservative_isothermal)
 polydeg = 3
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
