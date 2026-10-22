@@ -166,6 +166,43 @@ end
 end
 
 """
+    flux_nonconservative_isothermal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerEnergyEquationsWithGravity2D)
+
+Well-balanced gravity term for an isothermal background state
+for the [`CompressibleEulerEnergyEquationsWithGravity2D`](@ref)
+developed by
+-  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
+   Structure-Preserving High-Order Methods for the Compressible Euler Equations
+   in Potential Temperature Formulation for Atmospheric Flows
+   (https://arxiv.org/abs/2509.10311)
+
+In contrast to [`flux_nonconservative_waruszewski_etal`](@ref), whose gravity term of the
+momentum depends on the inverse temperature ``b = \\varrho / (2 p)`` and is in general of
+the form "local * jump", this gravity term does not depend on ``b`` and is purely of the
+form "symmetric * jump", thus anti-symmetric.
+"""
+@inline function flux_nonconservative_isothermal(u_ll, u_rr,
+                                                 normal_direction::AbstractVector,
+                                                 equations::CompressibleEulerEnergyEquationsWithGravity2D)
+    rho_ll, rho_v1_ll, rho_v2_ll, _, phi_ll = u_ll
+    rho_rr, rho_v1_rr, rho_v2_rr, _, phi_rr = u_rr
+    v1_ll = rho_v1_ll / rho_ll
+    v1_rr = rho_v1_rr / rho_rr
+    v2_ll = rho_v2_ll / rho_ll
+    v2_rr = rho_v2_rr / rho_rr
+    v1_avg = 0.5f0 * (v1_ll + v1_rr)
+    v2_avg = 0.5f0 * (v2_ll + v2_rr)
+    rho_mean = ln_mean(rho_ll, rho_rr)
+    phi_jump = phi_rr - phi_ll
+    return SVector(zero(eltype(u_ll)),
+                   normal_direction[1] * rho_mean * phi_jump,
+                   normal_direction[2] * rho_mean * phi_jump,
+                   (normal_direction[1] * v1_avg + normal_direction[2] * v2_avg) *
+                   rho_mean * phi_jump,
+                   zero(eltype(u_ll)))
+end
+
+"""
     flux_nonconservative_waruszewski_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerEnergyEquationsWithGravity2D)
 
 Well-balanced gravity term for an isothermal background state
@@ -194,13 +231,18 @@ The well-balancedness on curvilinear coordinates was proven by
     v2_rr = rho_v2_rr / rho_rr
     v1_avg = 0.5f0 * (v1_ll + v1_rr)
     v2_avg = 0.5f0 * (v2_ll + v2_rr)
-    rho_avg = ln_mean(rho_ll, rho_rr)
+    rho_mean = ln_mean(rho_ll, rho_rr)
+    # Factor of the density of the gravity term of the momentum of Eq. (73d), where
+    # `b = rho / (2 p)`
+    b_ll = 0.5f0 * rho_ll / pressure(u_ll, equations)
+    b_rr = 0.5f0 * rho_rr / pressure(u_rr, equations)
+    b_factor = 0.5f0 * (b_ll + b_rr) / b_ll
     phi_jump = phi_rr - phi_ll
     return SVector(zero(eltype(u_ll)),
-                   normal_direction[1] * rho_avg * phi_jump,
-                   normal_direction[2] * rho_avg * phi_jump,
-                   normal_direction[1] * rho_avg * v1_avg * phi_jump +
-                   normal_direction[2] * rho_avg * v2_avg * phi_jump,
+                   normal_direction[1] * rho_mean * b_factor * phi_jump,
+                   normal_direction[2] * rho_mean * b_factor * phi_jump,
+                   (normal_direction[1] * v1_avg + normal_direction[2] * v2_avg) *
+                   rho_mean * phi_jump,
                    zero(eltype(u_ll)))
 end
 

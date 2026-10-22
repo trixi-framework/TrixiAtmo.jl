@@ -127,25 +127,20 @@ end
 end
 
 """
-    flux_nonconservative_waruszewski_etal(u_ll, u_rr,
-                                         normal_direction::AbstractVector,
-                                             equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+    flux_nonconservative_isothermal(u_ll, u_rr, normal_direction::AbstractVector,
+                                    equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
 
-Well-balanced gravity term for isothermal background state
--  Maciej Waruszewski and Jeremy E. Kozdon and Lucas C. Wilcox and Thomas H. Gibson and Francis X. Giraldo (2022),
-   Entropy stable discontinuous {G}alerkin methods for balance laws
-   in non-conservative form: Applications to the {E}uler equations with gravity
-   [DOI: 10.1016/j.jcp.2022.111507](https://doi.org/10.1016/j.jcp.2022.111507)
-
-The well balanced on curvilinear coordinates was proven by
+Well-balanced gravity term for an isothermal background state
+for the [`CompressibleEulerPotentialTemperatureEquationsWithGravity3D`](@ref)
+developed by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
    Structure-Preserving High-Order Methods for the Compressible Euler Equations
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)
 """
-@inline function flux_nonconservative_waruszewski_etal(u_ll, u_rr,
-                                                       normal_direction::AbstractVector,
-                                                       equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+@inline function flux_nonconservative_isothermal(u_ll, u_rr,
+                                                 normal_direction::AbstractVector,
+                                                 equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     rho_ll, _, _, _, _, phi_ll = u_ll
     rho_rr, _, _, _, _, phi_rr = u_rr
     rho_avg = ln_mean(rho_ll, rho_rr)
@@ -783,11 +778,11 @@ end # @muladd
 
 # Specializations of the `FluxTurbo` interface of Trixi.jl for the volume fluxes
 # `FluxTurbo(flux_kennedy_gruber, flux_nonconservative_souza_etal)` and
-# `FluxTurbo(flux_ec, flux_nonconservative_waruszewski_etal)`.
+# `FluxTurbo(flux_ec, flux_nonconservative_isothermal)`.
 const FluxKennedyGruberSouzaEtal = Tuple{typeof(flux_kennedy_gruber),
                                          typeof(flux_nonconservative_souza_etal)}
 const FluxECIsothermal = Tuple{typeof(flux_ec),
-                               typeof(flux_nonconservative_waruszewski_etal)}
+                               typeof(flux_nonconservative_isothermal)}
 
 # We precompute `rho, v1, v2, v3, theta, p, phi`, i.e., one quantity more than the number
 # of variables. Both fluxes use the same precomputed variables.
@@ -848,7 +843,7 @@ end
     return flux_left, flux_right
 end
 
-# Fused version of `flux_ec` and `flux_nonconservative_waruszewski_etal`, see
+# Fused version of `flux_ec` and `flux_nonconservative_isothermal`, see
 # - Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
 #   Structure-Preserving High-Order Methods for the Compressible Euler Equations
 #   in Potential Temperature Formulation for Atmospheric Flows
