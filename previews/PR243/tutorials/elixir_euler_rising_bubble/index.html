@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Rising bubble (dry Euler with gravity) · TrixiAtmo.jl</title><meta name="title" content="Rising bubble (dry Euler with gravity) · TrixiAtmo.jl"/><meta property="og:title" content="Rising bubble (dry Euler with gravity) · TrixiAtmo.jl"/><meta property="twitter:title" content="Rising bubble (dry Euler with gravity) · TrixiAtmo.jl"/><meta name="description" content="Documentation for TrixiAtmo.jl."/><meta property="og:description" content="Documentation for TrixiAtmo.jl."/><meta property="twitter:description" content="Documentation for TrixiAtmo.jl."/><meta property="og:url" content="https://trixi-framework.github.io/TrixiAtmo.jl/tutorials/elixir_euler_rising_bubble/"/><meta property="twitter:url" content="https://trixi-framework.github.io/TrixiAtmo.jl/tutorials/elixir_euler_rising_bubble/"/><link rel="canonical" href="https://trixi-framework.github.io/TrixiAtmo.jl/tutorials/elixir_euler_rising_bubble/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.63.2/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/documentercodeblocks/juliasyntax-tokens.css" rel="stylesheet" type="text/css"/><link href="../../assets/documentercodeblocks/line-numbers.css" rel="stylesheet" type="text/css"/><script src="../../assets/documentercodeblocks/line-numbers.js"></script><link href="../../assets/documentercodeblocks/ref-popup.css" rel="stylesheet" type="text/css"/><script src="../../assets/documentercodeblocks/ref-popup.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">TrixiAtmo.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../introduction/">Introduction</a></li><li class="is-active"><a class="tocitem" href>Rising bubble (dry Euler with gravity)</a><ul class="internal"><li><a class="tocitem" href="#Load-packages"><span>Load packages</span></a></li><li><a class="tocitem" href="#Governing-equations"><span>Governing equations</span></a></li><li><a class="tocitem" href="#Initial-condition:-warm-bubble"><span>Initial condition: warm bubble</span></a></li><li><a class="tocitem" href="#Boundary-conditions-and-source-term"><span>Boundary conditions and source term</span></a></li><li><a class="tocitem" href="#DG-discretization"><span>DG discretization</span></a></li><li><a class="tocitem" href="#Mesh"><span>Mesh</span></a></li><li><a class="tocitem" href="#Semidiscretization"><span>Semidiscretization</span></a></li><li><a class="tocitem" href="#Time-interval-and-ODE-problem"><span>Time interval and ODE problem</span></a></li><li><a class="tocitem" href="#Callbacks-and-diagnostics"><span>Callbacks and diagnostics</span></a></li><li><a class="tocitem" href="#Run-the-simulation"><span>Run the simulation</span></a></li><li><a class="tocitem" href="#Expected-behavior"><span>Expected behavior</span></a></li></ul></li></ul></li><li><a class="tocitem" href="../../reference/">Reference</a></li><li><a class="tocitem" href="../../authors/">Authors</a></li><li><a class="tocitem" href="../../contributing/">Contributing</a></li><li><a class="tocitem" href="../../code_of_conduct/">Code of Conduct</a></li><li><a class="tocitem" href="../../license/">License</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>Rising bubble (dry Euler with gravity)</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Rising bubble (dry Euler with gravity)</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/trixi-framework/TrixiAtmo.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/trixi-framework/TrixiAtmo.jl/blob/main/docs/src/tutorials/elixir_euler_rising_bubble.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Rising-bubble-(dry-Euler-with-gravity)"><a class="docs-heading-anchor" href="#Rising-bubble-(dry-Euler-with-gravity)">Rising bubble (dry Euler with gravity)</a><a id="Rising-bubble-(dry-Euler-with-gravity)-1"></a><a class="docs-heading-anchor-permalink" href="#Rising-bubble-(dry-Euler-with-gravity)" title="Permalink"></a></h1><p>This tutorial sets up a warm rising-bubble test case in <code>TrixiAtmo.jl</code>.</p><p>The setup follows the warm-bubble benchmark described by Bryan and Fritsch, which includes both dry and moist atmospheric variants:</p><p>Bryan, G. H., and Fritsch, J. M. (2002). A benchmark simulation for moist nonhydrostatic numerical models. Monthly Weather Review, 130(12), 2917-2928. <a href="https://doi.org/10.1175/1520-0493(2002)130%3C2917:ABSFMN%3E2.0.CO;2">DOI: 10.1175/1520-0493(2002)130&lt;2917:ABSFMN&gt;2.0.CO;2</a></p><p>The setup is based on a standard atmospheric benchmark where a localized warm perturbation is placed in a background atmosphere. Since the perturbation is warmer than the air around it, it should rise as the solution evolves.</p><p>This example uses the moist Euler equations, but the moisture variables are initialized to zero in our initial condition.</p><p>In this tutorial we go through:</p><ul><li>the governing equations</li><li>the warm-bubble initial condition</li><li>the mesh and DG discretization</li><li>the source term and boundary conditions</li><li>the time integration setup</li></ul><h2 id="Load-packages"><a class="docs-heading-anchor" href="#Load-packages">Load packages</a><a id="Load-packages-1"></a><a class="docs-heading-anchor-permalink" href="#Load-packages" title="Permalink"></a></h2><p>We start by loading the time integrator, the core <code>Trixi.jl</code> tools, and the atmospheric extensions from <code>TrixiAtmo.jl</code>.</p><pre id="c-da33b69c"><code class="nohighlight hljs line-numbers"><span class="code-lines"><span class="line"><span class="line-num" aria-hidden="true"></span><span class="julia-keyword">using</span> OrdinaryDiffEqLowStorageRK</span><span class="line"><span class="line-num" aria-hidden="true"></span><span class="julia-keyword">using</span> Trixi</span><span class="line"><span class="line-num" aria-hidden="true"></span><span class="julia-keyword">using</span> TrixiAtmo</span><span class="line"><span class="line-num" aria-hidden="true"></span><span class="julia-keyword">using</span> TrixiAtmo<span class="julia-operator">:</span> cons2drypot</span></span></code></pre><h2 id="Governing-equations"><a class="docs-heading-anchor" href="#Governing-equations">Governing equations</a><a id="Governing-equations-1"></a><a class="docs-heading-anchor-permalink" href="#Governing-equations" title="Permalink"></a></h2><p>Here we use the two-dimensional compressible moist Euler equations with gravity. The parameters below specify the specific heat values in <span>$\mathrm{J}\,\mathrm{kg}^{-1}\,\mathrm{K}^{-1}$</span> for dry air and water vapor.</p><pre id="c-8b0fa6f5"><code class="nohighlight hljs line-numbers"><span class="code-lines"><span class="line"><span class="line-num" aria-hidden="true"></span>c_pd <span class="julia-keyword">=</span> <span class="julia-number">1004</span> <span class="julia-comment"># specific heat at constant pressure for dry air</span></span><span class="line"><span class="line-num" aria-hidden="true"></span>c_vd <span class="julia-keyword">=</span> <span class="julia-number">717</span>  <span class="julia-comment"># specific heat at constant volume for dry air</span></span><span class="line"><span class="line-num" aria-hidden="true"></span>c_pv <span class="julia-keyword">=</span> <span class="julia-number">1885</span> <span class="julia-comment"># specific heat at constant pressure for water vapor</span></span><span class="line"><span class="line-num" aria-hidden="true"></span>c_vv <span class="julia-keyword">=</span> <span class="julia-number">1424</span> <span class="julia-comment"># specific heat at constant volume for water vapor</span></span><span class="line"><span class="line-num" aria-hidden="true"></span></span><span class="line"><span class="line-num" aria-hidden="true"></span>equations <span class="julia-keyword">=</span> <span class="julia-funcall">CompressibleMoistEulerEquations2D</span>(c_pd <span class="julia-keyword">=</span> c_pd, c_vd <span class="julia-keyword">=</span> c_vd,</span><span class="line"><span class="line-num" aria-hidden="true"></span>                                              c_pv <span class="julia-keyword">=</span> c_pv, c_vv <span class="julia-keyword">=</span> c_vv,</span><span class="line"><span class="line-num" aria-hidden="true"></span>                                              gravity <span class="julia-keyword">=</span> <a class="julia-ref" href="../../reference/#TrixiAtmo.EARTH_GRAVITATIONAL_ACCELERATION">EARTH_GRAVITATIONAL_ACCELERATION</a>)</span><span class="line"><span class="line-num" aria-hidden="true"></span></span><span class="line"><span class="line-num" aria-hidden="true"></span>equations</span></span></code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Rising bubble (dry Euler with gravity) · TrixiAtmo.jl</title><meta name="title" content="Rising bubble (dry Euler with gravity) · TrixiAtmo.jl"/><meta property="og:title" content="Rising bubble (dry Euler with gravity) · TrixiAtmo.jl"/><meta property="twitter:title" content="Rising bubble (dry Euler with gravity) · TrixiAtmo.jl"/><meta name="description" content="Documentation for TrixiAtmo.jl."/><meta property="og:description" content="Documentation for TrixiAtmo.jl."/><meta property="twitter:description" content="Documentation for TrixiAtmo.jl."/><meta property="og:url" content="https://trixi-framework.github.io/TrixiAtmo.jl/tutorials/elixir_euler_rising_bubble/"/><meta property="twitter:url" content="https://trixi-framework.github.io/TrixiAtmo.jl/tutorials/elixir_euler_rising_bubble/"/><link rel="canonical" href="https://trixi-framework.github.io/TrixiAtmo.jl/tutorials/elixir_euler_rising_bubble/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.63.2/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/documentercodeblocks/juliasyntax-tokens.css" rel="stylesheet" type="text/css"/><link href="../../assets/documentercodeblocks/line-numbers.css" rel="stylesheet" type="text/css"/><script src="../../assets/documentercodeblocks/line-numbers.js"></script><link href="../../assets/documentercodeblocks/ref-popup.css" rel="stylesheet" type="text/css"/><script src="../../assets/documentercodeblocks/ref-popup.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">TrixiAtmo.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../introduction/">Introduction</a></li><li class="is-active"><a class="tocitem" href>Rising bubble (dry Euler with gravity)</a><ul class="internal"><li><a class="tocitem" href="#Load-packages"><span>Load packages</span></a></li><li><a class="tocitem" href="#Governing-equations"><span>Governing equations</span></a></li><li><a class="tocitem" href="#Initial-condition:-warm-bubble"><span>Initial condition: warm bubble</span></a></li><li><a class="tocitem" href="#Boundary-conditions-and-source-term"><span>Boundary conditions and source term</span></a></li><li><a class="tocitem" href="#DG-discretization"><span>DG discretization</span></a></li><li><a class="tocitem" href="#Mesh"><span>Mesh</span></a></li><li><a class="tocitem" href="#Semidiscretization"><span>Semidiscretization</span></a></li><li><a class="tocitem" href="#Time-interval-and-ODE-problem"><span>Time interval and ODE problem</span></a></li><li><a class="tocitem" href="#Callbacks-and-diagnostics"><span>Callbacks and diagnostics</span></a></li><li><a class="tocitem" href="#Run-the-simulation"><span>Run the simulation</span></a></li><li><a class="tocitem" href="#Expected-behavior"><span>Expected behavior</span></a></li></ul></li></ul></li><li><a class="tocitem" href="../../reference/">Reference</a></li><li><a class="tocitem" href="../../changelog/">Changelog</a></li><li><a class="tocitem" href="../../authors/">Authors</a></li><li><a class="tocitem" href="../../contributing/">Contributing</a></li><li><a class="tocitem" href="../../code_of_conduct/">Code of Conduct</a></li><li><a class="tocitem" href="../../license/">License</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>Rising bubble (dry Euler with gravity)</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Rising bubble (dry Euler with gravity)</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/trixi-framework/TrixiAtmo.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/trixi-framework/TrixiAtmo.jl/blob/main/docs/src/tutorials/elixir_euler_rising_bubble.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Rising-bubble-(dry-Euler-with-gravity)"><a class="docs-heading-anchor" href="#Rising-bubble-(dry-Euler-with-gravity)">Rising bubble (dry Euler with gravity)</a><a id="Rising-bubble-(dry-Euler-with-gravity)-1"></a><a class="docs-heading-anchor-permalink" href="#Rising-bubble-(dry-Euler-with-gravity)" title="Permalink"></a></h1><p>This tutorial sets up a warm rising-bubble test case in <code>TrixiAtmo.jl</code>.</p><p>The setup follows the warm-bubble benchmark described by Bryan and Fritsch, which includes both dry and moist atmospheric variants:</p><p>Bryan, G. H., and Fritsch, J. M. (2002). A benchmark simulation for moist nonhydrostatic numerical models. Monthly Weather Review, 130(12), 2917-2928. <a href="https://doi.org/10.1175/1520-0493(2002)130%3C2917:ABSFMN%3E2.0.CO;2">DOI: 10.1175/1520-0493(2002)130&lt;2917:ABSFMN&gt;2.0.CO;2</a></p><p>The setup is based on a standard atmospheric benchmark where a localized warm perturbation is placed in a background atmosphere. Since the perturbation is warmer than the air around it, it should rise as the solution evolves.</p><p>This example uses the moist Euler equations, but the moisture variables are initialized to zero in our initial condition.</p><p>In this tutorial we go through:</p><ul><li>the governing equations</li><li>the warm-bubble initial condition</li><li>the mesh and DG discretization</li><li>the source term and boundary conditions</li><li>the time integration setup</li></ul><h2 id="Load-packages"><a class="docs-heading-anchor" href="#Load-packages">Load packages</a><a id="Load-packages-1"></a><a class="docs-heading-anchor-permalink" href="#Load-packages" title="Permalink"></a></h2><p>We start by loading the time integrator, the core <code>Trixi.jl</code> tools, and the atmospheric extensions from <code>TrixiAtmo.jl</code>.</p><pre id="c-da33b69c"><code class="nohighlight hljs line-numbers"><span class="code-lines"><span class="line"><span class="line-num" aria-hidden="true"></span><span class="julia-keyword">using</span> OrdinaryDiffEqLowStorageRK</span><span class="line"><span class="line-num" aria-hidden="true"></span><span class="julia-keyword">using</span> Trixi</span><span class="line"><span class="line-num" aria-hidden="true"></span><span class="julia-keyword">using</span> TrixiAtmo</span><span class="line"><span class="line-num" aria-hidden="true"></span><span class="julia-keyword">using</span> TrixiAtmo<span class="julia-operator">:</span> cons2drypot</span></span></code></pre><h2 id="Governing-equations"><a class="docs-heading-anchor" href="#Governing-equations">Governing equations</a><a id="Governing-equations-1"></a><a class="docs-heading-anchor-permalink" href="#Governing-equations" title="Permalink"></a></h2><p>Here we use the two-dimensional compressible moist Euler equations with gravity. The parameters below specify the specific heat values in <span>$\mathrm{J}\,\mathrm{kg}^{-1}\,\mathrm{K}^{-1}$</span> for dry air and water vapor.</p><pre id="c-8b0fa6f5"><code class="nohighlight hljs line-numbers"><span class="code-lines"><span class="line"><span class="line-num" aria-hidden="true"></span>c_pd <span class="julia-keyword">=</span> <span class="julia-number">1004</span> <span class="julia-comment"># specific heat at constant pressure for dry air</span></span><span class="line"><span class="line-num" aria-hidden="true"></span>c_vd <span class="julia-keyword">=</span> <span class="julia-number">717</span>  <span class="julia-comment"># specific heat at constant volume for dry air</span></span><span class="line"><span class="line-num" aria-hidden="true"></span>c_pv <span class="julia-keyword">=</span> <span class="julia-number">1885</span> <span class="julia-comment"># specific heat at constant pressure for water vapor</span></span><span class="line"><span class="line-num" aria-hidden="true"></span>c_vv <span class="julia-keyword">=</span> <span class="julia-number">1424</span> <span class="julia-comment"># specific heat at constant volume for water vapor</span></span><span class="line"><span class="line-num" aria-hidden="true"></span></span><span class="line"><span class="line-num" aria-hidden="true"></span>equations <span class="julia-keyword">=</span> <span class="julia-funcall">CompressibleMoistEulerEquations2D</span>(c_pd <span class="julia-keyword">=</span> c_pd, c_vd <span class="julia-keyword">=</span> c_vd,</span><span class="line"><span class="line-num" aria-hidden="true"></span>                                              c_pv <span class="julia-keyword">=</span> c_pv, c_vv <span class="julia-keyword">=</span> c_vv,</span><span class="line"><span class="line-num" aria-hidden="true"></span>                                              gravity <span class="julia-keyword">=</span> <a class="julia-ref" href="../../reference/#TrixiAtmo.EARTH_GRAVITATIONAL_ACCELERATION">EARTH_GRAVITATIONAL_ACCELERATION</a>)</span><span class="line"><span class="line-num" aria-hidden="true"></span></span><span class="line"><span class="line-num" aria-hidden="true"></span>equations</span></span></code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ CompressibleMoistEulerEquations2D                                                                │
 │ ═════════════════════════════════                                                                │
 │ #variables: ……………………………………………………………… 6                                                           │
@@ -177,11 +177,11 @@ u0: 153600-element Vector{Float64}:
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  Simulation running &#39;CompressibleMoistEulerEquations2D&#39; with DGSEM(polydeg=4)
 ────────────────────────────────────────────────────────────────────────────────────────────────────
- #timesteps:                  0                run time:       1.50000000e-06 s
+ #timesteps:                  0                run time:       1.40200000e-06 s
  Δt:             1.00000000e+00                └── GC time:    0.00000000e+00 s (0.000%)
  sim. time:      0.00000000e+00 (0.000%)       time/DOF/RHS:          NaN s
                                                PID:                   Inf s
- #DOFs per field:         25600                alloc&#39;d memory:        433.701 MiB
+ #DOFs per field:         25600                alloc&#39;d memory:        440.005 MiB
  #elements:                1024                device memory:           0.000 MiB
 
  Variable:       rho              rho_v1           rho_v2           rho_E            rho_qv           rho_ql
@@ -190,24 +190,24 @@ u0: 153600-element Vector{Float64}:
  ∑∂S/∂U ⋅ Uₜ :  -1.84841147e-14
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 
-#timesteps:    100 │ Δt: 8.1291e-02 │ sim. time: 8.1291e+00 (2.032%)   │ run time: 1.9462e+00 s
-#timesteps:    200 │ Δt: 8.1291e-02 │ sim. time: 1.6258e+01 (4.065%)   │ run time: 3.7696e+00 s
-#timesteps:    300 │ Δt: 8.1290e-02 │ sim. time: 2.4387e+01 (6.097%)   │ run time: 5.5960e+00 s
-#timesteps:    400 │ Δt: 8.1290e-02 │ sim. time: 3.2516e+01 (8.129%)   │ run time: 7.4204e+00 s
-#timesteps:    500 │ Δt: 8.1289e-02 │ sim. time: 4.0645e+01 (10.161%)  │ run time: 9.2429e+00 s
-#timesteps:    600 │ Δt: 8.1289e-02 │ sim. time: 4.8774e+01 (12.194%)  │ run time: 1.1062e+01 s
-#timesteps:    700 │ Δt: 8.1289e-02 │ sim. time: 5.6903e+01 (14.226%)  │ run time: 1.2892e+01 s
-#timesteps:    800 │ Δt: 8.1288e-02 │ sim. time: 6.5032e+01 (16.258%)  │ run time: 1.4717e+01 s
-#timesteps:    900 │ Δt: 8.1287e-02 │ sim. time: 7.3161e+01 (18.290%)  │ run time: 1.6542e+01 s
+#timesteps:    100 │ Δt: 8.1291e-02 │ sim. time: 8.1291e+00 (2.032%)   │ run time: 1.3667e+00 s
+#timesteps:    200 │ Δt: 8.1291e-02 │ sim. time: 1.6258e+01 (4.065%)   │ run time: 2.6213e+00 s
+#timesteps:    300 │ Δt: 8.1290e-02 │ sim. time: 2.4387e+01 (6.097%)   │ run time: 3.9195e+00 s
+#timesteps:    400 │ Δt: 8.1290e-02 │ sim. time: 3.2516e+01 (8.129%)   │ run time: 5.2352e+00 s
+#timesteps:    500 │ Δt: 8.1289e-02 │ sim. time: 4.0645e+01 (10.161%)  │ run time: 6.5464e+00 s
+#timesteps:    600 │ Δt: 8.1289e-02 │ sim. time: 4.8774e+01 (12.194%)  │ run time: 7.8596e+00 s
+#timesteps:    700 │ Δt: 8.1289e-02 │ sim. time: 5.6903e+01 (14.226%)  │ run time: 9.1208e+00 s
+#timesteps:    800 │ Δt: 8.1288e-02 │ sim. time: 6.5032e+01 (16.258%)  │ run time: 1.0381e+01 s
+#timesteps:    900 │ Δt: 8.1287e-02 │ sim. time: 7.3161e+01 (18.290%)  │ run time: 1.1636e+01 s
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  Simulation running &#39;CompressibleMoistEulerEquations2D&#39; with DGSEM(polydeg=4)
 ────────────────────────────────────────────────────────────────────────────────────────────────────
- #timesteps:               1000                run time:       1.84666457e+01 s
+ #timesteps:               1000                run time:       1.29808820e+01 s
  Δt:             8.12864418e-02                └── GC time:    0.00000000e+00 s (0.000%)
- sim. time:      8.12893091e+01 (20.322%)      time/DOF/RHS:   1.31263184e-07 s
-                                               PID:            1.43567041e-07 s
- #DOFs per field:         25600                alloc&#39;d memory:        450.720 MiB
+ sim. time:      8.12893091e+01 (20.322%)      time/DOF/RHS:   9.45224279e-08 s
+                                               PID:            1.00816521e-07 s
+ #DOFs per field:         25600                alloc&#39;d memory:        457.024 MiB
  #elements:                1024                device memory:           0.000 MiB
 
  Variable:       rho              rho_v1           rho_v2           rho_E            rho_qv           rho_ql
@@ -216,24 +216,24 @@ u0: 153600-element Vector{Float64}:
  ∑∂S/∂U ⋅ Uₜ :  -2.16034247e-11
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 
-#timesteps:   1100 │ Δt: 8.1286e-02 │ sim. time: 8.9418e+01 (22.354%)  │ run time: 2.0207e+01 s
-#timesteps:   1200 │ Δt: 8.1285e-02 │ sim. time: 9.7546e+01 (24.387%)  │ run time: 2.2030e+01 s
-#timesteps:   1300 │ Δt: 8.1286e-02 │ sim. time: 1.0568e+02 (26.419%)  │ run time: 2.3855e+01 s
-#timesteps:   1400 │ Δt: 8.1284e-02 │ sim. time: 1.1380e+02 (28.451%)  │ run time: 2.5684e+01 s
-#timesteps:   1500 │ Δt: 8.1282e-02 │ sim. time: 1.2193e+02 (30.483%)  │ run time: 2.7507e+01 s
-#timesteps:   1600 │ Δt: 8.1282e-02 │ sim. time: 1.3006e+02 (32.515%)  │ run time: 2.9335e+01 s
-#timesteps:   1700 │ Δt: 8.1282e-02 │ sim. time: 1.3819e+02 (34.547%)  │ run time: 3.1166e+01 s
-#timesteps:   1800 │ Δt: 8.1282e-02 │ sim. time: 1.4632e+02 (36.579%)  │ run time: 3.2990e+01 s
-#timesteps:   1900 │ Δt: 8.1282e-02 │ sim. time: 1.5444e+02 (38.611%)  │ run time: 3.4817e+01 s
+#timesteps:   1100 │ Δt: 8.1286e-02 │ sim. time: 8.9418e+01 (22.354%)  │ run time: 1.4154e+01 s
+#timesteps:   1200 │ Δt: 8.1285e-02 │ sim. time: 9.7546e+01 (24.387%)  │ run time: 1.5402e+01 s
+#timesteps:   1300 │ Δt: 8.1286e-02 │ sim. time: 1.0568e+02 (26.419%)  │ run time: 1.6641e+01 s
+#timesteps:   1400 │ Δt: 8.1284e-02 │ sim. time: 1.1380e+02 (28.451%)  │ run time: 1.7870e+01 s
+#timesteps:   1500 │ Δt: 8.1282e-02 │ sim. time: 1.2193e+02 (30.483%)  │ run time: 1.9097e+01 s
+#timesteps:   1600 │ Δt: 8.1282e-02 │ sim. time: 1.3006e+02 (32.515%)  │ run time: 2.0314e+01 s
+#timesteps:   1700 │ Δt: 8.1282e-02 │ sim. time: 1.3819e+02 (34.547%)  │ run time: 2.1569e+01 s
+#timesteps:   1800 │ Δt: 8.1282e-02 │ sim. time: 1.4632e+02 (36.579%)  │ run time: 2.2831e+01 s
+#timesteps:   1900 │ Δt: 8.1282e-02 │ sim. time: 1.5444e+02 (38.611%)  │ run time: 2.4068e+01 s
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  Simulation running &#39;CompressibleMoistEulerEquations2D&#39; with DGSEM(polydeg=4)
 ────────────────────────────────────────────────────────────────────────────────────────────────────
- #timesteps:               2000                run time:       3.67485994e+01 s
+ #timesteps:               2000                run time:       2.54176405e+01 s
  Δt:             8.12805730e-02                └── GC time:    0.00000000e+00 s (0.000%)
- sim. time:      1.62572884e+02 (40.643%)      time/DOF/RHS:   1.31323350e-07 s
-                                               PID:            1.42736736e-07 s
- #DOFs per field:         25600                alloc&#39;d memory:        460.920 MiB
+ sim. time:      1.62572884e+02 (40.643%)      time/DOF/RHS:   9.18920509e-08 s
+                                               PID:            9.70941794e-08 s
+ #DOFs per field:         25600                alloc&#39;d memory:        467.224 MiB
  #elements:                1024                device memory:           0.000 MiB
 
  Variable:       rho              rho_v1           rho_v2           rho_E            rho_qv           rho_ql
@@ -242,24 +242,24 @@ u0: 153600-element Vector{Float64}:
  ∑∂S/∂U ⋅ Uₜ :  -4.41374541e-11
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 
-#timesteps:   2100 │ Δt: 8.1280e-02 │ sim. time: 1.7070e+02 (42.675%)  │ run time: 3.8494e+01 s
-#timesteps:   2200 │ Δt: 8.1280e-02 │ sim. time: 1.7883e+02 (44.707%)  │ run time: 4.0319e+01 s
-#timesteps:   2300 │ Δt: 8.1281e-02 │ sim. time: 1.8696e+02 (46.739%)  │ run time: 4.2144e+01 s
-#timesteps:   2400 │ Δt: 8.1280e-02 │ sim. time: 1.9509e+02 (48.771%)  │ run time: 4.3974e+01 s
-#timesteps:   2500 │ Δt: 8.1279e-02 │ sim. time: 2.0321e+02 (50.803%)  │ run time: 4.5796e+01 s
-#timesteps:   2600 │ Δt: 8.1277e-02 │ sim. time: 2.1134e+02 (52.835%)  │ run time: 4.7621e+01 s
-#timesteps:   2700 │ Δt: 8.1277e-02 │ sim. time: 2.1947e+02 (54.867%)  │ run time: 4.9443e+01 s
-#timesteps:   2800 │ Δt: 8.1278e-02 │ sim. time: 2.2760e+02 (56.899%)  │ run time: 5.1269e+01 s
-#timesteps:   2900 │ Δt: 8.1277e-02 │ sim. time: 2.3572e+02 (58.931%)  │ run time: 5.3096e+01 s
+#timesteps:   2100 │ Δt: 8.1280e-02 │ sim. time: 1.7070e+02 (42.675%)  │ run time: 2.6570e+01 s
+#timesteps:   2200 │ Δt: 8.1280e-02 │ sim. time: 1.7883e+02 (44.707%)  │ run time: 2.7839e+01 s
+#timesteps:   2300 │ Δt: 8.1281e-02 │ sim. time: 1.8696e+02 (46.739%)  │ run time: 2.9094e+01 s
+#timesteps:   2400 │ Δt: 8.1280e-02 │ sim. time: 1.9509e+02 (48.771%)  │ run time: 3.0333e+01 s
+#timesteps:   2500 │ Δt: 8.1279e-02 │ sim. time: 2.0321e+02 (50.803%)  │ run time: 3.1574e+01 s
+#timesteps:   2600 │ Δt: 8.1277e-02 │ sim. time: 2.1134e+02 (52.835%)  │ run time: 3.2811e+01 s
+#timesteps:   2700 │ Δt: 8.1277e-02 │ sim. time: 2.1947e+02 (54.867%)  │ run time: 3.4064e+01 s
+#timesteps:   2800 │ Δt: 8.1278e-02 │ sim. time: 2.2760e+02 (56.899%)  │ run time: 3.5307e+01 s
+#timesteps:   2900 │ Δt: 8.1277e-02 │ sim. time: 2.3572e+02 (58.931%)  │ run time: 3.6534e+01 s
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  Simulation running &#39;CompressibleMoistEulerEquations2D&#39; with DGSEM(polydeg=4)
 ────────────────────────────────────────────────────────────────────────────────────────────────────
- #timesteps:               3000                run time:       5.50176987e+01 s
+ #timesteps:               3000                run time:       3.78349265e+01 s
  Δt:             8.12753553e-02                └── GC time:    0.00000000e+00 s (0.000%)
- sim. time:      2.43851732e+02 (60.963%)      time/DOF/RHS:   1.31222806e-07 s
-                                               PID:            1.42634057e-07 s
- #DOFs per field:         25600                alloc&#39;d memory:        471.175 MiB
+ sim. time:      2.43851732e+02 (60.963%)      time/DOF/RHS:   9.17470730e-08 s
+                                               PID:            9.69434419e-08 s
+ #DOFs per field:         25600                alloc&#39;d memory:        477.479 MiB
  #elements:                1024                device memory:           0.000 MiB
 
  Variable:       rho              rho_v1           rho_v2           rho_E            rho_qv           rho_ql
@@ -268,24 +268,24 @@ u0: 153600-element Vector{Float64}:
  ∑∂S/∂U ⋅ Uₜ :  -1.35094529e-10
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 
-#timesteps:   3100 │ Δt: 8.1275e-02 │ sim. time: 2.5198e+02 (62.995%)  │ run time: 5.6759e+01 s
-#timesteps:   3200 │ Δt: 8.1275e-02 │ sim. time: 2.6011e+02 (65.027%)  │ run time: 5.8580e+01 s
-#timesteps:   3300 │ Δt: 8.1274e-02 │ sim. time: 2.6823e+02 (67.059%)  │ run time: 6.0407e+01 s
-#timesteps:   3400 │ Δt: 8.1276e-02 │ sim. time: 2.7636e+02 (69.090%)  │ run time: 6.2228e+01 s
-#timesteps:   3500 │ Δt: 8.1276e-02 │ sim. time: 2.8449e+02 (71.122%)  │ run time: 6.4052e+01 s
-#timesteps:   3600 │ Δt: 8.1275e-02 │ sim. time: 2.9262e+02 (73.154%)  │ run time: 6.5874e+01 s
-#timesteps:   3700 │ Δt: 8.1274e-02 │ sim. time: 3.0074e+02 (75.186%)  │ run time: 6.7697e+01 s
-#timesteps:   3800 │ Δt: 8.1273e-02 │ sim. time: 3.0887e+02 (77.218%)  │ run time: 6.9519e+01 s
-#timesteps:   3900 │ Δt: 8.1273e-02 │ sim. time: 3.1700e+02 (79.250%)  │ run time: 7.1343e+01 s
+#timesteps:   3100 │ Δt: 8.1275e-02 │ sim. time: 2.5198e+02 (62.995%)  │ run time: 3.8967e+01 s
+#timesteps:   3200 │ Δt: 8.1275e-02 │ sim. time: 2.6011e+02 (65.027%)  │ run time: 4.0196e+01 s
+#timesteps:   3300 │ Δt: 8.1274e-02 │ sim. time: 2.6823e+02 (67.059%)  │ run time: 4.1430e+01 s
+#timesteps:   3400 │ Δt: 8.1276e-02 │ sim. time: 2.7636e+02 (69.090%)  │ run time: 4.2661e+01 s
+#timesteps:   3500 │ Δt: 8.1276e-02 │ sim. time: 2.8449e+02 (71.122%)  │ run time: 4.3919e+01 s
+#timesteps:   3600 │ Δt: 8.1275e-02 │ sim. time: 2.9262e+02 (73.154%)  │ run time: 4.5157e+01 s
+#timesteps:   3700 │ Δt: 8.1274e-02 │ sim. time: 3.0074e+02 (75.186%)  │ run time: 4.6395e+01 s
+#timesteps:   3800 │ Δt: 8.1273e-02 │ sim. time: 3.0887e+02 (77.218%)  │ run time: 4.7630e+01 s
+#timesteps:   3900 │ Δt: 8.1273e-02 │ sim. time: 3.1700e+02 (79.250%)  │ run time: 4.8898e+01 s
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  Simulation running &#39;CompressibleMoistEulerEquations2D&#39; with DGSEM(polydeg=4)
 ────────────────────────────────────────────────────────────────────────────────────────────────────
- #timesteps:               4000                run time:       7.32646314e+01 s
+ #timesteps:               4000                run time:       5.02302989e+01 s
  Δt:             8.12729829e-02                └── GC time:    0.00000000e+00 s (0.000%)
- sim. time:      3.25126215e+02 (81.282%)      time/DOF/RHS:   1.31094961e-07 s
-                                               PID:            1.42460278e-07 s
- #DOFs per field:         25600                alloc&#39;d memory:        481.375 MiB
+ sim. time:      3.25126215e+02 (81.282%)      time/DOF/RHS:   9.16029810e-08 s
+                                               PID:            9.67662731e-08 s
+ #DOFs per field:         25600                alloc&#39;d memory:        487.678 MiB
  #elements:                1024                device memory:           0.000 MiB
 
  Variable:       rho              rho_v1           rho_v2           rho_E            rho_qv           rho_ql
@@ -294,24 +294,24 @@ u0: 153600-element Vector{Float64}:
  ∑∂S/∂U ⋅ Uₜ :  -4.35071818e-10
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 
-#timesteps:   4100 │ Δt: 8.1274e-02 │ sim. time: 3.3325e+02 (83.313%)  │ run time: 7.5015e+01 s
-#timesteps:   4200 │ Δt: 8.1271e-02 │ sim. time: 3.4138e+02 (85.345%)  │ run time: 7.6839e+01 s
-#timesteps:   4300 │ Δt: 8.1271e-02 │ sim. time: 3.4951e+02 (87.377%)  │ run time: 7.8667e+01 s
-#timesteps:   4400 │ Δt: 8.1271e-02 │ sim. time: 3.5764e+02 (89.409%)  │ run time: 8.0490e+01 s
-#timesteps:   4500 │ Δt: 8.1272e-02 │ sim. time: 3.6576e+02 (91.441%)  │ run time: 8.2314e+01 s
-#timesteps:   4600 │ Δt: 8.1270e-02 │ sim. time: 3.7389e+02 (93.472%)  │ run time: 8.4137e+01 s
-#timesteps:   4700 │ Δt: 8.1270e-02 │ sim. time: 3.8202e+02 (95.504%)  │ run time: 8.5967e+01 s
-#timesteps:   4800 │ Δt: 8.1269e-02 │ sim. time: 3.9014e+02 (97.536%)  │ run time: 8.7790e+01 s
-#timesteps:   4900 │ Δt: 8.1270e-02 │ sim. time: 3.9827e+02 (99.568%)  │ run time: 8.9617e+01 s
+#timesteps:   4100 │ Δt: 8.1274e-02 │ sim. time: 3.3325e+02 (83.313%)  │ run time: 5.1639e+01 s
+#timesteps:   4200 │ Δt: 8.1271e-02 │ sim. time: 3.4138e+02 (85.345%)  │ run time: 5.2900e+01 s
+#timesteps:   4300 │ Δt: 8.1271e-02 │ sim. time: 3.4951e+02 (87.377%)  │ run time: 5.4145e+01 s
+#timesteps:   4400 │ Δt: 8.1271e-02 │ sim. time: 3.5764e+02 (89.409%)  │ run time: 5.5396e+01 s
+#timesteps:   4500 │ Δt: 8.1272e-02 │ sim. time: 3.6576e+02 (91.441%)  │ run time: 5.6677e+01 s
+#timesteps:   4600 │ Δt: 8.1270e-02 │ sim. time: 3.7389e+02 (93.472%)  │ run time: 5.7936e+01 s
+#timesteps:   4700 │ Δt: 8.1270e-02 │ sim. time: 3.8202e+02 (95.504%)  │ run time: 5.9206e+01 s
+#timesteps:   4800 │ Δt: 8.1269e-02 │ sim. time: 3.9014e+02 (97.536%)  │ run time: 6.0461e+01 s
+#timesteps:   4900 │ Δt: 8.1270e-02 │ sim. time: 3.9827e+02 (99.568%)  │ run time: 6.1704e+01 s
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  Simulation running &#39;CompressibleMoistEulerEquations2D&#39; with DGSEM(polydeg=4)
 ────────────────────────────────────────────────────────────────────────────────────────────────────
- #timesteps:               4922                run time:       9.01159802e+01 s
- Δt:             2.30230462e-02                └── GC time:    0.00000000e+00 s (0.000%)
- sim. time:      4.00000000e+02 (100.000%)     time/DOF/RHS:   1.31325282e-07 s
-                                               PID:            1.42689897e-07 s
- #DOFs per field:         25600                alloc&#39;d memory:        491.683 MiB
+ #timesteps:               4922                run time:       6.20665982e+01 s
+ Δt:             2.30230462e-02                └── GC time:    2.16970295e-01 s (0.350%)
+ sim. time:      4.00000000e+02 (100.000%)     time/DOF/RHS:   9.29102303e-08 s
+                                               PID:            9.82071100e-08 s
+ #DOFs per field:         25600                alloc&#39;d memory:         95.778 MiB
  #elements:                1024                device memory:           0.000 MiB
 
  Variable:       rho              rho_v1           rho_v2           rho_E            rho_qv           rho_ql
@@ -328,31 +328,31 @@ Trixi.jl simulation finished.  Final time: 400.0  Time steps: 4922 (accepted), 4
 ──────────────────────────────────────────────────────────────────────────────────────
 <span class="sgr1">                                            Time                   Allocations        </span>
                                    ──────────────────────    ────────────────────────
-        Tot / % measured:              91.5s / 92.2%             98.4MiB / 57.8%
+        Tot / % measured:              63.1s / 95.0%             98.5MiB / 57.9%
  ────────────────────────────────  ──────────────────────    ────────────────────────
  Section                   ncalls    time    %tot     avg      alloc    %tot      avg
 ──────────────────────────────────────────────────────────────────────────────────────
- rhs_hyperbolic!            24.6k   82.7s   98.0%  3.36ms    3.92KiB    0.0%    0.16B
- ├─ volume integral         24.6k   69.9s   82.9%  2.84ms          ∅       ∅        ∅
- ├─ interface flux          24.6k   4.85s    5.7%   197μs          ∅       ∅        ∅
- ├─ prolong2interfaces      24.6k   2.03s    2.4%  82.4μs          ∅       ∅        ∅
- ├─ surface integral        24.6k   1.76s    2.1%  71.3μs          ∅       ∅        ∅
- ├─ source terms            24.6k   1.58s    1.9%  64.4μs          ∅       ∅        ∅
- ├─ reset ∂u/∂t             24.6k   1.16s    1.4%  47.3μs          ∅       ∅        ∅
- ├─ Jacobian                24.6k   877ms    1.0%  35.6μs          ∅       ∅        ∅
- ├─ boundary flux           24.6k   376ms    0.4%  15.3μs          ∅       ∅        ∅
- ├─ ~rhs_hyperbolic!~       24.6k  89.3ms    0.1%  3.63μs    3.92KiB    0.0%    0.16B
- ├─ prolong2boundaries      24.6k  52.9ms    0.1%  2.15μs          ∅       ∅        ∅
- ├─ prolong2mortars         24.6k  8.51ms    0.0%   346ns          ∅       ∅        ∅
- └─ mortar flux             24.6k  4.54ms    0.0%   184ns          ∅       ∅        ∅
- calculate dt               4.92k   1.46s    1.7%   296μs          ∅       ∅        ∅
- analyze solution               6   146ms    0.2%  24.3ms    34.5MiB   60.7%  5.75MiB
- I/O                            7  69.9ms    0.1%  10.0ms    22.4MiB   39.3%  3.19MiB
- ├─ save solution               6  62.0ms    0.1%  10.3ms    22.3MiB   39.3%  3.72MiB
- ├─ ~I/O~                       7  7.90ms    0.0%  1.13ms    8.38KiB    0.0%  1.20KiB
- ├─ get element variables       6  3.09μs    0.0%   515ns          ∅       ∅        ∅
- ├─ save mesh                   6  1.96μs    0.0%   327ns          ∅       ∅        ∅
- └─ get node variables          6  1.91μs    0.0%   318ns          ∅       ∅        ∅
+ rhs_hyperbolic!            24.6k   58.3s   97.2%  2.37ms    3.92KiB    0.0%    0.16B
+ ├─ volume integral         24.6k   50.2s   83.7%  2.04ms          ∅       ∅        ∅
+ ├─ interface flux          24.6k   4.04s    6.7%   164μs          ∅       ∅        ∅
+ ├─ prolong2interfaces      24.6k   1.17s    2.0%  47.7μs          ∅       ∅        ∅
+ ├─ surface integral        24.6k   1.11s    1.8%  45.1μs          ∅       ∅        ∅
+ ├─ source terms            24.6k   675ms    1.1%  27.4μs          ∅       ∅        ∅
+ ├─ Jacobian                24.6k   412ms    0.7%  16.8μs          ∅       ∅        ∅
+ ├─ boundary flux           24.6k   261ms    0.4%  10.6μs          ∅       ∅        ∅
+ ├─ reset ∂u/∂t             24.6k   254ms    0.4%  10.3μs          ∅       ∅        ∅
+ ├─ ~rhs_hyperbolic!~       24.6k   105ms    0.2%  4.25μs    3.92KiB    0.0%    0.16B
+ ├─ prolong2boundaries      24.6k  36.6ms    0.1%  1.49μs          ∅       ∅        ∅
+ ├─ prolong2mortars         24.6k  12.9ms    0.0%   525ns          ∅       ∅        ∅
+ └─ mortar flux             24.6k  10.2ms    0.0%   413ns          ∅       ∅        ∅
+ calculate dt               4.92k   1.27s    2.1%   258μs          ∅       ∅        ∅
+ analyze solution               6   355ms    0.6%  59.2ms    34.7MiB   60.8%  5.78MiB
+ I/O                            7  64.5ms    0.1%  9.21ms    22.4MiB   39.2%  3.19MiB
+ ├─ save solution               6  55.6ms    0.1%  9.27ms    22.3MiB   39.2%  3.72MiB
+ ├─ ~I/O~                       7  8.87ms    0.0%  1.27ms    8.30KiB    0.0%  1.19KiB
+ ├─ get element variables       6  3.57μs    0.0%   594ns          ∅       ∅        ∅
+ ├─ save mesh                   6  3.03μs    0.0%   506ns          ∅       ∅        ∅
+ └─ get node variables          6  2.18μs    0.0%   364ns          ∅       ∅        ∅
 ──────────────────────────────────────────────────────────────────────────────────────
 
 
@@ -360,30 +360,30 @@ Trixi.jl simulation finished.  Final time: 400.0  Time steps: 4922 (accepted), 4
 ──────────────────────────────────────────────────────────────────────────────────────
 <span class="sgr1">                                            Time                   Allocations        </span>
                                    ──────────────────────    ────────────────────────
-        Tot / % measured:              92.7s / 91.0%              164MiB / 34.6%
+        Tot / % measured:              64.1s / 93.6%              164MiB / 34.7%
  ────────────────────────────────  ──────────────────────    ────────────────────────
  Section                   ncalls    time    %tot     avg      alloc    %tot      avg
 ──────────────────────────────────────────────────────────────────────────────────────
- rhs_hyperbolic!            24.6k   82.7s   98.0%  3.36ms    3.92KiB    0.0%    0.16B
- ├─ volume integral         24.6k   69.9s   82.9%  2.84ms          ∅       ∅        ∅
- ├─ interface flux          24.6k   4.85s    5.7%   197μs          ∅       ∅        ∅
- ├─ prolong2interfaces      24.6k   2.03s    2.4%  82.4μs          ∅       ∅        ∅
- ├─ surface integral        24.6k   1.76s    2.1%  71.3μs          ∅       ∅        ∅
- ├─ source terms            24.6k   1.58s    1.9%  64.4μs          ∅       ∅        ∅
- ├─ reset ∂u/∂t             24.6k   1.16s    1.4%  47.3μs          ∅       ∅        ∅
- ├─ Jacobian                24.6k   877ms    1.0%  35.6μs          ∅       ∅        ∅
- ├─ boundary flux           24.6k   376ms    0.4%  15.3μs          ∅       ∅        ∅
- ├─ ~rhs_hyperbolic!~       24.6k  89.3ms    0.1%  3.63μs    3.92KiB    0.0%    0.16B
- ├─ prolong2boundaries      24.6k  52.9ms    0.1%  2.15μs          ∅       ∅        ∅
- ├─ prolong2mortars         24.6k  8.51ms    0.0%   346ns          ∅       ∅        ∅
- └─ mortar flux             24.6k  4.54ms    0.0%   184ns          ∅       ∅        ∅
- calculate dt               4.92k   1.46s    1.7%   296μs          ∅       ∅        ∅
- analyze solution               6   146ms    0.2%  24.3ms    34.5MiB   60.7%  5.75MiB
- I/O                            7  69.9ms    0.1%  10.0ms    22.4MiB   39.3%  3.19MiB
- ├─ save solution               6  62.0ms    0.1%  10.3ms    22.3MiB   39.3%  3.72MiB
- ├─ ~I/O~                       7  7.90ms    0.0%  1.13ms    8.38KiB    0.0%  1.20KiB
- ├─ get element variables       6  3.09μs    0.0%   515ns          ∅       ∅        ∅
- ├─ save mesh                   6  1.96μs    0.0%   327ns          ∅       ∅        ∅
- └─ get node variables          6  1.91μs    0.0%   318ns          ∅       ∅        ∅
-──────────────────────────────────────────────────────────────────────────────────────</code></pre><h2 id="Expected-behavior"><a class="docs-heading-anchor" href="#Expected-behavior">Expected behavior</a><a id="Expected-behavior-1"></a><a class="docs-heading-anchor-permalink" href="#Expected-behavior" title="Permalink"></a></h2><p>Since the perturbation is warmer than the surrounding air, it is less dense and should rise under gravity. As the solution develops, the bubble should move upward and begin to deform.</p><p>This kind of test is a standard atmospheric benchmark because it checks how well the method handles buoyancy, gravity, compressibility, and the spatial discretization all at once.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../introduction/">« Introduction</a><a class="docs-footer-nextpage" href="../../reference/">Reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Wednesday 21 October 2026 12:21">Wednesday 21 October 2026</span>. Using Julia version 1.13.2.</p></section><footer class="modal-card-foot"></footer></div></div></div><div class="ref-tips" hidden><div class="ref-tip" data-for="../../reference/#Trixi.FluxLMARS-Tuple{Any, Any, AbstractVector, CompressibleEulerEnergyEquationsWithGravity3D}"><code class="ref-tip-sig nohighlight"><span class="julia-funcall">FluxLMARS</span>(c)(u_ll, u_rr, orientation_or_normal_direction,
+ rhs_hyperbolic!            24.6k   58.3s   97.2%  2.37ms    3.92KiB    0.0%    0.16B
+ ├─ volume integral         24.6k   50.2s   83.7%  2.04ms          ∅       ∅        ∅
+ ├─ interface flux          24.6k   4.04s    6.7%   164μs          ∅       ∅        ∅
+ ├─ prolong2interfaces      24.6k   1.17s    2.0%  47.7μs          ∅       ∅        ∅
+ ├─ surface integral        24.6k   1.11s    1.8%  45.1μs          ∅       ∅        ∅
+ ├─ source terms            24.6k   675ms    1.1%  27.4μs          ∅       ∅        ∅
+ ├─ Jacobian                24.6k   412ms    0.7%  16.8μs          ∅       ∅        ∅
+ ├─ boundary flux           24.6k   261ms    0.4%  10.6μs          ∅       ∅        ∅
+ ├─ reset ∂u/∂t             24.6k   254ms    0.4%  10.3μs          ∅       ∅        ∅
+ ├─ ~rhs_hyperbolic!~       24.6k   105ms    0.2%  4.25μs    3.92KiB    0.0%    0.16B
+ ├─ prolong2boundaries      24.6k  36.6ms    0.1%  1.49μs          ∅       ∅        ∅
+ ├─ prolong2mortars         24.6k  12.9ms    0.0%   525ns          ∅       ∅        ∅
+ └─ mortar flux             24.6k  10.2ms    0.0%   413ns          ∅       ∅        ∅
+ calculate dt               4.92k   1.27s    2.1%   258μs          ∅       ∅        ∅
+ analyze solution               6   355ms    0.6%  59.2ms    34.7MiB   60.8%  5.78MiB
+ I/O                            7  64.5ms    0.1%  9.21ms    22.4MiB   39.2%  3.19MiB
+ ├─ save solution               6  55.6ms    0.1%  9.27ms    22.3MiB   39.2%  3.72MiB
+ ├─ ~I/O~                       7  8.87ms    0.0%  1.27ms    8.30KiB    0.0%  1.19KiB
+ ├─ get element variables       6  3.57μs    0.0%   594ns          ∅       ∅        ∅
+ ├─ save mesh                   6  3.03μs    0.0%   506ns          ∅       ∅        ∅
+ └─ get node variables          6  2.18μs    0.0%   364ns          ∅       ∅        ∅
+──────────────────────────────────────────────────────────────────────────────────────</code></pre><h2 id="Expected-behavior"><a class="docs-heading-anchor" href="#Expected-behavior">Expected behavior</a><a id="Expected-behavior-1"></a><a class="docs-heading-anchor-permalink" href="#Expected-behavior" title="Permalink"></a></h2><p>Since the perturbation is warmer than the surrounding air, it is less dense and should rise under gravity. As the solution develops, the bubble should move upward and begin to deform.</p><p>This kind of test is a standard atmospheric benchmark because it checks how well the method handles buoyancy, gravity, compressibility, and the spatial discretization all at once.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../introduction/">« Introduction</a><a class="docs-footer-nextpage" href="../../reference/">Reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Thursday 22 October 2026 15:31">Thursday 22 October 2026</span>. Using Julia version 1.13.2.</p></section><footer class="modal-card-foot"></footer></div></div></div><div class="ref-tips" hidden><div class="ref-tip" data-for="../../reference/#Trixi.FluxLMARS-Tuple{Any, Any, AbstractVector, CompressibleEulerEnergyEquationsWithGravity3D}"><code class="ref-tip-sig nohighlight"><span class="julia-funcall">FluxLMARS</span>(c)(u_ll, u_rr, orientation_or_normal_direction,
              equations<span class="julia-operator">::</span><span class="julia-type">CompressibleEulerEnergyEquationsWithGravity3D</span>)</code><p class="ref-tip-brief">Low Mach number approximate Riemann solver (LMARS) for atmospheric flows using an estimate c of the speed of sound.</p></div><div class="ref-tip" data-for="../../reference/#Trixi.flux_chandrashekar-Tuple{Any, Any, AbstractVector, CompressibleEulerEnergyEquationsWithGravity3D}"><code class="ref-tip-sig nohighlight"><span class="julia-funcall">flux_chandrashekar</span>(u_ll, u_rr, orientation_or_normal_direction, equations<span class="julia-operator">::</span><span class="julia-type">CompressibleEulerEnergyEquationsWithGravity3D</span>)</code><p class="ref-tip-brief">Entropy conserving two-point flux by</p></div><div class="ref-tip" data-for="../../reference/#TrixiAtmo.EARTH_GRAVITATIONAL_ACCELERATION"><code class="ref-tip-sig nohighlight">EARTH_GRAVITATIONAL_ACCELERATION</code><p class="ref-tip-brief">Gravitational acceleration at the surface of the Earth.</p></div></div></body></html>
