@@ -40,4 +40,14 @@ function solve_jacobian!(b_ode, ::Nothing, semi, gamma_dt)
     b_ode .*= gamma_dt
     return nothing
 end
+
+function number_of_layers(mesh::Trixi.AbstractMesh)
+    throw(ArgumentError("the vertical Jacobians require a " *
+                        "`P4estMeshCubedSphereTopography`"))
+end
 end # @muladd
+
+include("jacobian_gpu.jl")
+include("jacobian_3d.jl")
+include("jacobian_3d_gpu.jl")
+include("jacobian_two_sided.jl")

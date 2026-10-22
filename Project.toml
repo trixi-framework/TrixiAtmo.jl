@@ -4,6 +4,7 @@ authors = ["Benedict Geihe <bgeihe@uni-koeln.de>", "Tristan Montoya <montoya.tri
 version = "0.1.15-DEV"
 
 [deps]
+Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
 Accessors = "7d9f7c33-5ae7-4f3b-8dc6-eff91059b697"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 DiffEqBase = "2b5f629d-d688-5b77-993f-72d75c75574e"
@@ -27,6 +28,7 @@ StrideArrays = "d1fa6d79-ef01-42a6-86c9-f7c551f8593b"
 Trixi = "a7f1ee26-1774-49b1-8366-f1abc58fbfcb"
 
 [compat]
+Adapt = "4.4"
 Accessors = "0.1.44"
 DataStructures = "0.19"
 DiffEqBase = "6.215, 7"
@@ -47,5 +49,5 @@ Static = "0.8, 1"
 StaticArrayInterface = "1.5.1"
 StaticArrays = "1"
 StrideArrays = "0.1.28"
-Trixi = "0.17.11"
+Trixi = "0.17.15"
 julia = "1.10"
