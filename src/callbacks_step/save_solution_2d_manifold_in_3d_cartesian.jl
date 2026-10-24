@@ -128,6 +128,13 @@ function Trixi.save_solution_file(u, time, dt, timestep,
                                   system = "")
     @unpack output_directory, solution_variables = solution_callback
 
+    # Newer versions of Trixi.jl may pass the `StructArray` wrapped by `u_ode`
+    # instead of the `VectorOfArray` itself, which the code below expects.
+    # See https://github.com/trixi-framework/Trixi.jl/pull/3357
+    if !(u isa Trixi.VectorOfArray)
+        u = Trixi.VectorOfArray(u)
+    end
+
     # Filename based on current time step.
     if isempty(system)
         filename = joinpath(output_directory, @sprintf("solution_%09d.vtu", timestep))
