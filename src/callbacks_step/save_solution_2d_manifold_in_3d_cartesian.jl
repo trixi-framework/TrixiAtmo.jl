@@ -128,12 +128,11 @@ function Trixi.save_solution_file(u, time, dt, timestep,
                                   system = "")
     @unpack output_directory, solution_variables = solution_callback
 
-    # Newer versions of Trixi.jl may pass the `StructArray` wrapped by `u_ode`
-    # instead of the `VectorOfArray` itself, which the code below expects.
+    # Older versions of Trixi.jl pass the `VectorOfArray` `u_ode` instead of the
+    # `StructArray` wrapped by it, which the code below expects. `wrap_array` unwraps
+    # the former and returns the latter unchanged.
     # See https://github.com/trixi-framework/Trixi.jl/pull/3357
-    if !(u isa Trixi.VectorOfArray)
-        u = Trixi.VectorOfArray(u)
-    end
+    u = Trixi.wrap_array(u, mesh, equations, dg, cache)
 
     # Filename based on current time step.
     if isempty(system)
@@ -224,10 +223,9 @@ end
     (; aux_values) = cache.auxiliary_container
     Dr, Ds = rd.Drst
 
-    dv2dxi1 = dv1dxi2 = zero(eltype(u))
+    dv2dxi1 = dv1dxi2 = zero(eltype(eltype(u)))
     for ii in eachnode(dg)
-        index = (element - 1) * nnodes(dg) + ii
-        u_node_ii = u[:, index]
+        u_node_ii = u[ii, element]
         aux_node_ii = aux_values[ii, element]
         vcov = metric_covariant(aux_node_ii, equations) *
                velocity_contravariant(u_node_ii, equations)
