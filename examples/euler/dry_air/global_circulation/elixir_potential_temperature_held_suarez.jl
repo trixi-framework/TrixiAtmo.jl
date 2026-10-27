@@ -70,7 +70,7 @@ boundary_conditions = (; inside = boundary_condition_slip_wall,
 
 polydeg = 4
 surface_flux = (FluxLMARS(340), flux_zero)
-volume_flux = (flux_ec, flux_nonconservative_waruszewski_etal)
+volume_flux = (flux_ec, flux_nonconservative_isothermal)
 
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
