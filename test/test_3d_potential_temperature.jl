@@ -136,7 +136,7 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@testitem "Euler potential temperature 3D: elixir_potential_temperature_baroclinic_instability Waruszewski" setup=[
+@testitem "Euler potential temperature 3D: elixir_potential_temperature_baroclinic_instability isothermal" setup=[
     Setup,
     EulerPotentialTemperature3D
 ] tags=[:euler_potential_temperature_3d] begin
@@ -159,7 +159,7 @@ end
                             333.1178018152714
                         ],
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
-                        volume_flux=(flux_ec, flux_nonconservative_waruszewski_etal))
+                        volume_flux=(flux_ec, flux_nonconservative_isothermal))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)

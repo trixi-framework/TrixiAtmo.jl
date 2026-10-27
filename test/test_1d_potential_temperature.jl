@@ -69,7 +69,7 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@testitem "Euler potential temperature 1D: elixir_potential_temperature_well_balanced_1d with Waruszewski/Souza fluxes" setup=[
+@testitem "Euler potential temperature 1D: elixir_potential_temperature_well_balanced_1d with isothermal/Souza fluxes" setup=[
     Setup,
     EulerPotentialTemperature1D
 ] tags=[:euler_potential_temperature_1d] begin
@@ -87,7 +87,7 @@ end
                             4.881114818999777e-6,
                             1.8189894035458565e-12
                         ],
-                        surface_flux=(flux_ec, flux_nonconservative_waruszewski_etal),
+                        surface_flux=(flux_ec, flux_nonconservative_isothermal),
                         volume_flux=(flux_etec, flux_nonconservative_souza_etal), atol=1e-5)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)

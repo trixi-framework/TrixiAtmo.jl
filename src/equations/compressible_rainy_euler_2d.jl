@@ -20,7 +20,7 @@ import Trixi: varnames, cons2prim, cons2entropy,
         AbstractCompressibleRainyEulerEquations{2, 9}
 
 The compressible Euler equations in two dimensions with gravity and separate densities for
-dry air ($\rho_d$), moist air ($\rho_m$), and rain ($\rho_r).
+dry air ($\rho_d$), moist air ($\rho_m$), and rain ($\rho_r$).
 ```math
 \begin{alignat}{4}
     \partial_t \, &&(\rho_d) &+ \nabla \cdot (\rho_d\, v) &&= & 0\,,\\
