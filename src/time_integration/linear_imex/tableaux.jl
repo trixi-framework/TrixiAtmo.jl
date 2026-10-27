@@ -124,7 +124,7 @@ function tableau(::ARS343, RealT)
     # (1997), Section 2.7. Only `a32` is taken from there: with `a42 = a43`, the remaining
     # ones follow from the row sums `c` and the third-order condition `b' * a * c = 1/6`,
     # which are thus satisfied to the precision of `RealT`.
-    a32 = convert(RealT, 0.3966543747)
+    a32 = convert(RealT, 0.39665437472560)
     a31 = c3 - a32
     a42 = (1 / convert(RealT, 6) - b3 * a32 * gamma) / (gamma * (gamma + c3))
     a43 = a42
