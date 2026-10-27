@@ -58,7 +58,8 @@ for element in eachelement(solver, semi.cache)
         contravariant_normal_vector = Trixi.get_contravariant_vector(3,
                                                                      semi.cache.elements.contravariant_vectors,
                                                                      i, j, element)
-        clean_solution_lagrange_multiplier!(u0[:, i, j, element], equations,
+        clean_solution_lagrange_multiplier!(view(u0, :, i, j, element),
+                                            equations,
                                             contravariant_normal_vector)
     end
 end
