@@ -42,14 +42,14 @@ function convert_variables(u, solution_variables, mesh::DGMultiMesh,
     n_vars = length(Trixi.varnames(solution_variables, equations))
 
     # Allocate storage for output, an Np x n_elements array of nvars arrays
-    data = map(_ -> SVector{n_vars, eltype(u)}(zeros(n_vars)), parent(u))
+    data = map(_ -> zero(SVector{n_vars, eltype(eltype(u))}), u)
 
     # Loop over all nodes and convert variables, passing in auxiliary variables
     for i in Trixi.each_dof_global(mesh, dg)
         if applicable(solution_variables, u, mesh, equations, dg, cache, i)
             data[i] = solution_variables(u, mesh, equations, dg, cache, i)
         else
-            u_node = u[:, i]
+            u_node = u[i]
             aux_node = aux_values[i]
             data[i] = solution_variables(u_node, aux_node, equations)
         end
@@ -77,7 +77,7 @@ end
                                          equations::AbstractCovariantEquations{2},
                                          dg::DGMulti, cache, i)
     (; aux_values) = cache.auxiliary_container
-    u_node = u[:, i]
+    u_node = u[i]
     aux_node = aux_values[i]
     element = (i - 1) ÷ nnodes(dg) + 1
     local_node_index = (i - 1) % nnodes(dg) + 1
