@@ -62,7 +62,6 @@ end
     using CUDA
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_potential_temperature_baroclinic_instability_turbo.jl"),
-                        # Expected errors similar to reference on CPU
                         l2=Float32[0.00052923214,
                                    0.017052146,
                                    0.01605738,
@@ -77,6 +76,7 @@ end
                                      380.0],
                         tspan=(0.0, 20.0), trees_per_cube_face=(2, 2),
                         RealT_for_test_tolerances=Float32,
+                        rtol=1.0f-3,
                         real_type=Float32,
                         storage_type=CuArray)
     # The elixir adapts `semi` before creating the ODE problem

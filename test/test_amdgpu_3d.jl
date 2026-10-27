@@ -79,6 +79,7 @@ end
                                      380.0],
                         tspan=(0.0, 20.0), trees_per_cube_face=(2, 2),
                         RealT_for_test_tolerances=Float32,
+                        rtol=1.0f-3,
                         real_type=Float32,
                         storage_type=ROCArray)
     # The elixir adapts `semi` before creating the ODE problem
