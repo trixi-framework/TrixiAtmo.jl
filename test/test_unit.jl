@@ -750,3 +750,94 @@ end
                                                            dg, cache)
     end
 end
+
+@testitem "Unit: Consistency check for ETEC flux with vector-invariant equations: CEVIEWG" setup=[Setup] tags=[:unit_fluxes] begin
+    equations = CompressibleEulerVectorInvariantEquationsWithGravity3D(c_p = 1004.0,
+                                                                       c_v = 717.0,
+                                                                       gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+    u_ll = SVector(1.1, -0.5, 2.34, 2.4, 330.0, 1500.0)
+    u_rr = SVector(0.9, 0.3, -1.2, 1.7, 280.5, 1700.0)
+
+    normal_directions = [SVector(1.0, 0.0, 0.0),
+        SVector(0.0, 1.0, 0.0),
+        SVector(0.0, 0.0, 1.0),
+        SVector(0.5, -0.5, 0.2),
+        SVector(-1.2, 0.3, 1.4)]
+
+    for normal_direction in normal_directions
+        # Consistency with the conservative part of the physical flux
+        rho, v1, v2, v3, rho_theta = u_ll
+        v_normal = v1 * normal_direction[1] + v2 * normal_direction[2] +
+                   v3 * normal_direction[3]
+        kinetic_energy = 0.5 * (v1^2 + v2^2 + v3^2)
+        flux_physical = SVector(rho * v_normal, kinetic_energy * normal_direction[1],
+                                kinetic_energy * normal_direction[2],
+                                kinetic_energy * normal_direction[3],
+                                rho_theta * v_normal, 0.0)
+        for i in 1:2
+            @test flux_etec(u_ll, u_ll, normal_direction, equations)[i] ≈ flux_physical
+        end
+
+        # The nonconservative contribution is antisymmetric
+        flux_left, flux_right = flux_etec(u_ll, u_rr, normal_direction, equations)
+        flux_left_swapped, flux_right_swapped = flux_etec(u_rr, u_ll, normal_direction,
+                                                          equations)
+        @test flux_left ≈ flux_right_swapped
+        @test flux_right ≈ flux_left_swapped
+
+        # The `FluxTurbo` specialization returns the same contributions
+        turbo_ll = Trixi.cons2turbo(flux_etec, u_ll..., equations)
+        turbo_rr = Trixi.cons2turbo(flux_etec, u_rr..., equations)
+        flux_left_turbo, flux_right_turbo = Trixi.flux_turbo(flux_etec, turbo_ll...,
+                                                             turbo_rr...,
+                                                             normal_direction...,
+                                                             equations)
+        @test SVector(flux_left_turbo) ≈ flux_left
+        @test SVector(flux_right_turbo) ≈ flux_right
+    end
+    @test Trixi.nturbovars(flux_etec, equations) == Val(8)
+
+    # The entropy variables are the derivatives of the entropy
+    epsilon = 1.0e-6
+    for v in (1, 5)
+        e_v = SVector(ntuple(i -> i == v ? epsilon : 0.0, 6))
+        @test isapprox(cons2entropy(u_ll, equations)[v],
+                       (entropy(u_ll + e_v, equations) -
+                        entropy(u_ll - e_v, equations)) / (2 * epsilon); rtol = 1.0e-6)
+    end
+end
+
+@testitem "Unit: Consistency check for ES LMARS flux with vector-invariant equations: CEVIEWG" setup=[Setup] tags=[:unit_fluxes] begin
+    equations = CompressibleEulerVectorInvariantEquationsWithGravity3D(c_p = 1004.0,
+                                                                       c_v = 717.0,
+                                                                       gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+    u_ll = SVector(1.1, -0.5, 2.34, 2.4, 330.0, 1500.0)
+    u_rr = SVector(0.9, 0.3, -1.2, 1.7, 280.5, 1500.0)
+
+    normal_directions = [SVector(1.0, 0.0, 0.0),
+        SVector(0.0, 1.0, 0.0),
+        SVector(0.0, 0.0, 1.0),
+        SVector(0.5, -0.5, 0.2),
+        SVector(-1.2, 0.3, 1.4)]
+
+    for normal_direction in normal_directions
+        # Consistency with the conservative part of the physical flux
+        rho, v1, v2, v3, rho_theta = u_ll
+        v_normal = v1 * normal_direction[1] + v2 * normal_direction[2] +
+                   v3 * normal_direction[3]
+        kinetic_energy = 0.5 * (v1^2 + v2^2 + v3^2)
+        flux_physical = SVector(rho * v_normal, kinetic_energy * normal_direction[1],
+                                kinetic_energy * normal_direction[2],
+                                kinetic_energy * normal_direction[3],
+                                rho_theta * v_normal, 0.0)
+        for i in 1:2
+            @test flux_lmars_es(u_ll, u_ll, normal_direction, equations)[i] ≈ flux_physical
+        end
+
+        # The flux is homogeneous of degree one in the normal direction
+        for i in 1:2
+            @test flux_lmars_es(u_ll, u_rr, 2.5 * normal_direction, equations)[i] ≈
+                  2.5 * flux_lmars_es(u_ll, u_rr, normal_direction, equations)[i]
+        end
+    end
+end

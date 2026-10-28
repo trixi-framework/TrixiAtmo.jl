@@ -259,7 +259,9 @@ end
 
 Source term accounting for the Coriolis force ``-2 \vec{\Omega} \times \rho \vec{v}``
 induced by the rotation of the Earth about the ``z`` axis, with the rotation rate given by
-[`EARTH_ROTATION_RATE`](@ref).
+[`EARTH_ROTATION_RATE`](@ref). For the [`CompressibleEulerVectorInvariantEquationsWithGravity3D`](@ref),
+whose variables contain the velocity instead of the momentum, this is the Coriolis force
+``-2 \vec{\Omega} \times \vec{v}``.
 
 See also [`source_terms_coriolis_small_earth`](@ref) for the reduced-radius configuration.
 """
