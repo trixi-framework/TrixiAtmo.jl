@@ -7,10 +7,6 @@
 # - Paul A. Ullrich, Thomas Melvin, Christiane Jablonowski, Andrew Staniforth (2013)
 #   A proposed baroclinic wave test case for deep- and shallow-atmosphere dynamical cores
 #   https://doi.org/10.1002/qj.2241
-# - Marco Artiano, Kieran Ricardo, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2026)
-#   Entropy-Stable and Well-Balanced Discontinuous Galerkin Methods for the Compressible
-#   Euler Equations in Vector-Invariant Form
-#   https://arxiv.org/abs/2610.05820
 
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
