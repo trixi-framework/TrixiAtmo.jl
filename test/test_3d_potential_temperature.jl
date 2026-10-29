@@ -114,22 +114,25 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
                                  "elixir_potential_temperature_baroclinic_instability.jl"),
                         l2=[
-                            0.0005402395841055702,
-                            0.015504198901321566,
-                            0.013810762099057143,
-                            0.012941059844617686,
-                            0.13997998630072814,
+                            0.0005402393238279539,
+                            0.015504205694712513,
+                            0.01381076289049231,
+                            0.01294102701363884,
+                            0.1399799820386323,
                             98.99596252593278
                         ],
                         linf=[
-                            0.00465163788388856,
-                            1.103975326401016,
-                            0.6663546739590771,
-                            1.1276304927800584,
-                            1.0013116647290303,
+                            0.004651643364409042,
+                            1.1039753911159889,
+                            0.6663547415643245,
+                            1.1276304312270025,
+                            1.0013115858773745,
                             333.1178018152714
                         ],
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
+                        # Avoid intermediate time stops of the `SaveSolutionCallback`, which
+                        # make the adaptive time step sensitive to round-off differences
+                        dt=100000,
                         atol=4e-9)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
@@ -143,22 +146,25 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
                                  "elixir_potential_temperature_baroclinic_instability.jl"),
                         l2=[
-                            0.0005196272051560329,
-                            0.014181797563020288,
-                            0.012313242607020112,
-                            0.01292552205348503,
-                            0.13992540269745019,
+                            0.0005196270252418007,
+                            0.01418185778196006,
+                            0.012313266292176705,
+                            0.012925464491476689,
+                            0.1399254073208803,
                             98.99596252593278
                         ],
                         linf=[
-                            0.004229565002612068,
-                            1.1219789755395857,
-                            0.6394799575459038,
-                            1.1308638851545025,
-                            1.001517909681752,
+                            0.004229570190425136,
+                            1.121979178312215,
+                            0.6394800688530998,
+                            1.130863653580196,
+                            1.0015193815603993,
                             333.1178018152714
                         ],
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
+                        # Avoid intermediate time stops of the `SaveSolutionCallback`, which
+                        # make the adaptive time step sensitive to round-off differences
+                        dt=100000,
                         volume_flux=(flux_ec, flux_nonconservative_isothermal))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
@@ -172,23 +178,26 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
                                  "elixir_potential_temperature_baroclinic_instability.jl"),
                         l2=[
-                            0.000523719382533147,
-                            0.014655063653884646,
-                            0.012853475595311427,
-                            0.012929770875453885,
-                            0.13994216785366526,
+                            0.0005237190800921414,
+                            0.014655110637819678,
+                            0.012853499984038785,
+                            0.012929732595606175,
+                            0.13994217749435772,
                             98.99596252593278
                         ],
                         linf=[
-                            0.004240676976761337,
-                            1.1141182315622127,
-                            0.6517476607758924,
-                            1.1292930444744558,
-                            1.0016131893156626,
+                            0.004240679407750303,
+                            1.1141184103385866,
+                            0.6517478056271079,
+                            1.1292928534049589,
+                            1.001613869978712,
                             333.1178018152714
                         ],
                         rtol=8e-8,
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
+                        # Avoid intermediate time stops of the `SaveSolutionCallback`, which
+                        # make the adaptive time step sensitive to round-off differences
+                        dt=100000,
                         volume_flux=(flux_etec, flux_nonconservative_artiano_etal))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
