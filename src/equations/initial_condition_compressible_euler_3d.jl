@@ -27,7 +27,7 @@
     const_a = 1 / lapse_rate
     const_b = (temperature0 - surface_polar_temperature) /
               (temperature0 * surface_polar_temperature)
-    const_c = 0.5f0 * convert(RealT, k + 2) *
+    const_c = 0.5f0 * (k + 2) *
               (surface_equatorial_temperature - surface_polar_temperature) /
               (surface_equatorial_temperature * surface_polar_temperature)
     const_h = gas_constant * temperature0 / gravitational_acceleration
