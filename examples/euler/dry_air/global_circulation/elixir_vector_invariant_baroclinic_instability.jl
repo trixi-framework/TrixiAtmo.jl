@@ -1,8 +1,3 @@
-# An idealized baroclinic instability test case for the compressible Euler equations in
-# vector-invariant form with the entropy-stable and well-balanced fluxes of Artiano et al.
-# (2026). For optimal results consider increasing the resolution to 16x16x8 trees per cube
-# face.
-#
 # References:
 # - Paul A. Ullrich, Thomas Melvin, Christiane Jablonowski, Andrew Staniforth (2013)
 #   A proposed baroclinic wave test case for deep- and shallow-atmosphere dynamical cores
