@@ -1,5 +1,4 @@
 [deps]
-AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
@@ -12,7 +11,6 @@ Trixi = "a7f1ee26-1774-49b1-8366-f1abc58fbfcb"
 TrixiTest = "0a316866-cbd0-4425-8bcb-08103b2c1f26"
 
 [compat]
-AMDGPU = "2.6"
 CUDA = "6.2.1"
 LinearAlgebra = "1"
 MPI = "0.20.6"

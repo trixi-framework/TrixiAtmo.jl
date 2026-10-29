@@ -61,21 +61,15 @@ if "mpi" in SUITES_TO_DISPATCH
 end
 
 # The GPU suites run their items only when the respective backend is `functional()`,
-# so requesting `CUDA`/`AMDGPU` on a machine without that GPU warns and runs nothing
-# instead of erroring. The GPU backends are loaded only if their suite is requested
-# explicitly (e.g., by the Buildkite workflow), i.e., `TRIXI_TEST == "all"` skips the GPU
-# items without loading the backends, since the GitHub Actions runners have no GPUs.
+# so requesting `CUDA` on a machine without that GPU warns and runs nothing instead of
+# erroring. The GPU backends are loaded only if their suite is requested explicitly
+# (e.g., by the Buildkite workflow), i.e., `TRIXI_TEST == "all"` skips the GPU items
+# without loading the backends, since the GitHub Actions runners have no GPUs.
 RUN_CUDA = false
 if !IN_WORKER && TRIXI_TEST == "CUDA"
     import CUDA
     RUN_CUDA = CUDA.functional()
     RUN_CUDA || @warn "Unable to run CUDA tests on this machine"
-end
-RUN_AMDGPU = false
-if !IN_WORKER && TRIXI_TEST == "AMDGPU"
-    import AMDGPU
-    RUN_AMDGPU = AMDGPU.functional()
-    RUN_AMDGPU || @warn "Unable to run AMDGPU tests on this machine"
 end
 
 # Relaunch Julia/`mpiexec` for a suite that needs a special process. The worker
@@ -125,7 +119,6 @@ else
         end
         # GPU items run only when the respective backend is functional.
         :CUDA in ti.tags && !RUN_CUDA && return false
-        :AMDGPU in ti.tags && !RUN_AMDGPU && return false
         return true
     end
     @run_package_tests filter=testitem_filter verbose=TRIXI_TEST_VERBOSE
