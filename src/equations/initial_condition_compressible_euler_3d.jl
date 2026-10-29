@@ -50,7 +50,7 @@
 
     # Temporary variables
     temp3 = r / radius_earth * cos(lat)
-    temp4 = temp3^k - k / convert(RealT, k + 2) * temp3^(k + 2)
+    temp4 = temp3^k - convert(RealT, k) / (k + 2) * temp3^(k + 2)
 
     # In the paper: T
     temperature = 1 / ((r / radius_earth)^2 * (tau1 - tau2 * temp4))
