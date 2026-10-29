@@ -9,19 +9,19 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR, "buoyancy",
                                  "elixir_potential_temperature_inertia_gravity_waves.jl"),
                         l2=[
-                            5.360162314066379e-7,
-                            0.00013097436752903342,
-                            7.172813096420895e-5,
-                            3.560199562542724e-5,
+                            2.3769294616410207e-7,
+                            6.185093976945336e-6,
+                            3.381239393834709e-5,
+                            2.3980358890246166e-5,
                             9.251160452856857e-12
                         ],
                         linf=[
-                            3.7348732354614e-6,
-                            0.0005402594042358544,
-                            0.00023237719913361634,
-                            0.00015331821185782246,
+                            1.2351363709584007e-6,
+                            6.0579975343699743e-5,
+                            0.00033462089828990393,
+                            0.00021173899654058914,
                             4.3655745685100555e-11
-                        ], tspan=(0.0, 1800.0), atol=1e-5)
+                        ], tspan=(0.0, 10.0), atol=5e-11)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
