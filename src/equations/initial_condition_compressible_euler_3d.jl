@@ -27,7 +27,7 @@
     const_a = 1 / lapse_rate
     const_b = (temperature0 - surface_polar_temperature) /
               (temperature0 * surface_polar_temperature)
-    const_c = 0.5f0 * (k + 2) *
+    const_c = 0.5f0 * convert(RealT, k + 2) *
               (surface_equatorial_temperature - surface_polar_temperature) /
               (surface_equatorial_temperature * surface_polar_temperature)
     const_h = gas_constant * temperature0 / gravitational_acceleration
@@ -98,7 +98,8 @@ end
     perttaper = 1 - 3 * z^2 / pertz^2 + 2 * z^3 / pertz^3
 
     # sin/cos(pi * d / (2 * d_0)) in the paper
-    sin_, cos_ = sincos(0.5f0 * pi * great_circle_distance_by_a / perturbation_radius)
+    sin_, cos_ = sincos(pi * great_circle_distance_by_a /
+                        (2 * perturbation_radius))
 
     # Common factor for both u and v
     factor = 16 / (3 * sqrt(convert(RealT, 3))) * perturbed_wind_amplitude * perttaper *
