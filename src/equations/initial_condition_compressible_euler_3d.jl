@@ -50,7 +50,7 @@
 
     # Temporary variables
     temp3 = r / radius_earth * cos(lat)
-    temp4 = temp3^k - k / convert(RealT, k + 2) * temp3^(k + 2)
+    temp4 = temp3^k - convert(RealT, k) / (k + 2) * temp3^(k + 2)
 
     # In the paper: T
     temperature = 1 / ((r / radius_earth)^2 * (tau1 - tau2 * temp4))
@@ -98,7 +98,8 @@ end
     perttaper = 1 - 3 * z^2 / pertz^2 + 2 * z^3 / pertz^3
 
     # sin/cos(pi * d / (2 * d_0)) in the paper
-    sin_, cos_ = sincos(0.5f0 * pi * great_circle_distance_by_a / perturbation_radius)
+    sin_, cos_ = sincos(pi * great_circle_distance_by_a /
+                        (2 * perturbation_radius))
 
     # Common factor for both u and v
     factor = 16 / (3 * sqrt(convert(RealT, 3))) * perturbed_wind_amplitude * perttaper *

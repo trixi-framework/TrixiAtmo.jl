@@ -62,21 +62,23 @@ end
 
 # The GPU suites run their items only when the respective backend is `functional()`,
 # so requesting `CUDA`/`AMDGPU`/`Metal` on a machine without that GPU warns and runs
-# nothing instead of erroring.
+# nothing instead of erroring. The GPU backends are loaded only if their suite is requested
+# explicitly (e.g., by the Buildkite workflow), i.e., `TRIXI_TEST == "all"` skips the GPU
+# items without loading the backends, since the GitHub Actions runners have no GPUs.
 RUN_CUDA = false
-if !IN_WORKER && TRIXI_TEST in ("all", "CUDA")
+if !IN_WORKER && TRIXI_TEST == "CUDA"
     import CUDA
     RUN_CUDA = CUDA.functional()
     RUN_CUDA || @warn "Unable to run CUDA tests on this machine"
 end
 RUN_AMDGPU = false
-if !IN_WORKER && TRIXI_TEST in ("all", "AMDGPU")
+if !IN_WORKER && TRIXI_TEST == "AMDGPU"
     import AMDGPU
     RUN_AMDGPU = AMDGPU.functional()
     RUN_AMDGPU || @warn "Unable to run AMDGPU tests on this machine"
 end
 RUN_METAL = false
-if !IN_WORKER && TRIXI_TEST in ("all", "Metal")
+if !IN_WORKER && TRIXI_TEST == "Metal"
     import Metal
     RUN_METAL = Metal.functional()
     RUN_METAL || @warn "Unable to run Metal tests on this machine"

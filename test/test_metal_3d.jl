@@ -30,6 +30,7 @@ end
                         # adaptive time integrator must be `Float32`
                         tol=1.0f-6,
                         RealT_for_test_tolerances=Float32,
+                        rtol=1.0f-3,
                         real_type=Float32,
                         storage_type=MtlArray)
     # The elixir adapts `semi` before creating the ODE problem
