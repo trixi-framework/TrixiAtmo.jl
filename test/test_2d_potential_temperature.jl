@@ -194,16 +194,18 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR, "buoyancy",
                                  "elixir_potential_temperature_robert_bubble.jl"),
                         l2=[
-                            4.3406554813061024e-5,
-                            0.0016924594668553596,
-                            0.002272895766783168,
-                            0.0025209103450235496
+                            4.3405732476032155e-5,
+                            0.0016927322551533875,
+                            0.0022726674234457935,
+                            0.0025216609561729574,
+                            1.565468903960407e-12
                         ],
                         linf=[
-                            0.00026253980321122583,
-                            0.00764409768320462,
-                            0.0111236926691191,
-                            0.013215426049498546
+                            0.00026256051848561057,
+                            0.00783144078468112,
+                            0.011119993546789355,
+                            0.013230743579299542,
+                            5.4569682106375694e-12
                         ],
                         tspan=(0.0, 1.0), cells_per_dimension=(8, 8))
 
@@ -219,19 +221,22 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR, "buoyancy",
                                  "elixir_potential_temperature_robert_bubble.jl"),
                         l2=[
-                            4.342413055592755e-5,
-                            0.0016945803933380045,
-                            0.002274914518054041,
-                            0.0025178880253885075
+                            4.342309507719658e-5,
+                            0.0016948521388523575,
+                            0.0022749691451829195,
+                            0.0025182826353940535,
+                            1.565468903960407e-12
                         ],
                         linf=[
-                            0.00026378589582520817,
-                            0.00781773220859705,
-                            0.011480660134785742,
-                            0.012652115689945731
+                            0.0002638820467344427,
+                            0.007826475522577425,
+                            0.011527292470409735,
+                            0.012676184748499963,
+                            5.4569682106375694e-12
                         ],
-                        tspan=(0.0, 1.0), cells_per_dimension=(8, 8), surface_flux=flux_ec,
-                        volume_flux=flux_etec)
+                        tspan=(0.0, 1.0), cells_per_dimension=(8, 8),
+                        surface_flux=(flux_ec, flux_zero),
+                        volume_flux=(flux_etec, flux_nonconservative_artiano_etal))
 
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)

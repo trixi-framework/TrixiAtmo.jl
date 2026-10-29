@@ -1,33 +1,3 @@
-@testitem "Type stability: Compressible Euler Potential Temperature 1D" setup=[Setup] tags=[:type_stable_tests] begin
-    for RealT in (Float32, Float64)
-        equations = @inferred CompressibleEulerPotentialTemperatureEquations1D(c_p = RealT(1004),
-                                                                               c_v = RealT(717))
-
-        x = SVector(zero(RealT))
-        t = zero(RealT)
-        u = u_ll = u_rr = u_inner = cons = SVector(one(RealT), one(RealT), one(RealT))
-        orientation = 1
-
-        surface_flux_function = flux_lax_friedrichs
-
-        @test eltype(@inferred flux(u, orientation, equations)) == RealT
-        @test eltype(@inferred flux_ec(u_ll, u_rr, orientation, equations)) ==
-              RealT
-        @test eltype(@inferred flux_tec(u_ll, u_rr, orientation, equations)) ==
-              RealT
-        @test eltype(@inferred flux_etec(u_ll, u_rr, orientation, equations)) ==
-              RealT
-
-        @test eltype(@inferred cons2prim(u, equations)) == RealT
-        @test eltype(@inferred prim2cons(u, equations)) == RealT
-        @test eltype(@inferred cons2entropy(u, equations)) == RealT
-        @test typeof(@inferred pressure(u, equations)) == RealT
-        @test typeof(@inferred entropy(cons, equations)) == RealT
-        @test typeof(@inferred energy_kinetic(cons, equations)) == RealT
-        @test typeof(@inferred energy_total(cons, equations)) == RealT
-    end
-end
-
 @testitem "Type stability: Compressible Euler Potential Temperature With Gravity 1D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
         equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity1D(c_p = RealT(1004),
@@ -87,54 +57,6 @@ end
     end
 end
 
-@testitem "Type stability: Compressible Euler Potential Temperature 2D" setup=[Setup] tags=[:type_stable_tests] begin
-    for RealT in (Float32, Float64)
-        equations = @inferred CompressibleEulerPotentialTemperatureEquations2D(c_p = RealT(1004),
-                                                                               c_v = RealT(717))
-
-        x = SVector(zero(RealT))
-        t = zero(RealT)
-        u = u_ll = u_rr = u_inner = cons = SVector(one(RealT), one(RealT), one(RealT),
-                                                   one(RealT))
-
-        normal_direction = SVector(one(RealT), one(RealT))
-        surface_flux_function = flux_lax_friedrichs
-        orientations = [1, 2]
-        directions = [1, 2]
-
-        for direction in directions, orientation in orientations
-            @test eltype(@inferred boundary_condition_slip_wall(u_inner, orientation,
-                                                                direction,
-                                                                x, t,
-                                                                surface_flux_function,
-                                                                equations)) == RealT
-            @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, orientation,
-                                                       equations)) == RealT
-        end
-
-        @test eltype(@inferred flux(u, normal_direction, equations)) == RealT
-        @test eltype(@inferred flux_ec(u_ll, u_rr, normal_direction, equations)) ==
-              RealT
-        @test eltype(@inferred flux_tec(u_ll, u_rr, normal_direction, equations)) ==
-              RealT
-        @test eltype(@inferred flux_etec(u_ll, u_rr, normal_direction, equations)) ==
-              RealT
-
-        @test eltype(@inferred cons2prim(u, equations)) == RealT
-        @test eltype(@inferred prim2cons(u, equations)) == RealT
-        @test eltype(@inferred cons2entropy(u, equations)) == RealT
-        @test typeof(@inferred pressure(u, equations)) == RealT
-        @test typeof(@inferred entropy(cons, equations)) == RealT
-        @test typeof(@inferred energy_kinetic(cons, equations)) == RealT
-        @test typeof(@inferred energy_total(cons, equations)) == RealT
-        @test eltype(@inferred Trixi.max_abs_speeds(u, equations)) == RealT
-        @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, normal_direction,
-                                                   equations)) == RealT
-        @test typeof(@inferred max_abs_speed(u_ll, u_rr, normal_direction,
-                                             equations)) == RealT
-    end
-end
-
 @testitem "Type stability: Compressible Euler Potential Temperature With Gravity 2D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
         equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = RealT(1004),
@@ -190,48 +112,6 @@ end
     end
 end
 
-@testitem "Type stability: Compressible Euler Potential Temperature 3D" setup=[Setup] tags=[:type_stable_tests] begin
-    for RealT in (Float32, Float64)
-        equations = @inferred CompressibleEulerPotentialTemperatureEquations3D(c_p = RealT(1004),
-                                                                               c_v = RealT(717))
-
-        x = SVector(zero(RealT))
-        t = zero(RealT)
-        u = u_ll = u_rr = u_inner = cons = SVector(one(RealT), one(RealT), one(RealT),
-                                                   one(RealT), one(RealT))
-
-        surface_flux_function = flux_lax_friedrichs
-        orientations = [1, 2, 3]
-
-        for orientation in orientations
-            @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, orientation,
-                                                       equations)) == RealT
-            @test typeof(@inferred max_abs_speed(u_ll, u_rr, orientation,
-                                                 equations)) == RealT
-        end
-        normal_direction = SVector(one(RealT), one(RealT), one(RealT))
-        @test eltype(@inferred flux(u, normal_direction, equations)) == RealT
-        @test eltype(@inferred flux_ec(u_ll, u_rr, normal_direction, equations)) ==
-              RealT
-        @test eltype(@inferred flux_tec(u_ll, u_rr, normal_direction, equations)) ==
-              RealT
-        @test eltype(@inferred flux_etec(u_ll, u_rr, normal_direction, equations)) ==
-              RealT
-
-        @test eltype(@inferred cons2prim(u, equations)) == RealT
-        @test eltype(@inferred prim2cons(u, equations)) == RealT
-        @test eltype(@inferred cons2entropy(u, equations)) == RealT
-        @test typeof(@inferred pressure(u, equations)) == RealT
-        @test typeof(@inferred entropy(cons, equations)) == RealT
-        @test typeof(@inferred energy_kinetic(cons, equations)) == RealT
-        @test typeof(@inferred energy_total(cons, equations)) == RealT
-        @test eltype(@inferred Trixi.max_abs_speeds(u, equations)) == RealT
-        @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, normal_direction,
-                                                   equations)) == RealT
-        @test typeof(@inferred max_abs_speed(u_ll, u_rr, normal_direction,
-                                             equations)) == RealT
-    end
-end
 @testitem "Type stability: Compressible Euler Potential Temperature With Gravity 3D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
         equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = RealT(1004),

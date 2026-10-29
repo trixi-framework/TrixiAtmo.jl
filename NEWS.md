@@ -5,6 +5,17 @@ TrixiAtmo.jl follows the interpretation of
 used in the Julia ecosystem. Notable changes will be documented in this file
 for human readability.
 
+## Changes when updating to v0.2 from v0.1
+
+#### Removed
+- The `CompressibleEulerPotentialTemperatureEquations1D`, the
+  `CompressibleEulerPotentialTemperatureEquations2D`, and the
+  `CompressibleEulerPotentialTemperatureEquations3D` without gravity have been removed.
+  Use the `CompressibleEulerPotentialTemperatureEquationsWithGravity1D`, the
+  `CompressibleEulerPotentialTemperatureEquationsWithGravity2D`, and the
+  `CompressibleEulerPotentialTemperatureEquationsWithGravity3D` instead, which include
+  gravity as a nonconservative term.
+
 ## Changes in the v0.1 lifecycle
 
 #### Added

@@ -8,11 +8,11 @@ using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
 function initial_condition_robert_bubble(x, t,
-                                         equations::CompressibleEulerPotentialTemperatureEquations2D)
+                                         equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     # center of perturbation
     center_x = 500.0
     center_z = 260.0
-    g = EARTH_GRAVITATIONAL_ACCELERATION
+    g = equations.g
     # radius of perturbation
     radius = 250.0
     # distance of current x to center of perturbation
@@ -41,20 +41,19 @@ function initial_condition_robert_bubble(x, t,
 
     v1 = 20
     v2 = 0
-    return prim2cons(SVector(rho, v1, v2, p), equations)
+    # geopotential
+    phi = g * x[2]
+    return prim2cons(SVector(rho, v1, v2, p, phi), equations)
 end
 
-@inline function source_terms_gravity(u, x, t,
-                                      equations::CompressibleEulerPotentialTemperatureEquations2D)
-    rho, _, _, _ = u
-    g = EARTH_GRAVITATIONAL_ACCELERATION
-    return SVector(zero(eltype(u)), zero(eltype(u)), -g * rho, zero(eltype(u)))
-end
+equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004,
+                                                                        c_v = 717,
+                                                                        gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 
-equations = CompressibleEulerPotentialTemperatureEquations2D(c_p = 1004, c_v = 717)
-
-surface_flux = FluxLMARS(340)
-volume_flux = flux_tec
+# The background state has a constant potential temperature, for which the gravity term
+# `flux_nonconservative_artiano_etal` is well-balanced.
+surface_flux = (FluxLMARS(340), flux_zero)
+volume_flux = (flux_tec, flux_nonconservative_artiano_etal)
 polydeg = 3
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
@@ -70,7 +69,7 @@ cells_per_dimension = (64, 64)
 mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
                       periodicity = (true, false))
 
-source_terms = source_terms_gravity
+source_terms = nothing
 initial_condition = initial_condition_robert_bubble
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_terms,
