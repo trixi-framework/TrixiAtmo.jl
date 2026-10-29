@@ -12,8 +12,7 @@ for human readability.
   term for isothermal background states of the
   `CompressibleEulerEnergyEquationsWithGravity2D` and the
   `CompressibleEulerEnergyEquationsWithGravity3D` ([#248]).
-- GPU support is tested on NVIDIA and AMD GPUs in a Buildkite workflow using
-  `TRIXI_TEST=CUDA` and `TRIXI_TEST=AMDGPU`, respectively ([#242]).
+- GPU support including adaptation to `Float32` via `trixi_adapt` ([#242]).
 
 #### Changed
 - Fixes a bug in `flux_nonconservative_waruszewski_etal` for the
