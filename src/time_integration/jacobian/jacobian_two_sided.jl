@@ -58,6 +58,7 @@ variables but only at one edge.
 
 ### Sparsity pattern
 Example for `nz = 3`, `polydeg = 3` (`M = 4`), in the permuted ordering above:
+```
 ⠑⢄⠀⣿⠀⠀⠀⠀⠀⠀⠀⠀⢹⣇⣀⠀⠀⠀
 ⠠⡀⣵⢟⠀⠀⠀⠀⠀⠀⠀⠀⡜⢣⠀⠀⠀⠀
 ⠀⠀⠀⠀⠑⢄⠀⣿⠀⠀⠀⠀⠀⠉⢹⣇⣀⠀
@@ -67,6 +68,7 @@ Example for `nz = 3`, `polydeg = 3` (`M = 4`), in the permuted ordering above:
 ⠂⠠⠶⣉⠀⠀⠀⠀⠀⠀⠀⠀⢟⣵⣤⠀⠀⠀
 ⠀⠀⠀⠀⠂⠠⠶⣉⠀⠀⠀⠀⠀⠛⢟⣵⣤⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠂⠠⠶⣉⠀⠀⠀⠛⢟⣵
+```
 
 `A` (block-diagonal, one block per element) holds `rho` (diagonal, plus
 gravity's off-diagonal coupling to `rho*w`) and the interior `rho*theta`/
