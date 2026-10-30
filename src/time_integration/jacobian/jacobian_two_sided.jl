@@ -36,6 +36,66 @@ array type of the solution, so that it runs on the same backend (CPU or GPU) as 
 semidiscretization. The Jacobian decouples into independent linear systems for each
 vertical column of nodes. The dissipation of the vertical acoustic waves is based on the
 constant speed of sound `c`.
+
+### Permutation
+For a column of `nz` elements of polynomial degree `polydeg` (`M = polydeg + 1`
+LGL nodes), the vertical unknowns `(rho, rho*theta, rho*w)` are grouped, by
+variable, into a small *local* block per element and a small *global* (edge)
+block shared by the whole column:
+
+* All `rho` DOFs of element 1 (nodes `1..M`), then
+* The `rho*theta` DOFs `2..M-1` of element 1 (interior only), then
+* The `rho*w` DOFs `2..M-1` of element 1 (interior only), then
+* ... (repeated, element by element) ...
+* Finally, 4 edge DOFs per element, ordered element by element:
+  `(rho*theta)_1, (rho*w)_1, (rho*w)_M, (rho*theta)_M`.
+
+Density is *never* condensed: it keeps all `M` nodes, including both edges,
+in the local block. Only `rho*theta` and `rho*w` are condensed, and only at
+the two edge nodes of each element -- that is what "two-sided" refers to, as
+opposed to `JacobianCacheOneSidedPointwise`, which condenses all three
+variables but only at one edge.
+
+### Sparsity pattern
+Example for `nz = 3`, `polydeg = 3` (`M = 4`), in the permuted ordering above:
+⠑⢄⠀⣿⠀⠀⠀⠀⠀⠀⠀⠀⢹⣇⣀⠀⠀⠀
+⠠⡀⣵⢟⠀⠀⠀⠀⠀⠀⠀⠀⡜⢣⠀⠀⠀⠀
+⠀⠀⠀⠀⠑⢄⠀⣿⠀⠀⠀⠀⠀⠉⢹⣇⣀⠀
+⠀⠀⠀⠀⠠⡀⣵⢟⠀⠀⠀⠀⠀⠀⡜⢣⠀⠀ = ⎡A B⎤
+⠀⠀⠀⠀⠀⠀⠀⠀⠑⢄⠀⣿⠀⠀⠀⠉⢹⣇   ⎣C D⎦
+⠀⠀⠀⠀⠀⠀⠀⠀⠠⡀⣵⢟⠀⠀⠀⠀⡜⢣
+⠂⠠⠶⣉⠀⠀⠀⠀⠀⠀⠀⠀⢟⣵⣤⠀⠀⠀
+⠀⠀⠀⠀⠂⠠⠶⣉⠀⠀⠀⠀⠀⠛⢟⣵⣤⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠂⠠⠶⣉⠀⠀⠀⠛⢟⣵
+
+`A` (block-diagonal, one block per element) holds `rho` (diagonal, plus
+gravity's off-diagonal coupling to `rho*w`) and the interior `rho*theta`/
+`rho*w` (diagonal, densely coupled to each other via the LGL derivative
+operator). `D` (bottom-right) is block-tridiagonal before elimination: each
+element's 4 edge DOFs couple to the next element's through the single-valued
+LMARS flux. `B`/`C` connect local DOFs to both edges of `rho*theta`/`rho*w`
+(dense LGL coupling) and, pointwise, `rho*w`'s edges to the local `rho`.
+
+### What `update_jacobian!`/`solve_jacobian!` do
+1. **Local Schur complement** (per element, once per step): eliminate the
+   diagonal `rho`/`rho*theta` analytically, leaving a dense
+   `(M-2)x(M-2)` complement `SA` on interior `rho*w`, LU-factorized once.
+2. **Global Schur complement** (per column, once per step): eliminating every
+   element's local DOFs against `SA` leaves a `4*nz x 4*nz` banded system
+   `SchurBand` (3 sub-/3 super-diagonals) on the edge DOFs, factorized with a
+   generic banded LU -- unlike `JacobianCacheOneSidedPointwise`, which solves
+   its smaller Schur complement with a specialized block-tridiagonal (block
+   Thomas) algorithm instead.
+3. **Per-stage solve**: gather the stage right-hand side, eliminate locally
+   against `SA`, forward/backward-substitute against the factorized banded
+   `SchurBand` for the edge solution, back-substitute into the local DOFs,
+   and scatter back into the DGSEM array.
+
+Every kernel is dispatched via KernelAbstractions.jl to a CPU loop or a GPU
+kernel. Columns are independent, so the sequential recurrences (fill, Schur
+assembly, banded factor/solve) use one thread per column; gather/scatter use
+one thread per node; independent per-element work (forward elimination,
+back-substitution) uses one thread per `(column, element)`.
 """
 struct VerticalJacobianTwoSided{RealT <: Real}
     speed_of_sound::RealT
