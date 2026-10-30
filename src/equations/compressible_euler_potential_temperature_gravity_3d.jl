@@ -66,6 +66,17 @@ struct CompressibleEulerPotentialTemperatureEquationsWithGravity3D{RealT <: Real
     end
 end
 
+# Together with the specialization of `Adapt.adapt_structure` in Trixi.jl,
+# this allows to move semidiscretizations and their components including
+# the equations to GPUs and adapt the floating point type, e.g.,
+# to `Float32` to improve performance on GPUs.
+function Base.similar(equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D,
+                      ::Type{NewRealT}) where {NewRealT}
+    c_p, c_v, gravity = convert.(NewRealT, (equations.c_p, equations.c_v, equations.g))
+    return CompressibleEulerPotentialTemperatureEquationsWithGravity3D(; c_p, c_v,
+                                                                       gravity)
+end
+
 function varnames(::typeof(cons2cons),
                   ::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     ("rho", "rho_v1", "rho_v2", "rho_v3", "rho_theta", "phi")

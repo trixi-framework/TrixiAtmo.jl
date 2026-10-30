@@ -19,6 +19,10 @@ macro test_trixi_include(expr, args...)
         # This is needed because we overwrite `Trixi.weak_form_kernel!`, e.g., here:
         # https://github.com/trixi-framework/TrixiAtmo.jl/blob/20e069e818f23ed4033ef65fe087175f07d235fa/examples/elixir_shallowwater_cartesian_advection_cubed_sphere.jl#L50
         r"WARNING: Method definition .* in module .* at .* overwritten .*.\n",
+        # Deprecation warning from CUDACore.jl v6.4, which still uses `compile_hook` deprecated
+        # in GPUCompiler.jl v2.19. CUDACore.jl v6.5 uses the new API but is not compatible
+        # with KernelAbstractions.jl v0.9 required by TrixiAtmo.jl and Trixi.jl.
+        r"WARNING: CUDACore\.compile_hook is deprecated, use .+ instead\.\n  likely near .+\nin compile_or_lookup at .+\n",
         # Ignore deprecation warnings from OrdinaryDiffEq
         r"┌ Warning: Passing `stage_limiter!` to the algorithm constructor is deprecated; pass `stage_limiter` as a keyword argument to `solve`/`init` instead\.\n│   caller = .+\n└ @ Core .+\n"
     ]
