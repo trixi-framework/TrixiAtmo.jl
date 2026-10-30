@@ -212,3 +212,4 @@ end # @muladd
 
 include("jacobian/jacobian.jl")
 include("rosenbrock/rosenbrock.jl")
+include("linear_imex/linear_imex.jl")

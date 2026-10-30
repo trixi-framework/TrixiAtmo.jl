@@ -84,7 +84,7 @@ export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
 export NonlinearSolveDG
 
-export SSPRW32, ROS2
+export SSPRW32, ROS2, ARK2, ARS232, ARS343
 
 export flux_chandrashekar, FluxLMARS
 
