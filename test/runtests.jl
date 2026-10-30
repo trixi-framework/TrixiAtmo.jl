@@ -65,6 +65,18 @@ if "kernelabstractions" in SUITES_TO_DISPATCH
     import Trixi
 end
 
+# The GPU suites run their items only when the respective backend is `functional()`,
+# so requesting `CUDA` on a machine without that GPU warns and runs nothing instead of
+# erroring. The GPU backends are loaded only if their suite is requested explicitly
+# (e.g., by the Buildkite workflow), i.e., `TRIXI_TEST == "all"` skips the GPU items
+# without loading the backends, since the GitHub Actions runners have no GPUs.
+RUN_CUDA = false
+if !IN_WORKER && TRIXI_TEST == "CUDA"
+    import CUDA
+    RUN_CUDA = CUDA.functional()
+    RUN_CUDA || @warn "Unable to run CUDA tests on this machine"
+end
+
 # Relaunch Julia/`mpiexec` for a suite that needs a special process. The worker
 # re-enters this file with `TRIXI_TEST_RUN_ITEMS=true` and `TRIXI_TEST=<suite>`.
 function run_worker(cmd, suite)
@@ -118,10 +130,13 @@ else
     testitem_filter = ti -> begin
         if TRIXI_TEST == "all"
             # The special suites run in dedicated processes (see above).
-            return !any(t -> t in ti.tags, special_tags)
+            any(t -> t in ti.tags, special_tags) && return false
         else
-            return tag in ti.tags
+            tag in ti.tags || return false
         end
+        # GPU items run only when the respective backend is functional.
+        :CUDA in ti.tags && !RUN_CUDA && return false
+        return true
     end
     @run_package_tests filter=testitem_filter verbose=TRIXI_TEST_VERBOSE
 end

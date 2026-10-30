@@ -364,7 +364,7 @@ function source_terms_coriolis_lagrange_multiplier(u, du, x, t,
 end
 
 """
-         clean_solution_lagrange_multiplier!(u, equations::ShallowWaterEquations3D, normal_direction)
+    clean_solution_lagrange_multiplier!(u, equations::ShallowWaterEquations3D, normal_direction)
 
 Function to apply Lagrange multiplier discretely to the solution in order to constrain
 the momentum to a 2D manifold.

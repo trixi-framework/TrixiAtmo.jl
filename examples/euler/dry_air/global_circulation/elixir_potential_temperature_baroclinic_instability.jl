@@ -21,7 +21,7 @@ boundary_conditions = (; inside = boundary_condition_slip_wall,
 
 polydeg = 4
 surface_flux = flux_lmars_es
-volume_flux = FluxTurbo(flux_ec, flux_nonconservative_waruszewski_etal)
+volume_flux = FluxTurbo(flux_ec, flux_nonconservative_isothermal)
 
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
@@ -42,11 +42,11 @@ tspan = (0.0, T * SECONDS_PER_DAY) # time in seconds for 10 days
 # Setting `real_type` allows to change the real number type, e.g., to `Float32`.
 # This is particularly useful when changing the `storage_type` to a GPU array
 # type such as `ROCArray` (AMD) or `CuArray` (NVIDIA CUDA).
-# On such backends, `flux_differencing_kernel` selects the kernel used for the
-# flux differencing volume integral, one of `HalfSweep()` (default), `FullSweep()`,
-# or `FullSweepGlobal()`.
+# On such backends, `tuning` selects performance settings of the kernels, e.g.,
+# `Tuning(flux_differencing_kernel = FullSweep())` for the kernel used for the
+# flux differencing volume integral.
 semi = trixi_adapt(semi; real_type = nothing, storage_type = nothing,
-                   flux_differencing_kernel = nothing)
+                   tuning = nothing)
 ode = semidiscretize(semi, tspan)
 
 summary_callback = SummaryCallback()

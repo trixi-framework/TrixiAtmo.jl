@@ -156,19 +156,19 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
                                  "elixir_potential_temperature_baroclinic_instability.jl"),
                         l2=[
-                            0.06038459139309027,
-                            0.8915510163308389,
-                            0.8913086013946125,
-                            0.06509593249004579,
-                            16.38941082495303,
+                            0.06038459139308219,
+                            0.8915510163421179,
+                            0.8913086013944854,
+                            0.06509593251096094,
+                            16.389410824950847,
                             12088.812342810517
                         ],
                         linf=[
-                            0.3974848452573452,
-                            11.227067968087622,
-                            11.226940924845337,
-                            0.48989573048064183,
-                            102.87534546836966,
+                            0.3974848452573446,
+                            11.227067968114762,
+                            11.226940924845325,
+                            0.4898957579567604,
+                            102.87534546836963,
                             42964.04658728838
                         ],
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
@@ -205,6 +205,7 @@ end
                             42964.04658728838
                         ],
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
+                        polydeg=3, dt=20.0,
                         volume_flux=(flux_ec, flux_nonconservative_isothermal))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities). `Trixi.solve!` calls the right-hand side inside the
@@ -280,6 +281,43 @@ end
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
+end
+
+@testitem "Euler potential temperature 3D: elixir_potential_temperature_baroclinic_instability_turbo (Float32)" setup=[
+    Setup,
+    EulerPotentialTemperature3D
+] tags=[:euler_potential_temperature_3d] begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
+                                 "elixir_potential_temperature_baroclinic_instability_turbo.jl"),
+                        l2=Float32[0.00052923214,
+                                   0.017052146,
+                                   0.01605738,
+                                   0.016616695,
+                                   0.14386448,
+                                   101.35988],
+                        linf=Float32[0.0044720173,
+                                     1.1709296,
+                                     0.695263,
+                                     1.1052238,
+                                     1.0602722,
+                                     380.0],
+                        tspan=(0.0, 20.0), trees_per_cube_face=(2, 2),
+                        RealT_for_test_tolerances=Float32,
+                        real_type=Float32)
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
+    # The elixir uses the adapted `semi` for the ODE problem and the time span
+    @test semi === ode.p
+    @test eltype(ode.tspan) == Float32
+    @test sol.t[end] isa Float32
+    @test eltype(sol.u[end]) == Float32
+    @test real(semi.solver) == Float32
+    @test real(semi.solver.basis) == Float32
+    @test real(semi.solver.mortar) == Float32
+    @test typeof(semi.equations.c_p) == Float32
+    # TODO: `mesh` is currently not `adapt`ed correctly
+    @test real(semi.mesh) == Float64
 end
 
 @testitem "Euler potential temperature 3D: elixir_potential_temperature_held_suarez" setup=[
