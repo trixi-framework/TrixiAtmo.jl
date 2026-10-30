@@ -17,13 +17,15 @@ const TRIXI_NTHREADS = clamp(Sys.CPU_THREADS, 2, 3)
 
 # A few suites cannot run in the ordinary in-process `@run_package_tests` model:
 # they need a specially-launched Julia process - `mpi` (multiple ranks via
-# `mpiexec`) and `threaded` (multiple threads via `--threads`). We handle them by
-# *relaunching* Julia/`mpiexec` on this very file: the launched worker re-enters
-# `runtests.jl` with `TRIXI_TEST_RUN_ITEMS` set and then runs the tag-filtered test
-# items in-process (`TestItemRunner` evaluates items in the current process, so this
+# `mpiexec`), `threaded` (multiple threads via `--threads`), and
+# `kernelabstractions` (a different threading backend, selected via a preference
+# that only takes effect on a fresh Julia start). We handle them by *relaunching*
+# Julia/`mpiexec` on this very file: the launched worker re-enters `runtests.jl`
+# with `TRIXI_TEST_RUN_ITEMS` set and then runs the tag-filtered test items
+# in-process (`TestItemRunner` evaluates items in the current process, so this
 # also works for every MPI rank). The `TRIXI_TEST` value of such a suite selects
 # the items via the equally-named tag.
-const SPECIAL_PROCESS_SUITES = ("mpi", "threaded")
+const SPECIAL_PROCESS_SUITES = ("mpi", "threaded", "kernelabstractions")
 const IN_WORKER = haskey(ENV, "TRIXI_TEST_RUN_ITEMS")
 
 # Remove the output directory `out`, where examples write solution/restart/mesh
@@ -55,9 +57,12 @@ else
 end
 
 # `import` is only allowed at top level, so load here what `dispatch_special_suite`
-# needs: `MPI` for `mpiexec`.
+# needs: `MPI` for `mpiexec`, and `Trixi` to toggle the threading backend preference.
 if "mpi" in SUITES_TO_DISPATCH
     import MPI
+end
+if "kernelabstractions" in SUITES_TO_DISPATCH
+    import Trixi
 end
 
 # The GPU suites run their items only when the respective backend is `functional()`,
@@ -88,6 +93,18 @@ function dispatch_special_suite(suite)
     elseif suite == "threaded"
         cmd = `$julia --threads=$TRIXI_NTHREADS --check-bounds=yes --code-coverage=none --project=$project $(@__FILE__)`
         run_worker(cmd, suite)
+    elseif suite == "kernelabstractions"
+        # The threading backend is selected via a preference that is read on Julia
+        # startup, so we set it here (in the parent) and restore it afterwards;
+        # the relaunched worker picks it up.
+        previous_backend = Trixi._PREFERENCE_THREADING
+        Trixi.set_threading_backend!(:kernelabstractions)
+        try
+            cmd = `$julia --threads=$TRIXI_NTHREADS --check-bounds=yes --project=$project $(@__FILE__)`
+            run_worker(cmd, suite)
+        finally
+            Trixi.set_threading_backend!(Symbol(previous_backend))
+        end
     else
         error("We should not reach this branch; something is wrong.")
     end

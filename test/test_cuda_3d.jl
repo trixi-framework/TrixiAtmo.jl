@@ -103,3 +103,58 @@ end
     Trixi.rhs_hyperbolic!(du_ode, u_ode, semi, first(ode.tspan))
     @test all(isfinite, du_ode)
 end
+
+@testitem "CUDA 3D: elixir_potential_temperature_baroclinic_instability Float64 / CUDA" setup=[
+    Setup,
+    CUDA3DExamples
+] tags=[:CUDA] begin
+    # Using CUDA inside the testitem since otherwise the bindings are hidden by the anonymous modules
+    using CUDA
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_potential_temperature_baroclinic_instability.jl"),
+                        # Expected errors similar to reference on CPU
+                        l2=[
+                            0.06049646764469473,
+                            0.8991477386737083,
+                            0.8989027811649443,
+                            0.032243454466505415,
+                            16.378452703937285,
+                            12088.812342810517
+                        ],
+                        linf=[
+                            0.4028624079698643,
+                            11.767657917694287,
+                            11.767656315593566,
+                            0.591082133466972,
+                            103.08761789192533,
+                            42964.04658728838
+                        ],
+                        tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
+                        polydeg=3, dt=20.0,
+                        storage_type=CuArray)
+    # The stages of the Rosenbrock-W method and the vertical Jacobian run on the GPU
+    @test Trixi.trixi_backend(ode.u0) isa CUDABackend
+    # The elixir adapts `semi` before creating the ODE problem
+    @test semi === ode.p
+    @test real(semi.solver) == Float64
+    @test real(semi.solver.basis) == Float64
+    @test real(semi.solver.mortar) == Float64
+    # TODO: `mesh` is currently not `adapt`ed correctly
+    @test real(semi.mesh) == Float64
+    @test typeof(semi.equations.c_p) == Float64
+
+    @test ode.u0 isa CuArray
+    @test semi.solver.basis.derivative_matrix isa CuArray
+
+    @test Trixi.storage_type(semi.cache.elements) === CuArray
+    @test Trixi.storage_type(semi.cache.interfaces) === CuArray
+    @test Trixi.storage_type(semi.cache.boundaries) === CuArray
+    @test Trixi.storage_type(semi.cache.mortars) === CuArray
+
+    # Ensure that the RHS computation overwrites existing data in `du` correctly.
+    u_ode = copy(ode.u0)
+    du_ode = similar(u_ode)
+    fill!(du_ode, convert(eltype(du_ode), NaN))
+    Trixi.rhs_hyperbolic!(du_ode, u_ode, semi, first(ode.tspan))
+    @test all(isfinite, du_ode)
+end
