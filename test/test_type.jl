@@ -687,3 +687,36 @@ end
                                              equations)) == RealT
     end
 end
+
+@testitem "Type stability: Compressible Euler Vector Invariant With Gravity 3D" setup=[Setup] tags=[:type_stable_tests] begin
+    for RealT in (Float32, Float64)
+        equations = @inferred CompressibleEulerVectorInvariantEquationsWithGravity3D(c_p = RealT(1004),
+                                                                                     c_v = RealT(717),
+                                                                                     gravity = RealT(EARTH_GRAVITATIONAL_ACCELERATION))
+
+        u = u_ll = u_rr = cons = SVector(one(RealT), one(RealT), one(RealT),
+                                         one(RealT), one(RealT), one(RealT))
+
+        normal_direction = SVector(one(RealT), one(RealT), one(RealT))
+
+        for i in 1:2
+            @test eltype(@inferred flux_etec(u_ll, u_rr, normal_direction, equations)[i]) ==
+                  RealT
+            @test eltype(@inferred flux_lmars_es(u_ll, u_rr, normal_direction, equations)[i]) ==
+                  RealT
+        end
+        turbo = @inferred Trixi.cons2turbo(flux_etec, u..., equations)
+        @test eltype(turbo) == RealT
+        for i in 1:2
+            @test eltype(@inferred Trixi.flux_turbo(flux_etec, turbo..., turbo...,
+                                                    normal_direction..., equations)[i]) ==
+                  RealT
+        end
+        @test eltype(@inferred cons2prim(u, equations)) == RealT
+        @test eltype(@inferred prim2cons(u, equations)) == RealT
+        @test eltype(@inferred cons2entropy(u, equations)) == RealT
+        @test typeof(@inferred pressure(u, equations)) == RealT
+        @test typeof(@inferred entropy(cons, equations)) == RealT
+        @test eltype(@inferred Trixi.max_abs_speeds(u, equations)) == RealT
+    end
+end
