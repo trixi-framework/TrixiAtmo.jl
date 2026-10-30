@@ -2,29 +2,33 @@
 # Returns primitive variables with only the velocity in longitudinal direction (rho, u, p).
 # The other velocity components are zero.
 @inline function basic_state_baroclinic_instability_longitudinal_velocity(lon, lat, z)
+    RealT = typeof(z)
     # Parameters from Table 1 in the paper
     # Corresponding names in the paper are commented
-    radius_earth = EARTH_RADIUS                                     # a
+    radius_earth = convert(RealT, EARTH_RADIUS)                     # a
     half_width_parameter = 2                                        # b
-    gravitational_acceleration = EARTH_GRAVITATIONAL_ACCELERATION   # g
+    gravitational_acceleration = convert(RealT,
+                                         EARTH_GRAVITATIONAL_ACCELERATION) # g
     k = 3                                                           # k
     surface_pressure = 1.0f5                                        # p₀
     gas_constant = 287                                              # R
     surface_equatorial_temperature = 310                            # T₀ᴱ
     surface_polar_temperature = 240                                 # T₀ᴾ
-    lapse_rate = 0.005                                              # Γ
-    angular_velocity = EARTH_ROTATION_RATE                          # Ω
+    lapse_rate = convert(RealT, 0.005)                              # Γ
+    angular_velocity = convert(RealT, EARTH_ROTATION_RATE)          # Ω
 
     # Distance to the center of the Earth
     r = z + radius_earth
 
     # In the paper: T₀
-    temperature0 = 0.5 * (surface_equatorial_temperature + surface_polar_temperature)
+    temperature0 = 0.5f0 * convert(RealT,
+                           surface_equatorial_temperature + surface_polar_temperature)
     # In the paper: A, B, C, H
     const_a = 1 / lapse_rate
     const_b = (temperature0 - surface_polar_temperature) /
               (temperature0 * surface_polar_temperature)
-    const_c = 0.5 * (k + 2) * (surface_equatorial_temperature - surface_polar_temperature) /
+    const_c = 0.5f0 * convert(RealT, k + 2) *
+              (surface_equatorial_temperature - surface_polar_temperature) /
               (surface_equatorial_temperature * surface_polar_temperature)
     const_h = gas_constant * temperature0 / gravitational_acceleration
 
@@ -46,7 +50,7 @@
 
     # Temporary variables
     temp3 = r / radius_earth * cos(lat)
-    temp4 = temp3^k - k / (k + 2) * temp3^(k + 2)
+    temp4 = temp3^k - convert(RealT, k) / (k + 2) * temp3^(k + 2)
 
     # In the paper: T
     temperature = 1 / ((r / radius_earth)^2 * (tau1 - tau2 * temp4))
@@ -69,12 +73,13 @@ end
 
 # Perturbation as in Equations 25 and 26 of the paper (analytical derivative)
 @inline function perturbation_stream_function(lon, lat, z)
+    RealT = typeof(z)
     # Parameters from Table 1 in the paper
     # Corresponding names in the paper are commented
-    perturbation_radius = 1 / 6      # d₀ / a
+    perturbation_radius = inv(convert(RealT, 6)) # d₀ / a
     perturbed_wind_amplitude = 1      # Vₚ
-    perturbation_lon = pi / 9     # Longitude of perturbation location
-    perturbation_lat = 2 * pi / 9 # Latitude of perturbation location
+    perturbation_lon = convert(RealT, pi) / 9     # Longitude of perturbation location
+    perturbation_lat = 2 * convert(RealT, pi) / 9 # Latitude of perturbation location
     pertz = 15000    # Perturbation height cap
 
     # Great circle distance (d in the paper) divided by a (radius of the Earth)
@@ -93,10 +98,12 @@ end
     perttaper = 1 - 3 * z^2 / pertz^2 + 2 * z^3 / pertz^3
 
     # sin/cos(pi * d / (2 * d_0)) in the paper
-    sin_, cos_ = sincos(0.5f0 * pi * great_circle_distance_by_a / perturbation_radius)
+    sin_, cos_ = sincos(pi * great_circle_distance_by_a /
+                        (2 * perturbation_radius))
 
     # Common factor for both u and v
-    factor = 16 / (3 * sqrt(3)) * perturbed_wind_amplitude * perttaper * cos_^3 * sin_
+    factor = 16 / (3 * sqrt(convert(RealT, 3))) * perturbed_wind_amplitude * perttaper *
+             cos_^3 * sin_
 
     u_perturbation = -factor * (-sin(perturbation_lat) * cos(lat) +
                       cos(perturbation_lat) * sin(lat) * cos(lon - perturbation_lon)) /
@@ -132,8 +139,9 @@ See Section 3.2 and Appendix A of the following paper:
 function initial_condition_baroclinic_instability(x, t,
                                                   equations::AbstractCompressibleEulerEquations{3,
                                                                                                 6})
+    RealT = eltype(x)
     lon, lat, r = cartesian_to_sphere(x)
-    radius_earth = EARTH_RADIUS
+    radius_earth = convert(RealT, EARTH_RADIUS)
     # Make sure that the r is not smaller than radius_earth
     z = max(r - radius_earth, 0)
 
@@ -151,7 +159,7 @@ function initial_condition_baroclinic_instability(x, t,
     v2 = cos(lon) * u - sin(lat) * sin(lon) * v
     v3 = cos(lat) * v
 
-    gravitational_acceleration = EARTH_GRAVITATIONAL_ACCELERATION  # g
+    gravitational_acceleration = convert(RealT, EARTH_GRAVITATIONAL_ACCELERATION)  # g
     phi = -radius_earth^2 * gravitational_acceleration / norm(x)
 
     return prim2cons(SVector(rho, v1, v2, v3, p, phi), equations)
@@ -245,6 +253,7 @@ end
 @inline function coriolis_source(u, angular_velocity,
                                  equations::AbstractCompressibleEulerEquations{3, 6})
     du0 = zero(eltype(u))
+    angular_velocity = convert(eltype(u), angular_velocity)
 
     # Coriolis term, -2Ω × ρv = -2 * angular_velocity * (0, 0, 1) × u[2:4]
     du2 = 2 * angular_velocity * u[3]
