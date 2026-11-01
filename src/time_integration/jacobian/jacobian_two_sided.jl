@@ -82,10 +82,62 @@ Example for `nz = 4`, `polydeg = 5` (`M = 6`), in the permuted ordering above:
 `A` (block-diagonal, one block per element) holds `rho` (diagonal, plus
 gravity's off-diagonal coupling to `rho_w`) and the interior `rho_theta`/
 `rho_w` (diagonal, densely coupled to each other via the LGL derivative
-operator). `D` (bottom-right) is block-tridiagonal before elimination: each
-element's 4 edge DOFs couple to the next element's through the single-valued
-LMARS flux. `B`/`C` connect local DOFs to both edges of `rho_theta`/`rho_w`
-(dense LGL coupling) and, pointwise, `rho_w`'s edges to the local `rho`.
+operator):
+```
+⠑⢄⠀⠀⠀⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠑⢄⠀⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠠⡀⠀⣤⣵⢟⠛⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠈⠂⠛⠛⠀⠑⢄⠀⠀⠀⠀⣤⣤⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠑⢄⠀⠀⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠑⢄⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠈⠢⡀⣿⣿⠑⢄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠑⢄⠀⠀⠀⣿⣿⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠑⢄⠀⣿⣿⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠠⡀⠀⣤⣵⢟⠛⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠂⠛⠛⠀⠑⢄⠀⠀⠀⠀⣤⣤
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠑⢄⠀⠀⣿⣿
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠑⢄⣿⣿
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠢⡀⣿⣿⠑⢄
+```
+
+`B` connects the local DOFs to both edges of `rho_theta`/`rho_w` of the same
+element (dense LGL coupling) and, through the LMARS mass flux, the edge `rho`
+to the edge DOFs of the neighboring elements:
+```
+⢸⡇⠀⠀⠀⠀⠀⠀
+⢸⡗⠒⠀⠀⠀⠀⠀
+⡜⢣⠀⠀⠀⠀⠀⠀
+⠃⠼⢤⡄⠀⠀⠀⠀
+⠀⠀⢸⣇⣀⠀⠀⠀
+⠀⠀⢸⡇⠀⠀⠀⠀
+⠀⠀⡇⢸⠀⠀⠀⠀
+⠀⠀⠀⠉⢹⡇⠀⠀
+⠀⠀⠀⠀⢸⡗⠒⠀
+⠀⠀⠀⠀⡜⢣⠀⠀
+⠀⠀⠀⠀⠃⠼⢤⡄
+⠀⠀⠀⠀⠀⠀⢸⡇
+⠀⠀⠀⠀⠀⠀⢸⡇
+⠀⠀⠀⠀⠀⠀⡇⢸
+```
+
+`C` connects the edge `rho_theta`/`rho_w` to the interior `rho_w`/`rho_theta` of
+the same element (dense LGL coupling) and, pointwise, the edge `rho_w` to the
+local `rho` (gravity):
+```
+⠂⠀⠠⠶⠶⣉⣉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠂⠀⠠⠶⠶⣉⣉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠂⠀⠠⠶⠶⣉⣉⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠂⠀⠠⠶⠶⣉⣉
+```
+
+`D` is block-tridiagonal before elimination: each element's 4 edge DOFs
+couple to the next element's through the single-valued LMARS flux:
+```
+⢟⣵⣤⠀⠀⠀⠀⠀
+⠀⠛⢟⣵⣤⠀⠀⠀
+⠀⠀⠀⠛⢟⣵⣤⠀
+⠀⠀⠀⠀⠀⠛⢟⣵
+```
 
 ### What `update_jacobian!`/`solve_jacobian!` do
 1. **Local Schur complement** (per element, once per step): eliminate the
