@@ -9,7 +9,9 @@
 # the stage times `c` (the row sums of `a`), `d = (a_im - a) / gamma` of the auxiliary
 # variables of the stages, and the constant diagonal `gamma` of the implicit coefficients
 # `a_im`. Both `a` and `d` are strictly lower triangular.
-struct LinearIMEXTableau{RealT <: Real, MatrixT, VectorT}
+struct LinearIMEXTableau{RealT <: Real,
+                         MatrixT <: AbstractMatrix{RealT},
+                         VectorT <: AbstractVector{RealT}}
     a::MatrixT
     d::MatrixT
     b::VectorT
@@ -17,12 +19,26 @@ struct LinearIMEXTableau{RealT <: Real, MatrixT, VectorT}
     gamma::RealT
 end
 
-# Coefficients of the explicit part `a`, `b` and of the implicit part `a_im` (lower
-# triangular with an explicit first stage and a constant diagonal of the other stages) of
-# an IMEX Runge-Kutta method. The final update uses only the right-hand sides of the stages,
-# so the weights of both parts must agree.
+# Coefficients of the explicit part `a`, `b` and of the implicit part `a_im` of an IMEX
+# Runge-Kutta method. The stages require a strictly lower triangular `a` and a lower
+# triangular `a_im` with an explicit first stage (vanishing first row) and a constant
+# diagonal of the other stages. The final update uses only the right-hand sides of the
+# stages with the weights `b`, so the weights of the implicit part must be `b` as well.
 function LinearIMEXTableau(a, b, a_im)
     gamma = a_im[2, 2]
+    if !istril(a, -1)
+        throw(ArgumentError("the explicit coefficients `a` must be strictly lower " *
+                            "triangular"))
+    end
+    if !istril(a_im) || !all(iszero, a_im[1, :])
+        throw(ArgumentError("the implicit coefficients `a_im` must be lower triangular " *
+                            "with a vanishing first row"))
+    end
+    if iszero(gamma) || !all(i -> a_im[i, i] ≈ gamma, 3:size(a_im, 1))
+        throw(ArgumentError("the implicit coefficients `a_im` must have a constant " *
+                            "nonzero diagonal except for the first stage"))
+    end
+
     d = (a_im - a) / gamma
     c = vec(sum(a, dims = 2))
 
@@ -96,6 +112,7 @@ function tableau(::ARS232, RealT)
 
     return LinearIMEXTableau(a, b, a_im)
 end
+
 """
     ARS343()
 

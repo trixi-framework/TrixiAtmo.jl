@@ -11,14 +11,18 @@
 # `Trixi.solve` (see `jacobian.jl`). They are implemented in the form of Giraldo, Kelly,
 # and Constantinescu (2013), Section 3.2: every stage solves one linear system with the
 # matrix `I / (gamma * dt) - J`, see `LinearIMEXTableau`, and no matrix-vector product with
-# the Jacobian is needed. A concrete method provides `tableau(alg, RealT)`.
+# the Jacobian is needed. This form requires an IMEX method whose implicit part is lower
+# triangular with an explicit first stage (vanishing first row), a constant nonzero diagonal
+# `gamma` in the other stages, and the same weights as the explicit part. A concrete method
+# provides `tableau(alg, RealT)`.
 #
-# Compared to the Rosenbrock-W methods (see `rosenbrock.jl`), the cost per stage is the
-# same: one evaluation of the right-hand side and one solve with the matrix
-# `I / (gamma * dt) - J`, which is the same in all stages. The difference is the storage:
-# the linear IMEX methods need the stage values and the right-hand sides of the stages
-# (`2 N - 1` vectors in addition to the solution), while the Rosenbrock-W methods need only
-# the `N` stage vectors of the transformed form.
+# Compared to the Rosenbrock-W methods (see `rosenbrock.jl`), every stage evaluates the
+# right-hand side once, and every stage except the explicit first one solves one linear
+# system with the matrix `I / (gamma * dt) - J`, which is the same in all stages. Thus, a
+# step needs `N - 1` linear solves instead of the `N` solves of the Rosenbrock-W methods.
+# However, the linear IMEX methods need more storage: the stage values and the right-hand
+# sides of the stages (`2 N - 1` vectors in addition to the solution), while the
+# Rosenbrock-W methods need only the `N` stage vectors of the transformed form.
 abstract type AbstractLinearIMEXAlgorithm{N} <: AbstractTimeIntegrationAlgorithm end
 
 nstages(::AbstractLinearIMEXAlgorithm{N}) where {N} = N
