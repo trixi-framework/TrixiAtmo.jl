@@ -25,6 +25,11 @@
         @test typeof(@inferred entropy(cons, equations)) == RealT
         @test typeof(@inferred energy_kinetic(cons, equations)) == RealT
         @test typeof(@inferred energy_total(cons, equations)) == RealT
+
+        # Adapt the real type, e.g., to move a semidiscretization to a GPU
+        equations_float64 = @inferred similar(equations, Float64)
+        @test typeof(equations_float64.c_p) == Float64
+        @test typeof(@inferred similar(equations_float64, RealT)) == typeof(equations)
     end
 end
 
@@ -84,6 +89,12 @@ end
         @test eltype(@inferred Trixi.max_abs_speeds(u, equations)) == RealT
         @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, orientation, equations)) ==
               RealT
+
+        # Adapt the real type, e.g., to move a semidiscretization to a GPU
+        equations_float64 = @inferred similar(equations, Float64)
+        @test typeof(equations_float64.c_p) == Float64
+        @test typeof(equations_float64.g) == Float64
+        @test typeof(@inferred similar(equations_float64, RealT)) == typeof(equations)
     end
 end
 
@@ -132,6 +143,11 @@ end
                                                    equations)) == RealT
         @test typeof(@inferred max_abs_speed(u_ll, u_rr, normal_direction,
                                              equations)) == RealT
+
+        # Adapt the real type, e.g., to move a semidiscretization to a GPU
+        equations_float64 = @inferred similar(equations, Float64)
+        @test typeof(equations_float64.c_p) == Float64
+        @test typeof(@inferred similar(equations_float64, RealT)) == typeof(equations)
     end
 end
 
@@ -187,6 +203,12 @@ end
                                                    equations)) == RealT
         @test typeof(@inferred max_abs_speed(u_ll, u_rr, normal_direction,
                                              equations)) == RealT
+
+        # Adapt the real type, e.g., to move a semidiscretization to a GPU
+        equations_float64 = @inferred similar(equations, Float64)
+        @test typeof(equations_float64.c_p) == Float64
+        @test typeof(equations_float64.g) == Float64
+        @test typeof(@inferred similar(equations_float64, RealT)) == typeof(equations)
     end
 end
 
@@ -230,6 +252,11 @@ end
                                                    equations)) == RealT
         @test typeof(@inferred max_abs_speed(u_ll, u_rr, normal_direction,
                                              equations)) == RealT
+
+        # Adapt the real type, e.g., to move a semidiscretization to a GPU
+        equations_float64 = @inferred similar(equations, Float64)
+        @test typeof(equations_float64.c_p) == Float64
+        @test typeof(@inferred similar(equations_float64, RealT)) == typeof(equations)
     end
 end
 @testitem "Type stability: Compressible Euler Potential Temperature With Gravity 3D" setup=[Setup] tags=[:type_stable_tests] begin
@@ -296,6 +323,12 @@ end
                                                    equations)) == RealT
         @test typeof(@inferred max_abs_speed(u_ll, u_rr, normal_direction,
                                              equations)) == RealT
+
+        # Adapt the real type, e.g., to move a semidiscretization to a GPU
+        equations_float64 = @inferred similar(equations, Float64)
+        @test typeof(equations_float64.c_p) == Float64
+        @test typeof(equations_float64.g) == Float64
+        @test typeof(@inferred similar(equations_float64, RealT)) == typeof(equations)
     end
 end
 

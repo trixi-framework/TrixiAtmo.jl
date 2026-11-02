@@ -9,22 +9,25 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
                                  "elixir_vector_invariant_baroclinic_instability.jl"),
                         l2=[
-                            0.0005185551293504875,
-                            0.017027947132866136,
-                            0.015090141253565458,
-                            0.014702882313897592,
-                            0.13991185685924915,
+                            0.0005185551299287267,
+                            0.01702794705024047,
+                            0.015090140614023183,
+                            0.014702877472746486,
+                            0.13991185540136739,
                             98.99596252593312
                         ],
                         linf=[
-                            0.004215976505289154,
-                            0.9447573700011822,
-                            0.5192256997767286,
-                            0.9433480065440424,
-                            1.0011212827678264,
+                            0.004215974593237748,
+                            0.944757292581601,
+                            0.5192256773744095,
+                            0.9433480536280751,
+                            1.0011207426927058,
                             333.1178018152714
                         ],
-                        tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2))
+                        tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
+                        # Avoid intermediate time stops of the `SaveSolutionCallback`, which
+                        # make the adaptive time step sensitive to round-off differences
+                        dt=100000)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
