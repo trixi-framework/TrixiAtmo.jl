@@ -37,7 +37,6 @@ struct CompressibleEulerVectorInvariantEquationsWithGravity3D{RealT <: Real} <:
     gamma::RealT # ratio of specific heats
     inv_gamma_minus_one::RealT # = inv(gamma - 1); can be used to write slow divisions as fast multiplications
     K::RealT # = p_0 * (R / p_0)^gamma; scaling factor between pressure and weighted potential temperature
-    stolarsky_factor::RealT # = (gamma - 1) / gamma; used in the stolarsky mean
     function CompressibleEulerVectorInvariantEquationsWithGravity3D(; c_p, c_v, gravity)
         c_p, c_v, g = promote(c_p, c_v, gravity)
         p_0 = 100_000
@@ -45,11 +44,10 @@ struct CompressibleEulerVectorInvariantEquationsWithGravity3D{RealT <: Real} <:
         gamma = c_p / c_v
         inv_gamma_minus_one = inv(gamma - 1)
         K = p_0 * (R / p_0)^gamma
-        stolarsky_factor = (gamma - 1) / gamma
         return new{typeof(c_p)}(p_0, c_p, c_v, g, R,
                                 gamma,
                                 inv_gamma_minus_one,
-                                K, stolarsky_factor)
+                                K)
     end
 end
 
