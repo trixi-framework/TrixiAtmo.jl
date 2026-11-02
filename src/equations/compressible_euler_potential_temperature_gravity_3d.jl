@@ -779,6 +779,8 @@ end # @muladd
 # Specializations of the `FluxTurbo` interface of Trixi.jl for the volume fluxes
 # `FluxTurbo(flux_kennedy_gruber, flux_nonconservative_souza_etal)` and
 # `FluxTurbo(flux_ec, flux_nonconservative_isothermal)`.
+# We do not wrap this code in `@muladd begin ... end` block. Optimizations like
+# this are handled automatically by LoopVectorization.jl.
 const FluxKennedyGruberSouzaEtal = Tuple{typeof(flux_kennedy_gruber),
                                          typeof(flux_nonconservative_souza_etal)}
 const FluxECIsothermal = Tuple{typeof(flux_ec),

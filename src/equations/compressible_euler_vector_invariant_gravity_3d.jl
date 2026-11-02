@@ -339,6 +339,8 @@ end
 end # @muladd
 
 # Specializations of the `FluxTurbo` interface of Trixi.jl.
+# We do not wrap this code in `@muladd begin ... end` block. Optimizations like
+# this are handled automatically by LoopVectorization.jl.
 # We precompute `rho, v1, v2, v3, theta, exner, phi, log(theta)`, i.e., two quantities more
 # than the number of variables.
 @inline function Trixi.nturbovars(::typeof(flux_etec),
