@@ -26,7 +26,7 @@ the origin.
     r = norm(x)
     lambda = atan(x[2], x[1])
     if lambda < 0
-        lambda += 2 * pi
+        lambda += 2 * convert(eltype(x), pi)
     end
     phi = asin(x[3] / r)
 
