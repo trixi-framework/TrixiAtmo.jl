@@ -16,7 +16,7 @@ using Printf: @sprintf
 using Static: True, False
 using StrideArrays: PtrArray
 using StaticArrayInterface: static_size
-using LinearAlgebra: Diagonal, I, UpperTriangular, cross, norm, dot, det, diagm
+using LinearAlgebra: Diagonal, I, UpperTriangular, cross, norm, dot, det, diagm, istril
 using Reexport: @reexport
 using LoopVectorization: @turbo
 using QuadGK: quadgk
@@ -81,13 +81,15 @@ export CompressibleMoistEulerEquations2D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity3D,
        CompressibleEulerEnergyEquationsWithGravity2D,
        CompressibleEulerEnergyEquationsWithGravity3D,
-       CompressibleEulerInternalEnergyEquationsWithGravity2D
+       CompressibleEulerInternalEnergyEquationsWithGravity2D,
+       CompressibleEulerVectorInvariantEquationsWithGravity3D
 
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
 export NonlinearSolveDG
 
-export SSPRW32, ROS2, VerticalJacobianTwoSided
+export VerticalJacobianTwoSided
+export SSPRW32, ROS2, ARK2, ARS232, ARS343
 
 export flux_chandrashekar, FluxLMARS
 
