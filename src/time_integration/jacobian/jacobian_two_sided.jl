@@ -423,58 +423,49 @@ Base.@propagate_inbounds function fill_jacobian_element!(layer, column, nlayers,
     lu_dense!(layer, column, schur_element, Val(NNODES - 2))
 
     if layer > 1
-        theta_m = u_vertical[column, 3, NNODES, layer - 1] /
-                  u_vertical[column, 1, NNODES, layer - 1]
-        dpdrhotheta_m = dp_factor *
-                        u_vertical[column, 3, NNODES, layer - 1]^dp_exponent
+        # States of the lower interface, with the last node of the layer below as `ll`
+        # (stored by the same thread when filling that layer) and the first node of this
+        # layer as `rr`
+        theta_ll = theta[column, NNODES, layer - 1]
+        dpdrhotheta_ll = dpdrhotheta[column, NNODES, layer - 1]
+        theta_rr = theta_element[1]
+        dpdrhotheta_rr = dpdrhotheta_element[1]
         # Interface potential temperature of the dissipative flux of `rho_theta`
-        theta_interface = 0.5f0 * (theta_m + theta_element[1])
-        # Factors of the last node of the layer below (rows `index_boundary - 2` and
-        # `index_boundary - 1`) and of the first node of this layer (rows `index_boundary`
-        # and `index_boundary + 1`)
-        fM = 0.5f0 * metric_factor[column, NNODES, layer - 1]
-        f1 = 0.5f0 * metric_factor[column, 1, layer]
+        theta_interface = 0.5f0 * (theta_ll + theta_rr)
+        # Factors of the rows of the `ll` node (rows `index_boundary - 2` and
+        # `index_boundary - 1`) and of the `rr` node (rows `index_boundary` and
+        # `index_boundary + 1`), as in `schur_complement_boundary_element!`
+        factor_ll = 0.5f0 * metric_factor[column, NNODES, layer - 1] *
+                    inv_boundary_weight
+        factor_rr = 0.5f0 * metric_factor[column, 1, layer] * inv_boundary_weight
         # (index_boundary-1,index_boundary-1)
-        schur_band[column, 4, index_boundary - 1] += theta_interface * dpdrhotheta_m *
-                                                     inv_speed_of_sound *
-                                                     inv_boundary_weight * fM
+        schur_band[column, 4, index_boundary - 1] += theta_interface * dpdrhotheta_ll *
+                                                     inv_speed_of_sound * factor_ll
         # (index_boundary,index_boundary-1)
-        schur_band[column, 5, index_boundary - 1] += -theta_interface * dpdrhotheta_m *
-                                                     inv_speed_of_sound * f1 *
-                                                     inv_boundary_weight
+        schur_band[column, 5, index_boundary - 1] += -theta_interface * dpdrhotheta_ll *
+                                                     inv_speed_of_sound * factor_rr
         # (index_boundary-1,index_boundary)
-        schur_band[column, 3, index_boundary] += -theta_interface *
-                                                 dpdrhotheta_element[1] *
-                                                 inv_speed_of_sound *
-                                                 inv_boundary_weight * fM
+        schur_band[column, 3, index_boundary] += -theta_interface * dpdrhotheta_rr *
+                                                 inv_speed_of_sound * factor_ll
         # (index_boundary,index_boundary)
-        schur_band[column, 4, index_boundary] += theta_interface *
-                                                 dpdrhotheta_element[1] *
-                                                 inv_speed_of_sound * f1 *
-                                                 inv_boundary_weight
+        schur_band[column, 4, index_boundary] += theta_interface * dpdrhotheta_rr *
+                                                 inv_speed_of_sound * factor_rr
         # (index_boundary-2,index_boundary-2)
-        schur_band[column, 4, index_boundary - 2] += speed_of_sound * fM *
-                                                     inv_boundary_weight
+        schur_band[column, 4, index_boundary - 2] += speed_of_sound * factor_ll
         # (index_boundary+1,index_boundary-2)
-        schur_band[column, 7, index_boundary - 2] += -speed_of_sound * f1 *
-                                                     inv_boundary_weight
+        schur_band[column, 7, index_boundary - 2] += -speed_of_sound * factor_rr
         # (index_boundary-2,index_boundary+1)
-        schur_band[column, 1, index_boundary + 1] += -speed_of_sound *
-                                                     inv_boundary_weight * fM
+        schur_band[column, 1, index_boundary + 1] += -speed_of_sound * factor_ll
         # (index_boundary+1,index_boundary+1)
-        schur_band[column, 4, index_boundary + 1] += speed_of_sound * f1 *
-                                                     inv_boundary_weight
+        schur_band[column, 4, index_boundary + 1] += speed_of_sound * factor_rr
         # (index_boundary,index_boundary-2)
-        schur_band[column, 6, index_boundary - 2] += -theta_m * f1 * inv_boundary_weight
+        schur_band[column, 6, index_boundary - 2] += -theta_ll * factor_rr
         # (index_boundary+1,index_boundary-1)
-        schur_band[column, 6, index_boundary - 1] += -dpdrhotheta_m * f1 *
-                                                     inv_boundary_weight
+        schur_band[column, 6, index_boundary - 1] += -dpdrhotheta_ll * factor_rr
         # (index_boundary-1,index_boundary+1)
-        schur_band[column, 2, index_boundary + 1] += theta_element[1] *
-                                                     inv_boundary_weight * fM
+        schur_band[column, 2, index_boundary + 1] += theta_rr * factor_ll
         # (index_boundary-2,index_boundary)
-        schur_band[column, 2, index_boundary] += dpdrhotheta_element[1] *
-                                                 inv_boundary_weight * fM
+        schur_band[column, 2, index_boundary] += dpdrhotheta_rr * factor_ll
     end
 
     if layer == 1
