@@ -374,7 +374,6 @@ end
 Base.@propagate_inbounds function fill_jacobian_element!(layer, column, nlayers,
                                                          ::Val{NNODES}, theta_element,
                                                          dpdrhotheta_element,
-                                                         schur_correction,
                                                          schur_element,
                                                          schur_band,
                                                          u_vertical,
@@ -403,27 +402,22 @@ Base.@propagate_inbounds function fill_jacobian_element!(layer, column, nlayers,
     # from `derivative_hat`, `theta_element`, `dpdrhotheta_element`, and `metric_factor`
     for i in 1:(NNODES - 2)
         gravity_i = gravity[column, i + 1, layer]
+        metric_factor_i = metric_factor[column, i + 1, layer]
         for j in 1:(NNODES - 2)
-            schur_correction[i, j] = zero_
+            # Entry `(A32 * A23)[i, j]`; the factors `metric_factor_i` of `A32` and
+            # `theta_element[j + 1]` of `A23` do not depend on `k`
+            correction = zero_
             for k in 1:(NNODES - 2)
-                a32 = metric_factor[column, i + 1, layer] *
-                      derivative_hat[i + 1, k + 1] *
-                      dpdrhotheta_element[k + 1]
-                a23 = metric_factor[column, k + 1, layer] *
-                      derivative_hat[k + 1, j + 1] *
-                      theta_element[j + 1]
-                schur_correction[i, j] += a32 * a23
+                correction += derivative_hat[i + 1, k + 1] *
+                              dpdrhotheta_element[k + 1] *
+                              metric_factor[column, k + 1, layer] *
+                              derivative_hat[k + 1, j + 1]
             end
-            a13 = metric_factor[column, i + 1, layer] *
-                  derivative_hat[i + 1, j + 1]
-            if i == j
-                schur_element[column, i, j, layer] = inv_gamma_dt -
-                                                     gravity_i * gamma_dt * a13 -
-                                                     gamma_dt * schur_correction[i, j]
-            else
-                schur_element[column, i, j, layer] = -gravity_i * gamma_dt * a13 -
-                                                     gamma_dt * schur_correction[i, j]
-            end
+            correction *= metric_factor_i * theta_element[j + 1]
+            a13 = metric_factor_i * derivative_hat[i + 1, j + 1]
+            schur_element[column, i, j, layer] = (i == j ? inv_gamma_dt : zero_) -
+                                                 gamma_dt *
+                                                 (gravity_i * a13 + correction)
         end
     end
     lu_dense!(layer, column, schur_element, Val(NNODES - 2))
@@ -552,12 +546,11 @@ end
     column = @index(Global)
     theta_element = MVector{NNODES, eltype(u_vertical)}(undef)
     dpdrhotheta_element = MVector{NNODES, eltype(u_vertical)}(undef)
-    schur_correction = MMatrix{NNODES, NNODES, eltype(u_vertical)}(undef)
 
     for layer in 1:nlayers
         fill_jacobian_element!(layer, column, nlayers, Val(NNODES), theta_element,
-                               dpdrhotheta_element, schur_correction,
-                               schur_element, schur_band, u_vertical,
+                               dpdrhotheta_element, schur_element, schur_band,
+                               u_vertical,
                                metric_factor,
                                derivative_hat,
                                speed_of_sound, inv_speed_of_sound,
