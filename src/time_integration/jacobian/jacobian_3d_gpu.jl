@@ -20,8 +20,7 @@ Base.@propagate_inbounds function copy_node_to_columns!(u_vertical, u, scaling,
                                                         vertical_index_of_element,
                                                         nnodes_,
                                                         i, j, k, element)
-    column = (horizontal_index_of_element[element] - 1) * nnodes_ * nnodes_ +
-             (j - 1) * nnodes_ + i
+    column = column_index(horizontal_index_of_element, nnodes_, i, j, element)
     layer = vertical_index_of_element[element]
     vertical_direction = SVector(vertical_frame[1, i, j, k, element],
                                  vertical_frame[2, i, j, k, element],
@@ -42,8 +41,7 @@ Base.@propagate_inbounds function copy_node_from_columns!(b, u_vertical, vertica
                                                           vertical_index_of_element,
                                                           nnodes_, gamma_dt,
                                                           i, j, k, element)
-    column = (horizontal_index_of_element[element] - 1) * nnodes_ * nnodes_ +
-             (j - 1) * nnodes_ + i
+    column = column_index(horizontal_index_of_element, nnodes_, i, j, element)
     layer = vertical_index_of_element[element]
     vertical_direction = SVector(vertical_frame[1, i, j, k, element],
                                  vertical_frame[2, i, j, k, element],

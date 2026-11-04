@@ -258,18 +258,14 @@ function create_jacobian_cache(jacobian::VerticalJacobianTwoSided, semi, u_ode)
     # The metric terms are computed on the CPU and moved to the storage type of the
     # semidiscretization
     storage = Trixi.storage_type(cache.elements)
-    vertical_indices = compute_vertical_mapping(nlayers, solver, cache)
-    vertical_line_indices, vertical_element_indices = vertical_indices
-    index_maps = compute_element_index_maps(vertical_indices..., solver, cache)
+    check_vertical_ordering(nlayers, semi)
+    index_maps = compute_element_index_maps(nlayers, solver, cache)
     horizontal_index_of_element = Adapt.adapt(storage, index_maps[1])
     vertical_index_of_element = Adapt.adapt(storage, index_maps[2])
     vertical_frame = Adapt.adapt(storage, compute_vertical_frame(semi))
-    metric_factor = compute_metric_factor(ncolumns, nlayers, semi,
-                                          vertical_line_indices,
-                                          vertical_element_indices)
+    metric_factor = compute_metric_factor(ncolumns, nlayers, semi, index_maps...)
     metric_factor = Adapt.adapt(storage, metric_factor)
-    gravity = compute_gravity(ncolumns, nlayers, semi, vertical_line_indices,
-                              vertical_element_indices)
+    gravity = compute_gravity(ncolumns, nlayers, semi, index_maps...)
     gravity = Adapt.adapt(storage, gravity)
     inv_boundary_weight = solver.basis.inverse_weights[1]
     derivative_hat = solver.basis.derivative_hat
