@@ -46,17 +46,17 @@ Base.@propagate_inbounds function copy_node_from_columns!(b, u_vertical, vertica
     vertical_direction = SVector(vertical_frame[1, i, j, k, element],
                                  vertical_frame[2, i, j, k, element],
                                  vertical_frame[3, i, j, k, element])
-    inv_area = inv(vertical_frame[4, i, j, k, element])
+    inv_norm_Ja3 = inv(vertical_frame[4, i, j, k, element])
     rho_v = SVector(b[2, i, j, k, element], b[3, i, j, k, element],
                     b[4, i, j, k, element])
-    rho_w = inv_area * u_vertical[column, 2, k, layer]
+    rho_w = inv_norm_Ja3 * u_vertical[column, 2, k, layer]
     rho_v = gamma_dt * rho_v +
             (rho_w - gamma_dt * dot(vertical_direction, rho_v)) * vertical_direction
-    b[1, i, j, k, element] = inv_area * u_vertical[column, 1, k, layer]
+    b[1, i, j, k, element] = inv_norm_Ja3 * u_vertical[column, 1, k, layer]
     b[2, i, j, k, element] = rho_v[1]
     b[3, i, j, k, element] = rho_v[2]
     b[4, i, j, k, element] = rho_v[3]
-    b[5, i, j, k, element] = inv_area * u_vertical[column, 3, k, layer]
+    b[5, i, j, k, element] = inv_norm_Ja3 * u_vertical[column, 3, k, layer]
     return nothing
 end
 end # @muladd

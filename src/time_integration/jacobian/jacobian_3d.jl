@@ -101,19 +101,19 @@ function compute_vertical_frame(semi)
                                         semi.cache.elements.contravariant_vectors)
     vertical_frame = zeros(eltype(node_coordinates), 4,
                            size(node_coordinates)[2:end]...)
-    area_max = zero(eltype(node_coordinates))
+    norm_Ja3_max = zero(eltype(node_coordinates))
     for element in eachelement(solver, cache)
         for k in eachnode(solver), j in eachnode(solver), i in eachnode(solver)
             Ja3 = get_contravariant_vector(3, contravariant_vectors, i, j, k, element)
-            area = norm(Ja3)
+            norm_Ja3 = norm(Ja3)
             x = get_node_coords(node_coordinates, equations, solver, i, j, k, element)
             # `Ja3` points outwards, see `check_vertical_ordering`
-            vertical_frame[1:3, i, j, k, element] .= Ja3 / area
-            vertical_frame[4, i, j, k, element] = area
-            area_max = max(area_max, area)
+            vertical_frame[1:3, i, j, k, element] .= Ja3 / norm_Ja3
+            vertical_frame[4, i, j, k, element] = norm_Ja3
+            norm_Ja3_max = max(norm_Ja3_max, norm_Ja3)
         end
     end
-    vertical_frame[4, :, :, :, :] ./= area_max
+    vertical_frame[4, :, :, :, :] ./= norm_Ja3_max
     return vertical_frame
 end
 
