@@ -41,7 +41,7 @@ function solve_jacobian!(b_ode, ::Nothing, semi, gamma_dt)
     return nothing
 end
 
-function number_of_layers(mesh::Trixi.AbstractMesh)
+function nlayers(mesh::Trixi.AbstractMesh)
     throw(ArgumentError("the vertical Jacobians require a " *
                         "`P4estMeshCubedSphereTopography`"))
 end

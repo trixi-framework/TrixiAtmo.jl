@@ -12,7 +12,7 @@
 # The number of layers of elements of a `P4estMeshCubedSphereTopography` is stored in the
 # registry of the mesh (see `src/meshes/p4est_cubed_sphere_topography.jl`). For parallel
 # meshes, the columns must be kept together on one rank.
-function number_of_layers(mesh::Trixi.P4estMesh{3})
+function nlayers(mesh::Trixi.P4estMesh{3})
     key = UInt64(Trixi.P4est.PointerWrappers.pointer(mesh.p4est))
     if !haskey(MeshContextRegistry.REGISTRY, key)
         throw(ArgumentError("the vertical Jacobians require a " *
@@ -30,12 +30,12 @@ end
 # columns. The formula is specific to the ordering of the trees of the
 # `P4estMeshCubedSphereTopography` (see `calc_tree_node_coordinates!` in
 # `src/meshes/p4est_cubed_sphere_topography.jl`), where the layers of a column are
-# consecutive, with the lowest layer first; other meshes are rejected by `number_of_layers`,
+# consecutive, with the lowest layer first; other meshes are rejected by `nlayers`,
 # and the ordering is checked by `check_vertical_ordering`.
-function compute_element_index_maps(nlayers, solver, cache)
-    horizontal_index_of_element = [(element - 1) ÷ nlayers + 1
+function compute_element_index_maps(nlayers_, solver, cache)
+    horizontal_index_of_element = [(element - 1) ÷ nlayers_ + 1
                                    for element in eachelement(solver, cache)]
-    vertical_index_of_element = [(element - 1) % nlayers + 1
+    vertical_index_of_element = [(element - 1) % nlayers_ + 1
                                  for element in eachelement(solver, cache)]
     return horizontal_index_of_element, vertical_index_of_element
 end
@@ -52,13 +52,13 @@ end
 # reference coordinate points outwards (`Ja^3 . x > 0`), and the last nodes (`k = nnodes`)
 # of every element except the top ones coincide with the first nodes (`k = 1`) of the next
 # element, i.e., the elements of a column are consecutive with the lowest layer first
-function check_vertical_ordering(nlayers, semi)
+function check_vertical_ordering(nlayers_, semi)
     (; solver, equations, cache) = semi
     nnodes_ = nnodes(solver)
     nelements_ = nelements(solver, cache)
-    if nelements_ % nlayers != 0
+    if nelements_ % nlayers_ != 0
         throw(ArgumentError("the number of elements $nelements_ is not a multiple of " *
-                            "the number of layers $nlayers"))
+                            "the number of layers $nlayers_"))
     end
     node_coordinates = Adapt.adapt(Array, cache.elements.node_coordinates)
     contravariant_vectors = Adapt.adapt(Array, cache.elements.contravariant_vectors)
@@ -74,7 +74,7 @@ function check_vertical_ordering(nlayers, semi)
             end
         end
         # The top element of a column has no element above it in the same column
-        (element - 1) % nlayers + 1 == nlayers && continue
+        (element - 1) % nlayers_ + 1 == nlayers_ && continue
         for j in eachnode(solver), i in eachnode(solver)
             x_top = get_node_coords(node_coordinates, equations, solver, i, j, nnodes_,
                                     element)
@@ -120,7 +120,7 @@ end
 # Metric factor `n / J` of the vertical operator of every node, with the norm
 # `n = |Ja^3|` of the contravariant vector of the third reference coordinate and the
 # Jacobian `J`, laid out `[column, node, layer]`
-function compute_metric_factor(ncolumns, nlayers, semi, horizontal_index_of_element,
+function compute_metric_factor(ncolumns, nlayers_, semi, horizontal_index_of_element,
                                vertical_index_of_element)
     (; solver, cache) = semi
     nnodes_ = nnodes(solver)
@@ -128,7 +128,7 @@ function compute_metric_factor(ncolumns, nlayers, semi, horizontal_index_of_elem
                                         semi.cache.elements.contravariant_vectors)
     inverse_jacobian = Adapt.adapt(Array, semi.cache.elements.inverse_jacobian)
     metric_factor = zeros(eltype(inverse_jacobian), ncolumns, nnodes_,
-                          nlayers)
+                          nlayers_)
     for element in eachelement(solver, cache), k in eachnode(solver),
         j in eachnode(solver), i in eachnode(solver)
 
@@ -144,14 +144,14 @@ end
 # Consistent pointwise gravity `g * (nu . r_hat)`, the projection of the gravitational
 # acceleration on the unit contravariant direction `nu` of the third reference coordinate
 # (see `compute_vertical_frame`).
-function compute_gravity(ncolumns, nlayers, semi, horizontal_index_of_element,
+function compute_gravity(ncolumns, nlayers_, semi, horizontal_index_of_element,
                          vertical_index_of_element)
     (; solver, equations, cache) = semi
     nnodes_ = nnodes(solver)
     node_coordinates = Adapt.adapt(Array, semi.cache.elements.node_coordinates)
     contravariant_vectors = Adapt.adapt(Array,
                                         semi.cache.elements.contravariant_vectors)
-    gravity = zeros(eltype(node_coordinates), ncolumns, nnodes_, nlayers)
+    gravity = zeros(eltype(node_coordinates), ncolumns, nnodes_, nlayers_)
     for element in eachelement(solver, cache)
         for k in eachnode(solver), j in eachnode(solver), i in eachnode(solver)
             Ja3 = get_contravariant_vector(3, contravariant_vectors, i, j, k, element)

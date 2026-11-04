@@ -25,7 +25,7 @@ function copy_state_to_columns!(backend::Backend, u_vertical, u, jacobian, semi)
     # Explicit bounds check, which allows us to assume inbounds access in the kernel
     @boundscheck Trixi.check_axes(u, mesh, equations, solver, cache)
     (; vertical_frame, horizontal_index_of_element, vertical_index_of_element) = jacobian
-    nnodes_ = number_of_nodes(jacobian)
+    nnodes_ = nnodes(jacobian)
     kernel! = copy_state_to_columns_KAkernel!(backend)
     kernel!(u_vertical, u, vertical_frame, horizontal_index_of_element,
             vertical_index_of_element, nnodes_;
@@ -51,7 +51,7 @@ function copy_rhs_to_columns!(backend::Backend, u_vertical, b, jacobian, semi)
     # Explicit bounds check, which allows us to assume inbounds access in the kernel
     @boundscheck Trixi.check_axes(b, mesh, equations, solver, cache)
     (; vertical_frame, horizontal_index_of_element, vertical_index_of_element) = jacobian
-    nnodes_ = number_of_nodes(jacobian)
+    nnodes_ = nnodes(jacobian)
     kernel! = copy_rhs_to_columns_KAkernel!(backend)
     kernel!(u_vertical, b, vertical_frame, horizontal_index_of_element,
             vertical_index_of_element, nnodes_;
@@ -79,7 +79,7 @@ function copy_solution_from_columns!(backend::Backend, b, u_vertical, jacobian, 
     # Explicit bounds check, which allows us to assume inbounds access in the kernel
     @boundscheck Trixi.check_axes(b, mesh, equations, solver, cache)
     (; vertical_frame, horizontal_index_of_element, vertical_index_of_element) = jacobian
-    nnodes_ = number_of_nodes(jacobian)
+    nnodes_ = nnodes(jacobian)
     kernel! = copy_solution_from_columns_KAkernel!(backend)
     kernel!(b, u_vertical, vertical_frame, horizontal_index_of_element,
             vertical_index_of_element, nnodes_, gamma_dt;

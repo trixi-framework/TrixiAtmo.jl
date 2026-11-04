@@ -226,14 +226,14 @@ struct VerticalJacobianTwoSidedCache{NLAYERS, NNODES, RealT <: Real, BackendType
     schur_rhs::MatrixRealT
 end
 
-@inline function number_of_layers(::VerticalJacobianTwoSidedCache{NLAYERS}) where {NLAYERS}
+# Number of layers of elements of a column and number of nodes per coordinate direction of
+# the elements (as `nnodes(solver)`), stored as type parameters such that they are
+# compile-time constants in the kernels
+@inline function nlayers(::VerticalJacobianTwoSidedCache{NLAYERS}) where {NLAYERS}
     return NLAYERS
 end
 
-@inline function number_of_nodes(::VerticalJacobianTwoSidedCache{NLAYERS,
-                                                                 NNODES}) where {
-                                                                                 NLAYERS,
-                                                                                 NNODES}
+@inline function Trixi.nnodes(::VerticalJacobianTwoSidedCache{<:Any, NNODES}) where {NNODES}
     return NNODES
 end
 
@@ -243,7 +243,7 @@ function create_jacobian_cache(jacobian::VerticalJacobianTwoSided, semi, u_ode)
         throw(ArgumentError("`VerticalJacobianTwoSided` requires the " *
                             "`CompressibleEulerPotentialTemperatureEquationsWithGravity3D`"))
     end
-    nlayers = number_of_layers(mesh)
+    nlayers_ = nlayers(mesh)
     nnodes_ = nnodes(solver)
     nelements_ = nelements(solver, cache)
     # Compare the global numbers of elements and trees, since `nelements` is local to the
@@ -252,36 +252,38 @@ function create_jacobian_cache(jacobian::VerticalJacobianTwoSided, semi, u_ode)
         throw(ArgumentError("`VerticalJacobianTwoSided` requires a mesh " *
                             "without refinement"))
     end
-    ncolumns = nnodes_^2 * nelements_ ÷ nlayers
+    ncolumns = nnodes_^2 * nelements_ ÷ nlayers_
     RealT = eltype(cache.elements.node_coordinates)
 
     # The metric terms are computed on the CPU and moved to the storage type of the
     # semidiscretization
     storage = Trixi.storage_type(cache.elements)
-    check_vertical_ordering(nlayers, semi)
-    index_maps = compute_element_index_maps(nlayers, solver, cache)
+    check_vertical_ordering(nlayers_, semi)
+    index_maps = compute_element_index_maps(nlayers_, solver, cache)
     horizontal_index_of_element = Adapt.adapt(storage, index_maps[1])
     vertical_index_of_element = Adapt.adapt(storage, index_maps[2])
     vertical_frame = Adapt.adapt(storage, compute_vertical_frame(semi))
-    metric_factor = compute_metric_factor(ncolumns, nlayers, semi, index_maps...)
+    metric_factor = compute_metric_factor(ncolumns, nlayers_, semi, index_maps...)
     metric_factor = Adapt.adapt(storage, metric_factor)
-    gravity = compute_gravity(ncolumns, nlayers, semi, index_maps...)
+    gravity = compute_gravity(ncolumns, nlayers_, semi, index_maps...)
     gravity = Adapt.adapt(storage, gravity)
     inv_boundary_weight = solver.basis.inverse_weights[1]
     derivative_hat = solver.basis.derivative_hat
 
     # The remaining arrays are allocated with the backend of the semidiscretization
     backend = get_backend(cache.elements.node_coordinates)
-    u_vertical = KernelAbstractions.zeros(backend, RealT, ncolumns, 3, nnodes_, nlayers)
-    theta = KernelAbstractions.zeros(backend, RealT, ncolumns, nnodes_, nlayers)
-    dp_drho_theta = KernelAbstractions.zeros(backend, RealT, ncolumns, nnodes_, nlayers)
+    u_vertical = KernelAbstractions.zeros(backend, RealT, ncolumns, 3, nnodes_,
+                                          nlayers_)
+    theta = KernelAbstractions.zeros(backend, RealT, ncolumns, nnodes_, nlayers_)
+    dp_drho_theta = KernelAbstractions.zeros(backend, RealT, ncolumns, nnodes_,
+                                             nlayers_)
     schur_element = KernelAbstractions.zeros(backend, RealT, ncolumns, nnodes_ - 2,
                                              nnodes_ - 2,
-                                             nlayers)
-    schur_band = KernelAbstractions.zeros(backend, RealT, ncolumns, 7, 4 * nlayers)
-    schur_rhs = KernelAbstractions.zeros(backend, RealT, ncolumns, 4 * nlayers)
+                                             nlayers_)
+    schur_band = KernelAbstractions.zeros(backend, RealT, ncolumns, 7, 4 * nlayers_)
+    schur_rhs = KernelAbstractions.zeros(backend, RealT, ncolumns, 4 * nlayers_)
 
-    return VerticalJacobianTwoSidedCache{nlayers, nnodes_, RealT, typeof(backend),
+    return VerticalJacobianTwoSidedCache{nlayers_, nnodes_, RealT, typeof(backend),
                                          typeof(schur_rhs), typeof(gravity),
                                          typeof(schur_element),
                                          typeof(vertical_frame),
@@ -367,7 +369,7 @@ end
 
 # Fill of element `layer` of the column `column`; the layers of a column are filled in
 # order by the same thread
-Base.@propagate_inbounds function fill_jacobian_element!(layer, column, nlayers,
+Base.@propagate_inbounds function fill_jacobian_element!(layer, column, nlayers_,
                                                          ::Val{NNODES}, theta_element,
                                                          dp_drho_theta_element,
                                                          schur_element,
@@ -499,7 +501,7 @@ Base.@propagate_inbounds function fill_jacobian_element!(layer, column, nlayers,
                                                            layer] *
                                              derivative_hat[NNODES, 1] *
                                              dp_drho_theta_element[1]
-    if layer == nlayers
+    if layer == nlayers_
         schur_band[column, 5, index_boundary + 2] += metric_factor[column,
                                                                    NNODES,
                                                                    layer] *
@@ -519,7 +521,7 @@ Base.@propagate_inbounds function fill_jacobian_element!(layer, column, nlayers,
     return nothing
 end
 
-@kernel inbounds=true function fill_jacobian_KAkernel!(nlayers, schur_element,
+@kernel inbounds=true function fill_jacobian_KAkernel!(nlayers_, schur_element,
                                                        schur_band,
                                                        @Const(u_vertical),
                                                        @Const(metric_factor),
@@ -536,8 +538,8 @@ end
     theta_element = MVector{NNODES, eltype(u_vertical)}(undef)
     dp_drho_theta_element = MVector{NNODES, eltype(u_vertical)}(undef)
 
-    for layer in 1:nlayers
-        fill_jacobian_element!(layer, column, nlayers, Val(NNODES), theta_element,
+    for layer in 1:nlayers_
+        fill_jacobian_element!(layer, column, nlayers_, Val(NNODES), theta_element,
                                dp_drho_theta_element, schur_element, schur_band,
                                u_vertical,
                                metric_factor,
@@ -556,8 +558,8 @@ function fill_jacobian!(backend::Backend, jacobian::VerticalJacobianTwoSidedCach
     (; schur_element, schur_band, gravity, theta, dp_drho_theta, ncolumns, metric_factor,
     derivative_hat, inv_boundary_weight, u_vertical) = jacobian
     speed_of_sound = jacobian.speed_of_sound
-    nnodes_ = number_of_nodes(jacobian)
-    nlayers = number_of_layers(jacobian)
+    nnodes_ = nnodes(jacobian)
+    nlayers_ = nlayers(jacobian)
     dp_factor = equations.gamma * equations.K
     dp_exponent = equations.gamma - 1
     inv_speed_of_sound = inv(speed_of_sound)
@@ -567,7 +569,7 @@ function fill_jacobian!(backend::Backend, jacobian::VerticalJacobianTwoSidedCach
     @views schur_band[:, 4, :] .= inv_gamma_dt
 
     kernel! = fill_jacobian_KAkernel!(backend)
-    kernel!(nlayers, schur_element, schur_band, u_vertical,
+    kernel!(nlayers_, schur_element, schur_band, u_vertical,
             metric_factor,
             derivative_hat, speed_of_sound, inv_speed_of_sound,
             inv_boundary_weight, dp_factor, dp_exponent, inv_gamma_dt, gamma_dt,
@@ -589,7 +591,7 @@ end
 # `schur_complement_boundary_unknown!`. The arrays `x_rho`, `x_rho_theta`, and `x_rho_w`
 # hold the components of the column `b` of `B` of the three variables.
 Base.@propagate_inbounds function schur_complement_boundary_element!(layer, column,
-                                                                     nlayers,
+                                                                     nlayers_,
                                                                      ::Val{NNODES},
                                                                      x_rho, x_rho_theta,
                                                                      x_rho_w,
@@ -616,7 +618,7 @@ Base.@propagate_inbounds function schur_complement_boundary_element!(layer, colu
             is_interface = layer > 1
         else
             node = NNODES
-            is_interface = layer < nlayers
+            is_interface = layer < nlayers_
         end
         metric_factor_node = metric_factor[column, node, layer]
 
@@ -688,7 +690,7 @@ Base.@propagate_inbounds function schur_complement_boundary_element!(layer, colu
                                                   inv_speed_of_sound *
                                                   factor_rr
     end
-    if layer < nlayers
+    if layer < nlayers_
         dp_drho_theta_rr = dp_drho_theta[column, 1, layer + 1]
         factor_ll = 0.5f0 * metric_factor[column, NNODES, layer] * inv_boundary_weight
         schur_band[column, 2, offset_boundary + 5] += gravity_M * gamma_dt *
@@ -782,7 +784,7 @@ Base.@propagate_inbounds function schur_complement_boundary_unknown!(index_local
     return nothing
 end
 
-@kernel inbounds=true function schur_complement_boundary_KAkernel!(nlayers,
+@kernel inbounds=true function schur_complement_boundary_KAkernel!(nlayers_,
                                                                    @Const(schur_element),
                                                                    schur_band,
                                                                    gamma_dt,
@@ -800,8 +802,8 @@ end
     x_rho_theta = MVector{NNODES - 2, RealT}(undef)
     x_rho_w = MVector{NNODES - 2, RealT}(undef)
 
-    for layer in 1:nlayers
-        schur_complement_boundary_element!(layer, column, nlayers, Val(NNODES), x_rho,
+    for layer in 1:nlayers_
+        schur_complement_boundary_element!(layer, column, nlayers_, Val(NNODES), x_rho,
                                            x_rho_theta, x_rho_w, schur_element,
                                            schur_band, gamma_dt, gravity, theta,
                                            dp_drho_theta, metric_factor, derivative_hat,
@@ -814,12 +816,12 @@ function schur_complement_boundary!(backend::Backend,
                                     gamma_dt)
     (; schur_element, ncolumns, schur_band, gravity, theta, dp_drho_theta, metric_factor,
     derivative_hat, inv_boundary_weight) = jacobian
-    nnodes_ = number_of_nodes(jacobian)
-    nlayers = number_of_layers(jacobian)
+    nnodes_ = nnodes(jacobian)
+    nlayers_ = nlayers(jacobian)
     inv_speed_of_sound = inv(jacobian.speed_of_sound)
 
     kernel! = schur_complement_boundary_KAkernel!(backend)
-    kernel!(nlayers, schur_element, schur_band, gamma_dt,
+    kernel!(nlayers_, schur_element, schur_band, gamma_dt,
             gravity,
             theta, dp_drho_theta, metric_factor, derivative_hat, inv_speed_of_sound,
             inv_boundary_weight, Val(nnodes_);
@@ -860,7 +862,7 @@ end
 function lu_band!(backend::Backend, jacobian::VerticalJacobianTwoSidedCache)
     (; ncolumns, schur_band) = jacobian
     kernel! = lu_band_KAkernel!(backend)
-    kernel!(schur_band, Val(4 * number_of_layers(jacobian));
+    kernel!(schur_band, Val(4 * nlayers(jacobian));
             ndrange = ncolumns, column_kernel_workgroupsize()...)
     return nothing
 end
@@ -897,7 +899,7 @@ end
 function ldiv_band!(backend::Backend, jacobian::VerticalJacobianTwoSidedCache)
     (; ncolumns, schur_band, schur_rhs) = jacobian
     kernel! = ldiv_band_KAkernel!(backend)
-    kernel!(schur_band, schur_rhs, Val(4 * number_of_layers(jacobian));
+    kernel!(schur_band, schur_rhs, Val(4 * nlayers(jacobian));
             ndrange = ncolumns, column_kernel_workgroupsize()...)
     return nothing
 end
@@ -914,7 +916,8 @@ end
 # components of `A^{-1} b_A` of the three variables, `x_rho_1` and `x_rho_M` those of the
 # density in the first and the last node, and `schur_rhs_element` the entries of
 # `b_D - C A^{-1} b_A`.
-Base.@propagate_inbounds function ldiv_interior_forward_element!(layer, column, nlayers,
+Base.@propagate_inbounds function ldiv_interior_forward_element!(layer, column,
+                                                                 nlayers_,
                                                                  ::Val{NNODES},
                                                                  x_rho, x_rho_theta,
                                                                  x_rho_w,
@@ -993,7 +996,7 @@ Base.@propagate_inbounds function ldiv_interior_forward_element!(layer, column, 
     return nothing
 end
 
-@kernel inbounds=true function ldiv_interior_forward_KAkernel!(nlayers,
+@kernel inbounds=true function ldiv_interior_forward_KAkernel!(nlayers_,
                                                                @Const(schur_element),
                                                                @Const(b), schur_rhs,
                                                                gamma_dt,
@@ -1009,7 +1012,7 @@ end
     x_rho_w = MVector{NNODES - 2, eltype(b)}(undef)
     schur_rhs_element = MVector{4, eltype(b)}(undef)
 
-    ldiv_interior_forward_element!(layer, column, nlayers, Val(NNODES), x_rho,
+    ldiv_interior_forward_element!(layer, column, nlayers_, Val(NNODES), x_rho,
                                    x_rho_theta, x_rho_w,
                                    schur_rhs_element, schur_element,
                                    schur_rhs, b, gamma_dt, gravity, theta,
@@ -1022,14 +1025,14 @@ function ldiv_interior_forward!(backend::Backend,
                                 gamma_dt)
     (; schur_rhs, schur_element, ncolumns, theta, dp_drho_theta, metric_factor, derivative_hat,
     gravity) = jacobian
-    nnodes_ = number_of_nodes(jacobian)
-    nlayers = number_of_layers(jacobian)
+    nnodes_ = nnodes(jacobian)
+    nlayers_ = nlayers(jacobian)
 
     kernel! = ldiv_interior_forward_KAkernel!(backend)
-    kernel!(nlayers, schur_element, b, schur_rhs, gamma_dt, gravity, theta,
+    kernel!(nlayers_, schur_element, b, schur_rhs, gamma_dt, gravity, theta,
             dp_drho_theta,
             metric_factor, derivative_hat, Val(nnodes_);
-            ndrange = (ncolumns, nlayers), layer_kernel_workgroupsize()...)
+            ndrange = (ncolumns, nlayers_), layer_kernel_workgroupsize()...)
     return nothing
 end
 
@@ -1041,7 +1044,7 @@ end
 # hold the interior components of the three variables, and `rho_theta_1`, `rho_w_1`,
 # `rho_w_M`, and `rho_theta_M` the boundary components from `schur_rhs`
 Base.@propagate_inbounds function ldiv_interior_backward_element!(layer, column,
-                                                                  nlayers,
+                                                                  nlayers_,
                                                                   ::Val{NNODES},
                                                                   x_rho, x_rho_theta,
                                                                   x_rho_w,
@@ -1081,7 +1084,7 @@ Base.@propagate_inbounds function ldiv_interior_backward_element!(layer, column,
     end
     # Density entries of `B` from the LMARS mass flux at the upper interface of the element,
     # with this layer as `ll` and the layer above as `rr`; it vanishes at the wall
-    if layer < nlayers
+    if layer < nlayers_
         factor_ll = 0.5f0 * metric_factor[column, NNODES, layer] * inv_boundary_weight
         x_rho[NNODES] -= dp_drho_theta_M * inv_speed_of_sound * factor_ll *
                          schur_rhs[column, offset_boundary + 4]
@@ -1096,7 +1099,7 @@ Base.@propagate_inbounds function ldiv_interior_backward_element!(layer, column,
         if layer > 1 && i == 1
             b1 = zero_
         end
-        if layer < nlayers && i == NNODES
+        if layer < nlayers_ && i == NNODES
             b2 = zero_
         end
         x_rho[i] -= b1 * rho_w_1 + b2 * rho_w_M
@@ -1126,7 +1129,7 @@ Base.@propagate_inbounds function ldiv_interior_backward_element!(layer, column,
                     dp_drho_theta_ll * inv_speed_of_sound * factor_rr *
                     schur_rhs[column, offset_boundary]
     end
-    if layer < nlayers
+    if layer < nlayers_
         dp_drho_theta_rr = dp_drho_theta[column, 1, layer + 1]
         factor_ll = 0.5f0 * metric_factor[column, NNODES, layer] * inv_boundary_weight
         x_rho[NNODES] += dp_drho_theta_rr * inv_speed_of_sound * factor_ll *
@@ -1169,7 +1172,7 @@ Base.@propagate_inbounds function ldiv_interior_backward_element!(layer, column,
     return nothing
 end
 
-@kernel inbounds=true function ldiv_interior_backward_KAkernel!(nlayers,
+@kernel inbounds=true function ldiv_interior_backward_KAkernel!(nlayers_,
                                                                 @Const(schur_element),
                                                                 @Const(schur_rhs),
                                                                 b,
@@ -1187,7 +1190,7 @@ end
     x_rho_theta = MVector{NNODES - 2, eltype(b)}(undef)
     x_rho_w = MVector{NNODES - 2, eltype(b)}(undef)
 
-    ldiv_interior_backward_element!(layer, column, nlayers, Val(NNODES), x_rho,
+    ldiv_interior_backward_element!(layer, column, nlayers_, Val(NNODES), x_rho,
                                     x_rho_theta, x_rho_w,
                                     schur_element, schur_rhs, b,
                                     gamma_dt,
@@ -1203,17 +1206,17 @@ function ldiv_interior_backward!(backend::Backend,
                                  gamma_dt)
     (; schur_element, schur_rhs, ncolumns, gravity, theta, dp_drho_theta, metric_factor,
     derivative_hat, inv_boundary_weight) = jacobian
-    nnodes_ = number_of_nodes(jacobian)
-    nlayers = number_of_layers(jacobian)
+    nnodes_ = nnodes(jacobian)
+    nlayers_ = nlayers(jacobian)
     inv_speed_of_sound = inv(jacobian.speed_of_sound)
 
     kernel! = ldiv_interior_backward_KAkernel!(backend)
-    kernel!(nlayers, schur_element, schur_rhs, b, gamma_dt,
+    kernel!(nlayers_, schur_element, schur_rhs, b, gamma_dt,
             gravity,
             theta,
             dp_drho_theta, metric_factor, derivative_hat, inv_speed_of_sound,
             inv_boundary_weight, Val(nnodes_);
-            ndrange = (ncolumns, nlayers), layer_kernel_workgroupsize()...)
+            ndrange = (ncolumns, nlayers_), layer_kernel_workgroupsize()...)
     return nothing
 end
 
