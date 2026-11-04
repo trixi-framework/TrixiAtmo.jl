@@ -136,7 +136,7 @@ export bottom_topography_isolated_mountain, bottom_topography_unsteady_solid_bod
 
 export AtmosphereLayers, AtmosphereLayersRainyBubble
 
-export P4estMeshCubedSphereTopography, GalChen, Sleve
+export P4estMeshCubedSphereTopography, GalChen, Sleve, attach_cubed_sphere_metadata!
 
 export examples_dir
 
