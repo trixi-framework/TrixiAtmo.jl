@@ -34,14 +34,19 @@ method, e.g., `Trixi.solve(ode, SSPRW32(); dt, jacobian = VerticalJacobianTwoSid
 arrays are created by `Trixi.init` for the semidiscretization of the ODE problem, with the
 array type of the solution, so that it runs on the same backend (CPU or GPU) as the
 semidiscretization. The Jacobian decouples into independent linear systems for each
-vertical column of nodes. The dissipation of the vertical acoustic waves is based on the
-constant speed of sound `c`.
+vertical column of nodes. The dissipation of the vertical acoustic waves at the element
+interfaces and at the walls is the one of the LMARS flux with the constant speed of sound
+`c`, also if the surface flux of the semidiscretization uses a local speed of sound (e.g.,
+[`flux_lmars_es`](@ref)), since the Jacobian only needs to approximate the right-hand side.
 
 ### Permutation
-For a column of `nz` elements of polynomial degree `polydeg` (`M = polydeg + 1`
-LGL nodes), the vertical unknowns `(rho, rho_theta, rho_w)` are grouped, by
-variable, into a small *local* block per element and a small *global* (edge)
-block shared by the whole column:
+The unknowns of a column are the density `rho`, the vertical momentum `rho_w`, i.e., the
+component of the momentum in the unit contravariant direction of the vertical reference
+coordinate, and the potential temperature density `rho_theta`. The horizontal components
+of the momentum are not part of the Jacobian. For a column of `nz` elements of polynomial
+degree `polydeg` (`M = polydeg + 1` LGL nodes), the unknowns are grouped, by variable, into
+a small *local* block per element and a small *global* (edge) block shared by the whole
+column:
 
 * All `rho` DOFs of element 1 (nodes `1..M`), then
 * The `rho_theta` DOFs `2..M-1` of element 1 (interior only), then
@@ -52,9 +57,7 @@ block shared by the whole column:
 
 Density is *never* condensed: it keeps all `M` nodes, including both edges,
 in the local block. Only `rho_theta` and `rho_w` are condensed, and only at
-the two edge nodes of each element -- that is what "two-sided" refers to, as
-opposed to `JacobianCacheOneSidedPointwise`, which condenses all three
-variables but only at one edge.
+*both* edge nodes of each element -- that is what "two-sided" refers to.
 
 ### Sparsity pattern
 Example for `nz = 4`, `polydeg = 5` (`M = 6`), in the permuted ordering above:
@@ -79,10 +82,11 @@ Example for `nz = 4`, `polydeg = 5` (`M = 6`), in the permuted ordering above:
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠂⠀⠠⠶⠶⣉⣉⠀⠀⠀⠀⠀⠛⢟⣵
 ```
 
-`A` (block-diagonal, one block per element) holds `rho` (diagonal, plus
-gravity's off-diagonal coupling to `rho_w`) and the interior `rho_theta`/
-`rho_w` (diagonal, densely coupled to each other via the LGL derivative
-operator):
+`A` (block-diagonal, one block per element) holds the diagonals `I / gamma_dt` of `rho`
+and of the interior `rho_theta`/`rho_w`, the dense coupling (LGL derivative operator) of
+`rho` and the interior `rho_theta` to the interior `rho_w` (mass and potential temperature
+fluxes) and of the interior `rho_w` to the interior `rho_theta` (pressure gradient), and
+the pointwise coupling of the interior `rho_w` to `rho` (gravity):
 ```
 ⠑⢄⠀⠀⠀⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠑⢄⠀⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -102,7 +106,8 @@ operator):
 
 `B` connects the local DOFs to both edges of `rho_theta`/`rho_w` of the same
 element (dense LGL coupling) and, through the LMARS mass flux, the edge `rho`
-to the edge DOFs of the neighboring elements:
+to the edge `rho_theta` of the same element and to the edge DOFs of the neighboring
+elements:
 ```
 ⢸⡇⠀⠀⠀⠀⠀⠀
 ⢸⡗⠒⠀⠀⠀⠀⠀
@@ -130,8 +135,9 @@ local `rho` (gravity):
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠂⠀⠠⠶⠶⣉⣉
 ```
 
-`D` is block-tridiagonal before elimination: each element's 4 edge DOFs
-couple to the next element's through the single-valued LMARS flux:
+`D` is block-tridiagonal before elimination: the 4 edge DOFs of each element couple to
+each other (dense LGL coupling and the LMARS flux) and to those of the neighboring
+elements through the single-valued LMARS flux:
 ```
 ⢟⣵⣤⠀⠀⠀⠀⠀
 ⠀⠛⢟⣵⣤⠀⠀⠀
@@ -139,26 +145,37 @@ couple to the next element's through the single-valued LMARS flux:
 ⠀⠀⠀⠀⠀⠛⢟⣵
 ```
 
-### What `update_jacobian!`/`solve_jacobian!` do
-1. **Local Schur complement** (per element, once per step): eliminate the
-   diagonal `rho`/`rho_theta` analytically, leaving a dense
-   `(M-2)x(M-2)` complement `SA` on interior `rho_w`, LU-factorized once.
-2. **Global Schur complement** (per column, once per step): eliminating every
-   element's local DOFs against `SA` leaves a `4*nz x 4*nz` banded system
-   `SchurBand` (3 sub-/3 super-diagonals) on the edge DOFs, factorized with a
-   generic banded LU -- unlike `JacobianCacheOneSidedPointwise`, which solves
-   its smaller Schur complement with a specialized block-tridiagonal (block
-   Thomas) algorithm instead.
-3. **Per-stage solve**: gather the stage right-hand side, eliminate locally
-   against `SA`, forward/backward-substitute against the factorized banded
-   `SchurBand` for the edge solution, back-substitute into the local DOFs,
-   and scatter back into the DGSEM array.
+### Algorithm
+The matrix `I / gamma_dt - J` is assembled and factorized by `update_jacobian!`, i.e.,
+whenever the Jacobian is updated (see the keyword argument `update_interval` of
+`Trixi.solve`), and the linear systems of the stages are solved by `solve_jacobian!`:
+1. **Local Schur complement** (per element, in `update_jacobian!`): eliminate the
+   diagonal blocks of `rho` and the interior `rho_theta` analytically, leaving a dense
+   `(M-2)x(M-2)` complement `S_e` on the interior `rho_w`, which is LU-factorized
+   without pivoting (stored in `schur_element`).
+2. **Global Schur complement** (per column, in `update_jacobian!`): eliminating the
+   local DOFs of every element with `S_e` leaves a `4*nz x 4*nz` banded system
+   `S = D - C A^{-1} B` (3 sub- and 3 super-diagonals) on the edge DOFs, which is
+   factorized with a banded LU without pivoting (stored in `schur_band`).
+3. **Solve** (per stage, in `solve_jacobian!`): copy the right-hand side to the columns,
+   eliminate the local DOFs with `S_e` (right-hand side `b_D - C A^{-1} b_A` of the
+   condensed system), solve the banded system with the LU factors of `S` for the edge
+   DOFs, back-substitute into the local DOFs, and copy the solution back to Trixi.jl's
+   layout. The horizontal components of the momentum are only multiplied by `gamma_dt`,
+   i.e., solved with `J = 0`.
 
-Every kernel is dispatched via KernelAbstractions.jl to a CPU loop or a GPU
-kernel. Columns are independent, so the sequential recurrences (fill, Schur
-assembly, banded factor/solve) use one thread per column; gather/scatter use
-one thread per node; independent per-element work (forward elimination,
+All kernels use KernelAbstractions.jl with the backend of the arrays of the
+semidiscretization, i.e., the CPU backend of KernelAbstractions.jl for `Array`s
+(independently of the threading backend of Trixi.jl) or a GPU backend. Columns are
+independent, so the sequential recurrences (fill, Schur assembly, banded factorization
+and solve) use one thread per column, the copies between Trixi.jl's layout and the columns
+use one thread per node, and the independent work per element (forward elimination,
 back-substitution) uses one thread per `(column, element)`.
+
+!!! note
+    The mesh must not be refined, since the elements of a column must be consecutive
+    with the lowest layer first. For parallel meshes, the columns must be kept on one rank
+    (`keep_columns_together = true` in [`P4estMeshCubedSphereTopography`](@ref)).
 """
 struct VerticalJacobianTwoSided{RealT <: Real}
     speed_of_sound::RealT
