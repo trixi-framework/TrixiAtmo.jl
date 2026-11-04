@@ -58,3 +58,39 @@ end
     @assert nelems_min == 26
     @assert nelems_max == 28
 end
+
+@testitem "MPI: elixir_potential_temperature_vortex_shedding_restart with Sleve" setup=[Setup] tags=[:mpi] begin
+    # Restarting in the middle of the simulation must reproduce the results of the
+    # uninterrupted run (see the test of `elixir_potential_temperature_vortex_shedding.jl`)
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "euler", "dry_air", "global_circulation",
+                                 "elixir_potential_temperature_vortex_shedding_restart.jl"),
+                        l2=[
+                            0.0001057423398334098,
+                            0.03613038003451269,
+                            0.0361289924721471,
+                            0.04776452352503473,
+                            0.03182160814514321,
+                            0.6465393607304221
+                        ],
+                        linf=[
+                            0.0017419769943902708,
+                            0.15502911498267422,
+                            0.15502631515318002,
+                            0.25776642450538406,
+                            0.34429453617826766,
+                            119.17068115004376
+                        ],
+                        rtol=1e-9,
+                        t_final=0.0001 * SECONDS_PER_DAY, restart_interval=1,
+                        trees_per_cube_face=(3, 2), adapt_vertical_grid=Sleve(0.7, 0.8))
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities)
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 1000)
+    # The mesh loaded from the restart file must still keep the columns together
+    # (a total of 108 elements split into 4 partitions)
+    local_nelems = nelements(solver, semi.cache)
+    nelems_min = Trixi.MPI.Allreduce!(Ref(local_nelems), Base.min, Trixi.mpi_comm())[]
+    nelems_max = Trixi.MPI.Allreduce!(Ref(local_nelems), Base.max, Trixi.mpi_comm())[]
+    @test nelems_min == 26
+    @test nelems_max == 28
+end
