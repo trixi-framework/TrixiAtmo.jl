@@ -229,7 +229,9 @@ function create_jacobian_cache(jacobian::VerticalJacobianTwoSided, semi, u_ode)
     nlayers = number_of_layers(mesh)
     nnodes_ = nnodes(solver)
     nelements_ = nelements(solver, cache)
-    if nelements_ != Trixi.ntrees(mesh)
+    # Compare the global numbers of elements and trees, since `nelements` is local to the
+    # MPI rank for parallel meshes
+    if Trixi.ncellsglobal(mesh) != Trixi.ntrees(mesh)
         throw(ArgumentError("`VerticalJacobianTwoSided` requires a mesh " *
                             "without refinement"))
     end
