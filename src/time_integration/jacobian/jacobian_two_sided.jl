@@ -955,8 +955,10 @@ Base.@propagate_inbounds function lu_band_column!(column, A, l, u, ::Val{N}) whe
     up2 = u + 2
     uplp1 = u + l + 1
     for k in 1:(N - 1)
+        # One division and `l` multiplications instead of `l` divisions
+        inv_kk = inv(A[column, up1, k])
         for i in up2:uplp1
-            A[column, i, k] /= A[column, up1, k]
+            A[column, i, k] *= inv_kk
         end
         for i in up2:uplp1
             for j in (k + 1):min(k + u, N)
