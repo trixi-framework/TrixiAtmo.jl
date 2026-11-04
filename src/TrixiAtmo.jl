@@ -52,7 +52,7 @@ else
 end
 using DataStructures: BinaryHeap, FasterForward
 using KernelAbstractions: KernelAbstractions, @kernel, @index, @Const, Backend, get_backend
-using StaticArrays: MVector, MMatrix
+using StaticArrays: MVector
 using Adapt: Adapt
 using Trixi: wrap_array, get_node_coords, get_contravariant_vector
 
