@@ -27,8 +27,11 @@ function number_of_layers(mesh::Trixi.P4estMesh{3})
 end
 
 # Column and layer of every element, used to copy data between Trixi.jl's layout and the
-# columns. The trees of the cubed sphere are ordered such that the layers of a column are
-# consecutive, with the lowest layer first, which is checked by `check_vertical_ordering`.
+# columns. The formula is specific to the ordering of the trees of the
+# `P4estMeshCubedSphereTopography` (see `calc_tree_node_coordinates!` in
+# `src/meshes/p4est_cubed_sphere_topography.jl`), where the layers of a column are
+# consecutive, with the lowest layer first; other meshes are rejected by `number_of_layers`,
+# and the ordering is checked by `check_vertical_ordering`.
 function compute_element_index_maps(nlayers, solver, cache)
     horizontal_index_of_element = [(element - 1) ÷ nlayers + 1
                                    for element in eachelement(solver, cache)]
