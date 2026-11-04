@@ -74,7 +74,7 @@ alive_callback = AliveCallback(analysis_interval = analysis_interval)
 save_solution = SaveSolutionCallback(dt = 5760, save_initial_solution = true,
                                      save_final_solution = true)
 
-restart_interval = 10_000
+restart_interval = 15
 save_restart = SaveRestartCallback(interval = restart_interval, save_final_restart = true)
 
 callbacks = CallbackSet(summary_callback,
