@@ -121,3 +121,95 @@ end
         @test all(order -> isapprox(order, order_expected, atol = 0.1), orders)
     end
 end
+
+@testitem "Time integration: linear IMEX methods without Jacobian" setup=[
+    Setup,
+    TimeIntegration
+] tags=[:time_integration] begin
+    # With `jacobian = nothing`, i.e., a zero Jacobian, the linear IMEX methods reduce to
+    # their explicit parts
+    trixi_include(@__MODULE__,
+                  joinpath(EXAMPLES_DIR, "global_circulation",
+                           "elixir_potential_temperature_baroclinic_instability_turbo.jl"),
+                  tspan = (0.0, 10.0), trees_per_cube_face = (2, 2), sol = nothing)
+
+    for alg in (ARK2(), ARS232(), ARS343())
+        # Explicit time step restricted by the vertical acoustic waves
+        sol = Trixi.solve(ode, alg; dt = 0.5, callback = callbacks)
+
+        @test sol.t[end] == 10.0
+        u = Trixi.wrap_array(sol.u[end], semi)
+        u_initial = Trixi.wrap_array(ode.u0, semi)
+        @test all(isfinite, u)
+        # The solution changed, i.e., the stages were actually computed
+        @test !(view(u, 2, ..) ≈ view(u_initial, 2, ..))
+        # The geopotential does not change
+        @test view(u, 6, ..) == view(u_initial, 6, ..)
+
+        # Ensure that we do not have excessive memory allocations
+        # (e.g., from type instabilities). `Trixi.solve!` calls the right-hand side inside
+        # the timer section "main loop", so the first call outside of it creates new timer
+        # sections, which allocates.
+        TrixiAtmo.Trixi.rhs_hyperbolic!(similar(sol.u[end]), sol.u[end], semi, sol.t[end])
+        @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
+    end
+end
+
+@testitem "Time integration: linear IMEX resize!" setup=[Setup, TimeIntegration] tags=[:time_integration] begin
+    trixi_include(@__MODULE__,
+                  joinpath(EXAMPLES_DIR, "global_circulation",
+                           "elixir_potential_temperature_baroclinic_instability_turbo.jl"),
+                  tspan = (0.0, 1.0), trees_per_cube_face = (2, 2), sol = nothing)
+
+    # Resizing the integrator, e.g., for AMR, resizes all vectors of the same length as `u`
+    integrator = Trixi.init(ode, ARK2(); dt = 0.5)
+    new_size = length(ode.u0) + 6
+    resize!(integrator, new_size)
+    @test length(integrator.u) == length(integrator.du) == length(integrator.u_tmp) ==
+          new_size
+    # The first stage value is the solution itself
+    @test integrator.stages[1] === integrator.u
+    @test all(stage -> length(stage) == new_size && iszero(stage),
+              Base.tail(integrator.stages))
+    @test all(stage -> length(stage) == new_size && iszero(stage),
+              integrator.rhs_stages)
+end
+
+@testitem "Time integration: linear IMEX with tspan = (0.0, 0.0)" setup=[
+    Setup,
+    TimeIntegration
+] tags=[:time_integration] begin
+    # A vanishing time span is convenient to get a `sol` object with minimal costs. The
+    # stages divide by `dt` and must be skipped, such that the solution does not change.
+    trixi_include(@__MODULE__,
+                  joinpath(EXAMPLES_DIR, "global_circulation",
+                           "elixir_potential_temperature_baroclinic_instability_turbo.jl"),
+                  tspan = (0.0, 0.0), trees_per_cube_face = (2, 2), sol = nothing)
+
+    sol = Trixi.solve(ode, ARS232(); dt = 0.5,
+                      callback = CallbackSet(summary_callback, analysis_callback,
+                                             alive_callback))
+    @test sol.t[end] == 0.0
+    @test sol.u[end] == ode.u0
+end
+
+@testitem "Time integration: convergence of linear IMEX methods" setup=[Setup] tags=[:time_integration] begin
+    # Linear test problem `y' = lambda y` with the exact solution `exp(lambda t)`. Without
+    # Jacobian, the linear IMEX methods reduce to their explicit parts. The stability
+    # polynomial of the explicit parts of `ARK2` and `ARS232` is the one of the third-order
+    # SSPRK(3,3) method. The explicit part of `ARS343` is a third-order method whose
+    # stability polynomial is fourth-order accurate, so it converges with fourth order
+    # for this linear problem.
+    lambda = -2.0
+    rhs!(du, u, p, t) = (du .= lambda .* u; nothing)
+    ode = TrixiAtmo.ODEProblem(rhs!, [1.0], (0.0, 1.0))
+
+    for (alg, order_expected) in ((ARK2(), 3), (ARS232(), 3), (ARS343(), 4))
+        errors = map((0.05, 0.025, 0.0125)) do dt
+            sol = Trixi.solve(ode, alg; dt = dt)
+            return abs(sol.u[end][1] - exp(lambda))
+        end
+        orders = log2.(errors[1:(end - 1)] ./ errors[2:end])
+        @test all(order -> isapprox(order, order_expected, atol = 0.1), orders)
+    end
+end
