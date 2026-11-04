@@ -31,13 +31,14 @@ condensation (banded reduced system) of
 
 Pass it as keyword argument `jacobian` to `Trixi.solve` with an implicit time integration
 method, e.g., `Trixi.solve(ode, SSPRW32(); dt, jacobian = VerticalJacobianTwoSided())`. Its
-arrays are created by `Trixi.init` for the semidiscretization of the ODE problem, with the
-array type of the solution, so that it runs on the same backend (CPU or GPU) as the
-semidiscretization. The Jacobian decouples into independent linear systems for each
-vertical column of nodes. The dissipation of the vertical acoustic waves at the element
-interfaces and at the walls is the one of the LMARS flux with the constant speed of sound
-`c`, also if the surface flux of the semidiscretization uses a local speed of sound (e.g.,
-[`flux_lmars_es`](@ref)), since the Jacobian only needs to approximate the right-hand side.
+arrays are created by [`create_jacobian_cache`](@ref) when the time integrator is
+initialized, for the semidiscretization of the ODE problem and with the array type of the
+solution, so that it runs on the same backend (CPU or GPU) as the semidiscretization. The
+Jacobian decouples into independent linear systems for each vertical column of nodes. The
+dissipation of the vertical acoustic waves at the element interfaces and at the walls is the
+one of the LMARS flux with the constant speed of sound `c`, also if the surface flux of the
+semidiscretization uses a local speed of sound (e.g., [`flux_lmars_es`](@ref)), since the
+Jacobian only needs to approximate the right-hand side.
 
 ### Permutation
 The unknowns of a column are the density `rho`, the vertical momentum `rho_w`, i.e., the
@@ -48,11 +49,11 @@ degree `polydeg` (`M = polydeg + 1` LGL nodes), the unknowns are grouped, by var
 a small *local* block per element and a small *global* (edge) block shared by the whole
 column:
 
-* All `rho` DOFs of element 1 (nodes `1..M`), then
-* The `rho_theta` DOFs `2..M-1` of element 1 (interior only), then
-* The `rho_w` DOFs `2..M-1` of element 1 (interior only), then
+* all `rho` DOFs of element 1 (nodes `1..M`), then
+* the `rho_theta` DOFs `2..M-1` of element 1 (interior only), then
+* the `rho_w` DOFs `2..M-1` of element 1 (interior only), then
 * ... (repeated, element by element) ...
-* Finally, 4 edge DOFs per element, ordered element by element:
+* finally, 4 edge DOFs per element, ordered element by element:
   `rho_theta_1, rho_w_1, rho_w_M, rho_theta_M`.
 
 Density is *never* condensed: it keeps all `M` nodes, including both edges,
@@ -436,35 +437,38 @@ Base.@propagate_inbounds function fill_jacobian_element!(layer, column, nlayers_
         factor_ll = 0.5f0 * metric_factor[column, NNODES, layer - 1] *
                     inv_boundary_weight
         factor_rr = 0.5f0 * metric_factor[column, 1, layer] * inv_boundary_weight
-        # (index_boundary-1,index_boundary-1)
+        # Contributions of the LMARS flux at the interface. Each comment gives the entry
+        # `(i, j)` (row, column) of the condensed system, stored at
+        # `schur_band[column, i - j + 4, j]`.
+        # (index_boundary - 1, index_boundary - 1)
         schur_band[column, 4, index_boundary - 1] += theta_interface *
                                                      dp_drho_theta_ll *
                                                      inv_speed_of_sound * factor_ll
-        # (index_boundary,index_boundary-1)
+        # (index_boundary, index_boundary - 1)
         schur_band[column, 5, index_boundary - 1] += -theta_interface *
                                                      dp_drho_theta_ll *
                                                      inv_speed_of_sound * factor_rr
-        # (index_boundary-1,index_boundary)
+        # (index_boundary - 1, index_boundary)
         schur_band[column, 3, index_boundary] += -theta_interface * dp_drho_theta_rr *
                                                  inv_speed_of_sound * factor_ll
-        # (index_boundary,index_boundary)
+        # (index_boundary, index_boundary)
         schur_band[column, 4, index_boundary] += theta_interface * dp_drho_theta_rr *
                                                  inv_speed_of_sound * factor_rr
-        # (index_boundary-2,index_boundary-2)
+        # (index_boundary - 2, index_boundary - 2)
         schur_band[column, 4, index_boundary - 2] += speed_of_sound * factor_ll
-        # (index_boundary+1,index_boundary-2)
+        # (index_boundary + 1, index_boundary - 2)
         schur_band[column, 7, index_boundary - 2] += -speed_of_sound * factor_rr
-        # (index_boundary-2,index_boundary+1)
+        # (index_boundary - 2, index_boundary + 1)
         schur_band[column, 1, index_boundary + 1] += -speed_of_sound * factor_ll
-        # (index_boundary+1,index_boundary+1)
+        # (index_boundary + 1, index_boundary + 1)
         schur_band[column, 4, index_boundary + 1] += speed_of_sound * factor_rr
-        # (index_boundary,index_boundary-2)
+        # (index_boundary, index_boundary - 2)
         schur_band[column, 6, index_boundary - 2] += -theta_ll * factor_rr
-        # (index_boundary+1,index_boundary-1)
+        # (index_boundary + 1, index_boundary - 1)
         schur_band[column, 6, index_boundary - 1] += -dp_drho_theta_ll * factor_rr
-        # (index_boundary-1,index_boundary+1)
+        # (index_boundary - 1, index_boundary + 1)
         schur_band[column, 2, index_boundary + 1] += theta_rr * factor_ll
-        # (index_boundary-2,index_boundary)
+        # (index_boundary - 2, index_boundary)
         schur_band[column, 2, index_boundary] += dp_drho_theta_rr * factor_ll
     end
 

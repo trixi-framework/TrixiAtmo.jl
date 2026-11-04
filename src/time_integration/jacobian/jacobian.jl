@@ -12,9 +12,9 @@
 
 Create the arrays of the approximate Jacobian specified by `jacobian` (the keyword argument
 of `Trixi.solve` with implicit time integration methods such as [`SSPRW32`](@ref)) for the
-semidiscretization `semi`, with the array type of the solution `u_ode`. It is called by
-`Trixi.init` of the implicit time integration methods. For `jacobian = nothing`, i.e.,
-`J = 0`, nothing is created.
+semidiscretization `semi`, with the array type of the solution `u_ode`. It is called when
+the time integrator of an implicit time integration method is initialized (`init`, called
+by `Trixi.solve`). For `jacobian = nothing`, i.e., `J = 0`, nothing is created.
 """
 create_jacobian_cache(::Nothing, semi, u_ode) = nothing
 
