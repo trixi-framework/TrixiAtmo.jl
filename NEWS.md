@@ -20,6 +20,13 @@ for human readability.
 - GPU support including adaptation to `Float32` via `trixi_adapt` ([#242]).
 
 #### Changed
+- The `p4est` connectivities of `P4estMeshCubedSphere2D`, `P4estMeshQuadIcosahedron2D`, and
+  `P4estMeshCubedSphereTopography` now contain all corners (and edges in 3D) connecting
+  trees, as required by `p4est` for 2:1 balancing. Previously, they only contained the face
+  connections, so the 3D meshes could violate the 2:1 balance after local refinement
+  (e.g., with AMR). In 2D, this was hidden by Trixi.jl calling `p4est_balance` twice,
+  which is no longer necessary with complete connectivities. Simulations with uniform
+  refinement are not affected.
 - Fixes a bug in `flux_nonconservative_waruszewski_etal` for the
   `CompressibleEulerEnergyEquationsWithGravity2D` and the
   `CompressibleEulerEnergyEquationsWithGravity3D`: The gravity term of the momentum did
