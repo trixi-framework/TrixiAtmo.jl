@@ -147,6 +147,24 @@ end
         integral_final = Trixi.integrate((u, equations) -> u[v], sol.u[end], semi)
         @test isapprox(integral_final, integral_initial, rtol = 1e-13)
     end
+
+    # The kernels of the vertical Jacobian access the arrays without bounds checks, so the
+    # explicit bounds checks before launching them must catch arrays of the wrong size
+    jacobian_cache = TrixiAtmo.create_jacobian_cache(jacobian, semi, ode.u0)
+    backend = jacobian_cache.backend
+    (; u_vertical) = jacobian_cache
+    @test isnothing(TrixiAtmo.check_axes_columns(jacobian_cache))
+    u_vertical_too_small = similar(u_vertical, Base.front(size(u_vertical))...,
+                                   size(u_vertical, 4) - 1)
+    @test_throws DimensionMismatch TrixiAtmo.ldiv_interior_forward!(backend,
+                                                                    jacobian_cache,
+                                                                    u_vertical_too_small,
+                                                                    20.0)
+    @test_throws DimensionMismatch TrixiAtmo.copy_state_to_columns!(backend,
+                                                                    u_vertical_too_small,
+                                                                    Trixi.wrap_array(ode.u0,
+                                                                                     semi),
+                                                                    jacobian_cache, semi)
 end
 
 @testitem "Euler potential temperature 3D: elixir_potential_temperature_baroclinic_instability Souza" setup=[

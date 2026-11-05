@@ -19,11 +19,28 @@
 # `jacobian_3d_gpu.jl`. The kernels launch one thread per node, i.e.,
 # `indices = (i, j, k, element)`.
 
+# Check whether the arrays in `jacobian` have the axes we assume they must have in the copy
+# kernels between Trixi.jl's layout and the columns.
+function check_axes_element_layout(jacobian, solver, cache)
+    (; vertical_frame, horizontal_index_of_element, vertical_index_of_element) = jacobian
+    nodes = eachnode(solver)
+    elements = eachelement(solver, cache)
+    Trixi.check_axes(vertical_frame, (Base.OneTo(4), nodes, nodes, nodes, elements))
+    Trixi.check_axes(horizontal_index_of_element, (elements,))
+    Trixi.check_axes(vertical_index_of_element, (elements,))
+    check_axes_columns(jacobian)
+    return nothing
+end
+
 # Copy the state `u`, from which the Jacobian is assembled, to the columns
 function copy_state_to_columns!(backend::Backend, u_vertical, u, jacobian, semi)
     mesh, equations, solver, cache = Trixi.mesh_equations_solver_cache(semi)
     # Explicit bounds check, which allows us to assume inbounds access in the kernel
-    @boundscheck Trixi.check_axes(u, mesh, equations, solver, cache)
+    @boundscheck begin
+        Trixi.check_axes(u, mesh, equations, solver, cache)
+        check_axes_element_layout(jacobian, solver, cache)
+        Trixi.check_axes(u_vertical, axes(jacobian.u_vertical))
+    end
     (; vertical_frame, horizontal_index_of_element, vertical_index_of_element) = jacobian
     nnodes_ = nnodes(jacobian)
     kernel! = copy_state_to_columns_KAkernel!(backend)
@@ -49,7 +66,11 @@ end
 function copy_rhs_to_columns!(backend::Backend, u_vertical, b, jacobian, semi)
     mesh, equations, solver, cache = Trixi.mesh_equations_solver_cache(semi)
     # Explicit bounds check, which allows us to assume inbounds access in the kernel
-    @boundscheck Trixi.check_axes(b, mesh, equations, solver, cache)
+    @boundscheck begin
+        Trixi.check_axes(b, mesh, equations, solver, cache)
+        check_axes_element_layout(jacobian, solver, cache)
+        Trixi.check_axes(u_vertical, axes(jacobian.u_vertical))
+    end
     (; vertical_frame, horizontal_index_of_element, vertical_index_of_element) = jacobian
     nnodes_ = nnodes(jacobian)
     kernel! = copy_rhs_to_columns_KAkernel!(backend)
@@ -77,7 +98,11 @@ function copy_solution_from_columns!(backend::Backend, b, u_vertical, jacobian, 
                                      gamma_dt)
     mesh, equations, solver, cache = Trixi.mesh_equations_solver_cache(semi)
     # Explicit bounds check, which allows us to assume inbounds access in the kernel
-    @boundscheck Trixi.check_axes(b, mesh, equations, solver, cache)
+    @boundscheck begin
+        Trixi.check_axes(b, mesh, equations, solver, cache)
+        check_axes_element_layout(jacobian, solver, cache)
+        Trixi.check_axes(u_vertical, axes(jacobian.u_vertical))
+    end
     (; vertical_frame, horizontal_index_of_element, vertical_index_of_element) = jacobian
     nnodes_ = nnodes(jacobian)
     kernel! = copy_solution_from_columns_KAkernel!(backend)

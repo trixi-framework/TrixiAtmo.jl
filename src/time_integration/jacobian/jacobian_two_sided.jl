@@ -238,6 +238,29 @@ end
     return NNODES
 end
 
+# Check whether the arrays of the columns in `jacobian` have the axes we assume they must
+# have in the kernels of the vertical Jacobian.
+function check_axes_columns(jacobian::VerticalJacobianTwoSidedCache)
+    (; ncolumns, metric_factor, gravity, derivative_hat, u_vertical, theta,
+    dp_drho_theta, schur_element, schur_band, schur_rhs) = jacobian
+    columns = Base.OneTo(ncolumns)
+    nodes = Base.OneTo(nnodes(jacobian))
+    interior_nodes = Base.OneTo(nnodes(jacobian) - 2)
+    layers = Base.OneTo(nlayers(jacobian))
+    Trixi.check_axes(metric_factor, (columns, nodes, layers))
+    Trixi.check_axes(gravity, (columns, nodes, layers))
+    Trixi.check_axes(theta, (columns, nodes, layers))
+    Trixi.check_axes(dp_drho_theta, (columns, nodes, layers))
+    Trixi.check_axes(derivative_hat, (nodes, nodes))
+    Trixi.check_axes(u_vertical, (columns, Base.OneTo(3), nodes, layers))
+    Trixi.check_axes(schur_element, (columns, interior_nodes, interior_nodes, layers))
+    # Band matrix with 3 lower and 3 upper diagonals and 4 boundary unknowns per layer
+    Trixi.check_axes(schur_band,
+                     (columns, Base.OneTo(7), Base.OneTo(4 * length(layers))))
+    Trixi.check_axes(schur_rhs, (columns, Base.OneTo(4 * length(layers))))
+    return nothing
+end
+
 function create_jacobian_cache(jacobian::VerticalJacobianTwoSided, semi, u_ode)
     (; mesh, equations, solver, cache) = semi
     if !(equations isa CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
@@ -568,6 +591,8 @@ function fill_jacobian!(backend::Backend, jacobian::VerticalJacobianTwoSidedCach
     dp_exponent = equations.gamma - 1
     inv_speed_of_sound = inv(speed_of_sound)
     inv_gamma_dt = inv(gamma_dt)
+    # Explicit bounds check, which allows us to assume inbounds access in the kernel
+    @boundscheck check_axes_columns(jacobian)
     # The fill and the boundary Schur complement accumulate into `schur_band`
     fill!(schur_band, zero(eltype(schur_band)))
     @views schur_band[:, 4, :] .= inv_gamma_dt
@@ -823,6 +848,8 @@ function schur_complement_boundary!(backend::Backend,
     nnodes_ = nnodes(jacobian)
     nlayers_ = nlayers(jacobian)
     inv_speed_of_sound = inv(jacobian.speed_of_sound)
+    # Explicit bounds check, which allows us to assume inbounds access in the kernel
+    @boundscheck check_axes_columns(jacobian)
 
     kernel! = schur_complement_boundary_KAkernel!(backend)
     kernel!(nlayers_, schur_element, schur_band, gamma_dt,
@@ -865,6 +892,8 @@ end
 
 function lu_band!(backend::Backend, jacobian::VerticalJacobianTwoSidedCache)
     (; ncolumns, schur_band) = jacobian
+    # Explicit bounds check, which allows us to assume inbounds access in the kernel
+    @boundscheck check_axes_columns(jacobian)
     kernel! = lu_band_KAkernel!(backend)
     kernel!(schur_band, Val(4 * nlayers(jacobian));
             ndrange = ncolumns, column_kernel_workgroupsize()...)
@@ -902,6 +931,8 @@ end
 
 function ldiv_band!(backend::Backend, jacobian::VerticalJacobianTwoSidedCache)
     (; ncolumns, schur_band, schur_rhs) = jacobian
+    # Explicit bounds check, which allows us to assume inbounds access in the kernel
+    @boundscheck check_axes_columns(jacobian)
     kernel! = ldiv_band_KAkernel!(backend)
     kernel!(schur_band, schur_rhs, Val(4 * nlayers(jacobian));
             ndrange = ncolumns, column_kernel_workgroupsize()...)
@@ -1031,6 +1062,11 @@ function ldiv_interior_forward!(backend::Backend,
     gravity) = jacobian
     nnodes_ = nnodes(jacobian)
     nlayers_ = nlayers(jacobian)
+    # Explicit bounds check, which allows us to assume inbounds access in the kernel
+    @boundscheck begin
+        check_axes_columns(jacobian)
+        Trixi.check_axes(b, axes(jacobian.u_vertical))
+    end
 
     kernel! = ldiv_interior_forward_KAkernel!(backend)
     kernel!(nlayers_, schur_element, b, schur_rhs, gamma_dt, gravity, theta,
@@ -1213,6 +1249,11 @@ function ldiv_interior_backward!(backend::Backend,
     nnodes_ = nnodes(jacobian)
     nlayers_ = nlayers(jacobian)
     inv_speed_of_sound = inv(jacobian.speed_of_sound)
+    # Explicit bounds check, which allows us to assume inbounds access in the kernel
+    @boundscheck begin
+        check_axes_columns(jacobian)
+        Trixi.check_axes(b, axes(jacobian.u_vertical))
+    end
 
     kernel! = ldiv_interior_backward_KAkernel!(backend)
     kernel!(nlayers_, schur_element, schur_rhs, b, gamma_dt,
