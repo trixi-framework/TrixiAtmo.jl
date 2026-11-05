@@ -214,7 +214,7 @@ end
     end
 end
 
-@testitem "Time integration: convergence of SSPRW32 with VerticalJacobianTwoSided" setup=[
+@testitem "Time integration: convergence of SSPRW32 with JacobianVerticalTwoSided" setup=[
     Setup,
     TimeIntegration
 ] tags=[:time_integration] begin

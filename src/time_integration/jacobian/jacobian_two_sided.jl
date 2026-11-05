@@ -17,7 +17,7 @@
 # It conserves mass and mass-weighted potential temperature.
 
 """
-    VerticalJacobianTwoSided(; c = 340)
+    JacobianVerticalTwoSided(; c = 340)
 
 Approximate Jacobian of the vertical dynamics (vertically propagating acoustic waves and
 gravity) of the [`CompressibleEulerPotentialTemperatureEquationsWithGravity3D`](@ref) on a
@@ -30,11 +30,10 @@ condensation (banded reduced system) of
   [arXiv: 2610.15775](https://arxiv.org/abs/2610.15775)
 
 Pass it as keyword argument `jacobian` to `Trixi.solve` with an implicit time integration
-method, e.g., `Trixi.solve(ode, SSPRW32(); dt, jacobian = VerticalJacobianTwoSided())`. Its
-arrays are created by [`create_jacobian_cache`](@ref) when the time integrator is
-initialized, for the semidiscretization of the ODE problem and with the array type of the
-solution, so that it runs on the same backend (CPU or GPU) as the semidiscretization. The
-Jacobian decouples into independent linear systems for each vertical column of nodes. The
+method, e.g., `Trixi.solve(ode, SSPRW32(); dt, jacobian = JacobianVerticalTwoSided())`. Its
+arrays are created when the time integrator is initialized, with the array and real types of
+the semidiscretization of the ODE problem, so that it runs on the same backend (CPU or GPU)
+as the semidiscretization. The Jacobian decouples into independent linear systems for each vertical column of nodes. The
 dissipation of the vertical acoustic waves at the element interfaces and at the walls is the
 one of the LMARS flux with the constant speed of sound `c`, also if the surface flux of the
 semidiscretization uses a local speed of sound (e.g., [`flux_lmars_es`](@ref)), since the
@@ -178,15 +177,15 @@ back-substitution) uses one thread per `(column, element)`.
     with the lowest layer first. For parallel meshes, the columns must be kept on one rank
     (`keep_columns_together = true` in [`P4estMeshCubedSphereTopography`](@ref)).
 """
-struct VerticalJacobianTwoSided{RealT <: Real}
+struct JacobianVerticalTwoSided{RealT <: Real}
     speed_of_sound::RealT
 end
 
-VerticalJacobianTwoSided(; c = 340) = VerticalJacobianTwoSided(c)
+JacobianVerticalTwoSided(; c = 340) = JacobianVerticalTwoSided(c)
 
-# Arrays of the `VerticalJacobianTwoSided` for a semidiscretization, created by
+# Arrays of the `JacobianVerticalTwoSided` for a semidiscretization, created by
 # `create_jacobian_cache`
-struct VerticalJacobianTwoSidedCache{NLAYERS, NNODES, RealT <: Real, BackendType,
+struct JacobianVerticalTwoSidedCache{NLAYERS, NNODES, RealT <: Real, BackendType,
                                      MatrixRealT <: DenseMatrix{RealT},
                                      ArrayRealT3 <: DenseArray{RealT, 3},
                                      ArrayRealT4 <: DenseArray{RealT, 4},
@@ -230,17 +229,17 @@ end
 # Number of layers of elements of a column and number of nodes per coordinate direction of
 # the elements (as `nnodes(solver)`), stored as type parameters such that they are
 # compile-time constants in the kernels
-@inline function nlayers(::VerticalJacobianTwoSidedCache{NLAYERS}) where {NLAYERS}
+@inline function nlayers(::JacobianVerticalTwoSidedCache{NLAYERS}) where {NLAYERS}
     return NLAYERS
 end
 
-@inline function Trixi.nnodes(::VerticalJacobianTwoSidedCache{<:Any, NNODES}) where {NNODES}
+@inline function Trixi.nnodes(::JacobianVerticalTwoSidedCache{<:Any, NNODES}) where {NNODES}
     return NNODES
 end
 
 # Check whether the arrays of the columns in `jacobian` have the axes we assume they must
 # have in the kernels of the vertical Jacobian.
-function check_axes_columns(jacobian::VerticalJacobianTwoSidedCache)
+function check_axes_columns(jacobian::JacobianVerticalTwoSidedCache)
     (; ncolumns, metric_factor, gravity, derivative_hat, u_vertical, theta,
     dp_drho_theta, schur_element, schur_band, schur_rhs) = jacobian
     columns = Base.OneTo(ncolumns)
@@ -261,10 +260,10 @@ function check_axes_columns(jacobian::VerticalJacobianTwoSidedCache)
     return nothing
 end
 
-function create_jacobian_cache(jacobian::VerticalJacobianTwoSided, semi, u_ode)
+function create_jacobian_cache(jacobian::JacobianVerticalTwoSided, semi, u_ode)
     (; mesh, equations, solver, cache) = semi
     if !(equations isa CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
-        throw(ArgumentError("`VerticalJacobianTwoSided` requires the " *
+        throw(ArgumentError("`JacobianVerticalTwoSided` requires the " *
                             "`CompressibleEulerPotentialTemperatureEquationsWithGravity3D`"))
     end
     nlayers_ = nlayers(mesh)
@@ -273,7 +272,7 @@ function create_jacobian_cache(jacobian::VerticalJacobianTwoSided, semi, u_ode)
     # Compare the global numbers of elements and trees, since `nelements` is local to the
     # MPI rank for parallel meshes
     if Trixi.ncellsglobal(mesh) != Trixi.ntrees(mesh)
-        throw(ArgumentError("`VerticalJacobianTwoSided` requires a mesh " *
+        throw(ArgumentError("`JacobianVerticalTwoSided` requires a mesh " *
                             "without refinement"))
     end
     ncolumns = nnodes_^2 * nelements_ ÷ nlayers_
@@ -307,7 +306,7 @@ function create_jacobian_cache(jacobian::VerticalJacobianTwoSided, semi, u_ode)
     schur_band = KernelAbstractions.zeros(backend, RealT, ncolumns, 7, 4 * nlayers_)
     schur_rhs = KernelAbstractions.zeros(backend, RealT, ncolumns, 4 * nlayers_)
 
-    return VerticalJacobianTwoSidedCache{nlayers_, nnodes_, RealT, typeof(backend),
+    return JacobianVerticalTwoSidedCache{nlayers_, nnodes_, RealT, typeof(backend),
                                          typeof(schur_rhs), typeof(gravity),
                                          typeof(schur_element),
                                          typeof(vertical_frame),
@@ -330,7 +329,7 @@ function create_jacobian_cache(jacobian::VerticalJacobianTwoSided, semi, u_ode)
 end
 
 # Assemble and factorize `I / gamma_dt - J` from the state `u_ode`, see `jacobian.jl`
-function update_jacobian!(jacobian::VerticalJacobianTwoSidedCache, u_ode, semi,
+function update_jacobian!(jacobian::JacobianVerticalTwoSidedCache, u_ode, semi,
                           gamma_dt)
     (; backend, u_vertical) = jacobian
     u = wrap_array(u_ode, semi)
@@ -351,7 +350,7 @@ function update_jacobian!(jacobian::VerticalJacobianTwoSidedCache, u_ode, semi,
 end
 
 # Solve `(I / gamma_dt - J) x = b_ode` in place, see `jacobian.jl`
-function solve_jacobian!(b_ode, jacobian::VerticalJacobianTwoSidedCache, semi, gamma_dt)
+function solve_jacobian!(b_ode, jacobian::JacobianVerticalTwoSidedCache, semi, gamma_dt)
     (; backend, u_vertical) = jacobian
     b = wrap_array(b_ode, semi)
 
@@ -575,7 +574,7 @@ end
     end
 end
 
-function fill_jacobian!(backend::Backend, jacobian::VerticalJacobianTwoSidedCache,
+function fill_jacobian!(backend::Backend, jacobian::JacobianVerticalTwoSidedCache,
                         equations,
                         gamma_dt)
     (; schur_element, schur_band, gravity, theta, dp_drho_theta, ncolumns, metric_factor,
@@ -729,7 +728,7 @@ end
 # Eliminate the interior unknowns of element `layer` of the column `column` with the local
 # Schur complement `S_e`, as needed by both the boundary Schur complement and the forward
 # substitution. With the blocks `A_ij` of the element block `A_e` of the reference in the
-# docstring of `VerticalJacobianTwoSided`, `x = A_e^{-1} b` follows from
+# docstring of `JacobianVerticalTwoSided`, `x = A_e^{-1} b` follows from
 #   S_e x_rho_w = b_rho_w - A31 A11^{-1} b_rho - A32 A22^{-1} b_rho_theta,
 #   x_rho = A11^{-1} (b_rho - A13 x_rho_w),
 #   x_rho_theta = A22^{-1} (b_rho_theta - A23 x_rho_w),
@@ -860,7 +859,7 @@ end
 end
 
 function schur_complement_boundary!(backend::Backend,
-                                    jacobian::VerticalJacobianTwoSidedCache,
+                                    jacobian::JacobianVerticalTwoSidedCache,
                                     gamma_dt)
     (; schur_element, ncolumns, schur_band, gravity, theta, dp_drho_theta, metric_factor,
     derivative_hat, inv_boundary_weight) = jacobian
@@ -914,7 +913,7 @@ end
     lu_band_per_column!(schur_band, 3, 3, Val(N), column)
 end
 
-function lu_band!(backend::Backend, jacobian::VerticalJacobianTwoSidedCache)
+function lu_band!(backend::Backend, jacobian::JacobianVerticalTwoSidedCache)
     (; ncolumns, schur_band) = jacobian
     # Explicit bounds check, which allows us to assume inbounds access in the kernel
     @boundscheck check_axes_columns(jacobian)
@@ -952,7 +951,7 @@ end
     ldiv_band_per_column!(schur_rhs, schur_band, 3, 3, Val(N), column)
 end
 
-function ldiv_band!(backend::Backend, jacobian::VerticalJacobianTwoSidedCache)
+function ldiv_band!(backend::Backend, jacobian::JacobianVerticalTwoSidedCache)
     (; ncolumns, schur_band, schur_rhs) = jacobian
     # Explicit bounds check, which allows us to assume inbounds access in the kernel
     @boundscheck check_axes_columns(jacobian)
@@ -1039,7 +1038,7 @@ end
 end
 
 function ldiv_interior_forward!(backend::Backend,
-                                jacobian::VerticalJacobianTwoSidedCache, b,
+                                jacobian::JacobianVerticalTwoSidedCache, b,
                                 gamma_dt)
     (; schur_rhs, schur_element, ncolumns, theta, dp_drho_theta, metric_factor, derivative_hat,
     gravity) = jacobian
@@ -1222,7 +1221,7 @@ end
 end
 
 function ldiv_interior_backward!(backend::Backend,
-                                 jacobian::VerticalJacobianTwoSidedCache,
+                                 jacobian::JacobianVerticalTwoSidedCache,
                                  b,
                                  gamma_dt)
     (; schur_element, schur_rhs, ncolumns, gravity, theta, dp_drho_theta, metric_factor,

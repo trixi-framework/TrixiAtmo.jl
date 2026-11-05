@@ -67,7 +67,7 @@ callbacks = CallbackSet(summary_callback,
 ###############################################################################
 # Use a Rosenbrock-W method with the vertically implicit Jacobian, such that the time step
 # is restricted by the horizontal dynamics only
-jacobian = VerticalJacobianTwoSided(c = 340)
+jacobian = JacobianVerticalTwoSided(c = 340)
 
 dt = 85 # seconds
 sol = Trixi.solve(ode, SSPRW32(); dt = dt, callback = callbacks, jacobian = jacobian)

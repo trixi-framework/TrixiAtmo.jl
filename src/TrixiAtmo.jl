@@ -88,7 +88,7 @@ export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
 export NonlinearSolveDG
 
-export VerticalJacobianTwoSided
+export JacobianVerticalTwoSided
 export SSPRW32, ROS2, ARK2, ARS232, ARS343
 
 export flux_chandrashekar, FluxLMARS

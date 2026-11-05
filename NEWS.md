@@ -8,7 +8,7 @@ for human readability.
 ## Changes in the v0.1 lifecycle
 
 #### Added
-- `VerticalJacobianTwoSided` enables horizontally explicit, vertically implicit (HEVI) time
+- `JacobianVerticalTwoSided` enables horizontally explicit, vertically implicit (HEVI) time
   integration of the `CompressibleEulerPotentialTemperatureEquationsWithGravity3D` on a
   `P4estMeshCubedSphereTopography` with implicit methods such as `SSPRW32`, also on GPUs
   ([#243]).
