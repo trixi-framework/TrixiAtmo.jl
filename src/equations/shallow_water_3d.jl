@@ -70,32 +70,6 @@ varnames(::typeof(cons2cons), ::ShallowWaterEquations3D) = ("h", "h_v1", "h_v2",
 # Note, we use the total water height, H = h + b, as the first primitive variable for easier
 # visualization and setting initial conditions
 varnames(::typeof(cons2prim), ::ShallowWaterEquations3D) = ("H", "v1", "v2", "v3", "b")
-# Calculate 1D flux for a single point
-# Note, the bottom topography has no flux
-@inline function flux(u, orientation::Integer, equations::ShallowWaterEquations3D)
-    h, h_v1, h_v2, h_v3, _ = u
-    v1, v2, v3 = velocity(u, equations)
-
-    p = 0.5f0 * equations.gravity * h^2
-    if orientation == 1
-        f1 = h_v1
-        f2 = h_v1 * v1 + p
-        f3 = h_v1 * v2
-        f4 = h_v1 * v3
-    elseif orientation == 2
-        f1 = h_v2
-        f2 = h_v2 * v1
-        f3 = h_v2 * v2 + p
-        f4 = h_v2 * v3
-    else # orientation == 3
-        f1 = h_v3
-        f2 = h_v3 * v1
-        f3 = h_v3 * v2
-        f4 = h_v3 * v3 + p
-    end
-    return SVector(f1, f2, f3, f4, zero(eltype(u)))
-end
-
 # Calculate 1D flux for a single point in the normal direction
 # Note, this directional vector is not normalized and the bottom topography has no flux
 @inline function flux(u, normal_direction::AbstractVector,
@@ -207,8 +181,6 @@ Details are available in Eq. (4.1) in the paper:
 end
 
 """
-    flux_nonconservative_wintermeyer_etal(u_ll, u_rr, orientation::Integer,
-                                          equations::ShallowWaterEquations3D)
     flux_nonconservative_wintermeyer_etal(u_ll, u_rr,
                                           normal_direction::AbstractVector,
                                           equations::ShallowWaterEquations3D)
@@ -245,8 +217,6 @@ Further details are available in the papers:
 end
 
 """
-    flux_nonconservative_fjordholm_etal(u_ll, u_rr, orientation::Integer,
-                                        equations::ShallowWaterEquations3D)
     flux_nonconservative_fjordholm_etal(u_ll, u_rr,
                                         normal_direction::AbstractVector,
                                         equations::ShallowWaterEquations3D)

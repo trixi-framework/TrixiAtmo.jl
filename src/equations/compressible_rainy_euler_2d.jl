@@ -447,60 +447,6 @@ end
 
 ###  pde discretization  ###
 
-@inline function flux(u, orientation::Integer,
-                      equations::CompressibleRainyEulerEquations2D)
-    # constants
-    c_l = equations.c_liquid_water
-
-    #densities
-    rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
-
-    # recover rho_vapour, rho_cloud, temperature from nonlinear system
-    _, _, temperature = cons2nonlinearsystemsol(u, equations)
-
-    # velocity
-    v1, v2 = velocities(u, rho_inv, equations)
-    v_r = terminal_velocity_rain(rho_moist, rho_rain, equations)
-
-    # pressure
-    p = pressure(u, equations)
-
-    # energy density
-    energy = energy_density(u, equations)
-
-    # flux for orientation cases
-    if (orientation == 1)
-        # mass
-        f1 = rho_dry * v1
-        f2 = rho_moist * v1
-        f3 = rho_rain * v1
-
-        # momentum
-        f4 = rho * v1 * v1 + p
-        f5 = rho * v1 * v2
-
-        # energy
-        f6 = (energy + p) * v1
-
-    else
-        # mass
-        f1 = rho_dry * v2
-        f2 = rho_moist * v2
-        f3 = rho_rain * (v2 - v_r)
-
-        # momentum
-        f4 = rho * v1 * v2 - rho_rain * v_r * v1
-        f5 = rho * v2 * v2 + p - rho_rain * v_r * v2
-
-        # energy
-        f6 = (energy + p) * v2 -
-             (c_l * temperature + 0.5f0 * (v1^2 + v2^2)) * rho_rain * v_r
-    end
-
-    return SVector(f1, f2, f3, f4, f5, f6,
-                   0, 0, 0)
-end
-
 @inline function flux(u, normal_direction::AbstractVector,
                       equations::CompressibleRainyEulerEquations2D)
     # constants
@@ -616,23 +562,6 @@ end
            max(v_sound_ll, v_sound_rr) * norm(normal_direction)
 end
 
-@inline function max_abs_speed_naive(u_ll, u_rr, orientation::Integer,
-                                     equations::CompressibleRainyEulerEquations2D)
-    # name needed variables
-    v1_ll, v2_ll, v_sound_ll, v_r_ll = cons2speeds(u_ll, equations)
-    v1_rr, v2_rr, v_sound_rr, v_r_rr = cons2speeds(u_rr, equations)
-
-    if (orientation == 1)
-        v_ll = abs(v1_ll)
-        v_rr = abs(v1_rr)
-    else
-        v_ll = abs(v2_ll)
-        v_rr = abs(v2_rr)
-    end
-    # experimental
-    return max(v_ll, v_rr) + max(v_sound_ll, v_sound_rr) + max(abs(v_r_ll), abs(v_r_rr))
-end
-
 ###  boundary conditions  ###
 
 # adapted from compressible_moist_euler_2d.jl which was probably adapted from compressible_euler_2d.jl
@@ -683,26 +612,6 @@ end
                    p_star * normal[1] * norm_,
                    p_star * normal[2] * norm_,
                    0, 0, 0, 0)
-end
-
-# same as in compressible_euler_2d.jl
-@inline function boundary_condition_slip_wall(u_inner, normal_direction::AbstractVector,
-                                              direction, x, t,
-                                              surface_flux_function,
-                                              equations::CompressibleRainyEulerEquations2D)
-    # flip sign of normal to make it outward pointing, then flip the sign of the normal flux back
-    # to be inward pointing on the -x and -y sides due to the orientation convention used by StructuredMesh
-    if isodd(direction)
-        boundary_flux = -boundary_condition_slip_wall(u_inner, -normal_direction,
-                                                      x, t, surface_flux_function,
-                                                      equations)
-    else
-        boundary_flux = boundary_condition_slip_wall(u_inner, normal_direction,
-                                                     x, t, surface_flux_function,
-                                                     equations)
-    end
-
-    return boundary_flux
 end
 
 # same as in compressible_euler_2d.jl
@@ -861,7 +770,7 @@ end
 end
 
 """
-    flux_ec_rain(u_ll, u_rr, orientation_or_normal_direction,
+    flux_ec_rain(u_ll, u_rr, normal_direction::AbstractVector,
                  equations::CompressibleRainyEulerEquations2D)
 
 Entropy-conserving flux including rain, derived in:
@@ -958,39 +867,6 @@ Master's thesis, University of Cologne, 2025
                (v1_avg * f_rhov1 + v2_avg * f_rhov2)
 
     return SVector(f_dry, f_moist, f_rain, f_rhov1, f_rhov2, f_energy, 0, 0, 0)
-end
-
-@inline function flux_ec_rain(u_ll, u_rr, orientation::Int,
-                              equations::CompressibleRainyEulerEquations2D)
-    if (orientation == 1)
-        return flux_ec_rain(u_ll, u_rr, SVector(1, 0), equations)
-    else
-        return flux_ec_rain(u_ll, u_rr, SVector(0, 1), equations)
-    end
-end
-
-# adapted from ShallowWaterEquations2D (Recommended with rain!)
-@inline function boundary_condition_simple_slip_wall(u_inner, orientation, direction, x,
-                                                     t, surface_flux_function,
-                                                     equations::CompressibleRainyEulerEquations2D)
-    ## get the appropriate normal vector from the orientation
-    if orientation == 1
-        u_boundary = SVector(u_inner[1], u_inner[2], u_inner[3], -u_inner[4],
-                             u_inner[5], u_inner[6], u_inner[7], u_inner[8], u_inner[9])
-    else # orientation == 2
-        u_boundary = SVector(u_inner[1], u_inner[2], u_inner[3], u_inner[4],
-                             -u_inner[5], u_inner[6], u_inner[7], u_inner[8],
-                             u_inner[9])
-    end
-
-    # Calculate boundary flux
-    if iseven(direction) # u_inner is "left" of boundary, u_boundary is "right" of boundary
-        flux = surface_flux_function(u_inner, u_boundary, orientation, equations)
-    else # u_boundary is "left" of boundary, u_inner is "right" of boundary
-        flux = surface_flux_function(u_boundary, u_inner, orientation, equations)
-    end
-
-    return flux
 end
 
 # Version for `P4estMesh`/`UnstructuredMesh2D`/`T8codeMesh`: reflect the velocity

@@ -65,48 +65,6 @@ varnames(::typeof(cons2prim),
     return SVector(f1, f2, f3, f4)
 end
 
-# Calculate 1D flux for a single point
-@inline function flux(u, orientation::Integer,
-                      equations::CompressibleEulerPotentialTemperatureEquations2D)
-    rho, rho_v1, rho_v2, rho_theta = u
-    v1 = rho_v1 / rho
-    v2 = rho_v2 / rho
-    p = pressure(u, equations)
-    if orientation == 1
-        f1 = rho_v1
-        f2 = rho_v1 * v1 + p
-        f3 = rho_v1 * v2
-        f4 = rho_theta * v1
-    else
-        f1 = rho_v2
-        f2 = rho_v2 * v1
-        f3 = rho_v2 * v2 + p
-        f4 = rho_theta * v2
-    end
-    return SVector(f1, f2, f3, f4)
-end
-
-@inline function boundary_condition_slip_wall(u_inner, orientation,
-                                              direction, x, t,
-                                              surface_flux_function,
-                                              equations::CompressibleEulerPotentialTemperatureEquations2D)
-
-    ## get the appropriate normal vector from the orientation
-    if orientation == 1
-        u_boundary = SVector(u_inner[1], -u_inner[2], u_inner[3], u_inner[4])
-    else # orientation == 2
-        u_boundary = SVector(u_inner[1], u_inner[2], -u_inner[3], u_inner[4])
-    end
-    # Calculate boundary flux
-    if iseven(direction) # u_inner is "left" of boundary, u_boundary is "right" of boundary
-        flux = surface_flux_function(u_inner, u_boundary, orientation, equations)
-    else # u_boundary is "left" of boundary, u_inner is "right" of boundary
-        flux = surface_flux_function(u_boundary, u_inner, orientation, equations)
-    end
-
-    return flux
-end
-
 # Version for `P4estMesh`/`UnstructuredMesh2D`/`T8codeMesh`: reflect the velocity
 # component normal to the wall and evaluate the surface flux.
 @inline function boundary_condition_slip_wall(u_inner, normal_direction::AbstractVector,
@@ -162,7 +120,7 @@ end
 end
 
 """
-    flux_ec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperature2D)
+    flux_ec(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerEquationsPotentialTemperature2D)
 
 Entropy conservative two-point flux by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
@@ -198,7 +156,7 @@ Entropy conservative two-point flux by
 end
 
 """
-    flux_tec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperature2D)
+    flux_tec(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerEquationsPotentialTemperature2D)
 
 Total energy conservative two-point flux by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
@@ -233,7 +191,7 @@ Total energy conservative two-point flux by
 end
 
 """
-    flux_etec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperature2D)
+    flux_etec(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerEquationsPotentialTemperature2D)
 
 Entropy and total energy conservative two-point flux by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
@@ -335,26 +293,6 @@ end
     return abs(v1) + c, abs(v2) + c
 end
 
-@inline function max_abs_speed_naive(u_ll, u_rr, orientation::Integer,
-                                     equations::CompressibleEulerPotentialTemperatureEquations2D)
-    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
-
-    # Get the velocity value in the appropriate direction
-    if orientation == 1
-        v_ll = v1_ll
-        v_rr = v1_rr
-    else # orientation == 2
-        v_ll = v2_ll
-        v_rr = v2_rr
-    end
-    # Calculate sound speeds
-    c_ll = sqrt(equations.gamma * p_ll / rho_ll)
-    c_rr = sqrt(equations.gamma * p_rr / rho_rr)
-
-    λ_max = max(abs(v_ll), abs(v_rr)) + max(c_ll, c_rr)
-end
-
 @inline function max_abs_speed_naive(u_ll, u_rr, normal_direction::AbstractVector,
                                      equations::CompressibleEulerPotentialTemperatureEquations2D)
     rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
@@ -373,27 +311,6 @@ end
     c_rr = sqrt(equations.gamma * p_rr / rho_rr)
 
     return max(abs(v_ll), abs(v_rr)) + max(c_ll, c_rr) * norm(normal_direction)
-end
-
-# Less "cautious", i.e., less overestimating `λ_max` compared to `max_abs_speed_naive`
-@inline function max_abs_speed(u_ll, u_rr, orientation::Integer,
-                               equations::CompressibleEulerPotentialTemperatureEquations2D)
-    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
-
-    # Get the velocity value in the appropriate direction
-    if orientation == 1
-        v_ll = v1_ll
-        v_rr = v1_rr
-    else # orientation == 2
-        v_ll = v2_ll
-        v_rr = v2_rr
-    end
-    # Calculate sound speeds
-    c_ll = sqrt(equations.gamma * p_ll / rho_ll)
-    c_rr = sqrt(equations.gamma * p_rr / rho_rr)
-
-    return max(abs(v_ll) + c_ll, abs(v_rr) + c_rr)
 end
 
 # Less "cautious", i.e., less overestimating `λ_max` compared to `max_abs_speed_naive`

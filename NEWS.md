@@ -5,6 +5,27 @@ TrixiAtmo.jl follows the interpretation of
 used in the Julia ecosystem. Notable changes will be documented in this file
 for human readability.
 
+## Changes when updating to v0.2 from v0.1.x
+
+#### Removed
+- TrixiAtmo.jl now consistently uses `P4estMesh` for the Cartesian equations in 2D and 3D.
+  Thus, the methods based on `orientation` (for `TreeMesh` and `StructuredMesh`) of
+  `flux`, `max_abs_speed_naive`, `max_abs_speed`, `flux_ec_rain`,
+  `boundary_condition_slip_wall`, and `boundary_condition_simple_slip_wall` are removed
+  for the `CompressibleEulerPotentialTemperatureEquations2D`, the
+  `CompressibleEulerPotentialTemperatureEquations3D`, the
+  `CompressibleEulerPotentialTemperatureEquationsWithGravity2D`, the
+  `CompressibleEulerPotentialTemperatureEquationsWithGravity3D`, the
+  `CompressibleEulerEnergyEquationsWithGravity2D`, the
+  `CompressibleEulerEnergyEquationsWithGravity3D`, the
+  `CompressibleMoistEulerEquations2D`, the `CompressibleRainyEulerEquations2D`, and the
+  `ShallowWaterEquations3D`. The methods of `boundary_condition_slip_wall` with the
+  additional argument `direction`, which fixed the sign convention of `StructuredMesh`,
+  are removed for the `CompressibleMoistEulerEquations2D` and the
+  `CompressibleRainyEulerEquations2D`. Use the methods based on `normal_direction`
+  together with `P4estMesh` instead. The 1D equations and the equations in covariant
+  form are not affected.
+
 ## Changes in the v0.1 lifecycle
 
 #### Added
