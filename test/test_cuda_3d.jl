@@ -112,7 +112,7 @@ end
     using CUDA
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_potential_temperature_baroclinic_instability.jl"),
-                        # Expected errors similar to reference on CPU
+                        # Expected errors are exactly the same as on CPU
                         l2=[
                             0.06049646764469473,
                             0.8991477386737083,
