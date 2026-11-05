@@ -225,8 +225,7 @@ end
     trixi_include(@__MODULE__,
                   joinpath(EXAMPLES_DIR, "global_circulation",
                            "elixir_potential_temperature_baroclinic_instability.jl"),
-                  tspan = (0.0, 50.0), trees_per_cube_face = (2, 2), polydeg = 3,
-                  sol = nothing)
+                  tspan = (0.0, 100.0), trees_per_cube_face = (2, 2), sol = nothing)
     solutions = map((2.5, 1.25, 0.625, 0.3125)) do dt
         sol = Trixi.solve(ode, SSPRW32(); dt = dt, jacobian = jacobian)
         return Trixi.wrap_array(sol.u[end], semi)

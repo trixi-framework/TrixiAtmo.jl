@@ -114,23 +114,23 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
                                  "elixir_potential_temperature_baroclinic_instability.jl"),
                         l2=[
-                            0.06049646764469473,
-                            0.8991477386737083,
-                            0.8989027811649443,
-                            0.032243454466505415,
-                            16.378452703937285,
-                            12088.812342810517
+                            0.0030320086112184466,
+                            0.05144411394023726,
+                            0.05238807358575555,
+                            0.012609443441337428,
+                            0.8067575925333563,
+                            570.8566086563927
                         ],
                         linf=[
-                            0.4028624079698643,
-                            11.767657917694287,
-                            11.767656315593566,
-                            0.591082133466972,
-                            103.08761789192533,
-                            42964.04658728838
+                            0.021751907036954288,
+                            0.8297225783677513,
+                            1.2589734934841315,
+                            0.9103791727770297,
+                            4.833051748224818,
+                            1704.147344700992
                         ],
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
-                        polydeg=3, dt=20.0)
+                        dt=20)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities). `Trixi.solve!` calls the right-hand side inside the
     # timer section "main loop", so the first call outside of it creates new timer
@@ -174,23 +174,23 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
                                  "elixir_potential_temperature_baroclinic_instability.jl"),
                         l2=[
-                            0.06038459139308219,
-                            0.8915510163421179,
-                            0.8913086013944854,
-                            0.06509593251096094,
-                            16.389410824950847,
-                            12088.812342810517
+                            0.003030220313693854,
+                            0.05335666293346016,
+                            0.05427229406574965,
+                            0.012822475231476501,
+                            0.8068192103031516,
+                            570.8566086563927
                         ],
                         linf=[
-                            0.3974848452573446,
-                            11.227067968114762,
-                            11.226940924845325,
-                            0.4898957579567604,
-                            102.87534546836963,
-                            42964.04658728838
+                            0.019652674426639427,
+                            0.8433669261309379,
+                            1.17137194041459,
+                            0.9095778771181094,
+                            4.8231112405632075,
+                            1704.147344700992
                         ],
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
-                        polydeg=3, dt=20.0,
+                        dt=20,
                         volume_flux=(flux_tec, flux_nonconservative_souza_etal))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities). `Trixi.solve!` calls the right-hand side inside the
@@ -207,8 +207,7 @@ end
     trixi_include(@__MODULE__,
                   joinpath(EXAMPLES_DIR, "global_circulation",
                            "elixir_potential_temperature_baroclinic_instability.jl"),
-                  tspan = (0.0, 100.0), trees_per_cube_face = (2, 2), polydeg = 3,
-                  dt = 20.0)
+                  tspan = (0.0, 100.0), trees_per_cube_face = (2, 2), dt = 20)
     u_ode_specialized = copy(sol.u[end])
 
     # Standard implementation with tuples of conservative and nonconservative fluxes
@@ -216,8 +215,7 @@ end
                   joinpath(EXAMPLES_DIR, "global_circulation",
                            "elixir_potential_temperature_baroclinic_instability.jl"),
                   volume_flux = (flux_ec, flux_nonconservative_isothermal),
-                  tspan = (0.0, 100.0), trees_per_cube_face = (2, 2), polydeg = 3,
-                  dt = 20.0)
+                  tspan = (0.0, 100.0), trees_per_cube_face = (2, 2), dt = 20)
     u_ode = copy(sol.u[end])
 
     @test u_ode_specialized ≈ u_ode
@@ -236,23 +234,23 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
                                  "elixir_potential_temperature_baroclinic_instability.jl"),
                         l2=[
-                            0.06042302340736062,
-                            0.8924812641614615,
-                            0.8922368359583945,
-                            0.03530195168359246,
-                            16.38226071728834,
-                            12088.812342810517
+                            0.0030269733595988573,
+                            0.0524806653891805,
+                            0.05340928705922288,
+                            0.012749946942035753,
+                            0.8068491880533599,
+                            570.8566086563927
                         ],
                         linf=[
-                            0.40112070829758995,
-                            11.491436605132645,
-                            11.491310069764442,
-                            0.48798007565309154,
-                            103.1184908163601,
-                            42964.04658728838
+                            0.02037252533491385,
+                            0.8360193905634581,
+                            1.2146162508728153,
+                            0.9110979159038155,
+                            4.832699312170291,
+                            1704.147344700992
                         ],
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
-                        polydeg=3, dt=20.0,
+                        dt=20,
                         volume_flux=(flux_etec, flux_nonconservative_artiano_etal))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities). `Trixi.solve!` calls the right-hand side inside the

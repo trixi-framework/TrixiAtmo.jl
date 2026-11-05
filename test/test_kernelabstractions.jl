@@ -14,23 +14,23 @@ end
                                  "elixir_potential_temperature_baroclinic_instability.jl"),
                         # Expected errors are exactly the same as on CPU
                         l2=[
-                            0.06049646764469473,
-                            0.8991477386737083,
-                            0.8989027811649443,
-                            0.032243454466505415,
-                            16.378452703937285,
-                            12088.812342810517
+                            0.0030320086112184466,
+                            0.05144411394023726,
+                            0.05238807358575555,
+                            0.012609443441337428,
+                            0.8067575925333563,
+                            570.8566086563927
                         ],
                         linf=[
-                            0.4028624079698643,
-                            11.767657917694287,
-                            11.767656315593566,
-                            0.591082133466972,
-                            103.08761789192533,
-                            42964.04658728838
+                            0.021751907036954288,
+                            0.8297225783677513,
+                            1.2589734934841315,
+                            0.9103791727770297,
+                            4.833051748224818,
+                            1704.147344700992
                         ],
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
-                        polydeg=3, dt=20.0)
+                        dt=20)
     # The kernels of KernelAbstractions.jl are used on the CPU, also for the stages of the
     # Rosenbrock-W method and the vertical Jacobian
     @test Trixi.trixi_backend(ode.u0) isa TrixiAtmo.KernelAbstractions.CPU

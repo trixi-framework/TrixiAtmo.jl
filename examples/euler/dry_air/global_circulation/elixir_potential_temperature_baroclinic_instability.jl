@@ -69,5 +69,5 @@ callbacks = CallbackSet(summary_callback,
 # is restricted by the horizontal dynamics only
 jacobian = VerticalJacobianTwoSided(c = 340)
 
-dt = 85.0 # seconds
+dt = 85 # seconds
 sol = Trixi.solve(ode, SSPRW32(); dt = dt, callback = callbacks, jacobian = jacobian)
