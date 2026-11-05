@@ -371,6 +371,9 @@ end
                                                                    x, t,
                                                                    surface_flux_function,
                                                                    equations)) == RealT
+        for orientation in (1, 2)
+            @test eltype(@inferred flux(u, orientation, equations)) == RealT
+        end
         @test eltype(@inferred flux(u, normal_direction, equations)) == RealT
         @test eltype(@inferred flux_ec_rain(u_ll, u_rr, normal_direction, equations)) ==
               RealT

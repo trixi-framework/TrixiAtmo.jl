@@ -447,6 +447,60 @@ end
 
 ###  pde discretization  ###
 
+@inline function flux(u, orientation::Integer,
+                      equations::CompressibleRainyEulerEquations2D)
+    # constants
+    c_l = equations.c_liquid_water
+
+    #densities
+    rho_dry, rho_moist, rho_rain, rho, rho_inv = densities(u, equations)
+
+    # recover rho_vapour, rho_cloud, temperature from nonlinear system
+    _, _, temperature = cons2nonlinearsystemsol(u, equations)
+
+    # velocity
+    v1, v2 = velocities(u, rho_inv, equations)
+    v_r = terminal_velocity_rain(rho_moist, rho_rain, equations)
+
+    # pressure
+    p = pressure(u, equations)
+
+    # energy density
+    energy = energy_density(u, equations)
+
+    # flux for orientation cases
+    if (orientation == 1)
+        # mass
+        f1 = rho_dry * v1
+        f2 = rho_moist * v1
+        f3 = rho_rain * v1
+
+        # momentum
+        f4 = rho * v1 * v1 + p
+        f5 = rho * v1 * v2
+
+        # energy
+        f6 = (energy + p) * v1
+
+    else
+        # mass
+        f1 = rho_dry * v2
+        f2 = rho_moist * v2
+        f3 = rho_rain * (v2 - v_r)
+
+        # momentum
+        f4 = rho * v1 * v2 - rho_rain * v_r * v1
+        f5 = rho * v2 * v2 + p - rho_rain * v_r * v2
+
+        # energy
+        f6 = (energy + p) * v2 -
+             (c_l * temperature + 0.5f0 * (v1^2 + v2^2)) * rho_rain * v_r
+    end
+
+    return SVector(f1, f2, f3, f4, f5, f6,
+                   0, 0, 0)
+end
+
 @inline function flux(u, normal_direction::AbstractVector,
                       equations::CompressibleRainyEulerEquations2D)
     # constants

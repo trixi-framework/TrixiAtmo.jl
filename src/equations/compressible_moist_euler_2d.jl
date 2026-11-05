@@ -31,6 +31,33 @@ struct CompressibleMoistEulerEquations2D{RealT <: Real} <:
     end
 end
 
+# Calculate 1D flux for a single point.
+@inline function flux(u, orientation::Integer,
+                      equations::CompressibleMoistEulerEquations2D)
+    rho, rho_v1, rho_v2, rho_E, rho_qv, rho_ql = u
+    v1 = rho_v1 / rho
+    v2 = rho_v2 / rho
+    qv = rho_qv / rho
+    ql = rho_ql / rho
+    p, T = get_current_condition(u, equations)
+    if orientation == 1
+        f1 = rho_v1
+        f2 = rho_v1 * v1 + p
+        f3 = rho_v1 * v2
+        f4 = (rho_E + p) * v1
+        f5 = rho_v1 * qv
+        f6 = rho_v1 * ql
+    else
+        f1 = rho_v2
+        f2 = rho_v2 * v1
+        f3 = rho_v2 * v2 + p
+        f4 = (rho_E + p) * v2
+        f5 = rho_v2 * qv
+        f6 = rho_v2 * ql
+    end
+    return SVector(f1, f2, f3, f4, f5, f6)
+end
+
 # Calculate 1D flux for a single point in the normal direction.
 # Note, this directional vector is not normalized.
 @inline function flux(u, normal_direction::AbstractVector,

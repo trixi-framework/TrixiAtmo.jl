@@ -65,6 +65,27 @@ varnames(::typeof(cons2prim),
     return SVector(f1, f2, f3, f4)
 end
 
+# Calculate 1D flux for a single point
+@inline function flux(u, orientation::Integer,
+                      equations::CompressibleEulerPotentialTemperatureEquations2D)
+    rho, rho_v1, rho_v2, rho_theta = u
+    v1 = rho_v1 / rho
+    v2 = rho_v2 / rho
+    p = pressure(u, equations)
+    if orientation == 1
+        f1 = rho_v1
+        f2 = rho_v1 * v1 + p
+        f3 = rho_v1 * v2
+        f4 = rho_theta * v1
+    else
+        f1 = rho_v2
+        f2 = rho_v2 * v1
+        f3 = rho_v2 * v2 + p
+        f4 = rho_theta * v2
+    end
+    return SVector(f1, f2, f3, f4)
+end
+
 # Version for `P4estMesh`/`UnstructuredMesh2D`/`T8codeMesh`: reflect the velocity
 # component normal to the wall and evaluate the surface flux.
 @inline function boundary_condition_slip_wall(u_inner, normal_direction::AbstractVector,

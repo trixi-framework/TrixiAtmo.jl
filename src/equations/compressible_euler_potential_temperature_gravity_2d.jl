@@ -98,6 +98,27 @@ end
     return SVector(f1, f2, f3, f4, zero(eltype(u)))
 end
 
+# Calculate 1D flux for a single point
+@inline function flux(u, orientation::Integer,
+                      equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+    rho, rho_v1, rho_v2, rho_theta = u
+    v1 = rho_v1 / rho
+    v2 = rho_v2 / rho
+    p = pressure(u, equations)
+    if orientation == 1
+        f1 = rho_v1
+        f2 = rho_v1 * v1 + p
+        f3 = rho_v1 * v2
+        f4 = rho_theta * v1
+    else
+        f1 = rho_v2
+        f2 = rho_v2 * v1
+        f3 = rho_v2 * v2 + p
+        f4 = rho_theta * v2
+    end
+    return SVector(f1, f2, f3, f4, zero(eltype(u)))
+end
+
 """
     flux_nonconservative_isothermal(u_ll, u_rr, normal_direction::AbstractVector,
                                     equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)

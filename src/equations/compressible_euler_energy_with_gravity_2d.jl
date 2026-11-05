@@ -99,6 +99,27 @@ have_nonconservative_terms(::CompressibleEulerEnergyEquationsWithGravity2D) = Tr
     return flux, noncons_flux
 end
 
+# Calculate 1D flux for a single point
+@inline function flux(u, orientation::Integer,
+                      equations::CompressibleEulerEnergyEquationsWithGravity2D)
+    rho, rho_v1, rho_v2, rho_e = u
+    v1 = rho_v1 / rho
+    v2 = rho_v2 / rho
+    p = pressure(u, equations)
+    if orientation == 1
+        f1 = rho_v1
+        f2 = rho_v1 * v1 + p
+        f3 = rho_v1 * v2
+        f4 = (rho_e + p) * v1
+    else
+        f1 = rho_v2
+        f2 = rho_v2 * v1
+        f3 = rho_v2 * v2 + p
+        f4 = (rho_e + p) * v2
+    end
+    return SVector(f1, f2, f3, f4, zero(eltype(u)))
+end
+
 # Calculate 1D flux for a single point in the normal direction
 # Note, this directional vector is not normalized
 @inline function flux(u, normal_direction::AbstractVector,
