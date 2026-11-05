@@ -726,34 +726,29 @@ Base.@propagate_inbounds function schur_complement_boundary_per_element!(schur_b
     return nothing
 end
 
-# Add `-C A^{-1} b` of the column `b` of `B` of the boundary unknown `index_local` of
-# element `layer` to `schur_band`. With the blocks `A_ij` of the element block `A_e` of the
-# reference in the docstring of `VerticalJacobianTwoSided`, `x = A^{-1} b` follows from the
-# local Schur complement `S_e`:
+# Eliminate the interior unknowns of element `layer` of the column `column` with the local
+# Schur complement `S_e`, as needed by both the boundary Schur complement and the forward
+# substitution. With the blocks `A_ij` of the element block `A_e` of the reference in the
+# docstring of `VerticalJacobianTwoSided`, `x = A_e^{-1} b` follows from
 #   S_e x_rho_w = b_rho_w - A31 A11^{-1} b_rho - A32 A22^{-1} b_rho_theta,
 #   x_rho = A11^{-1} (b_rho - A13 x_rho_w),
 #   x_rho_theta = A22^{-1} (b_rho_theta - A23 x_rho_w),
 # with `A11 = A22 = I / gamma_dt`. On entry, `x_rho` and `x_rho_theta` hold the components
-# of `b` and `x_rho_w` the right-hand side of `S_e x_rho_w`, assembled by the caller
-# (`schur_complement_boundary_per_element!`), which skips the terms that vanish for the columns
-# of `rho_theta`. `x_rho_theta` and `x_rho_w` are overwritten by the components of `x`. Only
-# the density in the edge nodes is needed, since `C` couples the density only there.
-Base.@propagate_inbounds function schur_complement_boundary_unknown!(schur_band, x_rho,
-                                                                     x_rho_theta,
-                                                                     x_rho_w,
-                                                                     schur_element,
-                                                                     gravity, theta,
-                                                                     dp_drho_theta,
-                                                                     metric_factor,
-                                                                     derivative_hat,
-                                                                     gamma_dt,
-                                                                     ::Val{NNODES},
-                                                                     index_local,
-                                                                     offset_boundary,
-                                                                     column,
-                                                                     layer) where {NNODES}
-    RealT = eltype(schur_band)
-    zero_ = zero(RealT)
+# of `b` and `x_rho_w` the right-hand side of `S_e x_rho_w`. `x_rho_theta` and `x_rho_w` are
+# overwritten by the components of `x`. Only the density in the edge nodes is needed, since
+# `C` couples the density only there. Return `d - C x` in the rows `rho_theta_1`,
+# `rho_w_1`, `rho_w_M`, and `rho_theta_M` of the boundary unknowns of the element.
+Base.@propagate_inbounds function eliminate_interior_per_element!(x_rho_theta, x_rho_w,
+                                                                  x_rho, d,
+                                                                  schur_element,
+                                                                  gravity, theta,
+                                                                  dp_drho_theta,
+                                                                  metric_factor,
+                                                                  derivative_hat,
+                                                                  gamma_dt,
+                                                                  ::Val{NNODES},
+                                                                  column,
+                                                                  layer) where {NNODES}
     metric_factor_1 = metric_factor[column, 1, layer]
     metric_factor_M = metric_factor[column, NNODES, layer]
 
@@ -780,33 +775,59 @@ Base.@propagate_inbounds function schur_complement_boundary_unknown!(schur_band,
         x_rho_theta[i] *= gamma_dt
     end
 
-    # Entries `-C x` in the rows `rho_theta_1`, `rho_w_1`, `rho_w_M`, and `rho_theta_M`
-    schur_rho_theta_1 = zero_
-    schur_rho_w_1 = zero_
-    schur_rho_w_M = zero_
-    schur_rho_theta_M = zero_
+    # Entries `d - C x` in the rows `rho_theta_1`, `rho_w_1`, `rho_w_M`, and `rho_theta_M`
+    rho_theta_1, rho_w_1, rho_w_M, rho_theta_M = d
     for j in 1:(NNODES - 2)
         theta_j = theta[column, j + 1, layer]
         dp_drho_theta_j = dp_drho_theta[column, j + 1, layer]
-        schur_rho_theta_1 += -(metric_factor_1 * derivative_hat[1, j + 1] * theta_j) *
-                             x_rho_w[j]
-        schur_rho_theta_M += -(metric_factor_M * derivative_hat[NNODES, j + 1] *
-                               theta_j) * x_rho_w[j]
-        schur_rho_w_1 += -(metric_factor_1 * derivative_hat[1, j + 1] *
-                           dp_drho_theta_j) * x_rho_theta[j]
-        schur_rho_w_M += -(metric_factor_M * derivative_hat[NNODES, j + 1] *
-                           dp_drho_theta_j) * x_rho_theta[j]
+        rho_theta_1 += -(metric_factor_1 * derivative_hat[1, j + 1] * theta_j) *
+                       x_rho_w[j]
+        rho_theta_M += -(metric_factor_M * derivative_hat[NNODES, j + 1] * theta_j) *
+                       x_rho_w[j]
+        rho_w_1 += -(metric_factor_1 * derivative_hat[1, j + 1] * dp_drho_theta_j) *
+                   x_rho_theta[j]
+        rho_w_M += -(metric_factor_M * derivative_hat[NNODES, j + 1] * dp_drho_theta_j) *
+                   x_rho_theta[j]
     end
-    schur_rho_w_1 -= gravity[column, 1, layer] * x_rho_1
-    schur_rho_w_M -= gravity[column, NNODES, layer] * x_rho_M
+    rho_w_1 -= gravity[column, 1, layer] * x_rho_1
+    rho_w_M -= gravity[column, NNODES, layer] * x_rho_M
+
+    return rho_theta_1, rho_w_1, rho_w_M, rho_theta_M
+end
+
+# Add `-C A^{-1} b` of the column `b` of `B` of the boundary unknown `index_local` of
+# element `layer` to `schur_band`. On entry, `x_rho`, `x_rho_theta`, and `x_rho_w` are set up
+# as described in `eliminate_interior_per_element!` by the caller
+# (`schur_complement_boundary_per_element!`), which skips the terms that vanish for the
+# columns of `rho_theta`.
+Base.@propagate_inbounds function schur_complement_boundary_unknown!(schur_band, x_rho,
+                                                                     x_rho_theta,
+                                                                     x_rho_w,
+                                                                     schur_element,
+                                                                     gravity, theta,
+                                                                     dp_drho_theta,
+                                                                     metric_factor,
+                                                                     derivative_hat,
+                                                                     gamma_dt,
+                                                                     ::Val{NNODES},
+                                                                     index_local,
+                                                                     offset_boundary,
+                                                                     column,
+                                                                     layer) where {NNODES}
+    zero_ = zero(eltype(schur_band))
+    minus_C_x = eliminate_interior_per_element!(x_rho_theta, x_rho_w, x_rho,
+                                                (zero_, zero_, zero_, zero_),
+                                                schur_element, gravity, theta,
+                                                dp_drho_theta, metric_factor,
+                                                derivative_hat, gamma_dt, Val(NNODES),
+                                                column, layer)
 
     # The entry `(offset_boundary + i, offset_boundary + index_local)` is stored at
     # `schur_band[column, i - index_local + 4, offset_boundary + index_local]`
     index_column = offset_boundary + index_local
-    schur_band[column, 5 - index_local, index_column] += schur_rho_theta_1
-    schur_band[column, 6 - index_local, index_column] += schur_rho_w_1
-    schur_band[column, 7 - index_local, index_column] += schur_rho_w_M
-    schur_band[column, 8 - index_local, index_column] += schur_rho_theta_M
+    for i in 1:4
+        schur_band[column, i - index_local + 4, index_column] += minus_C_x[i]
+    end
     return nothing
 end
 
@@ -950,13 +971,10 @@ end
 # Entries of `schur_rhs` of element `layer` of the column `column`, following the
 # implementation in CGDycore.jl by Oswald Knoth
 # (https://github.com/CliMA/CGDycore.jl). `x_rho`, `x_rho_theta`, and `x_rho_w` hold the
-# components of `A^{-1} b_A` of the three variables, `x_rho_1` and `x_rho_M` those of the
-# density in the first and the last node, and `schur_rhs_element` the entries of
-# `b_D - C A^{-1} b_A`.
+# components of `A^{-1} b_A` of the three variables, see `eliminate_interior_per_element!`.
 Base.@propagate_inbounds function ldiv_interior_forward_per_element!(schur_rhs, x_rho,
                                                                      x_rho_theta,
                                                                      x_rho_w,
-                                                                     schur_rhs_element,
                                                                      b, schur_element,
                                                                      gravity, theta,
                                                                      dp_drho_theta,
@@ -966,13 +984,11 @@ Base.@propagate_inbounds function ldiv_interior_forward_per_element!(schur_rhs, 
                                                                      ::Val{NNODES},
                                                                      column,
                                                                      layer) where {NNODES}
-    RealT = eltype(b)
     # Offset of the 4 boundary unknowns of this layer in the condensed system
     offset_boundary = (layer - 1) * 4
-    schur_rhs_element[1] = b[column, 3, 1, layer]
-    schur_rhs_element[2] = b[column, 2, 1, layer]
-    schur_rhs_element[3] = b[column, 2, NNODES, layer]
-    schur_rhs_element[4] = b[column, 3, NNODES, layer]
+    # `b_D` in the rows `rho_theta_1`, `rho_w_1`, `rho_w_M`, and `rho_theta_M`
+    b_boundary = (b[column, 3, 1, layer], b[column, 2, 1, layer],
+                  b[column, 2, NNODES, layer], b[column, 3, NNODES, layer])
     for i in 1:NNODES
         x_rho[i] = b[column, 1, i, layer]
     end
@@ -989,48 +1005,15 @@ Base.@propagate_inbounds function ldiv_interior_forward_per_element!(schur_rhs, 
                            dp_drho_theta[column, j + 1, layer]) * x_rho_theta[j]
         end
     end
-    ldiv_dense!(x_rho_w, schur_element, Val(NNODES - 2), column, layer)
-    x_rho_1 = x_rho[1]
-    x_rho_M = x_rho[NNODES]
-    for j in 1:(NNODES - 2)
-        x_rho_1 += -(metric_factor[column, 1, layer] *
-                     derivative_hat[1, j + 1]) * x_rho_w[j]
-        x_rho_M += -(metric_factor[column, NNODES, layer] *
-                     derivative_hat[NNODES, j + 1]) *
-                   x_rho_w[j]
+    schur_rhs_boundary = eliminate_interior_per_element!(x_rho_theta, x_rho_w, x_rho,
+                                                         b_boundary, schur_element,
+                                                         gravity, theta, dp_drho_theta,
+                                                         metric_factor, derivative_hat,
+                                                         gamma_dt, Val(NNODES), column,
+                                                         layer)
+    for i in 1:4
+        schur_rhs[column, offset_boundary + i] = schur_rhs_boundary[i]
     end
-    x_rho_1 *= gamma_dt
-    x_rho_M *= gamma_dt
-    for i in 1:(NNODES - 2)
-        for j in 1:(NNODES - 2)
-            x_rho_theta[i] += -(metric_factor[column, i + 1, layer] *
-                                derivative_hat[i + 1, j + 1] *
-                                theta[column, j + 1, layer]) * x_rho_w[j]
-        end
-        x_rho_theta[i] *= gamma_dt
-    end
-    for j in 1:(NNODES - 2)
-        theta_j = theta[column, j + 1, layer]
-        dp_drho_theta_j = dp_drho_theta[column, j + 1, layer]
-        schur_rhs_element[1] += -(metric_factor[column, 1, layer] *
-                                  derivative_hat[1, j + 1] * theta_j) *
-                                x_rho_w[j]
-        schur_rhs_element[4] += -(metric_factor[column, NNODES, layer] *
-                                  derivative_hat[NNODES, j + 1] *
-                                  theta_j) * x_rho_w[j]
-        schur_rhs_element[2] += -(metric_factor[column, 1, layer] *
-                                  derivative_hat[1, j + 1] * dp_drho_theta_j) *
-                                x_rho_theta[j]
-        schur_rhs_element[3] += -(metric_factor[column, NNODES, layer] *
-                                  derivative_hat[NNODES, j + 1] *
-                                  dp_drho_theta_j) * x_rho_theta[j]
-    end
-    schur_rhs_element[2] += -gravity[column, 1, layer] * x_rho_1
-    schur_rhs_element[3] += -gravity[column, NNODES, layer] * x_rho_M
-    schur_rhs[column, offset_boundary + 1] = schur_rhs_element[1]
-    schur_rhs[column, offset_boundary + 2] = schur_rhs_element[2]
-    schur_rhs[column, offset_boundary + 3] = schur_rhs_element[3]
-    schur_rhs[column, offset_boundary + 4] = schur_rhs_element[4]
     return nothing
 end
 
@@ -1047,10 +1030,9 @@ end
     x_rho = MVector{NNODES, eltype(b)}(undef)
     x_rho_theta = MVector{NNODES - 2, eltype(b)}(undef)
     x_rho_w = MVector{NNODES - 2, eltype(b)}(undef)
-    schur_rhs_element = MVector{4, eltype(b)}(undef)
 
     ldiv_interior_forward_per_element!(schur_rhs, x_rho, x_rho_theta, x_rho_w,
-                                       schur_rhs_element, b, schur_element, gravity,
+                                       b, schur_element, gravity,
                                        theta, dp_drho_theta, metric_factor,
                                        derivative_hat, gamma_dt, Val(NNODES), column,
                                        layer)
