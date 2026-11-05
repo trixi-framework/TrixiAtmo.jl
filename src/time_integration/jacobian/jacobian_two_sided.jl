@@ -1260,7 +1260,7 @@ Base.@propagate_inbounds function lu_dense!(A, ::Val{N}, column, layer) where {N
         end
         for k in (j + 1):N
             a_jk = A[column, j, k, layer]
-            @simd for i in (j + 1):N
+            for i in (j + 1):N
                 A[column, i, k, layer] -= A[column, i, j, layer] * a_jk
             end
         end
