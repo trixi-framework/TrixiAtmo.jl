@@ -213,3 +213,30 @@ end
         @test all(order -> isapprox(order, order_expected, atol = 0.1), orders)
     end
 end
+
+@testitem "Time integration: convergence of SSPRW32 with VerticalJacobianTwoSided" setup=[
+    Setup,
+    TimeIntegration
+] tags=[:time_integration] begin
+    using LinearAlgebra: norm
+    # With a Jacobian, `SSPRW32` is a second-order Rosenbrock-W method. The order is
+    # estimated from the differences of the solutions with successively halved time steps,
+    # since the time steps are small enough to be in the asymptotic regime.
+    trixi_include(@__MODULE__,
+                  joinpath(EXAMPLES_DIR, "global_circulation",
+                           "elixir_potential_temperature_baroclinic_instability.jl"),
+                  tspan = (0.0, 50.0), trees_per_cube_face = (2, 2), polydeg = 3,
+                  sol = nothing)
+    solutions = map((2.5, 1.25, 0.625, 0.3125)) do dt
+        sol = Trixi.solve(ode, SSPRW32(); dt = dt, jacobian = jacobian)
+        return Trixi.wrap_array(sol.u[end], semi)
+    end
+    # Compare the variables separately, since they have very different magnitudes. The
+    # geopotential does not change.
+    for v in 1:5
+        differences = [norm(view(solutions[i], v, ..) - view(solutions[i + 1], v, ..), Inf)
+                       for i in 1:3]
+        orders = log2.(differences[1:(end - 1)] ./ differences[2:end])
+        @test all(order -> isapprox(order, 2, atol = 0.1), orders)
+    end
+end
