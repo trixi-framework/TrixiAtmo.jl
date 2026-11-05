@@ -200,31 +200,27 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@testitem "Euler potential temperature 3D: elixir_potential_temperature_baroclinic_instability isothermal" setup=[
+@testitem "Euler potential temperature 3D: elixir_potential_temperature_baroclinic_instability FluxTurbo(flux_ec, flux_nonconservative_isothermal)" setup=[
     Setup,
     EulerPotentialTemperature3D
 ] tags=[:euler_potential_temperature_3d] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
-                                 "elixir_potential_temperature_baroclinic_instability.jl"),
-                        l2=[
-                            0.060496467644694726,
-                            0.8991477386737077,
-                            0.8989027811649443,
-                            0.03224345446650522,
-                            16.378452703937274,
-                            12088.812342810517
-                        ],
-                        linf=[
-                            0.4028624079698645,
-                            11.767657917693796,
-                            11.767656315593149,
-                            0.5910821334660789,
-                            103.08761789192516,
-                            42964.04658728838
-                        ],
-                        tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
-                        polydeg=3, dt=20.0,
-                        volume_flux=(flux_ec, flux_nonconservative_isothermal))
+    trixi_include(@__MODULE__,
+                  joinpath(EXAMPLES_DIR, "global_circulation",
+                           "elixir_potential_temperature_baroclinic_instability.jl"),
+                  tspan = (0.0, 100.0), trees_per_cube_face = (2, 2), polydeg = 3,
+                  dt = 20.0)
+    u_ode_specialized = copy(sol.u[end])
+
+    # Standard implementation with tuples of conservative and nonconservative fluxes
+    trixi_include(@__MODULE__,
+                  joinpath(EXAMPLES_DIR, "global_circulation",
+                           "elixir_potential_temperature_baroclinic_instability.jl"),
+                  volume_flux = (flux_ec, flux_nonconservative_isothermal),
+                  tspan = (0.0, 100.0), trees_per_cube_face = (2, 2), polydeg = 3,
+                  dt = 20.0)
+    u_ode = copy(sol.u[end])
+
+    @test u_ode_specialized ≈ u_ode
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities). `Trixi.solve!` calls the right-hand side inside the
     # timer section "main loop", so the first call outside of it creates new timer
