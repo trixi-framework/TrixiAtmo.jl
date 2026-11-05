@@ -6,7 +6,7 @@ end
     @test TrixiAtmo.Trixi._PREFERENCE_THREADING == :kernelabstractions
 end
 
-@testitem "KernelAbstractions CPU 3D: elixir_potential_temperature_baroclinic_instability.jl native" setup=[
+@testitem "KernelAbstractions CPU 3D: elixir_potential_temperature_baroclinic_instability native" setup=[
     Setup,
     KernelAbstractionsExamples
 ] tags=[:kernelabstractions] begin
@@ -37,11 +37,19 @@ end
     # The elixir adapts `semi` before creating the ODE problem
     @test semi === ode.p
     @test real(semi.solver) == Float64
+    @test real(semi.solver.basis) == Float64
+    @test real(semi.solver.mortar) == Float64
+    # TODO: `mesh` is currently not `adapt`ed correctly
+    @test real(semi.mesh) == Float64
+    @test typeof(semi.equations.c_p) == Float64
 
     @test ode.u0 isa Array
+    @test semi.solver.basis.derivative_matrix isa Array
+
     @test Trixi.storage_type(semi.cache.elements) === Array
     @test Trixi.storage_type(semi.cache.interfaces) === Array
     @test Trixi.storage_type(semi.cache.boundaries) === Array
+    @test Trixi.storage_type(semi.cache.mortars) === Array
 
     # Ensure that the RHS computation overwrites existing data in `du` correctly.
     u_ode = copy(ode.u0)
@@ -59,7 +67,7 @@ end
     end
 end
 
-@testitem "KernelAbstractions CPU 3D: elixir_potential_temperature_baroclinic_instability_turbo.jl native" setup=[
+@testitem "KernelAbstractions CPU 3D: elixir_potential_temperature_baroclinic_instability_turbo native" setup=[
     Setup,
     KernelAbstractionsExamples
 ] tags=[:kernelabstractions] begin
@@ -83,14 +91,24 @@ end
                             333.1178018152714
                         ],
                         tspan=(0.0, 20.0), trees_per_cube_face=(2, 2))
+    # The kernels of KernelAbstractions.jl are used on the CPU
     @test Trixi.trixi_backend(ode.u0) isa TrixiAtmo.KernelAbstractions.CPU
+    # The elixir adapts `semi` before creating the ODE problem
     @test semi === ode.p
     @test real(semi.solver) == Float64
+    @test real(semi.solver.basis) == Float64
+    @test real(semi.solver.mortar) == Float64
+    # TODO: `mesh` is currently not `adapt`ed correctly
+    @test real(semi.mesh) == Float64
+    @test typeof(semi.equations.c_p) == Float64
 
     @test ode.u0 isa Array
+    @test semi.solver.basis.derivative_matrix isa Array
+
     @test Trixi.storage_type(semi.cache.elements) === Array
     @test Trixi.storage_type(semi.cache.interfaces) === Array
     @test Trixi.storage_type(semi.cache.boundaries) === Array
+    @test Trixi.storage_type(semi.cache.mortars) === Array
 
     # Ensure that the RHS computation overwrites existing data in `du` correctly.
     u_ode = copy(ode.u0)
