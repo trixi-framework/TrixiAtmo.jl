@@ -38,7 +38,7 @@ ode = semidiscretize(semi, tspan, restart_filename)
 
 # Do not overwrite the initial snapshot written by the run above
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval)
-save_solution = SaveSolutionCallback(dt = 5760, save_initial_solution = false,
+save_solution = SaveSolutionCallback(dt = 5760.0, save_initial_solution = false,
                                      save_final_solution = true)
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,
