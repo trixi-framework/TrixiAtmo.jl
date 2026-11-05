@@ -228,14 +228,19 @@ end
                   tspan = (0.0, 100.0), trees_per_cube_face = (2, 2), sol = nothing)
     solutions = map((2.5, 1.25, 0.625, 0.3125)) do dt
         sol = Trixi.solve(ode, SSPRW32(); dt = dt, jacobian = jacobian)
-        return Trixi.wrap_array(sol.u[end], semi)
+        return sol.u[end]
     end
-    # Compare the variables separately, since they have very different magnitudes. The
-    # geopotential does not change.
-    for v in 1:5
-        differences = [norm(view(solutions[i], v, ..) - view(solutions[i + 1], v, ..), Inf)
-                       for i in 1:3]
-        orders = log2.(differences[1:(end - 1)] ./ differences[2:end])
-        @test all(order -> isapprox(order, 2, atol = 0.1), orders)
+    # Preserve original memory since it will be `unsafe_wrap`ped and might
+    # thus otherwise be garbage collected
+    GC.@preserve solutions begin
+        u = map(u_ode -> Trixi.wrap_array(u_ode, semi), solutions)
+        # Compare the variables separately, since they have very different magnitudes. The
+        # geopotential does not change.
+        for v in 1:5
+            differences = [norm(view(u[i], v, ..) - view(u[i + 1], v, ..), Inf)
+                           for i in 1:3]
+            orders = log2.(differences[1:(end - 1)] ./ differences[2:end])
+            @test all(order -> isapprox(order, 2, atol = 0.1), orders)
+        end
     end
 end
