@@ -30,14 +30,10 @@ end
 diffusivity = 0.5f0
 equations_parabolic = LaplaceDiffusion2D(diffusivity, equations)
 
-boundary_conditions = (; x_neg = boundary_condition_periodic,
-                       x_pos = boundary_condition_periodic,
-                       y_neg = boundary_condition_simple_slip_wall,
+boundary_conditions = (; y_neg = boundary_condition_simple_slip_wall,
                        y_pos = boundary_condition_simple_slip_wall)
 
-boundary_conditions_parabolic = (; x_neg = boundary_condition_periodic,
-                                 x_pos = boundary_condition_periodic,
-                                 y_neg = boundary_condition_laplace,
+boundary_conditions_parabolic = (; y_neg = boundary_condition_laplace,
                                  y_pos = boundary_condition_laplace)
 
 polydeg = 3
@@ -48,9 +44,11 @@ volume_integral = VolumeIntegralFluxDifferencing(flux_ec_rain)
 solver = DGSEM(polydeg, surface_flux, volume_integral)
 
 initial_refinement_level = 6
-mesh = TreeMesh(coordinates_min, coordinates_max,
-                initial_refinement_level = initial_refinement_level,
-                periodicity = (true, false))
+trees_per_dimension = (1, 1)
+mesh = P4estMesh(trees_per_dimension, polydeg = 1,
+                 coordinates_min = coordinates_min, coordinates_max = coordinates_max,
+                 initial_refinement_level = initial_refinement_level,
+                 periodicity = (true, false))
 
 semi = SemidiscretizationHyperbolicParabolic(mesh, (equations, equations_parabolic),
                                              initial_condition_rainy, solver;
