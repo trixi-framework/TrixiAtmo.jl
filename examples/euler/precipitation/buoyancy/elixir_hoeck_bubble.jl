@@ -26,9 +26,7 @@ end
 ###############################################################################
 # semidiscretization of the compressible rainy Euler equations
 
-boundary_conditions = (; x_neg = boundary_condition_periodic,
-                       x_pos = boundary_condition_periodic,
-                       y_neg = boundary_condition_simple_slip_wall,
+boundary_conditions = (; y_neg = boundary_condition_simple_slip_wall,
                        y_pos = boundary_condition_simple_slip_wall)
 
 polydeg = 3
@@ -39,8 +37,9 @@ volume_integral = VolumeIntegralFluxDifferencing(flux_ec_rain)
 solver = DGSEM(polydeg, surface_flux, volume_integral)
 
 cells_per_dimension = (64, 64)
-mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
-                      periodicity = (true, false))
+mesh = P4estMesh(cells_per_dimension, polydeg = 1,
+                 coordinates_min = coordinates_min, coordinates_max = coordinates_max,
+                 periodicity = (true, false))
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_rainy, solver,
                                     source_terms = source_terms_rainy,

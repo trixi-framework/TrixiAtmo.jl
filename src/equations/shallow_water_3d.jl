@@ -207,8 +207,6 @@ Details are available in Eq. (4.1) in the paper:
 end
 
 """
-    flux_nonconservative_wintermeyer_etal(u_ll, u_rr, orientation::Integer,
-                                          equations::ShallowWaterEquations3D)
     flux_nonconservative_wintermeyer_etal(u_ll, u_rr,
                                           normal_direction::AbstractVector,
                                           equations::ShallowWaterEquations3D)
@@ -245,8 +243,6 @@ Further details are available in the papers:
 end
 
 """
-    flux_nonconservative_fjordholm_etal(u_ll, u_rr, orientation::Integer,
-                                        equations::ShallowWaterEquations3D)
     flux_nonconservative_fjordholm_etal(u_ll, u_rr,
                                         normal_direction::AbstractVector,
                                         equations::ShallowWaterEquations3D)

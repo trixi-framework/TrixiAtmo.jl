@@ -26,8 +26,9 @@ solver = DGSEM(basis, surface_flux, volume_integral)
 coordinates_min = (0.0, 0.0, 0.0)
 coordinates_max = (1.0, 1.0, 1.0) .* (2 * pi)
 cells_per_dimension = (8, 8, 8)
-mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
-                      periodicity = (true, true, true))
+mesh = P4estMesh(cells_per_dimension, polydeg = 1,
+                 coordinates_min = coordinates_min, coordinates_max = coordinates_max,
+                 periodicity = (true, true, true))
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_taylor_green_vortex,
                                     solver,

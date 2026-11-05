@@ -99,35 +99,6 @@ have_nonconservative_terms(::CompressibleEulerEnergyEquationsWithGravity2D) = Tr
     return flux, noncons_flux
 end
 
-@inline function boundary_condition_slip_wall(u_inner, orientation,
-                                              direction, x, t,
-                                              surface_flux_functions,
-                                              equations::CompressibleEulerEnergyEquationsWithGravity2D)
-    surface_flux_function, nonconservative_flux_function = surface_flux_functions
-
-    ## get the appropriate normal vector from the orientation
-    if orientation == 1
-        u_boundary = SVector(u_inner[1], -u_inner[2], u_inner[3], u_inner[4],
-                             u_inner[5])
-    else # orientation == 2
-        u_boundary = SVector(u_inner[1], u_inner[2], -u_inner[3], u_inner[4],
-                             u_inner[5])
-    end
-
-    # Calculate boundary flux
-    if iseven(direction) # u_inner is "left" of boundary, u_boundary is "right" of boundary
-        flux = surface_flux_function(u_inner, u_boundary, orientation, equations)
-        noncons_flux = nonconservative_flux_function(u_inner, u_boundary, orientation,
-                                                     equations)
-    else # u_boundary is "left" of boundary, u_inner is "right" of boundary
-        flux = surface_flux_function(u_boundary, u_inner, orientation, equations)
-        noncons_flux = nonconservative_flux_function(u_boundary, u_inner, orientation,
-                                                     equations)
-    end
-
-    return flux, noncons_flux
-end
-
 # Calculate 1D flux for a single point
 @inline function flux(u, orientation::Integer,
                       equations::CompressibleEulerEnergyEquationsWithGravity2D)
@@ -313,7 +284,7 @@ developed by
 end
 
 """
-    flux_shima_etal(u_ll, u_rr, orientation_or_normal_direction,
+    flux_shima_etal(u_ll, u_rr, normal_direction::AbstractVector,
                     equations::CompressibleEulerEnergyEquationsWithGravity2D)
 
 This flux is is a modification of the original kinetic energy preserving two-point flux by
@@ -356,7 +327,7 @@ The modification is in the energy flux to guarantee pressure equilibrium and was
 end
 
 """
-    flux_kennedy_gruber(u_ll, u_rr, orientation_or_normal_direction,
+    flux_kennedy_gruber(u_ll, u_rr, normal_direction::AbstractVector,
                         equations::CompressibleEulerEnergyEquationsWithGravity2D)
 
 Kinetic energy preserving two-point flux by
@@ -391,7 +362,7 @@ Kinetic energy preserving two-point flux by
 end
 
 """
-    flux_ranocha(u_ll, u_rr, orientation_or_normal_direction,
+    flux_ranocha(u_ll, u_rr, normal_direction::AbstractVector,
                  equations::CompressibleEulerEnergyEquationsWithGravity2D)
 
 Entropy conserving and kinetic energy preserving two-point flux by
@@ -473,26 +444,6 @@ end
 
 # Calculate maximum wave speed for local Lax-Friedrichs-type dissipation as the
 # maximum velocity magnitude plus the maximum speed of sound
-@inline function max_abs_speed_naive(u_ll, u_rr, orientation::Integer,
-                                     equations::CompressibleEulerEnergyEquationsWithGravity2D)
-    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
-
-    # Get the velocity value in the appropriate direction
-    if orientation == 1
-        v_ll = v1_ll
-        v_rr = v1_rr
-    else # orientation == 2
-        v_ll = v2_ll
-        v_rr = v2_rr
-    end
-    # Calculate sound speeds
-    c_ll = sqrt(equations.gamma * p_ll / rho_ll)
-    c_rr = sqrt(equations.gamma * p_rr / rho_rr)
-
-    return max(abs(v_ll), abs(v_rr)) + max(c_ll, c_rr)
-end
-
 @inline function max_abs_speed_naive(u_ll, u_rr, normal_direction::AbstractVector,
                                      equations::CompressibleEulerEnergyEquationsWithGravity2D)
     rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
@@ -511,27 +462,6 @@ end
     c_rr = sqrt(equations.gamma * p_rr / rho_rr)
 
     return max(abs(v_ll), abs(v_rr)) + max(c_ll, c_rr) * norm(normal_direction)
-end
-
-# Less "cautious", i.e., less overestimating `λ_max` compared to `max_abs_speed_naive`
-@inline function max_abs_speed(u_ll, u_rr, orientation::Integer,
-                               equations::CompressibleEulerEnergyEquationsWithGravity2D)
-    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
-
-    # Get the velocity value in the appropriate direction
-    if orientation == 1
-        v_ll = v1_ll
-        v_rr = v1_rr
-    else # orientation == 2
-        v_ll = v2_ll
-        v_rr = v2_rr
-    end
-    # Calculate sound speeds
-    c_ll = sqrt(equations.gamma * p_ll / rho_ll)
-    c_rr = sqrt(equations.gamma * p_rr / rho_rr)
-
-    return max(abs(v_ll) + c_ll, abs(v_rr) + c_rr)
 end
 
 # Less "cautious", i.e., less overestimating `λ_max` compared to `max_abs_speed_naive`
