@@ -69,7 +69,7 @@ u0: 153600-element Vector{Float64}:
 │ save initial solution: ………………………………… yes                                                         │
 │ save final solution: ……………………………………… yes                                                         │
 │ output directory: ……………………………………………… /home/runner/work/TrixiAtmo.jl/TrixiAtmo.jl/docs/out        │
-└──────────────────────────────────────────────────────────────────────────────────────────────────┘</code></pre><p>The time step is selected dynamically from a CFL condition. A moderate CFL number keeps the tutorial run stable while avoiding an unnecessarily small time step.</p><pre id="c-524be0dd"><code class="nohighlight hljs line-numbers"><span class="code-lines"><span class="line"><span class="line-num" aria-hidden="true"></span>stepsize_callback <span class="julia-keyword">=</span> <span class="julia-funcall">StepsizeCallback</span>(cfl <span class="julia-keyword">=</span> <span class="julia-number">0.5</span>)</span><span class="line"><span class="line-num" aria-hidden="true"></span></span><span class="line"><span class="line-num" aria-hidden="true"></span>callbacks <span class="julia-keyword">=</span> <span class="julia-funcall">CallbackSet</span>(summary_callback,</span><span class="line"><span class="line-num" aria-hidden="true"></span>                        analysis_callback,</span><span class="line"><span class="line-num" aria-hidden="true"></span>                        alive_callback,</span><span class="line"><span class="line-num" aria-hidden="true"></span>                        save_solution,</span><span class="line"><span class="line-num" aria-hidden="true"></span>                        stepsize_callback)</span><span class="line"><span class="line-num" aria-hidden="true"></span></span><span class="line"><span class="line-num" aria-hidden="true"></span>callbacks</span></span></code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">SciMLBase.CallbackSet{Tuple{}, Tuple{SciMLBase.DiscreteCallback{typeof(Trixi.summary_callback), typeof(Trixi.summary_callback), Trixi.var&quot;#initialize#SummaryCallback##0&quot;{Bool}, typeof(Trixi.finalize_summary_callback), Nothing, Tuple{}}, SciMLBase.DiscreteCallback{Trixi.var&quot;#1386#1387&quot;{Int64}, Trixi.AnalysisCallback{Trixi.LobattoLegendreAnalyzer{Float64, 9, SVector{9, Float64}, Matrix{Float64}}, Tuple{typeof(Trixi.entropy_timederivative)}, SVector{6, Float64}, @NamedTuple{u_local::StrideArraysCore.StaticStrideArray{Float64, 3, (1, 2, 3), Tuple{Static.StaticInt{6}, Static.StaticInt{9}, Static.StaticInt{9}}, Tuple{Nothing, Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}, Static.StaticInt{1}}, 486}, u_tmp1::StrideArraysCore.StaticStrideArray{Float64, 3, (1, 2, 3), Tuple{Static.StaticInt{6}, Static.StaticInt{9}, Static.StaticInt{5}}, Tuple{Nothing, Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}, Static.StaticInt{1}}, 270}, x_local::StrideArraysCore.StaticStrideArray{Float64, 3, (1, 2, 3), Tuple{Static.StaticInt{2}, Static.StaticInt{9}, Static.StaticInt{9}}, Tuple{Nothing, Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}, Static.StaticInt{1}}, 162}, x_tmp1::StrideArraysCore.StaticStrideArray{Float64, 3, (1, 2, 3), Tuple{Static.StaticInt{2}, Static.StaticInt{9}, Static.StaticInt{5}}, Tuple{Nothing, Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}, Static.StaticInt{1}}, 90}, jacobian_local::StrideArraysCore.StaticStrideArray{Float64, 2, (1, 2), Tuple{Static.StaticInt{9}, Static.StaticInt{9}}, Tuple{Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}}, 81}, jacobian_tmp1::StrideArraysCore.StaticStrideArray{Float64, 2, (1, 2), Tuple{Static.StaticInt{9}, Static.StaticInt{5}}, Tuple{Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}}, 45}}}, typeof(Trixi.initialize!), typeof(SciMLBase.FINALIZE_DEFAULT), Nothing, Tuple{}}, SciMLBase.DiscreteCallback{Trixi.AliveCallback, Trixi.AliveCallback, typeof(Trixi.initialize!), typeof(SciMLBase.FINALIZE_DEFAULT), Nothing, Tuple{}}, SciMLBase.DiscreteCallback{Trixi.SaveSolutionCallback{Int64, typeof(TrixiAtmo.cons2drypot)}, Trixi.SaveSolutionCallback{Int64, typeof(TrixiAtmo.cons2drypot)}, typeof(Trixi.initialize_save_cb!), typeof(SciMLBase.FINALIZE_DEFAULT), Nothing, Tuple{}}, SciMLBase.DiscreteCallback{Trixi.StepsizeCallback{Returns{Float64}, Returns{Float64}}, Trixi.StepsizeCallback{Returns{Float64}, Returns{Float64}}, typeof(Trixi.initialize!), typeof(SciMLBase.FINALIZE_DEFAULT), Nothing, Tuple{}}}}((), (SummaryCallback, SciMLBase.DiscreteCallback{Trixi.var&quot;#1386#1387&quot;{Int64}, Trixi.AnalysisCallback{Trixi.LobattoLegendreAnalyzer{Float64, 9, SVector{9, Float64}, Matrix{Float64}}, Tuple{typeof(Trixi.entropy_timederivative)}, SVector{6, Float64}, @NamedTuple{u_local::StrideArraysCore.StaticStrideArray{Float64, 3, (1, 2, 3), Tuple{Static.StaticInt{6}, Static.StaticInt{9}, Static.StaticInt{9}}, Tuple{Nothing, Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}, Static.StaticInt{1}}, 486}, u_tmp1::StrideArraysCore.StaticStrideArray{Float64, 3, (1, 2, 3), Tuple{Static.StaticInt{6}, Static.StaticInt{9}, Static.StaticInt{5}}, Tuple{Nothing, Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}, Static.StaticInt{1}}, 270}, x_local::StrideArraysCore.StaticStrideArray{Float64, 3, (1, 2, 3), Tuple{Static.StaticInt{2}, Static.StaticInt{9}, Static.StaticInt{9}}, Tuple{Nothing, Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}, Static.StaticInt{1}}, 162}, x_tmp1::StrideArraysCore.StaticStrideArray{Float64, 3, (1, 2, 3), Tuple{Static.StaticInt{2}, Static.StaticInt{9}, Static.StaticInt{5}}, Tuple{Nothing, Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}, Static.StaticInt{1}}, 90}, jacobian_local::StrideArraysCore.StaticStrideArray{Float64, 2, (1, 2), Tuple{Static.StaticInt{9}, Static.StaticInt{9}}, Tuple{Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}}, 81}, jacobian_tmp1::StrideArraysCore.StaticStrideArray{Float64, 2, (1, 2), Tuple{Static.StaticInt{9}, Static.StaticInt{5}}, Tuple{Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}}, 45}}}, typeof(Trixi.initialize!), typeof(SciMLBase.FINALIZE_DEFAULT), Nothing, Tuple{}}(Trixi.var&quot;#1386#1387&quot;{Int64}(1000), Trixi.AnalysisCallback{Trixi.LobattoLegendreAnalyzer{Float64, 9, SVector{9, Float64}, Matrix{Float64}}, Tuple{typeof(Trixi.entropy_timederivative)}, SVector{6, Float64}, @NamedTuple{u_local::StrideArraysCore.StaticStrideArray{Float64, 3, (1, 2, 3), Tuple{Static.StaticInt{6}, Static.StaticInt{9}, Static.StaticInt{9}}, Tuple{Nothing, Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}, Static.StaticInt{1}}, 486}, u_tmp1::StrideArraysCore.StaticStrideArray{Float64, 3, (1, 2, 3), Tuple{Static.StaticInt{6}, Static.StaticInt{9}, Static.StaticInt{5}}, Tuple{Nothing, Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}, Static.StaticInt{1}}, 270}, x_local::StrideArraysCore.StaticStrideArray{Float64, 3, (1, 2, 3), Tuple{Static.StaticInt{2}, Static.StaticInt{9}, Static.StaticInt{9}}, Tuple{Nothing, Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}, Static.StaticInt{1}}, 162}, x_tmp1::StrideArraysCore.StaticStrideArray{Float64, 3, (1, 2, 3), Tuple{Static.StaticInt{2}, Static.StaticInt{9}, Static.StaticInt{5}}, Tuple{Nothing, Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}, Static.StaticInt{1}}, 90}, jacobian_local::StrideArraysCore.StaticStrideArray{Float64, 2, (1, 2), Tuple{Static.StaticInt{9}, Static.StaticInt{9}}, Tuple{Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}}, 81}, jacobian_tmp1::StrideArraysCore.StaticStrideArray{Float64, 2, (1, 2), Tuple{Static.StaticInt{9}, Static.StaticInt{5}}, Tuple{Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}}, 45}}}(0.0, 0.0, 0, 0.0, 1000, false, &quot;out&quot;, &quot;analysis.dat&quot;, LobattoLegendreAnalyzer{Float64}(polydeg=8), [:l2_error, :linf_error, :entropy_conservation_error], (Trixi.entropy_timederivative,), [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], (u_local = [1.3e-322 4.0e-323 … 2.319944038402564e242 6.4e-323; 3.0e-323 2.121995791e-313 … 1.2655849671289378e-306 NaN; … ; NaN 2.3e-322 … 2.588057037e-315 2.152282361484e-312; 2.1e-322 1.3e-322 … 2.06640817066e-312 5.4e-323;;; 0.0 2.58805759e-315 … 2.588059013e-315 7.502283771162139e252; 2.588057393e-315 1.2361003680827409e224 … 9.267248951198694e242 NaN; … ; NaN 5.0e-323 … 0.0 0.0; 0.0 0.0 … 2.58805921e-315 2.58805945e-315;;; 9.267248951198694e242 6.21754089786354e-310 … 2.319944038402564e242 2.2210418348531503e252; 3.9301944e-317 7.4e-323 … 1.8819462452360298e-22 NaN; … ; NaN 9.267248951198694e242 … 0.0 0.0; 9.267248951198694e242 9.55810361140055e-307 … 2.588061345e-315 2.588061583e-315;;; 2.2210418348531503e252 6.087099045799372e247 … 2.864202489056727e161 2.4890013e-315; 2.5933862549481597e161 0.0 … 4.231474696661006e-140 NaN; … ; NaN 2.588062017e-315 … 0.0 1.7800590868057611e-307; 2.58806182e-315 6.087099045799372e247 … 2.516883047e-315 3.686134336889495e-99;;; 0.0 4.4e-323 … 1.4916681465876892e-154 6.365987506e-314; 2.516883047e-315 2.57321954e-315 … 0.0 NaN; … ; NaN 1.7800590868057611e-307 … 2.45708545e-315 2.588055377e-315; 1.867356296054e-312 3.686134336889495e-99 … 2.59956687e-315 2.5732193e-315;;; 1.0e-323 2.424056254e-315 … 2.579926693e-315 2.121995791e-313; 0.0 2.73513528e-315 … 6.35856474416747e-310 NaN; … ; NaN 2.573220765e-315 … 1.1e-322 0.0; 0.0 196608.00000000017 … 0.0 2.55703185e-315;;; 0.0 7.645295562778369e-298 … 5.0e-324 0.0; 2.54742176e-315 5.20342e-318 … 2.58806332e-315 NaN; … ; NaN 2.424056254e-315 … 0.0 2.58805949e-315; 0.0 0.0 … 9.691563509088135e-268 1.931016169783e-312;;; 8.0e-323 0.0 … 2.47515513e-315 0.0; 2.573218867e-315 0.0 … 0.0 NaN; … ; NaN 2.57322021e-315 … 0.0 2.479924333e-315; 9.691563509088135e-268 1.5e-323 … 0.0 1.888576253964e-312;;; 6.3659873724e-314 0.0 … 0.0 2.0237e-320; 2.57321859e-315 2.592601176e-315 … 3.0e-323 NaN; … ; NaN 4.231474696661865e-140 … 0.0 2.59956687e-315; 4.778309726736481e-299 0.0 … 0.0 6.3659873793e-314], u_tmp1 = [5.0e-324 2.40259491e-315 … 0.0 2.576579695e-315; 2.121995791e-314 4.6683907401e-313 … 2.735127534e-315 1.4853970537e-313; … ; 0.0 0.0 … 8.083e-321 0.0; 0.0 3.16e-322 … 5.0e-324 1.124432e7;;; 0.0 2.53262619e-315 … 0.0 0.0; 0.0 4.0e-323 … 0.0 0.0; … ; 2.96e-322 5.0e-324 … 0.0 0.0; 5.88832612035586e-310 3.16e-322 … 0.0 0.0;;; 0.0 0.0 … 2.567174977e-315 0.0; 0.0 0.0 … 0.0 0.0; … ; 0.0 0.0 … 0.0 0.0; 0.0 0.0 … 0.0 0.0;;; 0.0 4.832457998766711e276 … 2.42794728e-315 2.42794728e-315; 0.0 0.0 … 4.0e-323 5.0e-324; … ; 2.502764864e-315 2.524963826e-315 … 0.0 1.0e-323; 0.0 0.0 … 0.0 0.0;;; 2.42794728e-315 2.42794728e-315 … 2.73513619e-315 2.735136427e-315; 1.5e-323 5.4e-323 … 8.4879831644e-314 0.0; … ; 4.4e-323 2.0e-323 … 0.0 2.73513603e-315; 0.0 0.0 … 0.0 0.0], x_local = [1.556e-321 0.0 … 4.2439915903e-314 1.48539705377e-313; 6.358460186026e-310 1.90979621187e-313 … 3.60739284494e-313 4.2439915903e-314;;; 3.60739284504e-313 4.2439915903e-314 … 4.2439915903e-314 4.03179200293e-313; 1.90979621197e-313 3.60739284514e-313 … 3.60739284553e-313 4.2439915903e-314;;; 3.60739284563e-313 4.2439915903e-314 … 4.2439915903e-314 6.5781869521e-313; 4.45619116113e-313 3.60739284573e-313 … 3.6073928461e-313 4.2439915903e-314;;; 3.6073928462e-313 4.2439915903e-314 … 4.2439915903e-314 9.12458190125e-313; 7.0025861103e-313 3.6073928463e-313 … 3.6073928467e-313 4.2439915903e-314;;; 3.6073928468e-313 4.2439915903e-314 … 4.2439915903e-314 1.20953760086e-312; 9.54898105944e-313 3.6073928469e-313 … 3.6073928474e-313 4.2439915903e-314;;; 3.6073928475e-313 4.2439915903e-314 … 4.2439915903e-314 1.464177095776e-312; 1.25197751668e-312 3.6073928476e-313 … 3.607392848e-313 4.2439915903e-314;;; 3.6073928481e-313 4.2439915903e-314 … 4.2439915903e-314 1.76125650651e-312; 1.506617011595e-312 3.6073928482e-313 … 3.6073928487e-313 4.2439915903e-314;;; 3.6073928488e-313 4.2439915903e-314 … 4.2439915903e-314 1.0822178534e-312; 1.80369642233e-312 3.6073928489e-313 … 3.6073928471e-313 4.2439915903e-314;;; 3.60739284854e-313 6.365987382e-314 … 1.24e-322 6.35846018225685e-310; 1.69759663278e-312 3.819592424e-313 … 6.35834818804834e-310 6.35846018225843e-310], x_tmp1 = [8.3e-322 1.5e-323 … 9.4e-323 0.0; 6.358473639009e-310 1.0609978955e-313 … 4.45619116103e-313 1.14e-322;;; 5.3049894774e-313 1.33e-322 … 2.1e-322 0.0; 0.0 6.1537877938e-313 … 9.54898105934e-313 2.27e-322;;; 1.018557979663e-312 2.4e-322 … 0.0 0.0; 0.0 1.060997895483e-312 … 0.0 0.0;;; 0.0 0.0 … 0.0 0.0; 0.0 0.0 … 0.0 0.0;;; 0.0 0.0 … 2.0e-323 1.5e-323; 0.0 0.0 … 2.5e-323 5.0e-324], jacobian_local = [3.95e-322 2.0e-323 … 2.87e-322 2.87e-322; 6.3584689392969e-310 2.0e-323 … 2.87e-322 2.87e-322; … ; 2.0e-323 2.0e-323 … 2.87e-322 2.77e-322; 2.0e-323 2.0e-323 … 2.87e-322 2.77e-322], jacobian_tmp1 = [2.03e-322 6.35854660708876e-310 … 6.35854660708876e-310 6.35846810694333e-310; 6.3584686013054e-310 6.35854660708876e-310 … 6.35854660708876e-310 6.35854660708876e-310; … ; 6.35854660708876e-310 6.35854660708876e-310 … 6.3585523055356e-310 0.0; 6.35854660708876e-310 6.3585466192337e-310 … 6.35846810694017e-310 0.0])), Trixi.initialize!, SciMLBase.FINALIZE_DEFAULT, Bool[0, 0], nothing, (), true), AliveCallback(alive_interval=100), SaveSolutionCallback(interval=1000), StepsizeCallback(cfl_hyperbolic=Returns{Float64}(0.5), cfl_parabolic=Returns{Float64}(0.0), interval=1)))</code></pre><h2 id="Run-the-simulation"><a class="docs-heading-anchor" href="#Run-the-simulation">Run the simulation</a><a id="Run-the-simulation-1"></a><a class="docs-heading-anchor-permalink" href="#Run-the-simulation" title="Permalink"></a></h2><p>We now run the simulation. The value <code>dt = 1.0</code> is only an initial time-step guess; the actual time step is adjusted by <code>StepsizeCallback</code>.</p><pre id="c-5cdd97d7"><code class="nohighlight hljs line-numbers"><span class="code-lines"><span class="line"><span class="line-num" aria-hidden="true"></span>sol <span class="julia-keyword">=</span> <span class="julia-funcall">solve</span>(ode, <span class="julia-funcall">CarpenterKennedy2N54</span>(williamson_condition <span class="julia-keyword">=</span> <span class="julia-number">false</span>),</span><span class="line"><span class="line-num" aria-hidden="true"></span>            maxiters <span class="julia-keyword">=</span> <span class="julia-number">1.0e7</span>,</span><span class="line"><span class="line-num" aria-hidden="true"></span>            dt <span class="julia-keyword">=</span> <span class="julia-number">1.0</span>,</span><span class="line"><span class="line-num" aria-hidden="true"></span>            save_everystep <span class="julia-keyword">=</span> <span class="julia-number">false</span>,</span><span class="line"><span class="line-num" aria-hidden="true"></span>            callback <span class="julia-keyword">=</span> callbacks)</span><span class="line"><span class="line-num" aria-hidden="true"></span></span><span class="line"><span class="line-num" aria-hidden="true"></span><span class="julia-funcall">summary_callback</span>()</span></span></code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘</code></pre><p>The time step is selected dynamically from a CFL condition. A moderate CFL number keeps the tutorial run stable while avoiding an unnecessarily small time step.</p><pre id="c-524be0dd"><code class="nohighlight hljs line-numbers"><span class="code-lines"><span class="line"><span class="line-num" aria-hidden="true"></span>stepsize_callback <span class="julia-keyword">=</span> <span class="julia-funcall">StepsizeCallback</span>(cfl <span class="julia-keyword">=</span> <span class="julia-number">0.5</span>)</span><span class="line"><span class="line-num" aria-hidden="true"></span></span><span class="line"><span class="line-num" aria-hidden="true"></span>callbacks <span class="julia-keyword">=</span> <span class="julia-funcall">CallbackSet</span>(summary_callback,</span><span class="line"><span class="line-num" aria-hidden="true"></span>                        analysis_callback,</span><span class="line"><span class="line-num" aria-hidden="true"></span>                        alive_callback,</span><span class="line"><span class="line-num" aria-hidden="true"></span>                        save_solution,</span><span class="line"><span class="line-num" aria-hidden="true"></span>                        stepsize_callback)</span><span class="line"><span class="line-num" aria-hidden="true"></span></span><span class="line"><span class="line-num" aria-hidden="true"></span>callbacks</span></span></code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">SciMLBase.CallbackSet{Tuple{}, Tuple{SciMLBase.DiscreteCallback{typeof(Trixi.summary_callback), typeof(Trixi.summary_callback), Trixi.var&quot;#initialize#SummaryCallback##0&quot;{Bool}, typeof(Trixi.finalize_summary_callback), Nothing, Tuple{}}, SciMLBase.DiscreteCallback{Trixi.var&quot;#1386#1387&quot;{Int64}, Trixi.AnalysisCallback{Trixi.LobattoLegendreAnalyzer{Float64, 9, SVector{9, Float64}, Matrix{Float64}}, Tuple{typeof(Trixi.entropy_timederivative)}, SVector{6, Float64}, @NamedTuple{u_local::StrideArraysCore.StaticStrideArray{Float64, 3, (1, 2, 3), Tuple{Static.StaticInt{6}, Static.StaticInt{9}, Static.StaticInt{9}}, Tuple{Nothing, Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}, Static.StaticInt{1}}, 486}, u_tmp1::StrideArraysCore.StaticStrideArray{Float64, 3, (1, 2, 3), Tuple{Static.StaticInt{6}, Static.StaticInt{9}, Static.StaticInt{5}}, Tuple{Nothing, Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}, Static.StaticInt{1}}, 270}, x_local::StrideArraysCore.StaticStrideArray{Float64, 3, (1, 2, 3), Tuple{Static.StaticInt{2}, Static.StaticInt{9}, Static.StaticInt{9}}, Tuple{Nothing, Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}, Static.StaticInt{1}}, 162}, x_tmp1::StrideArraysCore.StaticStrideArray{Float64, 3, (1, 2, 3), Tuple{Static.StaticInt{2}, Static.StaticInt{9}, Static.StaticInt{5}}, Tuple{Nothing, Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}, Static.StaticInt{1}}, 90}, jacobian_local::StrideArraysCore.StaticStrideArray{Float64, 2, (1, 2), Tuple{Static.StaticInt{9}, Static.StaticInt{9}}, Tuple{Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}}, 81}, jacobian_tmp1::StrideArraysCore.StaticStrideArray{Float64, 2, (1, 2), Tuple{Static.StaticInt{9}, Static.StaticInt{5}}, Tuple{Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}}, 45}}}, typeof(Trixi.initialize!), typeof(SciMLBase.FINALIZE_DEFAULT), Nothing, Tuple{}}, SciMLBase.DiscreteCallback{Trixi.AliveCallback, Trixi.AliveCallback, typeof(Trixi.initialize!), typeof(SciMLBase.FINALIZE_DEFAULT), Nothing, Tuple{}}, SciMLBase.DiscreteCallback{Trixi.SaveSolutionCallback{Int64, typeof(TrixiAtmo.cons2drypot)}, Trixi.SaveSolutionCallback{Int64, typeof(TrixiAtmo.cons2drypot)}, typeof(Trixi.initialize_save_cb!), typeof(SciMLBase.FINALIZE_DEFAULT), Nothing, Tuple{}}, SciMLBase.DiscreteCallback{Trixi.StepsizeCallback{Returns{Float64}, Returns{Float64}}, Trixi.StepsizeCallback{Returns{Float64}, Returns{Float64}}, typeof(Trixi.initialize!), typeof(SciMLBase.FINALIZE_DEFAULT), Nothing, Tuple{}}}}((), (SummaryCallback, SciMLBase.DiscreteCallback{Trixi.var&quot;#1386#1387&quot;{Int64}, Trixi.AnalysisCallback{Trixi.LobattoLegendreAnalyzer{Float64, 9, SVector{9, Float64}, Matrix{Float64}}, Tuple{typeof(Trixi.entropy_timederivative)}, SVector{6, Float64}, @NamedTuple{u_local::StrideArraysCore.StaticStrideArray{Float64, 3, (1, 2, 3), Tuple{Static.StaticInt{6}, Static.StaticInt{9}, Static.StaticInt{9}}, Tuple{Nothing, Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}, Static.StaticInt{1}}, 486}, u_tmp1::StrideArraysCore.StaticStrideArray{Float64, 3, (1, 2, 3), Tuple{Static.StaticInt{6}, Static.StaticInt{9}, Static.StaticInt{5}}, Tuple{Nothing, Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}, Static.StaticInt{1}}, 270}, x_local::StrideArraysCore.StaticStrideArray{Float64, 3, (1, 2, 3), Tuple{Static.StaticInt{2}, Static.StaticInt{9}, Static.StaticInt{9}}, Tuple{Nothing, Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}, Static.StaticInt{1}}, 162}, x_tmp1::StrideArraysCore.StaticStrideArray{Float64, 3, (1, 2, 3), Tuple{Static.StaticInt{2}, Static.StaticInt{9}, Static.StaticInt{5}}, Tuple{Nothing, Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}, Static.StaticInt{1}}, 90}, jacobian_local::StrideArraysCore.StaticStrideArray{Float64, 2, (1, 2), Tuple{Static.StaticInt{9}, Static.StaticInt{9}}, Tuple{Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}}, 81}, jacobian_tmp1::StrideArraysCore.StaticStrideArray{Float64, 2, (1, 2), Tuple{Static.StaticInt{9}, Static.StaticInt{5}}, Tuple{Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}}, 45}}}, typeof(Trixi.initialize!), typeof(SciMLBase.FINALIZE_DEFAULT), Nothing, Tuple{}}(Trixi.var&quot;#1386#1387&quot;{Int64}(1000), Trixi.AnalysisCallback{Trixi.LobattoLegendreAnalyzer{Float64, 9, SVector{9, Float64}, Matrix{Float64}}, Tuple{typeof(Trixi.entropy_timederivative)}, SVector{6, Float64}, @NamedTuple{u_local::StrideArraysCore.StaticStrideArray{Float64, 3, (1, 2, 3), Tuple{Static.StaticInt{6}, Static.StaticInt{9}, Static.StaticInt{9}}, Tuple{Nothing, Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}, Static.StaticInt{1}}, 486}, u_tmp1::StrideArraysCore.StaticStrideArray{Float64, 3, (1, 2, 3), Tuple{Static.StaticInt{6}, Static.StaticInt{9}, Static.StaticInt{5}}, Tuple{Nothing, Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}, Static.StaticInt{1}}, 270}, x_local::StrideArraysCore.StaticStrideArray{Float64, 3, (1, 2, 3), Tuple{Static.StaticInt{2}, Static.StaticInt{9}, Static.StaticInt{9}}, Tuple{Nothing, Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}, Static.StaticInt{1}}, 162}, x_tmp1::StrideArraysCore.StaticStrideArray{Float64, 3, (1, 2, 3), Tuple{Static.StaticInt{2}, Static.StaticInt{9}, Static.StaticInt{5}}, Tuple{Nothing, Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}, Static.StaticInt{1}}, 90}, jacobian_local::StrideArraysCore.StaticStrideArray{Float64, 2, (1, 2), Tuple{Static.StaticInt{9}, Static.StaticInt{9}}, Tuple{Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}}, 81}, jacobian_tmp1::StrideArraysCore.StaticStrideArray{Float64, 2, (1, 2), Tuple{Static.StaticInt{9}, Static.StaticInt{5}}, Tuple{Nothing, Nothing}, Tuple{Static.StaticInt{1}, Static.StaticInt{1}}, 45}}}(0.0, 0.0, 0, 0.0, 1000, false, &quot;out&quot;, &quot;analysis.dat&quot;, LobattoLegendreAnalyzer{Float64}(polydeg=8), [:l2_error, :linf_error, :entropy_conservation_error], (Trixi.entropy_timederivative,), [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], (u_local = [1.816519906499072e223 1.0760979576475395e-306 … 1.2571144589299218e-47 2.319944038402564e242; 9.303505066325256e199 5.0e-323 … 1.7870725e-317 1.2655849671289378e-306; … ; 0.0 5.5560359258019495e180 … 4.373488227e-315 4.373488464e-315; 4.373486607e-315 4.3933416e-315 … 4.4403252028073835e252 2.06640817066e-312;;; 6.4e-323 0.0 … 0.0 4.37349044e-315; 0.0 4.37348882e-315 … 4.373490243e-315 9.267248951198694e242; … ; 2.152282361484e-312 9.0e-323 … 7.0e-323 0.0; 5.4e-323 0.0 … 0.0 4.37349064e-315;;; 7.502283771162139e252 9.267248951198694e242 … 3.6714209487554225e228 2.319944038402564e242; 2.7738988155460475e257 2.1259259854e-314 … 2.1257663646e-314 1.8819462452360298e-22; … ; 0.0 4.373491073e-315 … 4.373492496e-315 0.0; 4.373490875e-315 9.267248951198694e242 … 4.4403252028073835e252 4.373492773e-315;;; 2.2210418348531503e252 2.2210418348531503e252 … 4.37349447e-315 2.864202489056727e161; 2.5933862549481597e161 2.5933862549481597e161 … 3.872746927809837e233 4.35595897e-315; … ; 0.0 0.0 … 0.0 6.4289282155544e-310; 4.37349301e-315 4.373493247e-315 … 4.37349467e-315 4.356142096e-315;;; 6.42892820611025e-310 6.4289282192619e-310 … 6.4289282062407e-310 6.42892823297556e-310; 4.36693502e-315 4.356104547e-315 … 4.35609925e-315 4.35615838e-315; … ; 6.4289282190785e-310 6.42892820769047e-310 … NaN NaN; 4.35614771e-315 4.36695233e-315 … 1.14587772712e-312 NaN;;; 6.42892820922904e-310 6.42892820395296e-310 … 6.4289282329552e-310 6.4289282329548e-310; 0.0 4.36659945e-315 … 4.356157274e-315 0.0; … ; 6.42892822024077e-310 NaN … NaN 6.4289282057964e-310; 0.0 -5.80758188292519e303 … 8.487983164e-314 4.366844665e-315;;; NaN 6.4289282075282e-310 … NaN NaN; NaN 4.36668751e-315 … 8.2890466e-317 4.421187775e-315; … ; 6.4289282075286e-310 6.4289282075294e-310 … NaN NaN; 4.366498345e-315 4.36642301e-315 … 6.365987373e-314 8.4879832236e-314;;; NaN 6.42892823292615e-310 … 6.42892820565096e-310 6.4289282189528e-310; 2.1219957905e-314 4.356156167e-315 … 4.366731227e-315 4.3561519e-315; … ; NaN NaN … 6.4289282246974e-310 6.42892820859955e-310; 4.42729075e-315 1.6e-322 … 4.35615087e-315 4.36477718e-315;;; NaN 6.42892820859994e-310 … NaN NaN; NaN 4.366218427e-315 … 1.0e-323 NaN; … ; 6.4289282070312e-310 6.42892823269533e-310 … NaN 6.4289282040674e-310; 4.36681004e-315 4.356152373e-315 … 0.0 4.364995594e-315], u_tmp1 = [5.0e-324 5.0e-324 … 0.0 5.0e-324; 0.0 5.0e-324 … 0.0 5.0e-324; … ; 0.0 0.0 … 5.0e-324 5.0e-324; 2.0e-323 5.0e-324 … 5.0e-324 5.0e-324;;; 5.0e-324 0.0 … 0.0 5.0e-324; 5.0e-324 5.0e-324 … 0.0 5.0e-324; … ; 0.0 5.0e-324 … 5.0e-324 5.0e-324; 0.0 0.0 … 5.0e-324 5.0e-324;;; 5.0e-324 0.0 … 0.0 5.0e-324; 5.0e-324 0.0 … 0.0 5.0e-324; … ; 0.0 5.0e-324 … 0.0 5.0e-324; 0.0 5.0e-324 … 5.0e-324 5.0e-324;;; 5.0e-324 0.0 … 0.0 5.0e-324; 5.0e-324 0.0 … 5.0e-324 5.0e-324; … ; 5.0e-324 2.0e-323 … 5.0e-324 5.0e-324; 0.0 5.0e-324 … 5.0e-324 5.0e-324;;; 5.0e-324 0.0 … 0.0 0.0; 0.0 0.0 … 0.0 0.0; … ; 0.0 0.0 … 0.0 4.476612494e-315; 5.0e-324 1.0e-323 … 0.0 0.0], x_local = [1.57e-321 2.0e-323 … 2.1219957944e-314 1.9097962119e-313; 6.4289107685923e-310 1.0609978955e-313 … 1.48539705407e-313 2.1219957944e-314;;; 1.48539705417e-313 2.1219957944e-314 … 2.1219957944e-314 4.4561911611e-313; 2.3341953701e-313 1.48539705427e-313 … 1.48539705466e-313 2.1219957944e-314;;; 1.48539705476e-313 2.1219957944e-314 … 2.1219957944e-314 7.00258611023e-313; 4.88059031927e-313 1.48539705486e-313 … 1.48539705526e-313 2.1219957944e-314;;; 1.48539705536e-313 2.1219957944e-314 … 2.1219957944e-314 9.5489810594e-313; 7.42698526843e-313 1.48539705545e-313 … 1.48539705585e-313 2.1219957944e-314;;; 1.48539705595e-313 2.1219957944e-314 … 0.0 1.251977516674e-312; 9.9733802176e-313 1.48539705605e-313 … 1.4853970537e-313 2.1219957944e-314;;; 1.48539705664e-313 2.1219957944e-314 … 2.1219957944e-314 1.50661701159e-312; 1.294417432494e-312 1.48539705674e-313 … 1.48539705713e-313 2.1219957944e-314;;; 1.48539705723e-313 2.1219957944e-314 … 2.1219957944e-314 1.761256506506e-312; 1.54905692741e-312 1.48539705733e-313 … 1.48539705773e-313 2.1219957944e-314;;; 1.48539705783e-313 2.1219957944e-314 … 2.1219957944e-314 0.0; 1.803696422325e-312 1.4853970579e-313 … 4.64e-322 2.1219957944e-314;;; 1.48539705857e-313 2.1219957944e-314 … 2.1219957944e-314 2.05833591724e-312; 2.12199579097e-312 1.48539705867e-313 … 1.4853970584e-313 0.0], x_tmp1 = [4.15e-322 6.4289154854315e-310 … 6.42891912153174e-310 6.42891885955047e-310; 6.42885215181644e-310 6.4289154854315e-310 … 6.42891912153174e-310 6.42891912153174e-310;;; 6.42891912153174e-310 6.42891885955047e-310 … 6.4289154854315e-310 6.42891885955047e-310; 6.42891912153174e-310 6.42891912153174e-310 … 6.4289154854315e-310 6.42891912153174e-310;;; 6.42891885020195e-310 6.4289154888109e-310 … 6.42891885020195e-310 6.42885279645827e-310; 6.42891545693775e-310 6.42891885020195e-310 … 6.42891885020195e-310 6.42891885020195e-310;;; 6.42891885955047e-310 6.42891912153174e-310 … 6.42891885955047e-310 6.42891885020195e-310; 6.42891912153174e-310 6.42891885020195e-310 … 6.42891912153174e-310 6.42891545693775e-310;;; 6.4289154888109e-310 6.42891545693775e-310 … 6.4288504520053e-310 0.0; 6.42891885020195e-310 6.42891885955047e-310 … 6.4288504520085e-310 2.9e-322], jacobian_local = [3.9e-322 6.428826204582e-310 … 6.42882620461045e-310 6.42885158181883e-310; 6.4289104464813e-310 6.4288515817066e-310 … 6.4288515817983e-310 6.428851581822e-310; … ; 6.4288262045804e-310 6.4289180363051e-310 … 6.4289180363051e-310 6.4288515818315e-310; 6.4288515817034e-310 6.4288262045875e-310 … 6.4288262046144e-310 6.4288262046223e-310], jacobian_tmp1 = [2.08e-322 6.42883074823417e-310 … 6.42891128343876e-310 6.42891128360477e-310; 6.42882955235104e-310 6.4288307482658e-310 … 6.4289112834625e-310 6.4288299441016e-310; … ; 6.4289191193863e-310 6.42891128322533e-310 … 6.4289175482117e-310 6.42891128341505e-310; 6.4289112951406e-310 6.42891128324904e-310 … 6.42891128358105e-310 0.0])), Trixi.initialize!, SciMLBase.FINALIZE_DEFAULT, Bool[0, 0], nothing, (), true), AliveCallback(alive_interval=100), SaveSolutionCallback(interval=1000), StepsizeCallback(cfl_hyperbolic=Returns{Float64}(0.5), cfl_parabolic=Returns{Float64}(0.0), interval=1)))</code></pre><h2 id="Run-the-simulation"><a class="docs-heading-anchor" href="#Run-the-simulation">Run the simulation</a><a id="Run-the-simulation-1"></a><a class="docs-heading-anchor-permalink" href="#Run-the-simulation" title="Permalink"></a></h2><p>We now run the simulation. The value <code>dt = 1.0</code> is only an initial time-step guess; the actual time step is adjusted by <code>StepsizeCallback</code>.</p><pre id="c-5cdd97d7"><code class="nohighlight hljs line-numbers"><span class="code-lines"><span class="line"><span class="line-num" aria-hidden="true"></span>sol <span class="julia-keyword">=</span> <span class="julia-funcall">solve</span>(ode, <span class="julia-funcall">CarpenterKennedy2N54</span>(williamson_condition <span class="julia-keyword">=</span> <span class="julia-number">false</span>),</span><span class="line"><span class="line-num" aria-hidden="true"></span>            maxiters <span class="julia-keyword">=</span> <span class="julia-number">1.0e7</span>,</span><span class="line"><span class="line-num" aria-hidden="true"></span>            dt <span class="julia-keyword">=</span> <span class="julia-number">1.0</span>,</span><span class="line"><span class="line-num" aria-hidden="true"></span>            save_everystep <span class="julia-keyword">=</span> <span class="julia-number">false</span>,</span><span class="line"><span class="line-num" aria-hidden="true"></span>            callback <span class="julia-keyword">=</span> callbacks)</span><span class="line"><span class="line-num" aria-hidden="true"></span></span><span class="line"><span class="line-num" aria-hidden="true"></span><span class="julia-funcall">summary_callback</span>()</span></span></code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">
 ████████╗██████╗ ██╗██╗  ██╗██╗
 ╚══██╔══╝██╔══██╗██║╚██╗██╔╝██║
    ██║   ██████╔╝██║ ╚███╔╝ ██║
@@ -177,11 +177,11 @@ u0: 153600-element Vector{Float64}:
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  Simulation running &#39;CompressibleMoistEulerEquations2D&#39; with DGSEM(polydeg=4)
 ────────────────────────────────────────────────────────────────────────────────────────────────────
- #timesteps:                  0                run time:       1.29200000e-06 s
+ #timesteps:                  0                run time:       1.51000000e-06 s
  Δt:             1.00000000e+00                └── GC time:    0.00000000e+00 s (0.000%)
  sim. time:      0.00000000e+00 (0.000%)       time/DOF/RHS:          NaN s
                                                PID:                   Inf s
- #DOFs per field:         25600                alloc&#39;d memory:        353.710 MiB
+ #DOFs per field:         25600                alloc&#39;d memory:        497.010 MiB
  #elements:                1024                device memory:           0.000 MiB
 
  Variable:       rho              rho_v1           rho_v2           rho_E            rho_qv           rho_ql
@@ -190,24 +190,24 @@ u0: 153600-element Vector{Float64}:
  ∑∂S/∂U ⋅ Uₜ :  -1.84841147e-14
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 
-#timesteps:    100 │ Δt: 8.1291e-02 │ sim. time: 8.1291e+00 (2.032%)   │ run time: 2.2759e+00 s
-#timesteps:    200 │ Δt: 8.1291e-02 │ sim. time: 1.6258e+01 (4.065%)   │ run time: 4.4181e+00 s
-#timesteps:    300 │ Δt: 8.1290e-02 │ sim. time: 2.4387e+01 (6.097%)   │ run time: 6.5611e+00 s
-#timesteps:    400 │ Δt: 8.1290e-02 │ sim. time: 3.2516e+01 (8.129%)   │ run time: 8.6818e+00 s
-#timesteps:    500 │ Δt: 8.1289e-02 │ sim. time: 4.0645e+01 (10.161%)  │ run time: 1.0783e+01 s
-#timesteps:    600 │ Δt: 8.1289e-02 │ sim. time: 4.8774e+01 (12.194%)  │ run time: 1.2923e+01 s
-#timesteps:    700 │ Δt: 8.1289e-02 │ sim. time: 5.6903e+01 (14.226%)  │ run time: 1.5073e+01 s
-#timesteps:    800 │ Δt: 8.1288e-02 │ sim. time: 6.5032e+01 (16.258%)  │ run time: 1.7173e+01 s
-#timesteps:    900 │ Δt: 8.1287e-02 │ sim. time: 7.3161e+01 (18.290%)  │ run time: 1.9284e+01 s
+#timesteps:    100 │ Δt: 8.1291e-02 │ sim. time: 8.1291e+00 (2.032%)   │ run time: 1.9149e+00 s
+#timesteps:    200 │ Δt: 8.1291e-02 │ sim. time: 1.6258e+01 (4.065%)   │ run time: 3.7149e+00 s
+#timesteps:    300 │ Δt: 8.1290e-02 │ sim. time: 2.4387e+01 (6.097%)   │ run time: 5.5169e+00 s
+#timesteps:    400 │ Δt: 8.1290e-02 │ sim. time: 3.2516e+01 (8.129%)   │ run time: 7.3198e+00 s
+#timesteps:    500 │ Δt: 8.1289e-02 │ sim. time: 4.0645e+01 (10.161%)  │ run time: 9.1426e+00 s
+#timesteps:    600 │ Δt: 8.1289e-02 │ sim. time: 4.8774e+01 (12.194%)  │ run time: 1.0950e+01 s
+#timesteps:    700 │ Δt: 8.1289e-02 │ sim. time: 5.6903e+01 (14.226%)  │ run time: 1.2758e+01 s
+#timesteps:    800 │ Δt: 8.1288e-02 │ sim. time: 6.5032e+01 (16.258%)  │ run time: 1.4561e+01 s
+#timesteps:    900 │ Δt: 8.1287e-02 │ sim. time: 7.3161e+01 (18.290%)  │ run time: 1.6363e+01 s
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  Simulation running &#39;CompressibleMoistEulerEquations2D&#39; with DGSEM(polydeg=4)
 ────────────────────────────────────────────────────────────────────────────────────────────────────
- #timesteps:               1000                run time:       2.15170301e+01 s
+ #timesteps:               1000                run time:       1.82629318e+01 s
  Δt:             8.12864418e-02                └── GC time:    0.00000000e+00 s (0.000%)
- sim. time:      8.12893091e+01 (20.322%)      time/DOF/RHS:   1.56621980e-07 s
-                                               PID:            1.67288864e-07 s
- #DOFs per field:         25600                alloc&#39;d memory:        370.728 MiB
+ sim. time:      8.12893091e+01 (20.322%)      time/DOF/RHS:   1.30018787e-07 s
+                                               PID:            1.41999938e-07 s
+ #DOFs per field:         25600                alloc&#39;d memory:        514.029 MiB
  #elements:                1024                device memory:           0.000 MiB
 
  Variable:       rho              rho_v1           rho_v2           rho_E            rho_qv           rho_ql
@@ -216,24 +216,24 @@ u0: 153600-element Vector{Float64}:
  ∑∂S/∂U ⋅ Uₜ :  -2.16034247e-11
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 
-#timesteps:   1100 │ Δt: 8.1286e-02 │ sim. time: 8.9418e+01 (22.354%)  │ run time: 2.3547e+01 s
-#timesteps:   1200 │ Δt: 8.1285e-02 │ sim. time: 9.7546e+01 (24.387%)  │ run time: 2.5657e+01 s
-#timesteps:   1300 │ Δt: 8.1286e-02 │ sim. time: 1.0568e+02 (26.419%)  │ run time: 2.7755e+01 s
-#timesteps:   1400 │ Δt: 8.1284e-02 │ sim. time: 1.1380e+02 (28.451%)  │ run time: 2.9864e+01 s
-#timesteps:   1500 │ Δt: 8.1282e-02 │ sim. time: 1.2193e+02 (30.483%)  │ run time: 3.1979e+01 s
-#timesteps:   1600 │ Δt: 8.1282e-02 │ sim. time: 1.3006e+02 (32.515%)  │ run time: 3.4099e+01 s
-#timesteps:   1700 │ Δt: 8.1282e-02 │ sim. time: 1.3819e+02 (34.547%)  │ run time: 3.6204e+01 s
-#timesteps:   1800 │ Δt: 8.1282e-02 │ sim. time: 1.4632e+02 (36.579%)  │ run time: 3.8323e+01 s
-#timesteps:   1900 │ Δt: 8.1282e-02 │ sim. time: 1.5444e+02 (38.611%)  │ run time: 4.0442e+01 s
+#timesteps:   1100 │ Δt: 8.1286e-02 │ sim. time: 8.9418e+01 (22.354%)  │ run time: 2.0237e+01 s
+#timesteps:   1200 │ Δt: 8.1285e-02 │ sim. time: 9.7546e+01 (24.387%)  │ run time: 2.2045e+01 s
+#timesteps:   1300 │ Δt: 8.1286e-02 │ sim. time: 1.0568e+02 (26.419%)  │ run time: 2.3856e+01 s
+#timesteps:   1400 │ Δt: 8.1284e-02 │ sim. time: 1.1380e+02 (28.451%)  │ run time: 2.5666e+01 s
+#timesteps:   1500 │ Δt: 8.1282e-02 │ sim. time: 1.2193e+02 (30.483%)  │ run time: 2.7473e+01 s
+#timesteps:   1600 │ Δt: 8.1282e-02 │ sim. time: 1.3006e+02 (32.515%)  │ run time: 2.9279e+01 s
+#timesteps:   1700 │ Δt: 8.1282e-02 │ sim. time: 1.3819e+02 (34.547%)  │ run time: 3.1081e+01 s
+#timesteps:   1800 │ Δt: 8.1282e-02 │ sim. time: 1.4632e+02 (36.579%)  │ run time: 3.2881e+01 s
+#timesteps:   1900 │ Δt: 8.1282e-02 │ sim. time: 1.5444e+02 (38.611%)  │ run time: 3.4687e+01 s
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  Simulation running &#39;CompressibleMoistEulerEquations2D&#39; with DGSEM(polydeg=4)
 ────────────────────────────────────────────────────────────────────────────────────────────────────
- #timesteps:               2000                run time:       4.26838465e+01 s
- Δt:             8.12805730e-02                └── GC time:    0.00000000e+00 s (0.000%)
- sim. time:      1.62572884e+02 (40.643%)      time/DOF/RHS:   1.55824910e-07 s
-                                               PID:            1.65238302e-07 s
- #DOFs per field:         25600                alloc&#39;d memory:        380.928 MiB
+ #timesteps:               2000                run time:       3.65867480e+01 s
+ Δt:             8.12805730e-02                └── GC time:    2.26037747e-01 s (0.618%)
+ sim. time:      1.62572884e+02 (40.643%)      time/DOF/RHS:   1.29954159e-07 s
+                                               PID:            1.43058875e-07 s
+ #DOFs per field:         25600                alloc&#39;d memory:         98.417 MiB
  #elements:                1024                device memory:           0.000 MiB
 
  Variable:       rho              rho_v1           rho_v2           rho_E            rho_qv           rho_ql
@@ -242,24 +242,24 @@ u0: 153600-element Vector{Float64}:
  ∑∂S/∂U ⋅ Uₜ :  -4.41374541e-11
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 
-#timesteps:   2100 │ Δt: 8.1280e-02 │ sim. time: 1.7070e+02 (42.675%)  │ run time: 4.4711e+01 s
-#timesteps:   2200 │ Δt: 8.1280e-02 │ sim. time: 1.7883e+02 (44.707%)  │ run time: 4.6809e+01 s
-#timesteps:   2300 │ Δt: 8.1281e-02 │ sim. time: 1.8696e+02 (46.739%)  │ run time: 4.8907e+01 s
-#timesteps:   2400 │ Δt: 8.1280e-02 │ sim. time: 1.9509e+02 (48.771%)  │ run time: 5.1023e+01 s
-#timesteps:   2500 │ Δt: 8.1279e-02 │ sim. time: 2.0321e+02 (50.803%)  │ run time: 5.3123e+01 s
-#timesteps:   2600 │ Δt: 8.1277e-02 │ sim. time: 2.1134e+02 (52.835%)  │ run time: 5.5219e+01 s
-#timesteps:   2700 │ Δt: 8.1277e-02 │ sim. time: 2.1947e+02 (54.867%)  │ run time: 5.7374e+01 s
-#timesteps:   2800 │ Δt: 8.1278e-02 │ sim. time: 2.2760e+02 (56.899%)  │ run time: 5.9552e+01 s
-#timesteps:   2900 │ Δt: 8.1277e-02 │ sim. time: 2.3572e+02 (58.931%)  │ run time: 6.1685e+01 s
+#timesteps:   2100 │ Δt: 8.1280e-02 │ sim. time: 1.7070e+02 (42.675%)  │ run time: 3.8317e+01 s
+#timesteps:   2200 │ Δt: 8.1280e-02 │ sim. time: 1.7883e+02 (44.707%)  │ run time: 4.0122e+01 s
+#timesteps:   2300 │ Δt: 8.1281e-02 │ sim. time: 1.8696e+02 (46.739%)  │ run time: 4.1927e+01 s
+#timesteps:   2400 │ Δt: 8.1280e-02 │ sim. time: 1.9509e+02 (48.771%)  │ run time: 4.3733e+01 s
+#timesteps:   2500 │ Δt: 8.1279e-02 │ sim. time: 2.0321e+02 (50.803%)  │ run time: 4.5536e+01 s
+#timesteps:   2600 │ Δt: 8.1277e-02 │ sim. time: 2.1134e+02 (52.835%)  │ run time: 4.7337e+01 s
+#timesteps:   2700 │ Δt: 8.1277e-02 │ sim. time: 2.1947e+02 (54.867%)  │ run time: 4.9143e+01 s
+#timesteps:   2800 │ Δt: 8.1278e-02 │ sim. time: 2.2760e+02 (56.899%)  │ run time: 5.0946e+01 s
+#timesteps:   2900 │ Δt: 8.1277e-02 │ sim. time: 2.3572e+02 (58.931%)  │ run time: 5.2748e+01 s
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  Simulation running &#39;CompressibleMoistEulerEquations2D&#39; with DGSEM(polydeg=4)
 ────────────────────────────────────────────────────────────────────────────────────────────────────
- #timesteps:               3000                run time:       6.38917589e+01 s
- Δt:             8.12753553e-02                └── GC time:    0.00000000e+00 s (0.000%)
- sim. time:      2.43851732e+02 (60.963%)      time/DOF/RHS:   1.56070018e-07 s
-                                               PID:            1.65561339e-07 s
- #DOFs per field:         25600                alloc&#39;d memory:        391.183 MiB
+ #timesteps:               3000                run time:       5.46544095e+01 s
+ Δt:             8.12753553e-02                └── GC time:    2.26037747e-01 s (0.414%)
+ sim. time:      2.43851732e+02 (60.963%)      time/DOF/RHS:   1.29898412e-07 s
+                                               PID:            1.41059730e-07 s
+ #DOFs per field:         25600                alloc&#39;d memory:        108.672 MiB
  #elements:                1024                device memory:           0.000 MiB
 
  Variable:       rho              rho_v1           rho_v2           rho_E            rho_qv           rho_ql
@@ -268,24 +268,24 @@ u0: 153600-element Vector{Float64}:
  ∑∂S/∂U ⋅ Uₜ :  -1.35094529e-10
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 
-#timesteps:   3100 │ Δt: 8.1275e-02 │ sim. time: 2.5198e+02 (62.995%)  │ run time: 6.5890e+01 s
-#timesteps:   3200 │ Δt: 8.1275e-02 │ sim. time: 2.6011e+02 (65.027%)  │ run time: 6.7985e+01 s
-#timesteps:   3300 │ Δt: 8.1274e-02 │ sim. time: 2.6823e+02 (67.059%)  │ run time: 7.0105e+01 s
-#timesteps:   3400 │ Δt: 8.1276e-02 │ sim. time: 2.7636e+02 (69.090%)  │ run time: 7.2229e+01 s
-#timesteps:   3500 │ Δt: 8.1276e-02 │ sim. time: 2.8449e+02 (71.122%)  │ run time: 7.4357e+01 s
-#timesteps:   3600 │ Δt: 8.1275e-02 │ sim. time: 2.9262e+02 (73.154%)  │ run time: 7.6499e+01 s
-#timesteps:   3700 │ Δt: 8.1274e-02 │ sim. time: 3.0074e+02 (75.186%)  │ run time: 7.8593e+01 s
-#timesteps:   3800 │ Δt: 8.1273e-02 │ sim. time: 3.0887e+02 (77.218%)  │ run time: 8.0722e+01 s
-#timesteps:   3900 │ Δt: 8.1273e-02 │ sim. time: 3.1700e+02 (79.250%)  │ run time: 8.2821e+01 s
+#timesteps:   3100 │ Δt: 8.1275e-02 │ sim. time: 2.5198e+02 (62.995%)  │ run time: 5.6381e+01 s
+#timesteps:   3200 │ Δt: 8.1275e-02 │ sim. time: 2.6011e+02 (65.027%)  │ run time: 5.8186e+01 s
+#timesteps:   3300 │ Δt: 8.1274e-02 │ sim. time: 2.6823e+02 (67.059%)  │ run time: 5.9988e+01 s
+#timesteps:   3400 │ Δt: 8.1276e-02 │ sim. time: 2.7636e+02 (69.090%)  │ run time: 6.1794e+01 s
+#timesteps:   3500 │ Δt: 8.1276e-02 │ sim. time: 2.8449e+02 (71.122%)  │ run time: 6.3601e+01 s
+#timesteps:   3600 │ Δt: 8.1275e-02 │ sim. time: 2.9262e+02 (73.154%)  │ run time: 6.5406e+01 s
+#timesteps:   3700 │ Δt: 8.1274e-02 │ sim. time: 3.0074e+02 (75.186%)  │ run time: 6.7240e+01 s
+#timesteps:   3800 │ Δt: 8.1273e-02 │ sim. time: 3.0887e+02 (77.218%)  │ run time: 6.9056e+01 s
+#timesteps:   3900 │ Δt: 8.1273e-02 │ sim. time: 3.1700e+02 (79.250%)  │ run time: 7.0867e+01 s
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  Simulation running &#39;CompressibleMoistEulerEquations2D&#39; with DGSEM(polydeg=4)
 ────────────────────────────────────────────────────────────────────────────────────────────────────
- #timesteps:               4000                run time:       8.50454081e+01 s
- Δt:             8.12729829e-02                └── GC time:    0.00000000e+00 s (0.000%)
- sim. time:      3.25126215e+02 (81.282%)      time/DOF/RHS:   1.55715594e-07 s
-                                               PID:            1.65137870e-07 s
- #DOFs per field:         25600                alloc&#39;d memory:        401.383 MiB
+ #timesteps:               4000                run time:       7.27721422e+01 s
+ Δt:             8.12729829e-02                └── GC time:    2.26037747e-01 s (0.311%)
+ sim. time:      3.25126215e+02 (81.282%)      time/DOF/RHS:   1.30185053e-07 s
+                                               PID:            1.41450610e-07 s
+ #DOFs per field:         25600                alloc&#39;d memory:        118.871 MiB
  #elements:                1024                device memory:           0.000 MiB
 
  Variable:       rho              rho_v1           rho_v2           rho_E            rho_qv           rho_ql
@@ -294,24 +294,24 @@ u0: 153600-element Vector{Float64}:
  ∑∂S/∂U ⋅ Uₜ :  -4.35071818e-10
 ────────────────────────────────────────────────────────────────────────────────────────────────────
 
-#timesteps:   4100 │ Δt: 8.1274e-02 │ sim. time: 3.3325e+02 (83.313%)  │ run time: 8.7078e+01 s
-#timesteps:   4200 │ Δt: 8.1271e-02 │ sim. time: 3.4138e+02 (85.345%)  │ run time: 8.9173e+01 s
-#timesteps:   4300 │ Δt: 8.1271e-02 │ sim. time: 3.4951e+02 (87.377%)  │ run time: 9.1314e+01 s
-#timesteps:   4400 │ Δt: 8.1271e-02 │ sim. time: 3.5764e+02 (89.409%)  │ run time: 9.3437e+01 s
-#timesteps:   4500 │ Δt: 8.1272e-02 │ sim. time: 3.6576e+02 (91.441%)  │ run time: 9.5598e+01 s
-#timesteps:   4600 │ Δt: 8.1270e-02 │ sim. time: 3.7389e+02 (93.472%)  │ run time: 9.7714e+01 s
-#timesteps:   4700 │ Δt: 8.1270e-02 │ sim. time: 3.8202e+02 (95.504%)  │ run time: 9.9800e+01 s
-#timesteps:   4800 │ Δt: 8.1269e-02 │ sim. time: 3.9014e+02 (97.536%)  │ run time: 1.0190e+02 s
-#timesteps:   4900 │ Δt: 8.1270e-02 │ sim. time: 3.9827e+02 (99.568%)  │ run time: 1.0401e+02 s
+#timesteps:   4100 │ Δt: 8.1274e-02 │ sim. time: 3.3325e+02 (83.313%)  │ run time: 7.4507e+01 s
+#timesteps:   4200 │ Δt: 8.1271e-02 │ sim. time: 3.4138e+02 (85.345%)  │ run time: 7.6314e+01 s
+#timesteps:   4300 │ Δt: 8.1271e-02 │ sim. time: 3.4951e+02 (87.377%)  │ run time: 7.8113e+01 s
+#timesteps:   4400 │ Δt: 8.1271e-02 │ sim. time: 3.5764e+02 (89.409%)  │ run time: 7.9926e+01 s
+#timesteps:   4500 │ Δt: 8.1272e-02 │ sim. time: 3.6576e+02 (91.441%)  │ run time: 8.1739e+01 s
+#timesteps:   4600 │ Δt: 8.1270e-02 │ sim. time: 3.7389e+02 (93.472%)  │ run time: 8.3552e+01 s
+#timesteps:   4700 │ Δt: 8.1270e-02 │ sim. time: 3.8202e+02 (95.504%)  │ run time: 8.5366e+01 s
+#timesteps:   4800 │ Δt: 8.1269e-02 │ sim. time: 3.9014e+02 (97.536%)  │ run time: 8.7183e+01 s
+#timesteps:   4900 │ Δt: 8.1270e-02 │ sim. time: 3.9827e+02 (99.568%)  │ run time: 8.8992e+01 s
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  Simulation running &#39;CompressibleMoistEulerEquations2D&#39; with DGSEM(polydeg=4)
 ────────────────────────────────────────────────────────────────────────────────────────────────────
- #timesteps:               4922                run time:       1.04591054e+02 s
- Δt:             2.30230462e-02                └── GC time:    0.00000000e+00 s (0.000%)
- sim. time:      4.00000000e+02 (100.000%)     time/DOF/RHS:   1.56005680e-07 s
-                                               PID:            1.65481596e-07 s
- #DOFs per field:         25600                alloc&#39;d memory:        411.691 MiB
+ #timesteps:               4922                run time:       8.94815030e+01 s
+ Δt:             2.30230462e-02                └── GC time:    2.26037747e-01 s (0.253%)
+ sim. time:      4.00000000e+02 (100.000%)     time/DOF/RHS:   1.30187132e-07 s
+                                               PID:            1.41484400e-07 s
+ #DOFs per field:         25600                alloc&#39;d memory:        129.179 MiB
  #elements:                1024                device memory:           0.000 MiB
 
  Variable:       rho              rho_v1           rho_v2           rho_E            rho_qv           rho_ql
@@ -328,31 +328,31 @@ Trixi.jl simulation finished.  Final time: 400.0  Time steps: 4922 (accepted), 4
 ──────────────────────────────────────────────────────────────────────────────────────
 <span class="sgr1">                                            Time                   Allocations        </span>
                                    ──────────────────────    ────────────────────────
-        Tot / % measured:               106s / 94.8%             98.5MiB / 57.9%
+        Tot / % measured:              90.8s / 92.3%             98.5MiB / 57.9%
  ────────────────────────────────  ──────────────────────    ────────────────────────
  Section                   ncalls    time    %tot     avg      alloc    %tot      avg
 ──────────────────────────────────────────────────────────────────────────────────────
- rhs_hyperbolic!            24.6k   98.3s   97.6%  3.99ms    3.92KiB    0.0%    0.16B
- ├─ volume integral         24.6k   85.4s   84.7%  3.47ms          ∅       ∅        ∅
- ├─ interface flux          24.6k   6.26s    6.2%   254μs          ∅       ∅        ∅
- ├─ prolong2interfaces      24.6k   1.71s    1.7%  69.5μs          ∅       ∅        ∅
- ├─ surface integral        24.6k   1.68s    1.7%  68.4μs          ∅       ∅        ∅
- ├─ source terms            24.6k   1.29s    1.3%  52.4μs          ∅       ∅        ∅
- ├─ Jacobian                24.6k   810ms    0.8%  32.9μs          ∅       ∅        ∅
- ├─ reset ∂u/∂t             24.6k   654ms    0.6%  26.6μs          ∅       ∅        ∅
- ├─ boundary flux           24.6k   398ms    0.4%  16.2μs          ∅       ∅        ∅
- ├─ ~rhs_hyperbolic!~       24.6k  72.6ms    0.1%  2.95μs    3.92KiB    0.0%    0.16B
- ├─ prolong2boundaries      24.6k  49.1ms    0.0%  2.00μs          ∅       ∅        ∅
- ├─ prolong2mortars         24.6k  8.80ms    0.0%   358ns          ∅       ∅        ∅
- └─ mortar flux             24.6k  3.61ms    0.0%   147ns          ∅       ∅        ∅
- calculate dt               4.92k   2.09s    2.1%   424μs          ∅       ∅        ∅
- I/O                            7   200ms    0.2%  28.5ms    22.5MiB   39.5%  3.22MiB
- ├─ save solution               6   192ms    0.2%  32.0ms    22.5MiB   39.5%  3.76MiB
- ├─ ~I/O~                       7  7.66ms    0.0%  1.09ms    8.38KiB    0.0%  1.20KiB
- ├─ get element variables       6  2.36μs    0.0%   394ns          ∅       ∅        ∅
- ├─ save mesh                   6  2.05μs    0.0%   342ns          ∅       ∅        ∅
- └─ get node variables          6  1.71μs    0.0%   285ns          ∅       ∅        ∅
- analyze solution               6   180ms    0.2%  30.1ms    34.5MiB   60.5%  5.75MiB
+ rhs_hyperbolic!            24.6k   81.9s   97.7%  3.33ms    3.92KiB    0.0%    0.16B
+ ├─ volume integral         24.6k   69.2s   82.5%  2.81ms          ∅       ∅        ∅
+ ├─ interface flux          24.6k   4.84s    5.8%   196μs          ∅       ∅        ∅
+ ├─ prolong2interfaces      24.6k   2.00s    2.4%  81.3μs          ∅       ∅        ∅
+ ├─ surface integral        24.6k   1.73s    2.1%  70.3μs          ∅       ∅        ∅
+ ├─ source terms            24.6k   1.65s    2.0%  66.9μs          ∅       ∅        ∅
+ ├─ reset ∂u/∂t             24.6k   1.15s    1.4%  46.7μs          ∅       ∅        ∅
+ ├─ Jacobian                24.6k   873ms    1.0%  35.5μs          ∅       ∅        ∅
+ ├─ boundary flux           24.6k   380ms    0.5%  15.4μs          ∅       ∅        ∅
+ ├─ ~rhs_hyperbolic!~       24.6k  89.7ms    0.1%  3.65μs    3.92KiB    0.0%    0.16B
+ ├─ prolong2boundaries      24.6k  52.5ms    0.1%  2.13μs          ∅       ∅        ∅
+ ├─ prolong2mortars         24.6k  10.5ms    0.0%   426ns          ∅       ∅        ∅
+ └─ mortar flux             24.6k  6.65ms    0.0%   270ns          ∅       ∅        ∅
+ calculate dt               4.92k   1.46s    1.7%   296μs          ∅       ∅        ∅
+ I/O                            7   309ms    0.4%  44.1ms    22.5MiB   39.5%  3.22MiB
+ ├─ save solution               6   301ms    0.4%  50.2ms    22.5MiB   39.5%  3.76MiB
+ ├─ ~I/O~                       7  7.37ms    0.0%  1.05ms    8.30KiB    0.0%  1.19KiB
+ ├─ get element variables       6  2.84μs    0.0%   473ns          ∅       ∅        ∅
+ ├─ save mesh                   6  2.34μs    0.0%   390ns          ∅       ∅        ∅
+ └─ get node variables          6  1.83μs    0.0%   305ns          ∅       ∅        ∅
+ analyze solution               6   143ms    0.2%  23.9ms    34.5MiB   60.5%  5.75MiB
 ──────────────────────────────────────────────────────────────────────────────────────
 
 
@@ -360,30 +360,30 @@ Trixi.jl simulation finished.  Final time: 400.0  Time steps: 4922 (accepted), 4
 ──────────────────────────────────────────────────────────────────────────────────────
 <span class="sgr1">                                            Time                   Allocations        </span>
                                    ──────────────────────    ────────────────────────
-        Tot / % measured:               108s / 93.7%              164MiB / 34.7%
+        Tot / % measured:              92.1s / 91.0%              164MiB / 34.7%
  ────────────────────────────────  ──────────────────────    ────────────────────────
  Section                   ncalls    time    %tot     avg      alloc    %tot      avg
 ──────────────────────────────────────────────────────────────────────────────────────
- rhs_hyperbolic!            24.6k   98.3s   97.6%  3.99ms    3.92KiB    0.0%    0.16B
- ├─ volume integral         24.6k   85.4s   84.7%  3.47ms          ∅       ∅        ∅
- ├─ interface flux          24.6k   6.26s    6.2%   254μs          ∅       ∅        ∅
- ├─ prolong2interfaces      24.6k   1.71s    1.7%  69.5μs          ∅       ∅        ∅
- ├─ surface integral        24.6k   1.68s    1.7%  68.4μs          ∅       ∅        ∅
- ├─ source terms            24.6k   1.29s    1.3%  52.4μs          ∅       ∅        ∅
- ├─ Jacobian                24.6k   810ms    0.8%  32.9μs          ∅       ∅        ∅
- ├─ reset ∂u/∂t             24.6k   654ms    0.6%  26.6μs          ∅       ∅        ∅
- ├─ boundary flux           24.6k   398ms    0.4%  16.2μs          ∅       ∅        ∅
- ├─ ~rhs_hyperbolic!~       24.6k  72.6ms    0.1%  2.95μs    3.92KiB    0.0%    0.16B
- ├─ prolong2boundaries      24.6k  49.1ms    0.0%  2.00μs          ∅       ∅        ∅
- ├─ prolong2mortars         24.6k  8.80ms    0.0%   358ns          ∅       ∅        ∅
- └─ mortar flux             24.6k  3.61ms    0.0%   147ns          ∅       ∅        ∅
- calculate dt               4.92k   2.09s    2.1%   424μs          ∅       ∅        ∅
- I/O                            7   200ms    0.2%  28.5ms    22.5MiB   39.5%  3.22MiB
- ├─ save solution               6   192ms    0.2%  32.0ms    22.5MiB   39.5%  3.76MiB
- ├─ ~I/O~                       7  7.66ms    0.0%  1.09ms    8.38KiB    0.0%  1.20KiB
- ├─ get element variables       6  2.36μs    0.0%   394ns          ∅       ∅        ∅
- ├─ save mesh                   6  2.05μs    0.0%   342ns          ∅       ∅        ∅
- └─ get node variables          6  1.71μs    0.0%   285ns          ∅       ∅        ∅
- analyze solution               6   180ms    0.2%  30.1ms    34.5MiB   60.5%  5.75MiB
-──────────────────────────────────────────────────────────────────────────────────────</code></pre><h2 id="Expected-behavior"><a class="docs-heading-anchor" href="#Expected-behavior">Expected behavior</a><a id="Expected-behavior-1"></a><a class="docs-heading-anchor-permalink" href="#Expected-behavior" title="Permalink"></a></h2><p>Since the perturbation is warmer than the surrounding air, it is less dense and should rise under gravity. As the solution develops, the bubble should move upward and begin to deform.</p><p>This kind of test is a standard atmospheric benchmark because it checks how well the method handles buoyancy, gravity, compressibility, and the spatial discretization all at once.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../introduction/">« Introduction</a><a class="docs-footer-nextpage" href="../../reference/">Reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Thursday 5 November 2026 08:55">Thursday 5 November 2026</span>. Using Julia version 1.13.3.</p></section><footer class="modal-card-foot"></footer></div></div></div><div class="ref-tips" hidden><div class="ref-tip" data-for="../../reference/#Trixi.FluxLMARS-Tuple{Any, Any, AbstractVector, CompressibleEulerEnergyEquationsWithGravity3D}"><code class="ref-tip-sig nohighlight"><span class="julia-funcall">FluxLMARS</span>(c)(u_ll, u_rr, orientation_or_normal_direction,
+ rhs_hyperbolic!            24.6k   81.9s   97.7%  3.33ms    3.92KiB    0.0%    0.16B
+ ├─ volume integral         24.6k   69.2s   82.5%  2.81ms          ∅       ∅        ∅
+ ├─ interface flux          24.6k   4.84s    5.8%   196μs          ∅       ∅        ∅
+ ├─ prolong2interfaces      24.6k   2.00s    2.4%  81.3μs          ∅       ∅        ∅
+ ├─ surface integral        24.6k   1.73s    2.1%  70.3μs          ∅       ∅        ∅
+ ├─ source terms            24.6k   1.65s    2.0%  66.9μs          ∅       ∅        ∅
+ ├─ reset ∂u/∂t             24.6k   1.15s    1.4%  46.7μs          ∅       ∅        ∅
+ ├─ Jacobian                24.6k   873ms    1.0%  35.5μs          ∅       ∅        ∅
+ ├─ boundary flux           24.6k   380ms    0.5%  15.4μs          ∅       ∅        ∅
+ ├─ ~rhs_hyperbolic!~       24.6k  89.7ms    0.1%  3.65μs    3.92KiB    0.0%    0.16B
+ ├─ prolong2boundaries      24.6k  52.5ms    0.1%  2.13μs          ∅       ∅        ∅
+ ├─ prolong2mortars         24.6k  10.5ms    0.0%   426ns          ∅       ∅        ∅
+ └─ mortar flux             24.6k  6.65ms    0.0%   270ns          ∅       ∅        ∅
+ calculate dt               4.92k   1.46s    1.7%   296μs          ∅       ∅        ∅
+ I/O                            7   309ms    0.4%  44.1ms    22.5MiB   39.5%  3.22MiB
+ ├─ save solution               6   301ms    0.4%  50.2ms    22.5MiB   39.5%  3.76MiB
+ ├─ ~I/O~                       7  7.37ms    0.0%  1.05ms    8.30KiB    0.0%  1.19KiB
+ ├─ get element variables       6  2.84μs    0.0%   473ns          ∅       ∅        ∅
+ ├─ save mesh                   6  2.34μs    0.0%   390ns          ∅       ∅        ∅
+ └─ get node variables          6  1.83μs    0.0%   305ns          ∅       ∅        ∅
+ analyze solution               6   143ms    0.2%  23.9ms    34.5MiB   60.5%  5.75MiB
+──────────────────────────────────────────────────────────────────────────────────────</code></pre><h2 id="Expected-behavior"><a class="docs-heading-anchor" href="#Expected-behavior">Expected behavior</a><a id="Expected-behavior-1"></a><a class="docs-heading-anchor-permalink" href="#Expected-behavior" title="Permalink"></a></h2><p>Since the perturbation is warmer than the surrounding air, it is less dense and should rise under gravity. As the solution develops, the bubble should move upward and begin to deform.</p><p>This kind of test is a standard atmospheric benchmark because it checks how well the method handles buoyancy, gravity, compressibility, and the spatial discretization all at once.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../introduction/">« Introduction</a><a class="docs-footer-nextpage" href="../../reference/">Reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Thursday 5 November 2026 09:32">Thursday 5 November 2026</span>. Using Julia version 1.13.3.</p></section><footer class="modal-card-foot"></footer></div></div></div><div class="ref-tips" hidden><div class="ref-tip" data-for="../../reference/#Trixi.FluxLMARS-Tuple{Any, Any, AbstractVector, CompressibleEulerEnergyEquationsWithGravity3D}"><code class="ref-tip-sig nohighlight"><span class="julia-funcall">FluxLMARS</span>(c)(u_ll, u_rr, orientation_or_normal_direction,
              equations<span class="julia-operator">::</span><span class="julia-type">CompressibleEulerEnergyEquationsWithGravity3D</span>)</code><p class="ref-tip-brief">Low Mach number approximate Riemann solver (LMARS) for atmospheric flows using an estimate c of the speed of sound.</p></div><div class="ref-tip" data-for="../../reference/#Trixi.flux_chandrashekar-Tuple{Any, Any, AbstractVector, CompressibleEulerEnergyEquationsWithGravity3D}"><code class="ref-tip-sig nohighlight"><span class="julia-funcall">flux_chandrashekar</span>(u_ll, u_rr, orientation_or_normal_direction, equations<span class="julia-operator">::</span><span class="julia-type">CompressibleEulerEnergyEquationsWithGravity3D</span>)</code><p class="ref-tip-brief">Entropy conserving two-point flux by</p></div><div class="ref-tip" data-for="../../reference/#TrixiAtmo.EARTH_GRAVITATIONAL_ACCELERATION"><code class="ref-tip-sig nohighlight">EARTH_GRAVITATIONAL_ACCELERATION</code><p class="ref-tip-brief">Gravitational acceleration at the surface of the Earth.</p></div></div></body></html>
