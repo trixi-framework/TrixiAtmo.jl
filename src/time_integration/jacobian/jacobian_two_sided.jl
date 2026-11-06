@@ -21,19 +21,23 @@
 
 Approximate Jacobian of the vertical dynamics (vertically propagating acoustic waves and
 gravity) of the [`CompressibleEulerPotentialTemperatureEquationsWithGravity3D`](@ref) on a
-[`P4estMeshCubedSphereTopography`](@ref) for implicit time integration methods such as
-[`SSPRW32`](@ref), including the nested Schur-complement solver with the two-sided
+[`P4estMeshCubedSphereTopography`](@ref), used as linear operator of linearly implicit time
+integration methods, i.e., Rosenbrock-W methods such as [`SSPRW32`](@ref) and linear IMEX
+methods such as [`ARS343`](@ref), for horizontally explicit, vertically implicit (HEVI)
+time integration, including the nested Schur-complement solver with the two-sided
 condensation (banded reduced system) of
 - Marco Artiano, Andrés Rueda-Ramírez, Oswald Knoth, Hendrik Ranocha, Gregor Gassner (2026)
   GPU-Accelerated Nested Schur-Complement Solvers for Atmospheric Flow Simulations using
   Horizontally-Explicit, Vertically-Implicit Schemes and Discontinuous Galerkin Methods
   [arXiv: 2610.15775](https://arxiv.org/abs/2610.15775)
 
-Pass it as keyword argument `jacobian` to `Trixi.solve` with an implicit time integration
-method, e.g., `Trixi.solve(ode, SSPRW32(); dt, jacobian = JacobianVerticalTwoSided())`. Its
-arrays are created when the time integrator is initialized, with the array and real types of
-the semidiscretization of the ODE problem, so that it runs on the same backend (CPU or GPU)
-as the semidiscretization. The Jacobian decouples into independent linear systems for each
+Pass it as keyword argument `jacobian` to `Trixi.solve` with a linearly implicit time
+integration method, e.g.,
+`Trixi.solve(ode, SSPRW32(); dt, jacobian = JacobianVerticalTwoSided())` or
+`Trixi.solve(ode, ARS343(); dt, jacobian = JacobianVerticalTwoSided())`. Its arrays are
+created when the time integrator is initialized, with the array and real types of the
+semidiscretization of the ODE problem, so that it runs on the same backend (CPU or GPU) as
+the semidiscretization. The Jacobian decouples into independent linear systems for each
 vertical column of nodes. The dissipation of the vertical acoustic waves at the element
 interfaces and at the walls is the one of the LMARS flux with the constant speed of sound
 `c`, also if the surface flux of the semidiscretization uses a local speed of sound (e.g.,
@@ -265,7 +269,7 @@ function check_axes_columns(jacobian::JacobianVerticalTwoSidedCache)
     return nothing
 end
 
-function create_jacobian_cache(jacobian::JacobianVerticalTwoSided, semi)
+function create_jacobian_cache(jacobian::JacobianVerticalTwoSided, semi, u_ode)
     (; mesh, equations, solver, cache) = semi
     if !(equations isa CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
         throw(ArgumentError("`JacobianVerticalTwoSided` requires the " *

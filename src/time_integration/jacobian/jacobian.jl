@@ -5,19 +5,21 @@
 @muladd begin
 #! format: noindent
 
-# Interface of the approximate Jacobians of the implicit time integration methods
+# Interface of the approximate Jacobians, i.e., the linear operators of the linearly
+# implicit time integration methods (Rosenbrock-W and linear IMEX methods)
 
 """
-    create_jacobian_cache(jacobian, semi)
+    create_jacobian_cache(jacobian, semi, u_ode)
 
-Create the arrays of the approximate Jacobian specified by `jacobian` (the keyword argument
-of `Trixi.solve` with implicit time integration methods such as [`SSPRW32`](@ref)) for the
-semidiscretization `semi`, with the array and real types of the arrays of `semi`, which are
-also those of the solution. It is called when the time integrator of an implicit time
-integration method is initialized (`init`, called by `Trixi.solve`). For
-`jacobian = nothing`, i.e., `J = 0`, nothing is created.
+Create the arrays of the approximate Jacobian specified by `jacobian`, i.e., the linear
+operator of linearly implicit time integration methods such as [`SSPRW32`](@ref) (the
+keyword argument `jacobian` of `Trixi.solve`), for the semidiscretization `semi`, with the
+array and real types of the arrays of `semi`, which are also those of the solution `u_ode`.
+It is called when the time integrator of a linearly implicit time integration method is
+initialized (`init`, called by `Trixi.solve`). For `jacobian = nothing`, i.e., `J = 0`,
+nothing is created.
 """
-create_jacobian_cache(::Nothing, semi) = nothing
+create_jacobian_cache(::Nothing, semi, u_ode) = nothing
 
 """
     update_jacobian!(jacobian, u_ode, semi, gamma_dt)

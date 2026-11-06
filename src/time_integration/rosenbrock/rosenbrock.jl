@@ -61,7 +61,7 @@ function init(ode::ODEProblem, alg::AbstractRosenbrockAlgorithm;
     iter = 0
     # The arrays of the approximate Jacobian are created for the semidiscretization and the
     # array type of the solution
-    jacobian_cache = create_jacobian_cache(jacobian, ode.p)
+    jacobian_cache = create_jacobian_cache(jacobian, ode.p, u)
     integrator = RosenbrockIntegrator(u, du, u_tmp, stages, t, tdir, dt, dt, iter,
                                       ode.p, (prob = ode,), ode.f, alg, tableau_,
                                       jacobian_cache, update_interval, zero(dt),
