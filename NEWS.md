@@ -8,6 +8,11 @@ for human readability.
 ## Changes in the v0.1 lifecycle
 
 #### Added
+- `JacobianVerticalTwoSided` enables horizontally explicit, vertically implicit (HEVI) time
+  integration of the `CompressibleEulerPotentialTemperatureEquationsWithGravity3D` on a
+  `P4estMeshCubedSphereTopography` as linear operator of linearly implicit methods, i.e.,
+  Rosenbrock-W methods such as `SSPRW32` and linear IMEX methods such as `ARS343`, also on
+  GPUs ([#243]).
 - The `CompressibleEulerVectorInvariantEquationsWithGravity3D` are the compressible Euler
   equations with gravity in vector-invariant form with the potential temperature as
   prognostic variable. They come with the entropy and total energy conservative volume flux
