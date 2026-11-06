@@ -150,7 +150,7 @@ end
 
     # The kernels of the vertical Jacobian access the arrays without bounds checks, so the
     # explicit bounds checks before launching them must catch arrays of the wrong size
-    jacobian_cache = TrixiAtmo.create_jacobian_cache(jacobian, semi, ode.u0)
+    jacobian_cache = TrixiAtmo.create_jacobian_cache(jacobian, semi)
     backend = jacobian_cache.backend
     (; u_vertical) = jacobian_cache
     @test isnothing(TrixiAtmo.check_axes_columns(jacobian_cache))

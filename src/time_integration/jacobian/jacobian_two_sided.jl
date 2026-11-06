@@ -265,7 +265,7 @@ function check_axes_columns(jacobian::JacobianVerticalTwoSidedCache)
     return nothing
 end
 
-function create_jacobian_cache(jacobian::JacobianVerticalTwoSided, semi, u_ode)
+function create_jacobian_cache(jacobian::JacobianVerticalTwoSided, semi)
     (; mesh, equations, solver, cache) = semi
     if !(equations isa CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
         throw(ArgumentError("`JacobianVerticalTwoSided` requires the " *
