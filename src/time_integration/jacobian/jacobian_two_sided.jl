@@ -204,7 +204,7 @@ struct JacobianVerticalTwoSidedCache{NLAYERS, NNODES, RealT <: Real, BackendType
     inv_boundary_weight::RealT
     backend::BackendType # `KernelAbstractions.Backend` of the arrays
     # Unit contravariant direction `nu` of the vertical reference coordinate (slots 1:3)
-    # and normalized norm `n = |Ja^3|` (slot 4), laid out `[slot, i, j, k, element]`
+    # and norm `n = |Ja^3|` (slot 4), laid out `[slot, i, j, k, element]`
     vertical_frame::ArrayRealT5
     # Metric factor `n / J`, `[column, node, layer]`
     metric_factor::ArrayRealT3

@@ -61,7 +61,7 @@ end
                           nnodes_, indices...)
 end
 
-# Copy the right-hand side `b` of the linear system, multiplied by the normalized norm
+# Copy the right-hand side `b` of the linear system, multiplied by the norm
 # `n`, to the columns
 function copy_rhs_to_columns!(backend::Backend, u_vertical, b, jacobian, semi)
     mesh, equations, solver, cache = Trixi.mesh_equations_solver_cache(semi)
@@ -86,13 +86,13 @@ end
                                                              @Const(vertical_index_of_element),
                                                              nnodes_)
     indices = @index(Global, NTuple)
-    # The last slot of the vertical frame holds the normalized norm `n`
+    # The last slot of the vertical frame holds the norm `n`
     copy_node_to_columns!(u_vertical, b, vertical_frame[end, indices...],
                           vertical_frame, horizontal_index_of_element,
                           vertical_index_of_element, nnodes_, indices...)
 end
 
-# Copy the solution of the linear system, divided by the normalized norm `n`, from the
+# Copy the solution of the linear system, divided by the norm `n`, from the
 # columns to `b`
 function copy_solution_from_columns!(backend::Backend, b, u_vertical, jacobian, semi,
                                      gamma_dt)

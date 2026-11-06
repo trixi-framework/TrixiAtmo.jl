@@ -73,7 +73,8 @@ end
 ] tags=[:kernelabstractions] begin
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_potential_temperature_baroclinic_instability_turbo.jl"),
-                        # Expected errors similar to reference on CPU
+                        # Expected errors are exactly the same as with CUDA, see
+                        # `test_cuda_3d.jl`
                         l2=[
                             0.0005231487476660257,
                             0.01697962311431438,

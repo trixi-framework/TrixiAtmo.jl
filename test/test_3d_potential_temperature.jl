@@ -140,8 +140,8 @@ end
 
     # Check that the total mass and the total mass-weighted potential temperature are
     # conserved up to round-off errors. The explicit part of the scheme is conservative, and
-    # the implicit stages are conservative as well since the vertical Jacobian uses the same
-    # metric terms as the semidiscretization.
+    # the implicit stages are conservative as well since the vertical Jacobian is in flux
+    # form with the same quadrature weights and metric terms as the semidiscretization.
     for v in (1, 5)
         integral_initial = Trixi.integrate((u, equations) -> u[v], ode.u0, semi)
         integral_final = Trixi.integrate((u, equations) -> u[v], sol.u[end], semi)

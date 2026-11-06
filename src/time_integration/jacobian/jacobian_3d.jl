@@ -91,29 +91,24 @@ end
 
 # Vertical frame of every node: `vertical_frame[1:3, ...]` holds the unit contravariant
 # direction `nu = Ja^3 / n` of the third reference coordinate, oriented outwards, and
-# `vertical_frame[4, ...]` the norm `n = |Ja^3|` normalized by its global maximum (a
-# global constant cancels in the similarity transformation `N` of the copies in
-# `jacobian_3d_gpu.jl`)
+# `vertical_frame[4, ...]` the norm `n = |Ja^3|` of the diagonal similarity
+# transformation `N` of the copies in `jacobian_3d_gpu.jl`
 function compute_vertical_frame(semi)
-    (; solver, equations, cache) = semi
+    (; solver, cache) = semi
     node_coordinates = Adapt.adapt(Array, semi.cache.elements.node_coordinates)
     contravariant_vectors = Adapt.adapt(Array,
                                         semi.cache.elements.contravariant_vectors)
     vertical_frame = zeros(eltype(node_coordinates), 4,
                            size(node_coordinates)[2:end]...)
-    norm_Ja3_max = zero(eltype(node_coordinates))
     for element in eachelement(solver, cache)
         for k in eachnode(solver), j in eachnode(solver), i in eachnode(solver)
             Ja3 = get_contravariant_vector(3, contravariant_vectors, i, j, k, element)
             norm_Ja3 = norm(Ja3)
-            x = get_node_coords(node_coordinates, equations, solver, i, j, k, element)
             # `Ja3` points outwards, see `check_vertical_ordering`
             vertical_frame[1:3, i, j, k, element] .= Ja3 / norm_Ja3
             vertical_frame[4, i, j, k, element] = norm_Ja3
-            norm_Ja3_max = max(norm_Ja3_max, norm_Ja3)
         end
     end
-    vertical_frame[4, :, :, :, :] ./= norm_Ja3_max
     return vertical_frame
 end
 

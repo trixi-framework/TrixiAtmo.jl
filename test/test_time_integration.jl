@@ -219,9 +219,9 @@ end
     TimeIntegration
 ] tags=[:time_integration] begin
     using LinearAlgebra: norm
-    # With a Jacobian, `SSPRW32` is a second-order Rosenbrock-W method. The order is
-    # estimated from the differences of the solutions with successively halved time steps,
-    # since the time steps are small enough to be in the asymptotic regime.
+    # With a Jacobian, `SSPRW32` is a second-order Rosenbrock-W method. Since there is no
+    # exact solution, the order is estimated from the differences of the solutions with
+    # successively halved time steps, which are small enough to be in the asymptotic regime.
     trixi_include(@__MODULE__,
                   joinpath(EXAMPLES_DIR, "global_circulation",
                            "elixir_potential_temperature_baroclinic_instability.jl"),
