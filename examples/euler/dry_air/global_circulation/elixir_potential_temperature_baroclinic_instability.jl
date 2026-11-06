@@ -1,7 +1,8 @@
 # An idealized baroclinic instability test case, integrated with a Rosenbrock-W method and a
 # vertically implicit Jacobian (horizontally explicit, vertically implicit time integration)
 #
-# With `storage_type = CuArray`, this elixir takes about 2 minutes on an NVIDIA GH200 GPU.
+# This elixir takes about 30 minutes using 36 MPI ranks on two Intel Xeon Gold 5320 CPUs
+# and, with `storage_type = CuArray`, about 2 minutes on an NVIDIA GH200 GPU.
 #
 # References:
 # - Paul A. Ullrich, Thomas Melvin, Christiane Jablonowski, Andrew Staniforth (2013)
