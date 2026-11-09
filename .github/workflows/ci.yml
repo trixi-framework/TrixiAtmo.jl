@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   test:
-    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ github.event_name }}
+    name: ${{ matrix.trixi_test }} - Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -37,6 +37,10 @@ jobs:
           - ubuntu-latest
           - macos-latest
           - windows-latest
+        trixi_test:
+          - serial
+          - mpi
+          - threaded
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
@@ -45,6 +49,8 @@ jobs:
           arch: default
           show-versioninfo: true
       - uses: julia-actions/cache@v3
+        with:
+          include-matrix: false
 
       - name: Run tests without coverage
         if: ${{ matrix.os != 'ubuntu-latest' }}
@@ -52,6 +58,7 @@ jobs:
         with:
           coverage: false
         env:
+          TRIXI_TEST: ${{ matrix.trixi_test }}
           # Print every `@testitem` (with its run time) in the test summary, so per-testitem
           # timings show up in the job logs.
           TRIXI_TEST_VERBOSE: "true"
@@ -62,24 +69,98 @@ jobs:
         with:
           coverage: true
         env:
+          TRIXI_TEST: ${{ matrix.trixi_test }}
           # Print every `@testitem` (with its run time) in the test summary, so per-testitem
           # timings show up in the job logs.
           TRIXI_TEST_VERBOSE: "true"
 
       - name: Process Julia coverage data
-        if: ${{ matrix.os == 'ubuntu-latest' }}
+        if: ${{ matrix.os == 'ubuntu-latest' && !cancelled() }}
         uses: julia-actions/julia-processcoverage@v1
 
       - name: Upload coverage data (Codecov)
-        if: ${{ matrix.os == 'ubuntu-latest' }}
+        if: ${{ matrix.os == 'ubuntu-latest' && !cancelled() }}
         uses: codecov/codecov-action@v7
         with:
           files: lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: Upload coverage data (Coveralls)
+      # The standard setup of Coveralls is just annoying for parallel builds, see, e.g.,
+      # https://github.com/trixi-framework/Trixi.jl/issues/691
+      # https://github.com/coverallsapp/github-action/issues/47
+      # https://github.com/coverallsapp/github-action/issues/67
+      # This standard setup is reproduced below for completeness.
+      # - uses: coverallsapp/github-action@master
+      #   with:
+      #     github-token: ${{ secrets.GITHUB_TOKEN }}
+      #     flag-name: run-${{ matrix.trixi_test }}-${{ matrix.os }}-${{ matrix.version }}-${{ github.run_id }}
+      #     parallel: true
+      #     file: ./lcov.info
+      #     format: lcov
+      # Instead, we use a more tedious approach:
+      # - Store all individual coverage files as artifacts (directly below)
+      # - Download and merge individual coverage reports in another step
+      # - Upload only the merged coverage report to Coveralls
+      - shell: bash
+        if: ${{ matrix.os == 'ubuntu-latest' && !cancelled() }}
+        run: |
+          cp ./lcov.info ./lcov-${{ matrix.trixi_test }}-${{ matrix.os }}-${{ matrix.version }}.info
+      - uses: actions/upload-artifact@v7
         if: ${{ matrix.os == 'ubuntu-latest' }}
-        uses: coverallsapp/github-action@v2
+        with:
+          name: lcov-${{ matrix.trixi_test }}-${{ matrix.os }}-${{ matrix.version }}
+          path: ./lcov-${{ matrix.trixi_test }}-${{ matrix.os }}-${{ matrix.version }}.info
+
+  finish:
+    needs: test
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      # The standard setup of Coveralls is just annoying for parallel builds, see, e.g.,
+      # https://github.com/trixi-framework/Trixi.jl/issues/691
+      # https://github.com/coverallsapp/github-action/issues/47
+      # https://github.com/coverallsapp/github-action/issues/67
+      # This standard setup is reproduced below for completeness.
+      # - name: Coveralls Finished
+      #   uses: coverallsapp/github-action@master
+      #   with:
+      #     github-token: ${{ secrets.GITHUB_TOKEN }}
+      #     parallel-finished: true
+      # Instead, we use the more tedious approach described above.
+      # At first, we check out the repository and download all artifacts
+      # (and list files for debugging).
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+      - run: ls -R
+      # Next, we merge the individual coverage files and upload
+      # the combined results to Coveralls.
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1'
+      - name: Merge lcov files using Coverage.jl
+        shell: julia --color=yes {0}
+        run: |
+          using Pkg
+          Pkg.activate(temp=true)
+          Pkg.add("Coverage")
+          using Coverage
+          coverage = LCOV.readfolder(".")
+          for cov in coverage
+            cov.filename = replace(cov.filename, "\\" => "/")
+          end
+          coverage = merge_coverage_counts(coverage)
+          @show covered_lines, total_lines = get_summary(coverage)
+          LCOV.writefile("./lcov.info", coverage)
+      - uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           file: ./lcov.info
+          format: lcov
+          debug: true
+      # Upload merged coverage data as artifact for debugging
+      - uses: actions/upload-artifact@v7
+        with:
+          name: lcov
+          path: ./lcov.info
+      # That's it
+      - run: echo "Finished testing TrixiAtmo"
