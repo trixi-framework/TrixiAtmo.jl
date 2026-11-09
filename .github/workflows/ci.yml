@@ -35,12 +35,23 @@ jobs:
           - '1.10'
         os:
           - ubuntu-latest
-          - macos-latest
-          - windows-latest
         trixi_test:
           - serial
           - mpi
           - threaded
+        include:
+          - version: '1.10'
+            os: macos-latest
+            trixi_test: mpi
+          - version: '1.10'
+            os: macos-latest
+            trixi_test: threaded
+          - version: '1.10'
+            os: windows-latest
+            trixi_test: mpi
+          - version: '1.10'
+            os: windows-latest
+            trixi_test: threaded
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3

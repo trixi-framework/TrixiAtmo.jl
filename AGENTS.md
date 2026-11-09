@@ -135,9 +135,9 @@ defined in `test/runtests.jl` and providing the helpers from
 defined at the top of the corresponding test file and setting `EXAMPLES_DIR`)
 and its test group via `tags = [...]`. The value of the environment variable
 `TRIXI_TEST` selects the test items with the corresponding tag (see
-`test/runtests.jl`); CI runs all tests, with the special suites `mpi` and
-`threaded` in separate jobs (`TRIXI_TEST=serial`, `mpi`, `threaded`; see
-`.github/workflows/ci.yml`).
+`test/runtests.jl`); CI runs all tests on Ubuntu, with the special suites `mpi`
+and `threaded` in separate jobs (`TRIXI_TEST=serial`, `mpi`, `threaded`), and only
+`mpi` and `threaded` on macOS and Windows (see `.github/workflows/ci.yml`).
 
 ### The `run_agents` Julia project
 
