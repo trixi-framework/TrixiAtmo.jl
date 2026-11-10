@@ -76,7 +76,7 @@ function init(ode::ODEProblem, alg::AbstractLinearIMEXAlgorithm;
     iter = 0
     # The arrays of the approximate Jacobian are created for the semidiscretization and the
     # array type of the solution
-    jacobian_cache = create_jacobian_cache(jacobian, ode.p, u)
+    jacobian_cache = create_cache_jacobian(jacobian, ode.p, u)
     integrator = LinearIMEXIntegrator(u, du, u_tmp, stages, rhs_stages, t, tdir, dt, dt,
                                       iter, ode.p, (prob = ode,), ode.f, alg, tableau_,
                                       jacobian_cache, update_interval, zero(dt),

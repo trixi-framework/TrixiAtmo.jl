@@ -193,7 +193,7 @@ end
 JacobianVerticalTwoSided(; c = 340) = JacobianVerticalTwoSided(c)
 
 # Arrays of the `JacobianVerticalTwoSided` for a semidiscretization, created by
-# `create_jacobian_cache`
+# `create_cache_jacobian`
 struct JacobianVerticalTwoSidedCache{NLAYERS, NNODES, RealT <: Real, BackendType,
                                      MatrixRealT <: DenseMatrix{RealT},
                                      ArrayRealT3 <: DenseArray{RealT, 3},
@@ -269,7 +269,7 @@ function check_axes_columns(jacobian::JacobianVerticalTwoSidedCache)
     return nothing
 end
 
-function create_jacobian_cache(jacobian::JacobianVerticalTwoSided, semi, u_ode)
+function create_cache_jacobian(jacobian::JacobianVerticalTwoSided, semi, u_ode)
     (; mesh, equations, solver, cache) = semi
     if !(equations isa CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
         throw(ArgumentError("`JacobianVerticalTwoSided` requires the " *

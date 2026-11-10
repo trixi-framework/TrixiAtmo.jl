@@ -9,7 +9,7 @@
 # implicit time integration methods (Rosenbrock-W and linear IMEX methods)
 
 """
-    create_jacobian_cache(jacobian, semi, u_ode)
+    create_cache_jacobian(jacobian, semi, u_ode)
 
 Create the arrays of the approximate Jacobian specified by `jacobian`, i.e., the linear
 operator of linearly implicit time integration methods such as [`SSPRW32`](@ref) (the
@@ -19,13 +19,13 @@ It is called when the time integrator of a linearly implicit time integration me
 initialized (`init`, called by `Trixi.solve`). For `jacobian = nothing`, i.e., `J = 0`,
 nothing is created.
 """
-create_jacobian_cache(::Nothing, semi, u_ode) = nothing
+create_cache_jacobian(::Nothing, semi, u_ode) = nothing
 
 """
     update_jacobian!(jacobian, u_ode, semi, gamma_dt)
 
 Assemble (and factorize) the approximate Jacobian `jacobian` (created by
-[`create_jacobian_cache`](@ref)) of the right-hand side of the
+[`create_cache_jacobian`](@ref)) of the right-hand side of the
 semidiscretization `semi` at the solution `u_ode`, such that [`solve_jacobian!`](@ref) can
 solve linear systems with the matrix `I / gamma_dt - J`. For `jacobian = nothing`, nothing
 is done.
