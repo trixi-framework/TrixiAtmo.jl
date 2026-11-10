@@ -141,23 +141,12 @@ function P4estMeshCubedSphereTopography(trees_per_face_dimension, layers, inner_
     boundary_names[5, :] .= Symbol("inside")
     boundary_names[6, :] .= Symbol("outside")
 
-    # 1. Build the base concrete Trixi P4estMesh
+    # Build the base concrete Trixi P4estMesh
     mesh = P4estMesh{3}(p4est, tree_node_coordinates, nodes,
                         boundary_names, "", unsaved_changes,
                         p4est_partition_allow_for_coarsening)
 
-    # 2. Setup the context to save the number of layers and `keep_columns_together`
-    ctx = ColumnPartitionContext(Cint(layers), keep_columns_together)
-
-    # 3. Secure the context in our registry via the raw mesh pointer
-    p8est_raw_ptr = Trixi.P4est.PointerWrappers.pointer(mesh.p4est)
-    MeshContextRegistry.register!(p8est_raw_ptr, ctx)
-
-    # 4. Tie unregistering to the finalizer of the mesh object
-    finalizer(mesh) do m
-        raw_ptr = Trixi.P4est.PointerWrappers.pointer(m.p4est)
-        MeshContextRegistry.unregister!(raw_ptr)
-    end
+    attach_cubed_sphere_metadata!(mesh; layers, keep_columns_together)
 
     return mesh
 end
@@ -175,6 +164,46 @@ end
 function unregister!(p8est_ptr::Ptr{p8est_t})
     delete!(REGISTRY, UInt64(p8est_ptr))
 end
+end
+
+"""
+    attach_cubed_sphere_metadata!(mesh::Trixi.P4estMesh{3}; layers,
+                                  keep_columns_together = false)
+
+Attach the cubed-sphere layering/partitioning metadata (the number of vertical `layers`
+and whether `partition!` must keep columns together on one MPI rank) to a `mesh` that was
+*not* built with [`P4estMeshCubedSphereTopography`](@ref) -- in particular, a mesh freshly
+restored with `Trixi.load_mesh(restart_filename)`.
+
+`Trixi.load_mesh` reconstructs a plain `P4estMesh{3}`: it knows nothing about the number of
+layers or about `keep_columns_together`, since that information is not currently stored in
+the mesh file. Every [`P4estMeshCubedSphereTopography`](@ref) mesh carries this metadata in
+a registry keyed by the mesh's own `p4est` pointer, which the custom `partition!` relies on.
+A mesh loaded from a restart file is never entered into that registry, so without this
+call `partition!` silently falls back to uniform weights on restart, which breaks the
+"columns stay on one rank" invariant of `keep_columns_together = true` for MPI runs.
+
+Call this once, right after `load_mesh` and *before* constructing the
+`SemidiscretizationHyperbolic` (whose `create_cache` is what triggers `partition!` on a
+parallel mesh), supplying the same `layers`/`keep_columns_together` used in the run that
+produced the restart file:
+
+```julia
+mesh = load_mesh(restart_filename)
+attach_cubed_sphere_metadata!(mesh; layers = 4, keep_columns_together = true)
+semi = SemidiscretizationHyperbolic(mesh, equations, solver, initial_condition)
+```
+"""
+function attach_cubed_sphere_metadata!(mesh::Trixi.P4estMesh{3}; layers,
+                                       keep_columns_together = false)
+    ctx = ColumnPartitionContext(Cint(layers), keep_columns_together)
+    p8est_raw_ptr = Trixi.P4est.PointerWrappers.pointer(mesh.p4est)
+    MeshContextRegistry.register!(p8est_raw_ptr, ctx)
+    finalizer(mesh) do m
+        raw_ptr = Trixi.P4est.PointerWrappers.pointer(m.p4est)
+        MeshContextRegistry.unregister!(raw_ptr)
+    end
+    return mesh
 end
 
 # Context to save the number of radial layers into p4est user_pointer

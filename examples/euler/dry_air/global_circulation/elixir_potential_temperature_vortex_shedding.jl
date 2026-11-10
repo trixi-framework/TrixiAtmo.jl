@@ -74,10 +74,14 @@ alive_callback = AliveCallback(analysis_interval = analysis_interval)
 save_solution = SaveSolutionCallback(dt = 5760, save_initial_solution = true,
                                      save_final_solution = true)
 
+restart_interval = 15
+save_restart = SaveRestartCallback(interval = restart_interval, save_final_restart = true)
+
 callbacks = CallbackSet(summary_callback,
                         analysis_callback,
                         alive_callback,
-                        save_solution)
+                        save_solution,
+                        save_restart)
 
 ###############################################################################
 # Use a Runge-Kutta method with automatic (error based) time step size control
