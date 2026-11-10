@@ -128,26 +128,6 @@ end
                    zero(eltype(u_inner))) * norm_
 end
 
-# Fix sign for structured mesh.
-@inline function boundary_condition_slip_wall(u_inner, normal_direction::AbstractVector,
-                                              direction, x, t,
-                                              surface_flux_function,
-                                              equations::CompressibleMoistEulerEquations2D)
-    # flip sign of normal to make it outward pointing, then flip the sign of the normal flux back
-    # to be inward pointing on the -x and -y sides due to the orientation convention used by StructuredMesh
-    if isodd(direction)
-        boundary_flux = -boundary_condition_slip_wall(u_inner, -normal_direction,
-                                                      x, t, surface_flux_function,
-                                                      equations)
-    else
-        boundary_flux = boundary_condition_slip_wall(u_inner, normal_direction,
-                                                     x, t, surface_flux_function,
-                                                     equations)
-    end
-
-    return boundary_flux
-end
-
 # Rotate momentum flux. The same as in compressible Euler.
 @inline function rotate_to_x(u, normal_vector::AbstractVector,
                              equations::CompressibleMoistEulerEquations2D)
@@ -865,28 +845,6 @@ end
     pot5 = r_v
     pot6 = r_t
     return SVector(pot1, pot2, pot3, pot4, pot5, pot6)
-end
-
-@inline function max_abs_speed_naive(u_ll, u_rr, orientation::Integer,
-                                     equations::CompressibleMoistEulerEquations2D)
-    @unpack c_pd, c_pv, c_pl, c_vd, c_vv = equations
-    rho_ll, v1_ll, v2_ll, p_ll, qv_ll, ql_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr, qv_rr, ql_rr = cons2prim(u_rr, equations)
-    qd_ll = 1 - qv_ll - ql_ll
-    qd_rr = 1 - qv_rr - ql_rr
-    # Get the density and gas gamma
-    gamma_ll = (qd_ll * c_pd + qv_ll * c_pv + ql_ll * c_pl) *
-               inv(qd_ll * c_vd + qv_ll * c_vv + ql_ll * c_pl)
-    gamma_rr = (qd_rr * c_pd + qv_rr * c_pv + ql_rr * c_pl) *
-               inv(qd_rr * c_vd + qv_rr * c_vv + ql_rr * c_pl)
-
-    # Compute the sound speeds on the left and right
-    v_mag_ll = sqrt(v1_ll^2 + v2_ll^2)
-    c_ll = sqrt(gamma_ll * p_ll / rho_ll)
-    v_mag_rr = sqrt(v1_rr^2 + v2_rr^2)
-    c_rr = sqrt(gamma_rr * p_rr / rho_rr)
-
-    return max(v_mag_ll, v_mag_rr) + max(c_ll, c_rr)
 end
 
 # Adjusted version of LLF dissipation from compressible euler.

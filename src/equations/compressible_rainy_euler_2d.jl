@@ -616,23 +616,6 @@ end
            max(v_sound_ll, v_sound_rr) * norm(normal_direction)
 end
 
-@inline function max_abs_speed_naive(u_ll, u_rr, orientation::Integer,
-                                     equations::CompressibleRainyEulerEquations2D)
-    # name needed variables
-    v1_ll, v2_ll, v_sound_ll, v_r_ll = cons2speeds(u_ll, equations)
-    v1_rr, v2_rr, v_sound_rr, v_r_rr = cons2speeds(u_rr, equations)
-
-    if (orientation == 1)
-        v_ll = abs(v1_ll)
-        v_rr = abs(v1_rr)
-    else
-        v_ll = abs(v2_ll)
-        v_rr = abs(v2_rr)
-    end
-    # experimental
-    return max(v_ll, v_rr) + max(v_sound_ll, v_sound_rr) + max(abs(v_r_ll), abs(v_r_rr))
-end
-
 ###  boundary conditions  ###
 
 # adapted from compressible_moist_euler_2d.jl which was probably adapted from compressible_euler_2d.jl
@@ -683,26 +666,6 @@ end
                    p_star * normal[1] * norm_,
                    p_star * normal[2] * norm_,
                    0, 0, 0, 0)
-end
-
-# same as in compressible_euler_2d.jl
-@inline function boundary_condition_slip_wall(u_inner, normal_direction::AbstractVector,
-                                              direction, x, t,
-                                              surface_flux_function,
-                                              equations::CompressibleRainyEulerEquations2D)
-    # flip sign of normal to make it outward pointing, then flip the sign of the normal flux back
-    # to be inward pointing on the -x and -y sides due to the orientation convention used by StructuredMesh
-    if isodd(direction)
-        boundary_flux = -boundary_condition_slip_wall(u_inner, -normal_direction,
-                                                      x, t, surface_flux_function,
-                                                      equations)
-    else
-        boundary_flux = boundary_condition_slip_wall(u_inner, normal_direction,
-                                                     x, t, surface_flux_function,
-                                                     equations)
-    end
-
-    return boundary_flux
 end
 
 # same as in compressible_euler_2d.jl
@@ -861,7 +824,7 @@ end
 end
 
 """
-    flux_ec_rain(u_ll, u_rr, orientation_or_normal_direction,
+    flux_ec_rain(u_ll, u_rr, normal_direction::AbstractVector,
                  equations::CompressibleRainyEulerEquations2D)
 
 Entropy-conserving flux including rain, derived in:
@@ -960,37 +923,24 @@ Master's thesis, University of Cologne, 2025
     return SVector(f_dry, f_moist, f_rain, f_rhov1, f_rhov2, f_energy, 0, 0, 0)
 end
 
-@inline function flux_ec_rain(u_ll, u_rr, orientation::Int,
-                              equations::CompressibleRainyEulerEquations2D)
-    if (orientation == 1)
-        return flux_ec_rain(u_ll, u_rr, SVector(1, 0), equations)
-    else
-        return flux_ec_rain(u_ll, u_rr, SVector(0, 1), equations)
-    end
-end
-
-# adapted from ShallowWaterEquations2D (Recommended with rain!)
-@inline function boundary_condition_simple_slip_wall(u_inner, orientation, direction, x,
-                                                     t, surface_flux_function,
+# Version for `P4estMesh`/`UnstructuredMesh2D`/`T8codeMesh`: reflect the velocity
+# component normal to the wall and evaluate the surface flux.
+@inline function boundary_condition_simple_slip_wall(u_inner,
+                                                     normal_direction::AbstractVector,
+                                                     x, t, surface_flux_function,
                                                      equations::CompressibleRainyEulerEquations2D)
-    ## get the appropriate normal vector from the orientation
-    if orientation == 1
-        u_boundary = SVector(u_inner[1], u_inner[2], u_inner[3], -u_inner[4],
-                             u_inner[5], u_inner[6], u_inner[7], u_inner[8], u_inner[9])
-    else # orientation == 2
-        u_boundary = SVector(u_inner[1], u_inner[2], u_inner[3], u_inner[4],
-                             -u_inner[5], u_inner[6], u_inner[7], u_inner[8],
-                             u_inner[9])
-    end
+    # normalized outward normal vector
+    normal = normal_direction / norm(normal_direction)
 
-    # Calculate boundary flux
-    if iseven(direction) # u_inner is "left" of boundary, u_boundary is "right" of boundary
-        flux = surface_flux_function(u_inner, u_boundary, orientation, equations)
-    else # u_boundary is "left" of boundary, u_inner is "right" of boundary
-        flux = surface_flux_function(u_boundary, u_inner, orientation, equations)
-    end
+    # reflect the normal momentum component
+    rho_v_normal = normal[1] * u_inner[4] + normal[2] * u_inner[5]
+    u_boundary = SVector(u_inner[1], u_inner[2], u_inner[3],
+                         u_inner[4] - 2 * rho_v_normal * normal[1],
+                         u_inner[5] - 2 * rho_v_normal * normal[2],
+                         u_inner[6], u_inner[7], u_inner[8], u_inner[9])
 
-    return flux
+    # u_inner is always "left" of the boundary since the normal points outward
+    return surface_flux_function(u_inner, u_boundary, normal_direction, equations)
 end
 
 # hydrostatic base state residual
