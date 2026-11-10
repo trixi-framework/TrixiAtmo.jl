@@ -336,12 +336,6 @@ end
     Setup,
     EulerPotentialTemperature3D
 ] tags=[:euler_potential_temperature_3d] begin
-    if CI_ON_MACOS
-        _rtol = 7e-8  # increased error tolerance
-    else
-        _rtol = sqrt(eps(Float64))  # default
-    end
-
     @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
                                  "elixir_potential_temperature_held_suarez.jl"),
                         l2=[
@@ -360,7 +354,6 @@ end
                             4.88597072706591,
                             1703.946276059638
                         ],
-                        rtol=_rtol,
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY),
                         trees_per_cube_face=(2, 2))
     # Ensure that we do not have excessive memory allocations
