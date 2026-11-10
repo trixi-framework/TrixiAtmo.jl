@@ -58,3 +58,36 @@ end
     @assert nelems_min == 26
     @assert nelems_max == 28
 end
+
+@testitem "MPI: elixir_potential_temperature_baroclinic_instability" setup=[Setup] tags=[:mpi] begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "euler", "dry_air", "global_circulation",
+                                 "elixir_potential_temperature_baroclinic_instability.jl"),
+                        # Expected errors are exactly the same as in the serial test!
+                        l2=[
+                            0.0030320086112184466,
+                            0.05144411394023726,
+                            0.05238807358575555,
+                            0.012609443441337428,
+                            0.8067575925333563,
+                            570.8566086563927
+                        ],
+                        linf=[
+                            0.021751907036954288,
+                            0.8297225783677513,
+                            1.2589734934841315,
+                            0.9103791727770297,
+                            4.833051748224818,
+                            1704.147344700992
+                        ],
+                        tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
+                        dt=20)
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities). `Trixi.solve!` calls the right-hand side inside the
+    # timer section "main loop", so the first call outside of it creates new timer
+    # sections, which allocates.
+    TrixiAtmo.Trixi.rhs_hyperbolic!(similar(sol.u[end]), sol.u[end], semi, sol.t[end])
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 1000)
+    # Check partitioning: the vertical Jacobian requires that the columns are kept together
+    # on the ranks
+    @test nelements(solver, semi.cache) % TrixiAtmo.nlayers(mesh) == 0
+end

@@ -39,6 +39,7 @@ jobs:
           - serial
           - mpi
           - threaded
+          - kernelabstractions
         include:
           - version: '1.10'
             os: macos-latest

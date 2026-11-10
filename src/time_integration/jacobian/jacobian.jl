@@ -5,24 +5,27 @@
 @muladd begin
 #! format: noindent
 
-# Interface of the approximate Jacobians of the implicit time integration methods
+# Interface of the approximate Jacobians, i.e., the linear operators of the linearly
+# implicit time integration methods (Rosenbrock-W and linear IMEX methods)
 
 """
-    create_jacobian_cache(jacobian, semi, u_ode)
+    create_cache_jacobian(jacobian, semi, u_ode)
 
-Create the arrays of the approximate Jacobian specified by `jacobian` (the keyword argument
-of `Trixi.solve` with implicit time integration methods such as [`SSPRW32`](@ref)) for the
-semidiscretization `semi`, with the array type of the solution `u_ode`. It is called by
-`Trixi.init` of the implicit time integration methods. For `jacobian = nothing`, i.e.,
-`J = 0`, nothing is created.
+Create the arrays of the approximate Jacobian specified by `jacobian`, i.e., the linear
+operator of linearly implicit time integration methods such as [`SSPRW32`](@ref) (the
+keyword argument `jacobian` of `Trixi.solve`), for the semidiscretization `semi`, with the
+array and real types of the arrays of `semi`, which are also those of the solution `u_ode`.
+It is called when the time integrator of a linearly implicit time integration method is
+initialized (`init`, called by `Trixi.solve`). For `jacobian = nothing`, i.e., `J = 0`,
+nothing is created.
 """
-create_jacobian_cache(::Nothing, semi, u_ode) = nothing
+create_cache_jacobian(::Nothing, semi, u_ode) = nothing
 
 """
     update_jacobian!(jacobian, u_ode, semi, gamma_dt)
 
 Assemble (and factorize) the approximate Jacobian `jacobian` (created by
-[`create_jacobian_cache`](@ref)) of the right-hand side of the
+[`create_cache_jacobian`](@ref)) of the right-hand side of the
 semidiscretization `semi` at the solution `u_ode`, such that [`solve_jacobian!`](@ref) can
 solve linear systems with the matrix `I / gamma_dt - J`. For `jacobian = nothing`, nothing
 is done.
@@ -40,4 +43,14 @@ function solve_jacobian!(b_ode, ::Nothing, semi, gamma_dt)
     b_ode .*= gamma_dt
     return nothing
 end
+
+function nlayers(mesh::Trixi.AbstractMesh)
+    throw(ArgumentError("the vertical Jacobians require a " *
+                        "`P4estMeshCubedSphereTopography`"))
+end
 end # @muladd
+
+include("jacobian_gpu.jl")
+include("jacobian_3d.jl")
+include("jacobian_3d_gpu.jl")
+include("jacobian_two_sided.jl")
