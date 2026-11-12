@@ -107,6 +107,25 @@ end
     return flux
 end
 
+# Version for `P4estMesh`/`UnstructuredMesh2D`/`T8codeMesh`: reflect the velocity
+# component normal to the wall and evaluate the surface flux.
+@inline function boundary_condition_slip_wall(u_inner, normal_direction::AbstractVector,
+                                              x, t, surface_flux_function,
+                                              equations::CompressibleEulerPotentialTemperatureEquations2D)
+    # normalized outward normal vector
+    normal = normal_direction / norm(normal_direction)
+
+    # reflect the normal momentum component
+    rho_v_normal = normal[1] * u_inner[2] + normal[2] * u_inner[3]
+    u_boundary = SVector(u_inner[1],
+                         u_inner[2] - 2 * rho_v_normal * normal[1],
+                         u_inner[3] - 2 * rho_v_normal * normal[2],
+                         u_inner[4])
+
+    # u_inner is always "left" of the boundary since the normal points outward
+    return surface_flux_function(u_inner, u_boundary, normal_direction, equations)
+end
+
 # Low Mach number approximate Riemann solver (LMARS) from
 # X. Chen, N. Andronova, B. Van Leer, J. E. Penner, J. P. Boyd, C. Jablonowski, S.
 # Lin, A Control-Volume Model of the Compressible Euler Equations with a Vertical Lagrangian
