@@ -281,9 +281,9 @@ function connectivity_cubed_sphere(trees_per_face_dimension, layers)
     # Trixi.jl doesn't use the coordinates from `p4est`, so the vertices can be empty.
     n_vertices = 0
     n_trees = 6 * n_cells_x * n_cells_y * n_cells_z
-    # No edge connectivity is needed
+    # The edges connecting trees are added by `complete_connectivity` below
     n_edges = 0
-    # No corner connectivity is needed
+    # The corners connecting trees are added by `complete_connectivity` below
     n_corners = 0
     vertices = C_NULL
     tree_to_vertex = C_NULL
@@ -567,20 +567,20 @@ function connectivity_cubed_sphere(trees_per_face_dimension, layers)
 
     tree_to_edge = C_NULL
     # `p4est` docs: "in trivial cases it is just a pointer to a p4est_topix value of 0."
-    # We don't need edge connectivity, so this is a trivial case.
+    # The edges are added by `complete_connectivity` below, so this is a trivial case.
     ett_offset = zeros(p4est_topidx_t, 1)
     edge_to_tree = C_NULL
     edge_to_edge = C_NULL
 
     tree_to_corner = C_NULL
     # `p4est` docs: "in trivial cases it is just a pointer to a p4est_topix value of 0."
-    # We don't need corner connectivity, so this is a trivial case.
+    # The corners are added by `complete_connectivity` below, so this is a trivial case.
     ctt_offset = zeros(p4est_topidx_t, 1)
 
     corner_to_tree = C_NULL
     corner_to_corner = C_NULL
 
-    connectivity = p8est_connectivity_new_copy(n_vertices, n_trees, n_corners, n_edges,
+    connectivity = p8est_connectivity_new_copy(n_vertices, n_trees, n_edges, n_corners,
                                                vertices, tree_to_vertex,
                                                tree_to_tree, tree_to_face,
                                                tree_to_edge, ett_offset,
@@ -590,7 +590,9 @@ function connectivity_cubed_sphere(trees_per_face_dimension, layers)
 
     @assert p8est_connectivity_is_valid(connectivity) == 1
 
-    return connectivity
+    # Add all corners (and edges in 3D) connecting trees, which are required by
+    # `p4est_balance` to produce a balanced forest
+    return complete_connectivity(connectivity)
 end
 
 function cubed_sphere_mapping_topography(xi, eta, zeta, inner_radius, thickness, direction,
