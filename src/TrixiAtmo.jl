@@ -64,6 +64,7 @@ include("solvers/solvers.jl")
 include("callbacks_step/callbacks_step.jl")
 include("callbacks_stage/callbacks_stage.jl")
 include("time_integration/time_integration.jl")
+include("visualization/visualization.jl")
 
 export CompressibleMoistEulerEquations2D,
        CompressibleRainyEulerEquations2D,
@@ -139,5 +140,7 @@ export AtmosphereLayers, AtmosphereLayersRainyBubble
 export P4estMeshCubedSphereTopography, GalChen, Sleve
 
 export examples_dir
+
+export spherical_layer_data, plot_spherical_layer, plot_spherical_layer!
 
 end # module TrixiAtmo
