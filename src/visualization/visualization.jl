@@ -282,7 +282,9 @@ end
 
 Create a filled contour plot in longitude-latitude coordinates of the scalar quantity
 `func(u, equations)` on a horizontal layer of a simulation on a spherical shell, using
-[`spherical_layer_data`](@ref). Return a `Makie.Figure` with the plot and a colorbar.
+[`spherical_layer_data`](@ref). Return a `Makie.FigureAxisPlot` with the figure including
+a colorbar, the axis, and the filled contour plot, which can be destructured as
+`fig, ax, plt = plot_spherical_layer(...)`.
 
 This requires Makie.jl (e.g., via CairoMakie.jl or GLMakie.jl) to be loaded.
 
@@ -296,9 +298,13 @@ be represented and a small region around the pole remains empty.
 - `lon_limits`, `lat_limits`: plotted range of longitude and latitude in degrees. The
   range of longitude can include 0°, e.g., `lon_limits = (-60, 180)` for the range from
   60°W to 180°.
-- `levels`: number of equally spaced contour bands or vector of contour levels.
+- `levels`: number of equally spaced contour bands between the extrema of the values in
+  the plotted range of longitude and latitude, or vector of contour levels.
 - `colormap`: colormap of the filled contours.
 - `title`: title of the plot.
+
+All other keywords are passed to `Makie.tricontourf!`, e.g., `extendlow = :auto` and
+`extendhigh = :auto` to also fill the regions with values outside of the given `levels`.
 
 # Examples
 The surface pressure in hPa of the baroclinic instability (see
@@ -308,10 +314,12 @@ The surface pressure in hPa of the baroclinic instability (see
 `examples/euler/dry_air/global_circulation` via
 ```julia
 using CairoMakie
-fig = plot_spherical_layer((u, equations) -> pressure(u, equations) / 100, sol;
-                           lon_limits = (0, 240), lat_limits = (0, 90),
-                           levels = 920:10:1030, colormap = :plasma,
-                           title = "Surface pressure [hPa]")
+fig, ax, plt = plot_spherical_layer((u, equations) -> pressure(u, equations) / 100, sol;
+                                    lon_limits = (0, 240), lat_limits = (0, 90),
+                                    levels = 920:10:1030, colormap = :plasma,
+                                    extendlow = :auto, extendhigh = :auto,
+                                    title = "Surface pressure [hPa]")
+save("surface_pressure.png", fig)
 ```
 """
 function plot_spherical_layer end
@@ -323,7 +331,8 @@ function plot_spherical_layer end
 Add a filled contour plot with contour lines of `func(u, equations)` on a horizontal layer
 of a simulation on a spherical shell to the existing Makie.jl axis `ax` and return the
 filled contour plot, e.g., to create a `Makie.Colorbar`. The keywords are the same as for
-[`plot_spherical_layer`](@ref) except for `title`. This requires Makie.jl to be loaded.
+[`plot_spherical_layer`](@ref) except for `title`, i.e., all other keywords are passed to
+`Makie.tricontourf!`. This requires Makie.jl to be loaded.
 """
 function plot_spherical_layer! end
 end # @muladd

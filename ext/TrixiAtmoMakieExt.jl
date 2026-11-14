@@ -19,7 +19,7 @@ import TrixiAtmo: plot_spherical_layer, plot_spherical_layer!
 function plot_spherical_layer(func, args...;
                               layer = :surface, nvisnodes = nothing,
                               lon_limits = (0, 360), lat_limits = (-90, 90),
-                              levels = 10, colormap = :viridis, title = "")
+                              levels = 10, colormap = :viridis, title = "", kwargs...)
     fig = Makie.Figure()
     ax = Makie.Axis(fig[1, 1]; title, xlabel = "longitude", ylabel = "latitude",
                     xticks = degree_ticks(lon_limits),
@@ -27,7 +27,7 @@ function plot_spherical_layer(func, args...;
                     yticks = degree_ticks(lat_limits),
                     ytickformat = lats -> format_latitude.(lats))
     plt = plot_spherical_layer!(ax, func, args...; layer, nvisnodes, lon_limits,
-                                lat_limits, levels, colormap)
+                                lat_limits, levels, colormap, kwargs...)
     Makie.Colorbar(fig[1, 2], plt)
 
     # Make the width of the axis proportional to the plotted longitude range and its
@@ -36,13 +36,15 @@ function plot_spherical_layer(func, args...;
     Makie.colsize!(fig.layout, 1, Makie.Aspect(1, lon_lat_ratio))
     Makie.resize_to_layout!(fig)
 
-    return fig
+    # As for single plots in Trixi.jl, return the figure together with the axis and the
+    # plot, which can be destructured as `fig, ax, plt = plot_spherical_layer(...)`
+    return Makie.FigureAxisPlot(fig, ax, plt)
 end
 
 function plot_spherical_layer!(ax, func, args...;
                                layer = :surface, nvisnodes = nothing,
                                lon_limits = (0, 360), lat_limits = (-90, 90),
-                               levels = 10, colormap = :viridis)
+                               levels = 10, colormap = :viridis, kwargs...)
     data = spherical_layer_data(func, args...; layer, nvisnodes)
 
     # Triangulate the visualization points of each element separately instead of letting
@@ -51,18 +53,51 @@ function plot_spherical_layer!(ax, func, args...;
     (; lon, lat, values, triangles) = _spherical_layer_triangulation(data;
                                                                      lon_min = lon_limits[1])
 
-    # Equally spaced bands between the extrema
     if levels isa Integer
-        levels = range(extrema(values)...; length = levels + 1)
+        levels = default_levels(levels, lon, lat, values, triangles, lon_limits,
+                                lat_limits)
     end
 
+    # Additional keywords (e.g., `extendlow` and `extendhigh`) are passed only to the
+    # filled contours, which are returned, as in the `contourf` recipes of Trixi.jl
     plt = Makie.tricontourf!(ax, lon, lat, values; triangulation = triangles, levels,
-                             colormap)
+                             colormap, kwargs...)
     Makie.tricontour!(ax, lon, lat, values; triangulation = triangles, levels,
                       color = :black, linewidth = 0.5)
     Makie.limits!(ax, lon_limits..., lat_limits...)
 
     return plt
+end
+
+# Return `n_bands + 1` equally spaced contour levels between the extrema of the values in
+# the plotted range of longitude and latitude. As in the plots of the baroclinic
+# instability by Artiano and Ranocha (see
+# https://github.com/MarcoArtiano/2026_nonconservative_sbp), which mask the visualization points to the plotted
+# range, the levels do not depend on the values outside of this range. We use the
+# vertices of all triangles whose bounding box overlaps the plotted range. Since the values
+# in a triangle are interpolated linearly from its vertices, the levels cover all visible
+# values, and there are no gaps in the filled contours at the boundary of the axis.
+function default_levels(n_bands, lon, lat, values, triangles, lon_limits, lat_limits)
+    value_min = typemax(eltype(values))
+    value_max = typemin(eltype(values))
+    for triangle in eachcol(triangles)
+        lon_min, lon_max = extrema(vertex -> lon[vertex], triangle)
+        lat_min, lat_max = extrema(vertex -> lat[vertex], triangle)
+        if (lon_max >= lon_limits[1] && lon_min <= lon_limits[2] &&
+            lat_max >= lat_limits[1] && lat_min <= lat_limits[2])
+            for vertex in triangle
+                value_min = min(value_min, values[vertex])
+                value_max = max(value_max, values[vertex])
+            end
+        end
+    end
+
+    # Use all values if no triangle overlaps the plotted range
+    if value_min > value_max
+        value_min, value_max = extrema(values)
+    end
+
+    return range(value_min, value_max; length = n_bands + 1)
 end
 
 # Ticks at multiples of 30° within the plotted range as usual for global maps. For small
