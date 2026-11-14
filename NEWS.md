@@ -8,6 +8,11 @@ for human readability.
 ## Changes in the v0.1 lifecycle
 
 #### Added
+- The new function `spherical_layer_data` extracts a scalar quantity on a horizontal
+  layer of a simulation on a spherical shell in longitude-latitude coordinates. With
+  Makie.jl loaded, `plot_spherical_layer` and `plot_spherical_layer!` create filled
+  contour plots of it, e.g., of the surface pressure of the baroclinic instability
+  ([#266]).
 - The `CompressibleEulerVectorInvariantEquationsWithGravity3D` are the compressible Euler
   equations with gravity in vector-invariant form with the potential temperature as
   prognostic variable. They come with the entropy and total energy conservative volume flux
