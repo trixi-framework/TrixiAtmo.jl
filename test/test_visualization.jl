@@ -67,6 +67,19 @@ end
     @test_throws ArgumentError spherical_layer_data(pressure, sol; layer = 3)
 end
 
+@testitem "Visualization: spherical_layer_data errors" setup=[Setup] tags=[:visualization] begin
+    # A periodic mesh of a cube has no boundary `:inside` at the bottom of a spherical shell
+    equations = CompressibleEulerEquations3D(1.4)
+    solver = DGSEM(polydeg = 1, surface_flux = flux_lax_friedrichs)
+    mesh = P4estMesh((1, 1, 1); polydeg = 1, coordinates_min = (0.0, 0.0, 0.0),
+                     coordinates_max = (1.0, 1.0, 1.0))
+    semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_constant,
+                                        solver;
+                                        boundary_conditions = boundary_condition_periodic)
+    u_ode = compute_coefficients(0.0, semi)
+    @test_throws ArgumentError spherical_layer_data(pressure, u_ode, semi)
+end
+
 @testitem "Visualization: triangulation in longitude-latitude" setup=[
     Setup,
     Visualization
@@ -150,14 +163,19 @@ end
     run_baroclinic_instability((2, 2))
 
     pressure_hpa(u, equations) = pressure(u, equations) / 100
-    fig = plot_spherical_layer(pressure_hpa, sol;
+    fap = plot_spherical_layer(pressure_hpa, sol;
                                lon_limits = (0, 240), lat_limits = (0, 90),
                                levels = 5, colormap = :plasma,
                                title = "Surface Pressure [hPa]")
+    @test fap isa Makie.FigureAxisPlot
+    fig, ax, plt = fap
     @test fig isa Makie.Figure
+    @test ax isa Makie.Axis
+    @test plt isa Makie.Tricontourf
+    @test length(plt.levels[]) == 6
     mktempdir() do dir
         filename = joinpath(dir, "surface_pressure.png")
-        CairoMakie.save(filename, fig)
+        CairoMakie.save(filename, fap)
         @test isfile(filename)
     end
 
@@ -165,12 +183,30 @@ end
     ax = Makie.Axis(fig[1, 1])
     data = spherical_layer_data(pressure_hpa, sol; layer = 2)
     levels = range(extrema(data.values)...; length = 6)
+    # Additional keywords are passed to `Makie.tricontourf!`
     plt = plot_spherical_layer!(ax, pressure_hpa, sol.u[end], semi; layer = 2,
-                                nvisnodes = 6, levels)
+                                nvisnodes = 6, levels, extendhigh = :auto)
     @test plt isa Makie.Tricontourf
+    @test plt.extendhigh[] === :auto
+
+    ext = Base.get_extension(TrixiAtmo, :TrixiAtmoMakieExt)
+
+    # The default levels only use the values at the vertices of triangles overlapping the
+    # plotted range. Here, the second triangle lies in the southern hemisphere.
+    lon = [10.0, 20.0, 10.0, 200.0, 250.0, 200.0]
+    lat = [10.0, 10.0, 20.0, -50.0, -50.0, -40.0]
+    values = [1.0, 2.0, 3.0, -100.0, 100.0, 50.0]
+    triangles = [1 4; 2 5; 3 6]
+    @test ext.default_levels(5, lon, lat, values, triangles, (0, 240), (0, 90)) ≈
+          range(1, 3; length = 6)
+    # Triangles crossing the boundary of the plotted range are used as well
+    @test ext.default_levels(5, lon, lat, values, triangles, (0, 240), (-45, 90)) ≈
+          range(-100, 100; length = 6)
+    # If no triangle overlaps the plotted range, all values are used
+    @test ext.default_levels(2, lon, lat, values, triangles, (100, 180), (0, 90)) ≈
+          range(-100, 100; length = 3)
 
     # Ticks and their labels
-    ext = Base.get_extension(TrixiAtmo, :TrixiAtmoMakieExt)
     @test ext.degree_ticks((0, 240)) == 0:30:240
     @test ext.degree_ticks((-90, 90)) == -90:30:90
     @test ext.degree_ticks((-60, 180)) == -60:30:180
