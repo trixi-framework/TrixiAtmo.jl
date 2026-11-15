@@ -521,10 +521,14 @@ starts the Julia sessions itself.
   receiving the flux passes its own state first,
   `nonconservative_flux(u_own, u_neighbor, ...)`.
 - Some equations carry auxiliary variables as part of the state vector, e.g.,
-  the geopotential in the `...WithGravity` equations or the bottom topography in
-  `ShallowWaterEquations3D`. Fluxes must leave them unchanged (zero flux), and
-  well-balancedness tests (`elixir_*well_balanced*`) check that steady states
-  are preserved.
+  the geopotential in the `...WithGravity{1,3}D` equations or the bottom
+  topography in `ShallowWaterEquations3D`. Fluxes must leave them unchanged
+  (zero flux), and well-balancedness tests (`elixir_*well_balanced*`) check that
+  steady states are preserved. The `...WithGravity2D` equations instead store
+  the geopotential as auxiliary variable of Trixi.jl (`Trixi.nauxvariables`),
+  given by the `aux_field` of `SemidiscretizationHyperbolic`; their pointwise
+  functions take it as additional arguments after the states, e.g.,
+  `flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)`.
 - Arrays visible to the time integrator have the suffix `_ode` (`u_ode`,
   `du_ode`); when passed with `semi`, normally wrap them with
   `wrap_array(u_ode, semi)` before internal use. Wrapped arrays have no suffix.

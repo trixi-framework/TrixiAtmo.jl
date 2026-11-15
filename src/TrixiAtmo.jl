@@ -124,6 +124,8 @@ export initial_condition_adiabatic, initial_condition_gravity_waves,
        initial_condition_baroclinic_instability, initial_condition_isothermal,
        initial_condition_vortex_shedding
 
+export aux_field_geopotential
+
 export boundary_condition_horizontal_slip_wall
 
 export source_terms_coriolis_small_earth

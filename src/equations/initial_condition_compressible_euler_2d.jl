@@ -1,16 +1,18 @@
 """
     initial_condition_gravity_waves(x, t,
-                                        equations::AbstractCompressibleEulerEquations{2, 5})
+                                        equations::AbstractCompressibleEulerEquations{2, 4})
 
 Test cases for linearized analytical solution by
 -  Baldauf, Michael and Brdar, Slavko (2013)
    An analytic solution for linear gravity waves in a channel as a test
    for numerical models using the non-hydrostatic, compressible {E}uler equations
    [DOI: 10.1002/qj.2105] (https://doi.org/10.1002/qj.2105)
+
+The corresponding geopotential is given by [`aux_field_geopotential`](@ref).
 """
 function initial_condition_gravity_waves(x, t,
                                          equations::AbstractCompressibleEulerEquations{2,
-                                                                                       5})
+                                                                                       4})
     g = equations.g
     c_p = equations.c_p
     c_v = equations.c_v
@@ -31,18 +33,19 @@ function initial_condition_gravity_waves(x, t,
     v1 = 20
     v2 = 0
 
-    return prim2cons(SVector(rho, v1, v2, p, g * x[2]), equations)
+    return prim2cons(SVector(rho, v1, v2, p), equations)
 end
 
 @doc raw"""
     initial_condition_adiabatic(x, t,
-                                equations::AbstractCompressibleEulerEquations{2, 5})
+                                equations::AbstractCompressibleEulerEquations{2, 4})
 
 Atmosphere at rest with constant potential temperature ``\theta = 300\ \mathrm{K}`` in
-hydrostatic balance, used to assess the well-balanced property of a discretization.
+hydrostatic balance, used to assess the well-balanced property of a discretization. The
+corresponding geopotential is given by [`aux_field_geopotential`](@ref).
 """
 function initial_condition_adiabatic(x, t,
-                                     equations::AbstractCompressibleEulerEquations{2, 5})
+                                     equations::AbstractCompressibleEulerEquations{2, 4})
     g = equations.g
     c_p = equations.c_p
     c_v = equations.c_v
@@ -63,7 +66,21 @@ function initial_condition_adiabatic(x, t,
     v1 = 0
     v2 = 0
 
-    return prim2cons(SVector(rho, v1, v2, p, g * x[2]), equations)
+    return prim2cons(SVector(rho, v1, v2, p), equations)
+end
+
+@doc raw"""
+    aux_field_geopotential(x, equations::AbstractCompressibleEulerEquations{2, 4})
+
+Geopotential ``\phi = g z`` of a constant gravitational acceleration ``g`` = `equations.g`
+pointing in the negative ``z = x_2`` direction, as in
+[`initial_condition_gravity_waves`](@ref), [`initial_condition_adiabatic`](@ref), and
+[`MountainWaveSetup`](@ref). It is returned as the auxiliary variables, see
+`Trixi.nauxvariables`, and passed as `aux_field` to `SemidiscretizationHyperbolic`.
+"""
+@inline function aux_field_geopotential(x,
+                                        equations::AbstractCompressibleEulerEquations{2, 4})
+    return SVector(equations.g * x[2])
 end
 
 @doc raw"""
@@ -121,7 +138,7 @@ stably stratified atmosphere with constant Brunt-Väisälä frequency
 The resulting object is callable with two different signatures, which are meant to be
 passed to a `SemidiscretizationHyperbolic` as
 - `initial_condition`, via `(x, t, equations)`, and as
-- `source_terms`, via `(u, x, t, equations)`, which relaxes the solution towards the
+- `source_terms`, via `(u, aux, x, t, equations)`, which relaxes the solution towards the
   background state inside the absorbing layers described by `z_damping_start`,
   `z_damping_end`, `x_damping_start`, `x_damping_end`, and `damping_rate`, see
   [`rayleigh_damping_coefficient`](@ref).
@@ -148,7 +165,7 @@ end
 # Initial condition
 @inline function (setup::MountainWaveSetup)(x, t,
                                             equations::AbstractCompressibleEulerEquations{2,
-                                                                                          5})
+                                                                                          4})
     @unpack theta_0, u0, brunt_vaisala_frequency = setup
     g = equations.g
     c_p = equations.c_p
@@ -166,18 +183,18 @@ end
     v1 = u0
     v2 = 0
 
-    return prim2cons(SVector(rho, v1, v2, p, g * x[2]), equations)
+    return prim2cons(SVector(rho, v1, v2, p), equations)
 end
 
 # This signature is used for source terms, adding Rayleigh damping
 # to avoid reflections at the boundaries.
-@inline function (setup::MountainWaveSetup)(u, x, t,
+@inline function (setup::MountainWaveSetup)(u, aux, x, t,
                                             equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     @unpack theta_0, u0, brunt_vaisala_frequency = setup
     @unpack z_damping_start, z_damping_end = setup
     @unpack x_damping_start, x_damping_end, damping_rate = setup
 
-    rho, rho_v1, rho_v2, rho_theta, _ = u
+    rho, rho_v1, rho_v2, rho_theta = u
 
     g = equations.g
     v1 = rho_v1 / rho
@@ -192,7 +209,7 @@ end
     du3 = rho_v2 * damping
     du4 = rho * (theta - theta_b) * damping
 
-    return SVector(zero(eltype(u)), du2, du3, du4, zero(eltype(u)))
+    return SVector(zero(eltype(u)), du2, du3, du4)
 end
 
 @doc raw"""
