@@ -16,16 +16,14 @@ end
                             0.01697962311431438,
                             0.015947211723936594,
                             0.016561823433691548,
-                            0.14232904565449617,
-                            98.99596252593312
+                            0.14232904565449617
                         ],
                         linf=[
                             0.004219636209495059,
                             1.1709300104924298,
                             0.6920569865271409,
                             1.1056507865964287,
-                            0.9997828853548185,
-                            333.1178018152714
+                            0.9997828853548185
                         ],
                         tspan=(0.0, 20.0), trees_per_cube_face=(2, 2),
                         storage_type=CuArray)
@@ -45,6 +43,7 @@ end
     @test Trixi.storage_type(semi.cache.interfaces) === CuArray
     @test Trixi.storage_type(semi.cache.boundaries) === CuArray
     @test Trixi.storage_type(semi.cache.mortars) === CuArray
+    @test semi.cache.aux_vars.aux isa CuArray
 
     # Ensure that the RHS computation overwrites existing data in `du` correctly.
     u_ode = copy(ode.u0)
@@ -66,14 +65,12 @@ end
                                    0.017052146,
                                    0.01605738,
                                    0.016616695,
-                                   0.14386448,
-                                   101.35988],
+                                   0.14386448],
                         linf=Float32[0.0044720173,
                                      1.1709296,
                                      0.695263,
                                      1.1052238,
-                                     1.0602722,
-                                     380.0],
+                                     1.0602722],
                         tspan=(0.0, 20.0), trees_per_cube_face=(2, 2),
                         RealT_for_test_tolerances=Float32,
                         rtol=1.0f-3,
@@ -95,6 +92,7 @@ end
     @test Trixi.storage_type(semi.cache.interfaces) === CuArray
     @test Trixi.storage_type(semi.cache.boundaries) === CuArray
     @test Trixi.storage_type(semi.cache.mortars) === CuArray
+    @test semi.cache.aux_vars.aux isa CuArray{Float32}
 
     # Ensure that the RHS computation overwrites existing data in `du` correctly.
     u_ode = copy(ode.u0)
