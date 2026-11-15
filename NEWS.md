@@ -8,10 +8,16 @@ for human readability.
 ## Changes in the v0.1 lifecycle
 
 #### Added
+- The `CompressibleEulerVectorInvariantEquationsWithGravity3D` are the compressible Euler
+  equations with gravity in vector-invariant form with the potential temperature as
+  prognostic variable. They come with the entropy and total energy conservative volume flux
+  `flux_etec`, which supports `FluxTurbo`, and the entropy-stable and well-balanced surface
+  flux `flux_lmars_es` ([#253]).
 - The new nonconservative flux `flux_nonconservative_isothermal` is a well-balanced gravity
   term for isothermal background states of the
   `CompressibleEulerEnergyEquationsWithGravity2D` and the
   `CompressibleEulerEnergyEquationsWithGravity3D` ([#248]).
+- GPU support including adaptation to `Float32` via `trixi_adapt` ([#242]).
 
 #### Changed
 - Fixes a bug in `flux_nonconservative_waruszewski_etal` for the
