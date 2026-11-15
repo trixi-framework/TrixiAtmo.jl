@@ -156,14 +156,14 @@ function _layer_elements(layer, solver, cache)
 end
 
 # Triangulate the visualization points returned by `spherical_layer_data` in the
-# longitude-latitude plane for contour plots, e.g., with `Makie.tricontourf`.
+# longitude-latitude plane for contour plots with `Makie.tricontourf`.
 #
 # As for contour plots of DG solutions in Trixi.jl, the visualization points of each element
 # are triangulated separately using the triangulation of the visualization points on the
 # reference element. In contrast to a Delaunay triangulation of all points, this does not
 # connect points of different elements across discontinuities of the solution and avoids
 # duplicate points, since the points at element interfaces belong to several elements.
-# As in the plots of the baroclinic instability by Artiano and Ranocha (see
+# As in the plots of the baroclinic instability (see
 # https://github.com/MarcoArtiano/2026_nonconservative_sbp), the longitude is shifted to the
 # range from `lon_min` to `lon_min + 360°` such that the periodic boundary of the longitude
 # is at the boundary of the plotted range starting at `lon_min`. Elements crossing this
@@ -285,8 +285,6 @@ Create a filled contour plot in longitude-latitude coordinates of the scalar qua
 [`spherical_layer_data`](@ref). Return a `Makie.FigureAxisPlot` with the figure including
 a colorbar, the axis, and the filled contour plot, which can be destructured as
 `fig, ax, plt = plot_spherical_layer(...)`.
-
-This requires Makie.jl (e.g., via CairoMakie.jl or GLMakie.jl) to be loaded.
 
 The visualization points of each element are triangulated separately in the
 longitude-latitude plane. If a pole lies inside a cell of visualization points (e.g., for

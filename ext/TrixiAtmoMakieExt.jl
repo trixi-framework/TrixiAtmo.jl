@@ -36,8 +36,7 @@ function plot_spherical_layer(func, args...;
     Makie.colsize!(fig.layout, 1, Makie.Aspect(1, lon_lat_ratio))
     Makie.resize_to_layout!(fig)
 
-    # As for single plots in Trixi.jl, return the figure together with the axis and the
-    # plot, which can be destructured as `fig, ax, plt = plot_spherical_layer(...)`
+    # As for single plots in Trixi.jl, return the figure together with the axis and the plot
     return Makie.FigureAxisPlot(fig, ax, plt)
 end
 
@@ -59,7 +58,7 @@ function plot_spherical_layer!(ax, func, args...;
     end
 
     # Additional keywords (e.g., `extendlow` and `extendhigh`) are passed only to the
-    # filled contours, which are returned, as in the `contourf` recipes of Trixi.jl
+    # filled contours, which are returned
     plt = Makie.tricontourf!(ax, lon, lat, values; triangulation = triangles, levels,
                              colormap, kwargs...)
     Makie.tricontour!(ax, lon, lat, values; triangulation = triangles, levels,
@@ -71,7 +70,7 @@ end
 
 # Return `n_bands + 1` equally spaced contour levels between the extrema of the values in
 # the plotted range of longitude and latitude. As in the plots of the baroclinic
-# instability by Artiano and Ranocha (see
+# instability (see
 # https://github.com/MarcoArtiano/2026_nonconservative_sbp), which mask the visualization points to the plotted
 # range, the levels do not depend on the values outside of this range. We use the
 # vertices of all triangles whose bounding box overlaps the plotted range. Since the values
@@ -100,7 +99,7 @@ function default_levels(n_bands, lon, lat, values, triangles, lon_limits, lat_li
     return range(value_min, value_max; length = n_bands + 1)
 end
 
-# Ticks at multiples of 30° within the plotted range as usual for global maps. For small
+# Ticks at multiples of 30° within the plotted range. For small
 # ranges, Makie.jl chooses the ticks automatically.
 function degree_ticks(limits)
     ticks = (30 * ceil(Int, limits[1] / 30)):30:(30 * floor(Int, limits[2] / 30))

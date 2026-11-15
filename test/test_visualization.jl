@@ -46,8 +46,7 @@ end
     # Check that the values belong to the longitude and latitude by comparing with the
     # initial condition. At the bottom of the second layer, the velocity of the initial
     # condition has no perturbation, and its Cartesian components depend on both the
-    # longitude and the latitude. With wrong coordinates (e.g., shifted by 30° in longitude
-    # and mirrored at the equator), the relative error of the momentum is about 0.5.
+    # longitude and the latitude.
     for variable in (2, 3)
         data_u0 = spherical_layer_data((u, equations) -> u[variable], ode.u0, semi;
                                        layer = 2, nvisnodes)
