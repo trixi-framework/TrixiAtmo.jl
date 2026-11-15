@@ -64,6 +64,16 @@ end
     @test_throws ArgumentError spherical_layer_data(pressure, sol; layer = 1.5)
     # There are only two layers of elements
     @test_throws ArgumentError spherical_layer_data(pressure, sol; layer = 3)
+
+    # Swapping the primary and secondary sides of all interfaces describes the same mesh.
+    # Thus, the layers must not change. In the mesh above, the lower element is the
+    # primary element of each interface between two layers, so this checks that the upper
+    # neighbors are found if the upper element is the primary element.
+    # Since this modifies the cache, it must be the last test of this test item.
+    (; interfaces) = semi.cache
+    interfaces.neighbor_ids .= interfaces.neighbor_ids[[2, 1], :]
+    interfaces.node_indices .= interfaces.node_indices[[2, 1], :]
+    @test spherical_layer_data(geopotential, sol; layer = 2, nvisnodes) == data_2
 end
 
 @testitem "Visualization: spherical_layer_data errors" setup=[Setup] tags=[:visualization] begin
@@ -77,6 +87,21 @@ end
                                         boundary_conditions = boundary_condition_periodic)
     u_ode = compute_coefficients(0.0, semi)
     @test_throws ArgumentError spherical_layer_data(pressure, u_ode, semi)
+
+    # A non-periodic mesh of a cube whose boundaries are all renamed to `:inside` has the
+    # boundary `:inside` also at faces other than the bottom faces of the elements
+    mesh = P4estMesh((1, 1, 1); polydeg = 1, coordinates_min = (0.0, 0.0, 0.0),
+                     coordinates_max = (1.0, 1.0, 1.0), periodicity = false)
+    boundary_condition = BoundaryConditionDirichlet(initial_condition_constant)
+    boundary_conditions = Dict(name => boundary_condition
+                               for name in (:x_neg, :x_pos, :y_neg, :y_pos, :z_neg, :z_pos))
+    semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_constant,
+                                        solver; boundary_conditions)
+    semi.cache.boundaries.name .= :inside
+    u_ode = compute_coefficients(0.0, semi)
+    @test_throws ArgumentError("expected the `:inside` boundary at the bottom face " *
+                               "of each element") spherical_layer_data(pressure, u_ode,
+                                                                       semi)
 end
 
 @testitem "Visualization: triangulation in longitude-latitude" setup=[
