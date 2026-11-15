@@ -1,5 +1,6 @@
 [deps]
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
 NLsolve = "2774e3e8-f4cf-5e23-947b-6d7e65073b56"
@@ -12,6 +13,7 @@ TrixiTest = "0a316866-cbd0-4425-8bcb-08103b2c1f26"
 
 [compat]
 CUDA = "6.2.1"
+CairoMakie = "0.15"
 LinearAlgebra = "1"
 MPI = "0.20.6"
 NLsolve = "4.5.1, 5.0"
