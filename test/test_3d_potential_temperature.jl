@@ -167,6 +167,90 @@ end
                                                                     jacobian_cache, semi)
 end
 
+@testitem "Euler potential temperature 3D: elixir_potential_temperature_baroclinic_instability JacobianVerticalOneSided" setup=[
+    Setup,
+    EulerPotentialTemperature3D
+] tags=[:euler_potential_temperature_3d] begin
+    # The same reference values as with `JacobianVerticalTwoSided`, since both condensations
+    # solve the same linear systems up to round-off errors
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
+                                 "elixir_potential_temperature_baroclinic_instability.jl"),
+                        l2=[
+                            0.0030320086112184466,
+                            0.05144411394023726,
+                            0.05238807358575555,
+                            0.012609443441337428,
+                            0.8067575925333563,
+                            570.8566086563927
+                        ],
+                        linf=[
+                            0.021751907036954288,
+                            0.8297225783677513,
+                            1.2589734934841315,
+                            0.9103791727770297,
+                            4.833051748224818,
+                            1704.147344700992
+                        ],
+                        tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
+                        dt=20, jacobian=JacobianVerticalOneSided(c = 340))
+
+    # Check that the total mass and the total mass-weighted potential temperature are
+    # conserved up to round-off errors
+    for v in (1, 5)
+        integral_initial = Trixi.integrate((u, equations) -> u[v], ode.u0, semi)
+        integral_final = Trixi.integrate((u, equations) -> u[v], sol.u[end], semi)
+        @test isapprox(integral_final, integral_initial, rtol = 1e-13)
+    end
+
+    # Both condensations solve the same linear systems, also with more layers and another
+    # polynomial degree
+    trixi_include(@__MODULE__,
+                  joinpath(EXAMPLES_DIR, "global_circulation",
+                           "elixir_potential_temperature_baroclinic_instability.jl"),
+                  tspan = (0.0, 40.0), trees_per_cube_face = (2, 4), polydeg = 3, dt = 20,
+                  jacobian = JacobianVerticalOneSided(c = 340))
+    u_ode = sol.u[end]
+    gamma_dt = 20.0
+    jacobian_one_sided = TrixiAtmo.create_cache_jacobian(JacobianVerticalOneSided(c = 340),
+                                                         semi, u_ode)
+    jacobian_two_sided = TrixiAtmo.create_cache_jacobian(JacobianVerticalTwoSided(c = 340),
+                                                         semi, u_ode)
+    TrixiAtmo.update_jacobian!(jacobian_one_sided, u_ode, semi, gamma_dt)
+    TrixiAtmo.update_jacobian!(jacobian_two_sided, u_ode, semi, gamma_dt)
+    b_ode = similar(u_ode)
+    Trixi.rhs_hyperbolic!(b_ode, u_ode, semi, sol.t[end])
+    x_one_sided = copy(b_ode)
+    x_two_sided = copy(b_ode)
+    TrixiAtmo.solve_jacobian!(x_one_sided, jacobian_one_sided, semi, gamma_dt)
+    TrixiAtmo.solve_jacobian!(x_two_sided, jacobian_two_sided, semi, gamma_dt)
+    # Preserve original memory since it will be `unsafe_wrap`ped and might
+    # thus otherwise be garbage collected
+    GC.@preserve x_one_sided x_two_sided begin
+        x1 = Trixi.wrap_array(x_one_sided, semi)
+        x2 = Trixi.wrap_array(x_two_sided, semi)
+        # Compare the variables separately, since they have very different magnitudes
+        for v in 1:5
+            @test isapprox(view(x1, v, ..), view(x2, v, ..), rtol = 1e-12)
+        end
+    end
+
+    # The kernels of the vertical Jacobian access the arrays without bounds checks, so the
+    # explicit bounds checks before launching them must catch arrays of the wrong size
+    backend = jacobian_one_sided.backend
+    (; u_vertical) = jacobian_one_sided
+    @test isnothing(TrixiAtmo.check_axes_columns(jacobian_one_sided))
+    u_vertical_too_small = similar(u_vertical, Base.front(size(u_vertical))...,
+                                   size(u_vertical, 4) - 1)
+    @test_throws DimensionMismatch TrixiAtmo.ldiv_interior_forward!(backend,
+                                                                    jacobian_one_sided,
+                                                                    u_vertical_too_small,
+                                                                    gamma_dt)
+    @test_throws DimensionMismatch TrixiAtmo.ldiv_interior_backward!(backend,
+                                                                     jacobian_one_sided,
+                                                                     u_vertical_too_small,
+                                                                     gamma_dt)
+end
+
 @testitem "Euler potential temperature 3D: elixir_potential_temperature_baroclinic_instability Souza" setup=[
     Setup,
     EulerPotentialTemperature3D
