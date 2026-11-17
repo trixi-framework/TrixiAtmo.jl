@@ -192,14 +192,16 @@ Entropy-stable and well-balanced version of the low Mach number approximate Riem
 Like [`flux_etec`](@ref), it returns the conservative and the nonconservative contribution
 of the surface flux as a tuple, see
 [`Trixi.combine_conservative_and_nonconservative_fluxes`](@ref).
+
+The geopotential is continuous across interfaces, so the nonconservative gravity term, which
+is proportional to the jump of the geopotential, vanishes on the surface and is not computed
+here.
 """
 @inline function flux_lmars_es(u_ll, u_rr, aux_ll, aux_rr,
                                normal_direction::AbstractVector,
                                equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
     rho_ll, v1_ll, v2_ll, v3_ll, rho_theta_ll = u_ll
     rho_rr, v1_rr, v2_rr, v3_rr, rho_theta_rr = u_rr
-    phi_ll = aux_ll[1]
-    phi_rr = aux_rr[1]
     exner_ll = exner_pressure(u_ll, equations)
     exner_rr = exner_pressure(u_rr, equations)
     theta_ll = rho_theta_ll / rho_ll
@@ -233,7 +235,7 @@ of the surface flux as a tuple, see
     # entropy-conservative mean `1 / {{1/theta}}_ln` of `flux_etec` and an upwind correction
     # scaled by the jump
     v_interface = 0.5f0 * (v_dot_n_ll + v_dot_n_rr) -
-                  0.5f0 / c_avg * (theta_grad_exner + (phi_rr - phi_ll)) * norm_
+                  0.5f0 / c_avg * theta_grad_exner * norm_
     if v_interface > 0
         f1 = rho_ll * v_interface
         sign_v = one(f1)
