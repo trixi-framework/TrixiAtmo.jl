@@ -2,7 +2,8 @@ using TestItemRunner
 
 # We run subsets of the test suite in parallel CI jobs by setting the `TRIXI_TEST`
 # environment variable. Its value is matched against the `tags` attached to each
-# `@testitem`. By default (`TRIXI_TEST == "all"`), we run all tests.
+# `@testitem`. By default (`TRIXI_TEST == "all"`), we run all tests. With
+# `TRIXI_TEST == "serial"`, we run all tests except for the special suites below.
 const TRIXI_TEST = get(ENV, "TRIXI_TEST", "all")
 
 # With `TRIXI_TEST_VERBOSE=true`, `@run_package_tests` prints every `@testitem` (together
@@ -105,13 +106,13 @@ if !IN_WORKER && TRIXI_TEST in SPECIAL_PROCESS_SUITES
     # in this process.
 else
     # In-process run. Either we are inside a launched worker (run just that suite's
-    # tagged items), or this is an ordinary partition / `all` (in which case we
-    # exclude the special suites, which must run in their own processes).
+    # tagged items), or this is an ordinary partition / `all` / `serial` (in
+    # which case we exclude the special suites, which must run in their own processes).
     special_tags = Symbol.(SPECIAL_PROCESS_SUITES)
     tag = Symbol(TRIXI_TEST)
 
     testitem_filter = ti -> begin
-        if TRIXI_TEST == "all"
+        if TRIXI_TEST in ("all", "serial")
             # The special suites run in dedicated processes (see above).
             any(t -> t in ti.tags, special_tags) && return false
         else
