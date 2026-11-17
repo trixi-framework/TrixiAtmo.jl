@@ -16,7 +16,7 @@ equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 10
                                                                         gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 
 initial_condition = initial_condition_baroclinic_instability
-aux_field = aux_field_baroclinic_instability
+aux_field = aux_field_gravity_earth
 
 boundary_conditions = (; inside = boundary_condition_slip_wall,
                        outside = boundary_condition_slip_wall)

@@ -41,7 +41,7 @@ the pressure, where ``p_0 = 10^5\,\mathrm{Pa}`` is the reference pressure and
 
 The geopotential ``\phi`` is the only auxiliary variable, see `Trixi.nauxvariables`. Its
 values are given by the function `aux_field(x, equations)` passed to
-`SemidiscretizationHyperbolic`, e.g., [`aux_field_baroclinic_instability`](@ref). Thus,
+`SemidiscretizationHyperbolic`, e.g., [`aux_field_gravity_earth`](@ref). Thus,
 the pointwise functions take the auxiliary variables `aux = SVector(phi)` as additional
 argument after the state, e.g., `flux(u, aux, normal_direction, equations)` or
 `flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)`.
@@ -348,6 +348,8 @@ contribution of the surface flux as a tuple, see
     rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
     _, _, _, _, rho_theta_ll = u_ll
     _, _, _, _, rho_theta_rr = u_rr
+    phi_ll = aux_ll[1]
+    phi_rr = aux_rr[1]
 
     v_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2] +
            v3_ll * normal_direction[3]
@@ -367,7 +369,8 @@ contribution of the surface flux as a tuple, see
     p_interface = 0.5f0 * (p_ll + p_rr) -
                   0.5f0 * c_avg * rho_avg * (v_rr - v_ll) / norm_
     v_interface = 0.5f0 * (v_ll + v_rr) -
-                  0.5f0 / (c_avg * rho_mean) * (p_rr - p_ll) * norm_
+                  0.5f0 / (c_avg * rho_mean) * (p_rr - p_ll) * norm_ -
+                  0.5f0 / c_avg * (phi_rr - phi_ll) * norm_
 
     # Upwinded mass and momentum fluxes
     if v_interface > 0

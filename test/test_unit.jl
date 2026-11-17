@@ -524,6 +524,8 @@ end
 end
 
 @testitem "Unit: Consistency check for ES LMARS flux with Potential Temperature with gravity: CEPTEWG" setup=[Setup] tags=[:unit_fluxes] begin
+    using LinearAlgebra: norm
+
     # Set up equations and dummy conservative variables state
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004.0,
                                                                             c_v = 717.0,
@@ -569,6 +571,16 @@ end
                                 equations_3d)[i] ≈
                   flux(u_3d, aux_3d, normal_direction, equations_3d)
         end
+        # A jump of the geopotential alone modifies the interface velocity of the mass flux
+        rho = u_3d[1]
+        v_normal = (u_3d[2] * normal_direction[1] + u_3d[3] * normal_direction[2] +
+                    u_3d[4] * normal_direction[3]) / rho
+        c = sqrt(equations_3d.gamma * pressure(u_3d, equations_3d) / rho)
+        v_interface = v_normal -
+                      (aux_rr_3d[1] - aux_3d[1]) * norm(normal_direction) / (2 * c)
+        @test flux_lmars_es(u_3d, u_3d, aux_3d, aux_rr_3d, normal_direction,
+                            equations_3d)[1][1] ≈ rho * v_interface
+
         flux_left, flux_right = flux_lmars_es(u_3d, u_rr_3d, aux_3d, aux_rr_3d,
                                               normal_direction, equations_3d)
         @test flux_left == flux_right
@@ -829,13 +841,15 @@ end
 end
 
 @testitem "Unit: Consistency check for ES LMARS flux with vector-invariant equations: CEVIEWG" setup=[Setup] tags=[:unit_fluxes] begin
+    using LinearAlgebra: norm
+
     equations = CompressibleEulerVectorInvariantEquationsWithGravity3D(c_p = 1004.0,
                                                                        c_v = 717.0,
                                                                        gravity = EARTH_GRAVITATIONAL_ACCELERATION)
     u_ll = SVector(1.1, -0.5, 2.34, 2.4, 330.0)
     u_rr = SVector(0.9, 0.3, -1.2, 1.7, 280.5)
     aux_ll = SVector(1500.0)
-    aux_rr = SVector(1500.0)
+    aux_rr = SVector(1600.0)
 
     normal_directions = [SVector(1.0, 0.0, 0.0),
         SVector(0.0, 1.0, 0.0),
@@ -856,6 +870,15 @@ end
         for i in 1:2
             @test flux_lmars_es(u_ll, u_ll, aux_ll, aux_ll, normal_direction,
                                 equations)[i] ≈ flux_physical
+        end
+
+        # A jump of the geopotential alone modifies the interface velocity of the mass flux
+        c = sqrt(equations.gamma * pressure(u_ll, equations) / rho)
+        v_interface = v_normal -
+                      (aux_rr[1] - aux_ll[1]) * norm(normal_direction) / (2 * c)
+        for i in 1:2
+            @test flux_lmars_es(u_ll, u_ll, aux_ll, aux_rr, normal_direction,
+                                equations)[i][1] ≈ rho * v_interface
         end
 
         # The flux is homogeneous of degree one in the normal direction

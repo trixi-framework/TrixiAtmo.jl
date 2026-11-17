@@ -44,7 +44,7 @@ the pressure.
 
 The geopotential ``\phi`` is the only auxiliary variable, see `Trixi.nauxvariables`. Its
 values are given by the function `aux_field(x, equations)` passed to
-`SemidiscretizationHyperbolic`, e.g., [`aux_field_baroclinic_instability`](@ref). Thus,
+`SemidiscretizationHyperbolic`, e.g., [`aux_field_gravity_earth`](@ref). Thus,
 the pointwise functions take the auxiliary variables `aux = SVector(phi)` as additional
 argument after the state, e.g., `flux(u, aux, normal_direction, equations)` or
 `flux_ranocha(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)`.

@@ -123,7 +123,7 @@ Initial condition for an idealized baroclinic instability test on a spherical sh
 radius [`EARTH_RADIUS`](@ref). It consists of a balanced, hydrostatic and geostrophically balanced
 steady state, to which a localized stream function perturbation is added in order to trigger
 the instability. The corresponding geopotential is given by
-[`aux_field_baroclinic_instability`](@ref).
+[`aux_field_gravity_earth`](@ref).
 
 This initial condition is meant to be used together with [`source_terms_coriolis`](@ref),
 which accounts for the rotation of the Earth.
@@ -160,24 +160,26 @@ function initial_condition_baroclinic_instability(x, t,
 end
 
 @doc raw"""
-    aux_field_baroclinic_instability(x,
-                                     equations::AbstractCompressibleEulerEquations{3, 5})
+    aux_field_gravity_earth(x, equations::AbstractCompressibleEulerEquations{3, 5})
 
 Geopotential
 ```math
-\phi(\vec{x}) = -\frac{a^2 g}{\lVert \vec{x} \rVert}
+\phi(\vec{x}) = g \left(a - \frac{a^2}{\lVert \vec{x} \rVert}\right)
 ```
-of [`initial_condition_baroclinic_instability`](@ref), where ``a`` is the radius of the
-Earth and ``g`` the gravitational acceleration. It is returned as the auxiliary variables,
-see `Trixi.nauxvariables`, and passed as `aux_field` to `SemidiscretizationHyperbolic`.
+of the gravity of the Earth, which points to the center of the Earth and decreases with
+``1 / \lVert \vec{x} \rVert^2``. Here, ``a`` is the radius of the Earth
+([`EARTH_RADIUS`](@ref)) and ``g`` the gravitational acceleration at its surface
+([`EARTH_GRAVITATIONAL_ACCELERATION`](@ref)), where ``\phi = 0``. It is returned as the
+auxiliary variables, see `Trixi.nauxvariables`, and passed as `aux_field` to
+`SemidiscretizationHyperbolic`.
 """
-@inline function aux_field_baroclinic_instability(x,
-                                                  equations::AbstractCompressibleEulerEquations{3,
-                                                                                                5})
+@inline function aux_field_gravity_earth(x,
+                                         equations::AbstractCompressibleEulerEquations{3,
+                                                                                       5})
     RealT = eltype(x)
     radius_earth = convert(RealT, EARTH_RADIUS)
-    gravitational_acceleration = convert(RealT, EARTH_GRAVITATIONAL_ACCELERATION)  # g
-    phi = -radius_earth^2 * gravitational_acceleration / norm(x)
+    gravitational_acceleration = convert(RealT, EARTH_GRAVITATIONAL_ACCELERATION)
+    phi = gravitational_acceleration * (radius_earth - radius_earth^2 / norm(x))
 
     return SVector(phi)
 end
@@ -188,7 +190,7 @@ end
 
 Isothermal atmosphere at rest in hydrostatic balance on a spherical shell of inner radius
 [`EARTH_RADIUS`](@ref), used as the initial state of the Held-Suarez test case. The
-corresponding geopotential is given by [`aux_field_isothermal`](@ref).
+corresponding geopotential is given by [`aux_field_gravity_earth`](@ref).
 
 - Souza et al. (2023). The Flux-Differencing Discontinuous Galerkin Method Applied to an
   Idealized Fully Compressible Nonhydrostatic Dry Atmosphere.
@@ -218,25 +220,6 @@ function initial_condition_isothermal(x, t,
     return prim2cons(SVector(rho, 0, 0, 0, p), equations)
 end
 
-"""
-    aux_field_isothermal(x, equations::AbstractCompressibleEulerEquations{3, 5})
-
-Geopotential of [`initial_condition_isothermal`](@ref), returned as the auxiliary
-variables, see `Trixi.nauxvariables`, and passed as `aux_field` to
-`SemidiscretizationHyperbolic`.
-"""
-@inline function aux_field_isothermal(x,
-                                      equations::AbstractCompressibleEulerEquations{3, 5})
-    r = norm(x)
-    # Make sure that r is not smaller than radius_earth
-    z = max(r - EARTH_RADIUS, 0)
-    r = z + EARTH_RADIUS
-
-    phi = EARTH_GRAVITATIONAL_ACCELERATION * (EARTH_RADIUS - EARTH_RADIUS^2 / r)
-
-    return SVector(phi)
-end
-
 @doc raw"""
     initial_condition_vortex_shedding(x, t,
                                       equations::AbstractCompressibleEulerEquations{3, 5})
@@ -251,7 +234,7 @@ stably stratified atmosphere with constant Brunt-Väisälä frequency
 The test case uses the reduced-radius Earth configuration described by
 [`SMALL_EARTH_SCALING`](@ref), and is therefore meant to be used together with
 [`source_terms_coriolis_small_earth`](@ref). The corresponding geopotential is given by
-[`aux_field_vortex_shedding`](@ref).
+[`aux_field_gravity_small_earth`](@ref).
 
 - DCMIP-2025 Organizing Committee (2025). Test Case 2: Mountain-Triggered Meso-scale Flow
   Phenomena.
@@ -283,20 +266,29 @@ function initial_condition_vortex_shedding(x, t,
     return prim2cons(SVector(rho, v1, v2, v3, p), equations)
 end
 
-"""
-    aux_field_vortex_shedding(x, equations::AbstractCompressibleEulerEquations{3, 5})
+@doc raw"""
+    aux_field_gravity_small_earth(x,
+                                            equations::AbstractCompressibleEulerEquations{3, 5})
 
-Geopotential of [`initial_condition_vortex_shedding`](@ref), returned as the auxiliary
-variables, see `Trixi.nauxvariables`, and passed as `aux_field` to
+Geopotential
+```math
+\phi(\vec{x}) = g \max\left(\lVert \vec{x} \rVert - a_s, 0\right)
+```
+of a gravity of constant magnitude ``g`` ([`EARTH_GRAVITATIONAL_ACCELERATION`](@ref))
+pointing to the center of the reduced-radius Earth of radius ``a_s``
+([`SMALL_EARTH_RADIUS`](@ref)), see [`SMALL_EARTH_SCALING`](@ref). It is returned as the
+auxiliary variables, see `Trixi.nauxvariables`, and passed as `aux_field` to
 `SemidiscretizationHyperbolic`.
 """
-@inline function aux_field_vortex_shedding(x,
-                                           equations::AbstractCompressibleEulerEquations{3,
-                                                                                         5})
-    r = norm(x)
+@inline function aux_field_gravity_small_earth(x,
+                                               equations::AbstractCompressibleEulerEquations{3,
+                                                                                             5})
+    RealT = eltype(x)
+    radius_earth = convert(RealT, SMALL_EARTH_RADIUS)
+    gravitational_acceleration = convert(RealT, EARTH_GRAVITATIONAL_ACCELERATION)
     # Make sure that r is not smaller than radius_earth
-    z = max(r - SMALL_EARTH_RADIUS, 0)
-    phi = EARTH_GRAVITATIONAL_ACCELERATION * z
+    z = max(norm(x) - radius_earth, 0)
+    phi = gravitational_acceleration * z
 
     return SVector(phi)
 end

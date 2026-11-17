@@ -321,7 +321,8 @@ end
             end
         end
         x_3d = SVector(RealT(EARTH_RADIUS), zero(RealT), zero(RealT))
-        @test eltype(@inferred aux_field_baroclinic_instability(x_3d, equations)) == RealT
+        @test eltype(@inferred aux_field_gravity_earth(x_3d, equations)) == RealT
+        @test eltype(@inferred aux_field_gravity_small_earth(x_3d, equations)) == RealT
         @test eltype(@inferred source_terms_coriolis(u, aux, x_3d, t, equations)) == RealT
         @test eltype(@inferred cons2prim(u, equations)) == RealT
         @test eltype(@inferred prim2cons(u, equations)) == RealT

@@ -272,8 +272,8 @@ tuple, see [`Trixi.combine_conservative_and_nonconservative_fluxes`](@ref).
     # Unpack left and right state
     rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
     rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
-    _, _, _, rho_theta_ll = u_ll
-    _, _, _, rho_theta_rr = u_rr
+    _, _, _, rho_theta_ll, phi_ll = u_ll
+    _, _, _, rho_theta_rr, phi_rr = u_rr
 
     v_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2]
     v_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2]
@@ -291,7 +291,8 @@ tuple, see [`Trixi.combine_conservative_and_nonconservative_fluxes`](@ref).
     p_interface = 0.5f0 * (p_ll + p_rr) -
                   0.5f0 * c_avg * rho_avg * (v_rr - v_ll) / norm_
     v_interface = 0.5f0 * (v_ll + v_rr) -
-                  0.5f0 / (c_avg * rho_mean) * (p_rr - p_ll) * norm_
+                  0.5f0 / (c_avg * rho_mean) * (p_rr - p_ll) * norm_ -
+                  0.5f0 / c_avg * (phi_rr - phi_ll) * norm_
 
     # Upwinded mass and momentum fluxes
     if v_interface > 0
