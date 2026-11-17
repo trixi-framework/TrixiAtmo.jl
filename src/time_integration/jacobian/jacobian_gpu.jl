@@ -22,10 +22,12 @@
 # Check whether the arrays in `jacobian` have the axes we assume they must have in the copy
 # kernels between Trixi.jl's layout and the columns.
 function check_axes_element_layout(jacobian, solver, cache)
-    (; vertical_frame, horizontal_index_of_element, vertical_index_of_element) = jacobian
+    (; vertical_direction_and_norm, horizontal_index_of_element,
+    vertical_index_of_element) = jacobian
     nodes = eachnode(solver)
     elements = eachelement(solver, cache)
-    Trixi.check_axes(vertical_frame, (Base.OneTo(4), nodes, nodes, nodes, elements))
+    Trixi.check_axes(vertical_direction_and_norm,
+                     (Base.OneTo(4), nodes, nodes, nodes, elements))
     Trixi.check_axes(horizontal_index_of_element, (elements,))
     Trixi.check_axes(vertical_index_of_element, (elements,))
     check_axes_columns(jacobian)
@@ -41,22 +43,24 @@ function copy_state_to_columns!(backend::Backend, u_vertical, u, jacobian, semi)
         check_axes_element_layout(jacobian, solver, cache)
         Trixi.check_axes(u_vertical, axes(jacobian.u_vertical))
     end
-    (; vertical_frame, horizontal_index_of_element, vertical_index_of_element) = jacobian
+    (; vertical_direction_and_norm, horizontal_index_of_element,
+    vertical_index_of_element) = jacobian
     nnodes_ = nnodes(jacobian)
     kernel! = copy_state_to_columns_KAkernel!(backend)
-    kernel!(u_vertical, u, vertical_frame, horizontal_index_of_element,
+    kernel!(u_vertical, u, vertical_direction_and_norm, horizontal_index_of_element,
             vertical_index_of_element, nnodes_;
             ndrange = Base.tail(size(u)))
     return nothing
 end
 
 @kernel inbounds=true function copy_state_to_columns_KAkernel!(u_vertical, @Const(u),
-                                                               @Const(vertical_frame),
+                                                               @Const(vertical_direction_and_norm),
                                                                @Const(horizontal_index_of_element),
                                                                @Const(vertical_index_of_element),
                                                                nnodes_)
     indices = @index(Global, NTuple)
-    copy_node_to_columns!(u_vertical, u, one(eltype(u_vertical)), vertical_frame,
+    copy_node_to_columns!(u_vertical, u, one(eltype(u_vertical)),
+                          vertical_direction_and_norm,
                           horizontal_index_of_element, vertical_index_of_element,
                           nnodes_, indices...)
 end
@@ -71,24 +75,25 @@ function copy_rhs_to_columns!(backend::Backend, u_vertical, b, jacobian, semi)
         check_axes_element_layout(jacobian, solver, cache)
         Trixi.check_axes(u_vertical, axes(jacobian.u_vertical))
     end
-    (; vertical_frame, horizontal_index_of_element, vertical_index_of_element) = jacobian
+    (; vertical_direction_and_norm, horizontal_index_of_element,
+    vertical_index_of_element) = jacobian
     nnodes_ = nnodes(jacobian)
     kernel! = copy_rhs_to_columns_KAkernel!(backend)
-    kernel!(u_vertical, b, vertical_frame, horizontal_index_of_element,
+    kernel!(u_vertical, b, vertical_direction_and_norm, horizontal_index_of_element,
             vertical_index_of_element, nnodes_;
             ndrange = Base.tail(size(b)))
     return nothing
 end
 
 @kernel inbounds=true function copy_rhs_to_columns_KAkernel!(u_vertical, @Const(b),
-                                                             @Const(vertical_frame),
+                                                             @Const(vertical_direction_and_norm),
                                                              @Const(horizontal_index_of_element),
                                                              @Const(vertical_index_of_element),
                                                              nnodes_)
     indices = @index(Global, NTuple)
-    # The last slot of the vertical frame holds the norm `n`
-    copy_node_to_columns!(u_vertical, b, vertical_frame[end, indices...],
-                          vertical_frame, horizontal_index_of_element,
+    # The last slot of `vertical_direction_and_norm` holds the norm `n`
+    copy_node_to_columns!(u_vertical, b, vertical_direction_and_norm[end, indices...],
+                          vertical_direction_and_norm, horizontal_index_of_element,
                           vertical_index_of_element, nnodes_, indices...)
 end
 
@@ -103,10 +108,11 @@ function copy_solution_from_columns!(backend::Backend, b, u_vertical, jacobian, 
         check_axes_element_layout(jacobian, solver, cache)
         Trixi.check_axes(u_vertical, axes(jacobian.u_vertical))
     end
-    (; vertical_frame, horizontal_index_of_element, vertical_index_of_element) = jacobian
+    (; vertical_direction_and_norm, horizontal_index_of_element,
+    vertical_index_of_element) = jacobian
     nnodes_ = nnodes(jacobian)
     kernel! = copy_solution_from_columns_KAkernel!(backend)
-    kernel!(b, u_vertical, vertical_frame, horizontal_index_of_element,
+    kernel!(b, u_vertical, vertical_direction_and_norm, horizontal_index_of_element,
             vertical_index_of_element, nnodes_, gamma_dt;
             ndrange = Base.tail(size(b)))
     return nothing
@@ -114,12 +120,13 @@ end
 
 @kernel inbounds=true function copy_solution_from_columns_KAkernel!(b,
                                                                     @Const(u_vertical),
-                                                                    @Const(vertical_frame),
+                                                                    @Const(vertical_direction_and_norm),
                                                                     @Const(horizontal_index_of_element),
                                                                     @Const(vertical_index_of_element),
                                                                     nnodes_, gamma_dt)
     indices = @index(Global, NTuple)
-    copy_node_from_columns!(b, u_vertical, vertical_frame, horizontal_index_of_element,
+    copy_node_from_columns!(b, u_vertical, vertical_direction_and_norm,
+                            horizontal_index_of_element,
                             vertical_index_of_element, nnodes_, gamma_dt, indices...)
 end
 end # @muladd
