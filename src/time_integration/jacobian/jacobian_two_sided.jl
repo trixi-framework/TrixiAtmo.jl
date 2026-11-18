@@ -13,7 +13,8 @@
 # The vertical operator is the one of Eq. (34) of the reference below, transformed by the
 # diagonal matrix of the norms `n = |Ja^3|` (see `copy_node_to_columns!` in
 # `jacobian_3d_gpu.jl`), with the unit contravariant direction `nu = Ja^3 / n`
-# (`compute_vertical_frame`) and the metric factor `n / J` (`compute_metric_factor`).
+# (`compute_vertical_direction_and_norm`) and the metric factor `n / J`
+# (`compute_metric_factor`).
 # It conserves mass and mass-weighted potential temperature.
 
 """
@@ -209,7 +210,7 @@ struct JacobianVerticalTwoSidedCache{NLAYERS, NNODES, RealT <: Real, BackendType
     backend::BackendType # `KernelAbstractions.Backend` of the arrays
     # Unit contravariant direction `nu` of the vertical reference coordinate (slots 1:3)
     # and norm `n = |Ja^3|` (slot 4), laid out `[slot, i, j, k, element]`
-    vertical_frame::ArrayRealT5
+    vertical_direction_and_norm::ArrayRealT5
     # Metric factor `n / J`, `[column, node, layer]`
     metric_factor::ArrayRealT3
     # Pointwise gravity `g (nu . r_hat)`, `[column, node, layer]`
@@ -294,7 +295,8 @@ function create_cache_jacobian(jacobian::JacobianVerticalTwoSided, semi, u_ode)
     index_maps = compute_element_index_maps(nlayers_, solver, cache)
     horizontal_index_of_element = Adapt.adapt(storage, index_maps[1])
     vertical_index_of_element = Adapt.adapt(storage, index_maps[2])
-    vertical_frame = Adapt.adapt(storage, compute_vertical_frame(semi))
+    vertical_direction_and_norm = Adapt.adapt(storage,
+                                              compute_vertical_direction_and_norm(semi))
     metric_factor = compute_metric_factor(ncolumns, nlayers_, semi, index_maps...)
     metric_factor = Adapt.adapt(storage, metric_factor)
     gravity = compute_gravity(ncolumns, nlayers_, semi, index_maps...)
@@ -318,14 +320,14 @@ function create_cache_jacobian(jacobian::JacobianVerticalTwoSided, semi, u_ode)
     return JacobianVerticalTwoSidedCache{nlayers_, nnodes_, RealT, typeof(backend),
                                          typeof(schur_rhs), typeof(gravity),
                                          typeof(schur_element),
-                                         typeof(vertical_frame),
+                                         typeof(vertical_direction_and_norm),
                                          typeof(horizontal_index_of_element),
                                          typeof(derivative_hat)}(ncolumns,
                                                                  convert(RealT,
                                                                          jacobian.speed_of_sound),
                                                                  inv_boundary_weight,
                                                                  backend,
-                                                                 vertical_frame,
+                                                                 vertical_direction_and_norm,
                                                                  metric_factor,
                                                                  gravity,
                                                                  horizontal_index_of_element,

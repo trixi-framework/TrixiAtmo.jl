@@ -11,20 +11,20 @@
 
 # Copy the vertical variables of the node `(i, j, k, element)` of `u`, multiplied by
 # `scaling`, where the vertical momentum is the component of the momentum in the
-# `vertical_direction` `nu` (see `compute_vertical_frame`). The `scaling` is one for the
-# state and the norm `n` for the right-hand side of the linear system, i.e.,
+# `vertical_direction` `nu` (see `compute_vertical_direction_and_norm`). The `scaling` is
+# one for the state and the norm `n` for the right-hand side of the linear system, i.e.,
 # the diagonal similarity transformation `N` of the vertical operator.
 Base.@propagate_inbounds function copy_node_to_columns!(u_vertical, u, scaling,
-                                                        vertical_frame,
+                                                        vertical_direction_and_norm,
                                                         horizontal_index_of_element,
                                                         vertical_index_of_element,
                                                         nnodes_,
                                                         i, j, k, element)
     column = column_index(horizontal_index_of_element, nnodes_, i, j, element)
     layer = vertical_index_of_element[element]
-    vertical_direction = SVector(vertical_frame[1, i, j, k, element],
-                                 vertical_frame[2, i, j, k, element],
-                                 vertical_frame[3, i, j, k, element])
+    vertical_direction = SVector(vertical_direction_and_norm[1, i, j, k, element],
+                                 vertical_direction_and_norm[2, i, j, k, element],
+                                 vertical_direction_and_norm[3, i, j, k, element])
     rho_v = SVector(u[2, i, j, k, element], u[3, i, j, k, element],
                     u[4, i, j, k, element])
     u_vertical[column, 1, k, layer] = scaling * u[1, i, j, k, element]
@@ -36,17 +36,18 @@ end
 # Copy the solution of the linear system, divided by the norm `n`, to `b`. The
 # horizontal components of the momentum are multiplied by `gamma_dt`, i.e., solved with
 # `J = 0`, and the component in the `vertical_direction` is replaced by the solution.
-Base.@propagate_inbounds function copy_node_from_columns!(b, u_vertical, vertical_frame,
+Base.@propagate_inbounds function copy_node_from_columns!(b, u_vertical,
+                                                          vertical_direction_and_norm,
                                                           horizontal_index_of_element,
                                                           vertical_index_of_element,
                                                           nnodes_, gamma_dt,
                                                           i, j, k, element)
     column = column_index(horizontal_index_of_element, nnodes_, i, j, element)
     layer = vertical_index_of_element[element]
-    vertical_direction = SVector(vertical_frame[1, i, j, k, element],
-                                 vertical_frame[2, i, j, k, element],
-                                 vertical_frame[3, i, j, k, element])
-    inv_norm_Ja3 = inv(vertical_frame[4, i, j, k, element])
+    vertical_direction = SVector(vertical_direction_and_norm[1, i, j, k, element],
+                                 vertical_direction_and_norm[2, i, j, k, element],
+                                 vertical_direction_and_norm[3, i, j, k, element])
+    inv_norm_Ja3 = inv(vertical_direction_and_norm[4, i, j, k, element])
     rho_v = SVector(b[2, i, j, k, element], b[3, i, j, k, element],
                     b[4, i, j, k, element])
     rho_w = inv_norm_Ja3 * u_vertical[column, 2, k, layer]

@@ -5,9 +5,8 @@
 @muladd begin
 #! format: noindent
 
-# Vertical layout of the degrees of freedom and metric terms of the vertical Jacobians of
-# the `CompressibleEulerPotentialTemperatureEquationsWithGravity3D` on a
-# `P4estMeshCubedSphereTopography`, computed once on the CPU
+# Vertical layout of the degrees of freedom and metric terms of vertical Jacobians on
+# a `P4estMeshCubedSphereTopography`, computed once on the CPU
 
 # The number of layers of elements of a `P4estMeshCubedSphereTopography` is stored in the
 # registry of the mesh (see `src/meshes/p4est_cubed_sphere_topography.jl`). For parallel
@@ -89,27 +88,27 @@ function check_vertical_ordering(nlayers_, semi)
     return nothing
 end
 
-# Vertical frame of every node: `vertical_frame[1:3, ...]` holds the unit contravariant
-# direction `nu = Ja^3 / n` of the third reference coordinate, oriented outwards, and
-# `vertical_frame[4, ...]` the norm `n = |Ja^3|` of the diagonal similarity
-# transformation `N` of the copies in `jacobian_3d_gpu.jl`
-function compute_vertical_frame(semi)
+# Vertical direction and norm of every node: `vertical_direction_and_norm[1:3, ...]` holds
+# the unit contravariant direction `nu = Ja^3 / n` of the third reference coordinate,
+# oriented outwards, and `vertical_direction_and_norm[4, ...]` the norm `n = |Ja^3|` of the
+# diagonal similarity transformation `N` of the copies in `jacobian_3d_gpu.jl`
+function compute_vertical_direction_and_norm(semi)
     (; solver, cache) = semi
     node_coordinates = Adapt.adapt(Array, semi.cache.elements.node_coordinates)
     contravariant_vectors = Adapt.adapt(Array,
                                         semi.cache.elements.contravariant_vectors)
-    vertical_frame = zeros(eltype(node_coordinates), 4,
-                           size(node_coordinates)[2:end]...)
+    vertical_direction_and_norm = zeros(eltype(node_coordinates), 4,
+                                        size(node_coordinates)[2:end]...)
     for element in eachelement(solver, cache)
         for k in eachnode(solver), j in eachnode(solver), i in eachnode(solver)
             Ja3 = get_contravariant_vector(3, contravariant_vectors, i, j, k, element)
             norm_Ja3 = norm(Ja3)
             # `Ja3` points outwards, see `check_vertical_ordering`
-            vertical_frame[1:3, i, j, k, element] .= Ja3 / norm_Ja3
-            vertical_frame[4, i, j, k, element] = norm_Ja3
+            vertical_direction_and_norm[1:3, i, j, k, element] .= Ja3 / norm_Ja3
+            vertical_direction_and_norm[4, i, j, k, element] = norm_Ja3
         end
     end
-    return vertical_frame
+    return vertical_direction_and_norm
 end
 
 # Metric factor `n / J` of the vertical operator of every node, with the norm
@@ -138,7 +137,7 @@ end
 
 # Consistent pointwise gravity `g * (nu . r_hat)`, the projection of the gravitational
 # acceleration on the unit contravariant direction `nu` of the third reference coordinate
-# (see `compute_vertical_frame`).
+# (see `compute_vertical_direction_and_norm`).
 function compute_gravity(ncolumns, nlayers_, semi, horizontal_index_of_element,
                          vertical_index_of_element)
     (; solver, equations, cache) = semi
