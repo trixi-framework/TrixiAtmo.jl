@@ -9,28 +9,32 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
                                  "elixir_potential_temperature_kessler_baroclinic_instability.jl"),
                         l2=[
-                            3.02819246e-03,
-                            5.38918469e-02,
-                            5.42085921e-02,
-                            1.06442312e-02,
-                            8.08384841e-01,
-                            3.50552220e-04,
-                            1.87156755e-05,
+                            3.02801024e-03,
+                            5.36405488e-02,
+                            5.39538450e-02,
+                            8.75319901e-03,
+                            8.08173613e-01,
+                            3.50904856e-04,
+                            1.72606214e-05,
                             0.0
                         ],
                         linf=[
-                            1.95688143e-02,
-                            7.24930048e-01,
-                            9.51262545e-01,
-                            6.28548893e-02,
-                            4.83883063e+00,
-                            2.05219668e-03,
-                            8.70539884e-05,
+                            1.95751728e-02,
+                            7.20527595e-01,
+                            9.48924268e-01,
+                            6.25633147e-02,
+                            4.84258323e+00,
+                            2.05540782e-03,
+                            8.03572098e-05,
                             0.0
                         ],
-                        tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2))
+                        tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
+                        dt=20)
     # Ensure that we do not have excessive memory allocations
-    # (e.g., from type instabilities)
+    # (e.g., from type instabilities). `Trixi.solve!` calls the right-hand side inside the
+    # timer section "main loop", so the first call outside of it creates new timer
+    # sections, which allocates.
+    TrixiAtmo.Trixi.rhs_hyperbolic!(similar(sol.u[end]), sol.u[end], semi, sol.t[end])
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 
     # The dynamics and the microphysics conserve the mass of dry air and, before any rain
@@ -67,7 +71,7 @@ end
                   joinpath(EXAMPLES_DIR, "global_circulation",
                            "elixir_potential_temperature_kessler_baroclinic_instability.jl"),
                   initial_condition = initial_condition_rain,
-                  tspan = (0.0, 100.0), trees_per_cube_face = (2, 2))
+                  tspan = (0.0, 100.0), trees_per_cube_face = (2, 2), dt = 20)
     u_ode_specialized = copy(sol.u[end])
 
     # Same fluxes, but without the SIMD-vectorized flux differencing volume integral
@@ -77,7 +81,7 @@ end
                            "elixir_potential_temperature_kessler_baroclinic_instability.jl"),
                   initial_condition = initial_condition_rain,
                   volume_flux = flux_kennedy_gruber_souza_etal,
-                  tspan = (0.0, 100.0), trees_per_cube_face = (2, 2))
+                  tspan = (0.0, 100.0), trees_per_cube_face = (2, 2), dt = 20)
     u_ode = copy(sol.u[end])
 
     @test u_ode_specialized ≈ u_ode
@@ -89,6 +93,9 @@ end
                    Trixi.integrate(dry_air, ode.u0, semi), rtol = 1e-12)
     @test Trixi.integrate(water, sol.u[end], semi) < Trixi.integrate(water, ode.u0, semi)
     # Ensure that we do not have excessive memory allocations
-    # (e.g., from type instabilities)
+    # (e.g., from type instabilities). `Trixi.solve!` calls the right-hand side inside the
+    # timer section "main loop", so the first call outside of it creates new timer
+    # sections, which allocates.
+    TrixiAtmo.Trixi.rhs_hyperbolic!(similar(sol.u[end]), sol.u[end], semi, sol.t[end])
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end

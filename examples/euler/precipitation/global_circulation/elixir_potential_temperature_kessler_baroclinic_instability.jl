@@ -1,6 +1,6 @@
 # The moist baroclinic wave of DCMIP2016 (test case 161) with the Kessler warm-rain
-# microphysics. For optimal results consider increasing the resolution, e.g., to
-# `trees_per_cube_face = (16, 8)`.
+# microphysics, integrated with a Rosenbrock-W method and a vertically implicit Jacobian
+# (horizontally explicit, vertically implicit time integration)
 #
 # References:
 # - Paul A. Ullrich, Thomas Melvin, Christiane Jablonowski, Andrew Staniforth (2013)
@@ -10,13 +10,15 @@
 #   Dynamical Core Model Intercomparison Project (DCMIP2016) test case document
 #   https://doi.org/10.5281/zenodo.1298671
 
-using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
+# The microphysics is treated explicitly, so the relaxation time of the condensation in s
+# must not be much smaller than the time step `dt` below
+microphysics = KesslerMicrophysics(condensation_time = 85)
 equations = CompressibleEulerMoistPotentialTemperatureEquations3D(c_p = 1004.5,
                                                                   c_v = 717.5,
                                                                   gravity = EARTH_GRAVITATIONAL_ACCELERATION,
-                                                                  microphysics = KesslerMicrophysics())
+                                                                  microphysics = microphysics)
 
 initial_condition = initial_condition_moist_baroclinic_instability
 
@@ -38,9 +40,10 @@ volume_flux = FluxTurbo(flux_kennedy_gruber_souza_etal)
 
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
-trees_per_cube_face = (8, 4)
+trees_per_cube_face = (20, 13)
 mesh = P4estMeshCubedSphereTopography(trees_per_cube_face..., EARTH_RADIUS, 30000,
-                                      polydeg = polydeg, initial_refinement_level = 0)
+                                      polydeg = polydeg, initial_refinement_level = 0,
+                                      keep_columns_together = true)
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_terms_microphysics_coriolis,
@@ -80,10 +83,9 @@ callbacks = CallbackSet(summary_callback,
                         save_solution)
 
 ###############################################################################
-# Use a Runge-Kutta method with automatic (error based) time step size control
-# Enable threading of the RK method for better performance on multiple threads
-tol = 1e-6
-sol = solve(ode,
-            SSPRK43(thread = Trixi.Threaded());
-            abstol = tol, reltol = tol, ode_default_options()...,
-            callback = callbacks)
+# Use a Rosenbrock-W method with the vertically implicit Jacobian, such that the time step
+# is restricted by the horizontal dynamics only
+jacobian = JacobianVerticalTwoSided(c = 340)
+
+dt = 85 # seconds
+sol = Trixi.solve(ode, SSPRW32(); dt = dt, callback = callbacks, jacobian = jacobian)

@@ -25,6 +25,8 @@ for human readability.
   `P4estMeshCubedSphereTopography` as linear operator of linearly implicit methods, i.e.,
   Rosenbrock-W methods such as `SSPRW32` and linear IMEX methods such as `ARS343`, also on
   GPUs ([#243]).
+- `JacobianVerticalTwoSided` supports the `CompressibleEulerMoistPotentialTemperatureEquations3D`,
+  whose moisture variables are treated explicitly.
 - The `CompressibleEulerVectorInvariantEquationsWithGravity3D` are the compressible Euler
   equations with gravity in vector-invariant form with the potential temperature as
   prognostic variable. They come with the entropy and total energy conservative volume flux
