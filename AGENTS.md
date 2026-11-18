@@ -119,8 +119,8 @@ particular, do **not** run
   threaded tests),
 - `TRIXI_TEST=all` or `TRIXI_TEST=upstream`,
 - whole test files such as `include("test/test_3d_potential_temperature.jl")`,
-- the special suites `mpi` and `threaded`, which relaunch Julia via `mpiexec`
-  or with multiple threads.
+- the special suites `mpi`, `threaded`, and `kernelabstractions`, which relaunch
+  Julia via `mpiexec`, with multiple threads, or with a different threading backend.
 
 Instead, run only the individual test items related to the code you changed.
 Tests are isolated `@testitem`s (TestItems.jl) run with TestItemRunner.jl. Test
@@ -135,9 +135,10 @@ defined in `test/runtests.jl` and providing the helpers from
 defined at the top of the corresponding test file and setting `EXAMPLES_DIR`)
 and its test group via `tags = [...]`. The value of the environment variable
 `TRIXI_TEST` selects the test items with the corresponding tag (see
-`test/runtests.jl`); CI runs all tests on Ubuntu, with the special suites `mpi`
-and `threaded` in separate jobs (`TRIXI_TEST=serial`, `mpi`, `threaded`), and only
-`mpi` and `threaded` on macOS and Windows (see `.github/workflows/ci.yml`).
+`test/runtests.jl`); CI runs all tests on Ubuntu, with the special suites `mpi`,
+`threaded`, and `kernelabstractions` in separate jobs (`TRIXI_TEST=serial`, `mpi`,
+`threaded`, `kernelabstractions`), and only `mpi` and `threaded` on macOS and Windows
+(see `.github/workflows/ci.yml`).
 
 ### The `run_agents` Julia project
 
