@@ -1,6 +1,6 @@
 # The moist baroclinic wave of DCMIP2016 (test case 161) with the Kessler warm-rain
-# microphysics. For optimal results consider increasing the resolution to 16x16x8 trees per
-# cube face.
+# microphysics. For optimal results consider increasing the resolution, e.g., to
+# `trees_per_cube_face = (16, 8)`.
 #
 # References:
 # - Paul A. Ullrich, Thomas Melvin, Christiane Jablonowski, Andrew Staniforth (2013)
@@ -31,7 +31,9 @@ boundary_conditions = (; inside = boundary_condition_slip_wall,
 
 polydeg = 5
 surface_flux = flux_lmars_combined
-volume_flux = flux_kennedy_gruber_souza_etal
+# `FluxTurbo` selects a SIMD-vectorized implementation of the flux differencing volume
+# integral, which is equivalent to `volume_flux = flux_kennedy_gruber_souza_etal`.
+volume_flux = FluxTurbo(flux_kennedy_gruber_souza_etal)
 
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
@@ -49,6 +51,14 @@ semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
 T = 10 # 10 days
 tspan = (0.0, T * SECONDS_PER_DAY) # time in seconds for 10 days
 
+# Setting `real_type` allows to change the real number type, e.g., to `Float32`.
+# This is particularly useful when changing the `storage_type` to a GPU array
+# type such as `ROCArray` (AMD) or `CuArray` (NVIDIA CUDA).
+# On such backends, `tuning` selects performance settings of the kernels, e.g.,
+# `Tuning(flux_differencing_kernel = FullSweep())` for the kernel used for the
+# flux differencing volume integral.
+semi = trixi_adapt(semi; real_type = nothing, storage_type = nothing,
+                   tuning = nothing)
 ode = semidiscretize(semi, tspan)
 
 summary_callback = SummaryCallback()

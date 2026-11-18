@@ -889,6 +889,18 @@ end
         @test flux_left + flux_right ≈ flux_left_swapped + flux_right_swapped
         @test flux_left - flux_right ≈ -(flux_left_swapped - flux_right_swapped)
 
+        # The `FluxTurbo` specialization returns the same contributions
+        turbo_ll = Trixi.cons2turbo(flux_kennedy_gruber_souza_etal, u_ll..., aux_ll...,
+                                    equations)
+        turbo_rr = Trixi.cons2turbo(flux_kennedy_gruber_souza_etal, u_rr..., aux_rr...,
+                                    equations)
+        flux_left_turbo, flux_right_turbo = Trixi.flux_turbo(flux_kennedy_gruber_souza_etal,
+                                                             turbo_ll..., turbo_rr...,
+                                                             normal_direction...,
+                                                             equations)
+        @test SVector(flux_left_turbo) ≈ flux_left
+        @test SVector(flux_right_turbo) ≈ flux_right
+
         # The surface flux and the wave speed estimates are homogeneous of degree one in
         # the normal direction
         for i in 1:2
@@ -908,8 +920,9 @@ end
               max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)
     end
 
-    # Without water, the fluxes are the ones of the dry equations, which carry the
-    # geopotential in the state
+    # Without water, the physical and the volume flux are the ones of the dry equations,
+    # which carry the geopotential in the state. The surface flux is not compared since
+    # `flux_lmars_combined` of the dry equations uses a constant speed of sound.
     equations_dry = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
                                                                                 c_v = 717.0,
                                                                                 gravity = EARTH_GRAVITATIONAL_ACCELERATION)
@@ -921,10 +934,6 @@ end
         @test flux(dry(u_ll), aux_ll, normal_direction, equations)[1:5] ≈
               flux(u_ll_dry, normal_direction, equations_dry)[1:5]
         for i in 1:2
-            @test flux_lmars_combined(dry(u_ll), dry(u_rr), aux_ll, aux_rr,
-                                      normal_direction, equations)[i][1:5] ≈
-                  flux_lmars_combined(u_ll_dry, u_rr_dry, normal_direction,
-                                      equations_dry)[i][1:5]
             @test flux_kennedy_gruber_souza_etal(dry(u_ll), dry(u_rr), aux_ll, aux_rr,
                                                  normal_direction, equations)[i][1:5] ≈
                   flux_kennedy_gruber_souza_etal(u_ll_dry, u_rr_dry, normal_direction,
@@ -1040,15 +1049,15 @@ end
     aux = SVector(1000.0, 0.0, 0.0, 1.0)
     function state(T, p, rho_d, q_v, q_c, q_r)
         exner = (p / equations.p_0)^(equations.R / equations.c_p)
-        theta_m = T / exner * (1 + equations.R_v / equations.R * q_v)
-        u = SVector(rho_d * (1 + q_v + q_c + q_r), 1.0, -2.0, 0.5, rho_d * theta_m,
+        rho_theta_v = rho_d * T / exner * (1 + equations.R_v / equations.R * q_v)
+        u = SVector(rho_d * (1 + q_v + q_c + q_r), 1.0, -2.0, 0.5, rho_theta_v,
                     rho_d * q_v, rho_d * q_c, rho_d * q_r)
         # The states of the reference satisfy the equation of state
         @test pressure(u, equations) ≈ p
         return u, exner
     end
     # Right-hand side of the dry potential temperature `rho_d * theta` from the ones of
-    # `rho_d * theta_m = rho_d * theta * (1 + q_v R_v / R)` and of the vapor
+    # `rho * theta_v = rho_d * theta * (1 + q_v R_v / R)` and of the vapor
     function source_rho_theta(du, T, p, q_v)
         exner = (p / equations.p_0)^(equations.R / equations.c_p)
         return (du[5] - equations.R_v / equations.R * T / exner * du[6]) /

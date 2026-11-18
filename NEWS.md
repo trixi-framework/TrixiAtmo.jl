@@ -9,12 +9,14 @@ for human readability.
 
 #### Added
 - The `CompressibleEulerMoistPotentialTemperatureEquations3D` are the compressible Euler
-  equations with gravity with the moist potential temperature of WRF as prognostic variable,
-  water vapor, cloud water, and falling rain water, and the warm-rain Kessler microphysics of
-  DCMIP2016
-  (`source_terms_kessler`). They store the geopotential and the upward unit vector, which
-  gives the direction of the falling rain, as auxiliary variables of Trixi.jl, e.g., given
-  by `aux_field_gravity_earth`. The moist baroclinic wave of DCMIP2016 is available as
+  equations with gravity with the virtual potential temperature as prognostic variable,
+  water vapor, cloud water, and falling rain water,
+  and the warm-rain Kessler microphysics of DCMIP2016 (`source_terms_kessler`).
+  They store the geopotential and the upward unit vector,
+  which gives the direction of the falling rain,
+  as auxiliary variables of Trixi.jl, e.g., given by `aux_field_gravity_earth`.
+  Their volume flux `flux_kennedy_gruber_souza_etal` supports `FluxTurbo`.
+  The moist baroclinic wave of DCMIP2016 is available as
   `initial_condition_moist_baroclinic_instability`.
 - The `CompressibleEulerVectorInvariantEquationsWithGravity3D` are the compressible Euler
   equations with gravity in vector-invariant form with the potential temperature as
