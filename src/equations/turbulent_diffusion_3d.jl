@@ -2,7 +2,7 @@
 #! format: noindent
 
 @doc raw"""
-    TurbulentDiffusion3D(equations)
+    TurbulentDiffusion3D(equations; lowest_level_height = 65)
 
 Turbulent fluxes of the turbulence model `equations.turbulence`, e.g., a
 [`HorizontalVerticalTurbulence`](@ref), of the
@@ -37,28 +37,40 @@ geopotential ``\phi`` given by the `aux_field` passed to
 `SemidiscretizationHyperbolicParabolic`. For the
 [`CompressibleEulerMoistPotentialTemperatureEquations3D`](@ref), it is the ``\hat{k}`` of
 their auxiliary variables, i.e., the direction of the falling water. The pointwise
-functions take ``\hat{k}`` as additional argument after the gradients, e.g.,
-`flux(w, gradients, k, orientation, equations)`.
+functions take ``\hat{k}`` and the variables `column` of the lowest level of the column
+of the node as additional arguments after the gradients, e.g.,
+`flux(w, gradients, k, column, orientation, equations)`. They are the speed of the horizontal
+velocity `column[1]` and the height `column[2]` of the lowest level above the surface, used
+by column models such as the [`ReedJablonowskiBoundaryLayer`](@ref). The lowest level of a
+column is the point of the column at the height `lowest_level_height` in m above the surface,
+which must lie in the lowest element, and its state is the value of the polynomial of the
+conservative variables there.
 """
-struct TurbulentDiffusion3D{E, NVARS} <:
+struct TurbulentDiffusion3D{E, NVARS, RealT <: Real} <:
        Trixi.AbstractEquationsParabolic{3, NVARS, GradientVariablesPrimitive}
     equations_hyperbolic::E
+    lowest_level_height::RealT # height of the lowest level of the columns in m
 end
 
 function TurbulentDiffusion3D(equations::Union{CompressibleEulerPotentialTemperatureEquationsWithGravity3D,
-                                               CompressibleEulerMoistPotentialTemperatureEquations3D})
+                                               CompressibleEulerMoistPotentialTemperatureEquations3D};
+                              lowest_level_height = 65)
     if !(equations.turbulence isa HorizontalVerticalTurbulence)
         throw(ArgumentError("`TurbulentDiffusion3D` requires equations with a " *
                             "`HorizontalVerticalTurbulence`, but the turbulence of the " *
                             "equations is `$(nameof(typeof(equations.turbulence)))`"))
     end
-    return TurbulentDiffusion3D{typeof(equations), nvariables(equations)}(equations)
+    lowest_level_height = convert(typeof(equations.g), lowest_level_height)
+    return TurbulentDiffusion3D{typeof(equations), nvariables(equations),
+                                typeof(lowest_level_height)}(equations,
+                                                             lowest_level_height)
 end
 
 function Base.similar(equations_parabolic::TurbulentDiffusion3D,
                       ::Type{NewRealT}) where {NewRealT}
     return TurbulentDiffusion3D(similar(equations_parabolic.equations_hyperbolic,
-                                        NewRealT))
+                                        NewRealT);
+                                lowest_level_height = equations_parabolic.lowest_level_height)
 end
 
 function varnames(variable_mapping, equations_parabolic::TurbulentDiffusion3D)
@@ -87,6 +99,20 @@ end
     return cons2specific(u, equations_parabolic.equations_hyperbolic)
 end
 
+# Conservative variables of the specific variables `w`, i.e., the inverse of `cons2specific`
+@inline function specific2cons(w)
+    rho = w[1]
+    return SVector(rho, ntuple(i -> rho * w[i + 1], Val(length(w) - 1))...)
+end
+
+# Pressure `p = K (rho theta)^gamma` of the specific variables `w = cons2specific(u, equations)`,
+# with the virtual potential temperature for the moist equations
+@inline function pressure_specific(w,
+                                   equations::Union{CompressibleEulerPotentialTemperatureEquationsWithGravity3D,
+                                                    CompressibleEulerMoistPotentialTemperatureEquations3D})
+    return equations.K * exp(equations.gamma * log(w[1] * w[5]))
+end
+
 # Upward unit vector `k = ∇φ / |∇φ|` of the geopotential `φ = aux_field(x, equations)[1]`
 @inline function upward_unit_vector(x, aux_field, equations)
     gradient_phi = ForwardDiff.gradient(y -> first(aux_field(y, equations)), x)
@@ -101,13 +127,16 @@ end
 end
 
 # Turbulent flux in the direction `orientation` of the specific variables `w` with the
-# gradients `(dw/dx, dw/dy, dw/dz)` and the upward unit vector `k`
-@inline function flux(w, gradients, k, orientation::Integer,
+# gradients `(dw/dx, dw/dy, dw/dz)`, the upward unit vector `k`, and the variables `column` of
+# the lowest level of the column, see `eddy_diffusivities`
+@inline function flux(w, gradients, k, column, orientation::Integer,
                       equations_parabolic::TurbulentDiffusion3D)
     gradients_x, gradients_y, gradients_z = gradients
     rho = w[1]
-    nu_h, kappa_h, nu_v, kappa_v = eddy_diffusivities(w, gradients, k,
-                                                      equations_parabolic.equations_hyperbolic.turbulence)
+    (; equations_hyperbolic) = equations_parabolic
+    nu_h, kappa_h, nu_v, kappa_v = eddy_diffusivities(w, gradients, k, column,
+                                                      equations_hyperbolic.turbulence,
+                                                      equations_hyperbolic)
 
     # Rate-of-strain tensor `S` of the velocity gradient `dv_i/dx_j = gradients_j[1 + i]`
     velocity_gradient = SMatrix{3, 3}(gradients_x[2], gradients_x[3], gradients_x[4],
@@ -159,5 +188,69 @@ end
     return (boundary_condition.boundary_normal_flux_function(x, t,
                                                              equations_parabolic) *
             norm(normal))
+end
+
+@doc raw"""
+    BoundaryConditionSurfaceFluxes(sea_surface_temperature)
+
+Bulk fluxes through the surface of the momentum and the potential temperature of the
+[`ReedJablonowskiBoundaryLayer`](@ref), used as parabolic boundary condition of
+[`TurbulentDiffusion3D`](@ref) for the
+[`CompressibleEulerPotentialTemperatureEquationsWithGravity3D`](@ref) with a
+`HorizontalVerticalTurbulence` whose vertical model is a `ReedJablonowskiBoundaryLayer`.
+With the density ``\varrho_a``, the horizontal velocity ``\vec{v}_a``, the potential
+temperature ``\theta_a``, and the pressure ``p_a`` of the lowest level of the column (see
+[`TurbulentDiffusion3D`](@ref)), the turbulent fluxes into the domain are
+```math
+-\varrho_a C_d \lVert \vec{v}_a \rVert \vec{v}_a, \qquad
+\varrho_a C_E \lVert \vec{v}_a \rVert
+\left(T_s \left(\frac{p_0}{p_a}\right)^{R / c_p} - \theta_a\right)
+```
+of the momentum and of ``\varrho \theta`` (Ullrich et al., 2016, Appendix C), with the
+drag coefficient ``C_d`` of [`drag_coefficient`](@ref), the exchange coefficient ``C_E``,
+and the sea surface temperature ``T_s`` `= sea_surface_temperature(x, equations)` at the
+surface node `x`. The density has no flux through the surface.
+"""
+struct BoundaryConditionSurfaceFluxes{SeaSurfaceTemperature}
+    sea_surface_temperature::SeaSurfaceTemperature
+end
+
+# The `flux_inner` of the `Gradient` is the boundary value of the specific variables
+@inline function (boundary_condition::BoundaryConditionSurfaceFluxes)(flux_inner,
+                                                                      u_inner,
+                                                                      normal::AbstractVector,
+                                                                      x, t,
+                                                                      operator_type::Trixi.Gradient,
+                                                                      equations_parabolic::TurbulentDiffusion3D)
+    return flux_inner
+end
+
+# Turbulent flux through the surface in the direction of the outward `normal`, which need not
+# be a unit vector, from the specific variables `w_a`, the upward unit vector `k_a`, and the
+# height above the surface `z_a` of the lowest level of the column
+@inline function (boundary_condition::BoundaryConditionSurfaceFluxes)(w_a, k_a, z_a,
+                                                                      normal::AbstractVector,
+                                                                      x,
+                                                                      equations_parabolic::TurbulentDiffusion3D{<:CompressibleEulerPotentialTemperatureEquationsWithGravity3D{<:Any,
+                                                                                                                                                                              <:HorizontalVerticalTurbulence{<:Any,
+                                                                                                                                                                                                             <:ReedJablonowskiBoundaryLayer}}})
+    (; equations_hyperbolic) = equations_parabolic
+    turbulence = equations_hyperbolic.turbulence.vertical
+    rho_a = w_a[1]
+    v_a = SVector(w_a[2], w_a[3], w_a[4])
+    v_horizontal = v_a - dot(v_a, k_a) * k_a
+    wind_speed = norm(v_horizontal)
+    p_a = pressure_specific(w_a, equations_hyperbolic)
+    T_s = boundary_condition.sea_surface_temperature(x, equations_hyperbolic)
+    theta_s = T_s *
+              (equations_hyperbolic.p_0 / p_a)^(equations_hyperbolic.R /
+                                                equations_hyperbolic.c_p)
+
+    norm_ = norm(normal)
+    momentum = -norm_ * rho_a * drag_coefficient(wind_speed, turbulence) * wind_speed *
+               v_horizontal
+    heat = norm_ * rho_a * turbulence.exchange_coefficient * wind_speed *
+           (theta_s - w_a[5])
+    return SVector(zero(heat), momentum[1], momentum[2], momentum[3], heat)
 end
 end # @muladd

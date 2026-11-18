@@ -197,6 +197,60 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_parabolic!, semi, sol, 1000)
 end
 
+@testitem "Euler potential temperature 3D: elixir_potential_temperature_baroclinic_instability_boundary_layer" setup=[
+    Setup,
+    EulerPotentialTemperature3D
+] tags=[:euler_potential_temperature_3d] begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
+                                 "elixir_potential_temperature_baroclinic_instability_boundary_layer.jl"),
+                        l2=[
+                            0.003031953993863809,
+                            0.05144871072439155,
+                            0.052389663549330674,
+                            0.012601381438528281,
+                            0.8067718681549034
+                        ],
+                        linf=[
+                            0.02174801375592339,
+                            0.8297212480730628,
+                            1.253966949391037,
+                            0.9093281464230247,
+                            4.833143481634522
+                        ],
+                        tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
+                        dt=20)
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities). `Trixi.solve!` calls the right-hand side inside the
+    # timer section "main loop", so the first call outside of it creates new timer
+    # sections, which allocates.
+    TrixiAtmo.Trixi.rhs_hyperbolic!(similar(sol.u[end]), sol.u[end], semi, sol.t[end])
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
+    TrixiAtmo.Trixi.rhs_parabolic!(similar(sol.u[end]), sol.u[end], semi, sol.t[end])
+    @test_allocations(TrixiAtmo.Trixi.rhs_parabolic!, semi, sol, 1000)
+
+    using LinearAlgebra: norm
+    # The lowest levels are 65 m above the surface, with the state of the polynomial of the
+    # conservative variables of the lowest element there
+    (; lowest_level, lowest_level_weights, nlayers) = semi.cache
+    x = semi.cache.elements.node_coordinates
+    u = Trixi.wrap_array(sol.u[end], semi)
+    for column in axes(lowest_level, 4), j in axes(lowest_level, 3),
+        i in axes(lowest_level, 2)
+
+        element = (column - 1) * nlayers + 1
+        weights = lowest_level_weights[:, i, j, column]
+        x_a = sum(weights[k] * x[:, i, j, k, element] for k in eachindex(weights))
+        @test isapprox(norm(x_a) - norm(x[:, i, j, 1, element]), 65, atol = 1e-8)
+        u_a = sum(weights[k] * u[:, i, j, k, element] for k in eachindex(weights))
+        @test lowest_level[1:5, i, j, column] ≈ cons2specific(u_a, equations)
+    end
+
+    # The surface fluxes do not change the mass
+    integral_initial = Trixi.integrate((u, equations) -> u[1], ode.u0, semi)
+    integral_final = Trixi.integrate((u, equations) -> u[1], sol.u[end], semi)
+    @test isapprox(integral_final, integral_initial, rtol = 1e-13)
+end
+
 @testitem "Euler potential temperature 3D: elixir_potential_temperature_baroclinic_instability Souza" setup=[
     Setup,
     EulerPotentialTemperature3D

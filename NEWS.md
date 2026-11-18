@@ -28,6 +28,13 @@ for human readability.
   with the keyword argument `aux_field`. A `HorizontalVerticalTurbulence` combines a
   horizontal and a vertical model, e.g., `ConstantEddyViscosity`, with respect to the
   upward unit vector, i.e., the normalized gradient of the geopotential.
+- The `ReedJablonowskiBoundaryLayer` is the planetary boundary layer of the simple physics
+  of DCMIP2016, whose eddy viscosity and diffusivity depend on the horizontal velocity and
+  the height of the lowest level of the column, at the height `lowest_level_height` of the
+  `TurbulentDiffusion3D` above the surface.
+  The `BoundaryConditionSurfaceFluxes` are the corresponding bulk fluxes of the momentum and
+  the potential temperature through the surface for the
+  `CompressibleEulerPotentialTemperatureEquationsWithGravity3D`.
 
 ## Changes in the v0.1 lifecycle
 

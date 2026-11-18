@@ -442,6 +442,7 @@ end
                                                                                           turbulence = turbulence)
         x = SVector(RealT(4.0e6), RealT(-3.0e6), RealT(2.5e6))
         k = SVector(RealT(0.6), zero(RealT), RealT(0.8))
+        column = SVector(RealT(7), RealT(400))
         for equations in (equations_dry, equations_moist)
             equations_parabolic = @inferred TurbulentDiffusion3D(equations)
             nvars = nvariables(equations)
@@ -450,7 +451,7 @@ end
             w = @inferred cons2specific(u, equations_parabolic)
             @test eltype(w) == RealT
             for orientation in 1:3
-                @test eltype(@inferred flux(w, gradients, k, orientation,
+                @test eltype(@inferred flux(w, gradients, k, column, orientation,
                                             equations_parabolic)) == RealT
             end
             @test eltype(@inferred TrixiAtmo.upward_unit_vector(x, aux_field_gravity_earth,

@@ -192,6 +192,44 @@ end
     @test all(isfinite, du_ode)
 end
 
+@testitem "CUDA 3D: elixir_potential_temperature_baroclinic_instability_boundary_layer Float64 / CUDA" setup=[
+    Setup,
+    CUDA3DExamples
+] tags=[:CUDA] begin
+    # Using CUDA inside the testitem since otherwise the bindings are hidden by the anonymous modules
+    using CUDA
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_potential_temperature_baroclinic_instability_boundary_layer.jl"),
+                        # Expected errors are the same as on CPU
+                        l2=[
+                            0.003031953993863809,
+                            0.05144871072439155,
+                            0.052389663549330674,
+                            0.012601381438528281,
+                            0.8067718681549034
+                        ],
+                        linf=[
+                            0.02174801375592339,
+                            0.8297212480730628,
+                            1.253966949391037,
+                            0.9093281464230247,
+                            4.833143481634522
+                        ],
+                        tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
+                        dt=20,
+                        storage_type=CuArray)
+    @test Trixi.trixi_backend(ode.u0) isa CUDABackend
+    @test semi.cache.upward_unit_vectors isa CuArray
+    @test semi.cache.lowest_level isa CuArray
+
+    # Ensure that the RHS computation overwrites existing data in `du` correctly.
+    u_ode = copy(ode.u0)
+    du_ode = similar(u_ode)
+    fill!(du_ode, convert(eltype(du_ode), NaN))
+    Trixi.rhs_parabolic!(du_ode, u_ode, semi, first(ode.tspan))
+    @test all(isfinite, du_ode)
+end
+
 @testitem "CUDA 3D: elixir_potential_temperature_baroclinic_instability Float32 / CUDA" setup=[
     Setup,
     CUDA3DExamples

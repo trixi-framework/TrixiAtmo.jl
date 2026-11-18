@@ -1,12 +1,15 @@
 # Turbulence models of the equations with gravity on the sphere, e.g.,
 # `CompressibleEulerPotentialTemperatureEquationsWithGravity3D` and
 # `CompressibleEulerMoistPotentialTemperatureEquations3D`, whose turbulent fluxes are the
-# parabolic terms of `TurbulentDiffusion3D`. A model only sees the specific variables of
-# `cons2specific`, their gradients, and the upward unit vector `k`, such that it does not
-# depend on the prognostic thermodynamic variable of the equations. A model defines
+# parabolic terms of `TurbulentDiffusion3D`. A model only sees the specific variables `w` of
+# `cons2specific`, their gradients, the upward unit vector `k`, and the variables `column`
+# of the lowest level of the column of the node, see `TurbulentDiffusion3D`: the speed of the
+# horizontal velocity `column[1]` and the height above the surface `column[2]`. A model
+# defines
 # - `nturbulencevariables(turbulence)`: the number of prognostic variables of the model,
-# - `eddy_diffusivities(w, gradients, k, turbulence)`: the eddy viscosity of the momentum
-#   and the eddy diffusivity of the other specific variables in m²/s.
+# - `eddy_diffusivities(w, gradients, k, column, turbulence, equations)`: the eddy viscosity
+#   of the momentum and the eddy diffusivity of the other specific variables in m²/s, where
+#   `equations` are the hyperbolic equations, e.g., to compute the pressure of `w`.
 # A `HorizontalVerticalTurbulence` combines a horizontal and a vertical model, whose
 # diffusivities act in the plane orthogonal to `k` and in the direction of `k`, respectively,
 # see `flux(w, gradients, k, orientation, equations_parabolic::TurbulentDiffusion3D)`.
@@ -48,11 +51,14 @@ end
 
 # Eddy viscosities and diffusivities `(nu_h, kappa_h, nu_v, kappa_v)` of the horizontal and
 # the vertical model
-@inline function eddy_diffusivities(w, gradients, k,
-                                    turbulence::HorizontalVerticalTurbulence)
-    nu_h, kappa_h = eddy_diffusivities(w, gradients, k, turbulence.horizontal)
-    nu_v, kappa_v = eddy_diffusivities(w, gradients, k, turbulence.vertical)
+@inline function eddy_diffusivities(w, gradients, k, column,
+                                    turbulence::HorizontalVerticalTurbulence, equations)
+    nu_h, kappa_h = eddy_diffusivities(w, gradients, k, column, turbulence.horizontal,
+                                       equations)
+    nu_v, kappa_v = eddy_diffusivities(w, gradients, k, column, turbulence.vertical,
+                                       equations)
     return nu_h, kappa_h, nu_v, kappa_v
 end
 
 include("constant_eddy_viscosity.jl")
+include("reed_jablonowski.jl")

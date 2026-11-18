@@ -27,7 +27,8 @@ end
 
 @inline nturbulencevariables(::ConstantEddyViscosity) = 0
 
-@inline function eddy_diffusivities(w, gradients, k, turbulence::ConstantEddyViscosity)
+@inline function eddy_diffusivities(w, gradients, k, column,
+                                    turbulence::ConstantEddyViscosity, equations)
     return turbulence.viscosity, turbulence.diffusivity
 end
 end # @muladd

@@ -1156,6 +1156,9 @@ end
     gradients = (SVector(0.3, -1.2, 0.4, 2.0, -0.7), SVector(-0.1, 0.5, 1.3, -0.6, 0.9),
                  SVector(0.2, 0.8, -0.4, 1.1, 0.25))
     k = SVector(0.3, -0.4, 0.86) / norm(SVector(0.3, -0.4, 0.86))
+    # Speed of the horizontal velocity and height above the surface of the lowest level,
+    # which the constant eddy viscosities do not use
+    column = SVector(7.0, 400.0)
     rho = w[1]
 
     # Stress `2 rho (nu_h P S P + nu_v (S - P S P))` and diffusivity tensor
@@ -1167,7 +1170,7 @@ end
     tau_reference = 2 * rho * (nu_h * PSP + nu_v * (S - PSP))
     D = kappa_h * P + kappa_v * k * k'
     gradient_theta = [gradients[b][5] for b in 1:3]
-    fluxes = [flux(w, gradients, k, d, equations_parabolic) for d in 1:3]
+    fluxes = [flux(w, gradients, k, column, d, equations_parabolic) for d in 1:3]
     for d in 1:3
         @test fluxes[d][1] == 0
         @test fluxes[d][2:4] ≈ tau_reference[:, d]
@@ -1190,7 +1193,7 @@ end
     gradients_rotated = ntuple(b -> SVector(0.0, G_rotated[1, b], G_rotated[2, b],
                                             G_rotated[3, b], gradient_theta_rotated[b]),
                                3)
-    tau_rotated = [flux(w, gradients_rotated, k_rotated, d, equations_parabolic)[1 + a]
+    tau_rotated = [flux(w, gradients_rotated, k_rotated, column, d, equations_parabolic)[1 + a]
                    for a in 1:3, d in 1:3]
     @test tau_rotated ≈ Q * tau * Q'
 
@@ -1199,10 +1202,10 @@ end
     e_z = SVector(0.0, 0.0, 1.0)
     zero_ = SVector(0.0, 0.0, 0.0, 0.0, 0.0)
     vertical_shear = (zero_, zero_, SVector(0.0, 2.0, 0.0, 0.0, 0.0))
-    @test flux(w, vertical_shear, e_z, 3, equations_parabolic)[2] ≈ rho * nu_v * 2
-    @test flux(w, vertical_shear, e_z, 1, equations_parabolic)[4] ≈ rho * nu_v * 2
+    @test flux(w, vertical_shear, e_z, column, 3, equations_parabolic)[2] ≈ rho * nu_v * 2
+    @test flux(w, vertical_shear, e_z, column, 1, equations_parabolic)[4] ≈ rho * nu_v * 2
     horizontal_shear = (zero_, SVector(0.0, 2.0, 0.0, 0.0, 0.0), zero_)
-    @test flux(w, horizontal_shear, e_z, 2, equations_parabolic)[2] ≈ rho * nu_h * 2
+    @test flux(w, horizontal_shear, e_z, column, 2, equations_parabolic)[2] ≈ rho * nu_h * 2
 
     # Equal horizontal and vertical models give the isotropic stress `2 rho nu S`
     equations_isotropic = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
@@ -1211,7 +1214,7 @@ end
                                                                                       turbulence = HorizontalVerticalTurbulence(ConstantEddyViscosity(nu_v),
                                                                                                                                 ConstantEddyViscosity(nu_v)))
     for d in 1:3
-        f = flux(w, gradients, k, d, TurbulentDiffusion3D(equations_isotropic))
+        f = flux(w, gradients, k, column, d, TurbulentDiffusion3D(equations_isotropic))
         @test f[2:4] ≈ 2 * rho * nu_v * S[:, d]
         @test f[5] ≈ rho * nu_v * gradient_theta[d]
     end
@@ -1231,7 +1234,7 @@ end
                           SVector(-3.0e-6, 1.0e-6, 2.0e-6))
     gradients_moist = ntuple(b -> SVector(gradients[b]..., moisture_gradients[b]...), 3)
     for d in 1:3
-        f = flux(w_moist, gradients_moist, k, d, equations_parabolic_moist)
+        f = flux(w_moist, gradients_moist, k, column, d, equations_parabolic_moist)
         @test f[1:5] ≈ fluxes[d]
         for m in 1:3
             @test f[5 + m] ≈ rho * (D * [moisture_gradients[b][m] for b in 1:3])[d]
@@ -1257,4 +1260,63 @@ end
     @test_throws ArgumentError TurbulentDiffusion3D(CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
                                                                                                                 c_v = 717.0,
                                                                                                                 gravity = EARTH_GRAVITATIONAL_ACCELERATION))
+end
+
+@testitem "Unit: Consistency check for the Reed-Jablonowski boundary layer: TurbulentDiffusion3D" setup=[Setup] tags=[:unit_fluxes] begin
+    using LinearAlgebra: norm
+    boundary_layer = ReedJablonowskiBoundaryLayer()
+    turbulence = HorizontalVerticalTurbulence(ConstantEddyViscosity(1.0e5), boundary_layer)
+    equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
+                                                                            c_v = 717.0,
+                                                                            gravity = EARTH_GRAVITATIONAL_ACCELERATION,
+                                                                            turbulence = turbulence)
+    equations_parabolic = TurbulentDiffusion3D(equations)
+
+    # Drag coefficient of DCMIP2016, Eq. (102)
+    @test TrixiAtmo.drag_coefficient(10.0, boundary_layer) ≈ 7.0e-4 + 6.5e-5 * 10
+    @test TrixiAtmo.drag_coefficient(25.0, boundary_layer) == 0.002
+
+    # Eddy viscosity and diffusivity of DCMIP2016, Eqs. (124) and (125), below and above the
+    # top of the boundary layer at 850 hPa
+    gradients = ntuple(_ -> zero(SVector{5, Float64}), 3)
+    k = SVector(0.0, 0.0, 1.0)
+    wind_speed, z_a = 12.0, 65.0
+    column = SVector(wind_speed, z_a)
+    C_d = 7.0e-4 + 6.5e-5 * wind_speed
+    for p in (95000.0, 85000.0, 70000.0)
+        rho = 1.1
+        theta = (p / equations.K)^(1 / equations.gamma) / rho
+        w = SVector(rho, 3.0, -1.0, 0.5, theta)
+        @test TrixiAtmo.pressure_specific(w, equations) ≈ p
+        decay = p >= 85000 ? 1.0 : exp(-((85000 - p) / 10000)^2)
+        nu, kappa = TrixiAtmo.eddy_diffusivities(w, gradients, k, column, boundary_layer,
+                                                 equations)
+        @test nu ≈ C_d * wind_speed * z_a * decay
+        @test kappa ≈ 0.0011 * wind_speed * z_a * decay
+    end
+
+    # Bulk fluxes through the surface of DCMIP2016, Eqs. (106) and (110), multiplied by the
+    # density, for the outward normal `-2 k` of a surface with an area factor of two
+    sea_surface_temperature(x, equations) = 300.0
+    boundary_condition = BoundaryConditionSurfaceFluxes(sea_surface_temperature)
+    k_a = SVector(0.6, 0.0, 0.8)
+    p_a = 95000.0
+    rho_a = 1.1
+    theta_a = (p_a / equations.K)^(1 / equations.gamma) / rho_a
+    # Horizontal velocity with the speed 5 m/s, orthogonal to `k_a`
+    v_horizontal = 4 * SVector(-0.8, 0.0, 0.6) - 3 * SVector(0.0, 1.0, 0.0)
+    v_a = v_horizontal + 0.7 * k_a
+    w_a = SVector(rho_a, v_a..., theta_a)
+    normal = -2 * k_a
+    flux_surface = boundary_condition(w_a, k_a, z_a, normal, 6.4e6 * k_a,
+                                      equations_parabolic)
+    C_d = 7.0e-4 + 6.5e-5 * 5
+    @test flux_surface[1] == 0
+    @test SVector(flux_surface[2], flux_surface[3], flux_surface[4]) ≈
+          -2 * rho_a * C_d * 5 * v_horizontal
+    theta_s = 300.0 * (100000 / p_a)^(equations.R / equations.c_p)
+    @test flux_surface[5] ≈ 2 * rho_a * 0.0011 * 5 * (theta_s - theta_a)
+    # The `Gradient` uses the inner value
+    @test boundary_condition(w_a, w_a, normal, 6.4e6 * k_a, 0.0,
+                             TrixiAtmo.Trixi.Gradient(), equations_parabolic) == w_a
 end
