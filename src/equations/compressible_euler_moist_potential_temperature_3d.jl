@@ -32,8 +32,9 @@ temperature
 ```
 which includes the weight of the cloud and rain water, with the dry potential temperature
 ``\theta = T / \pi``, the Exner pressure ``\pi = (p / p_0)^{R / c_p}``, and the mixing
-ratios ``q_x = \varrho_x / \varrho_d``. The rain falls in the direction ``-\hat{k}`` with the terminal velocity ``V_r`` of
-Klemp and Wilhelmson (1978) (see [`terminal_velocity_rain`](@ref)), where ``\hat{k}`` is
+ratios ``q_x = \varrho_x / \varrho_d``. The rain falls in the direction ``-\hat{k}`` with
+the terminal velocity ``V_r`` of Klemp and Wilhelmson (1978)
+(see [`terminal_velocity_rain`](@ref)), where ``\hat{k}`` is
 the upward unit vector and the density `rho_surface` replaces the dry density at the
 surface. The pressure follows from Dalton's law ``p = (\varrho_d R + \varrho_v R_v) T``,
 i.e., ``p = K (\varrho \theta_v)^\gamma``, which depends on the fifth variable only.
@@ -123,7 +124,8 @@ function varnames(::typeof(cons2cons),
      "rho_rain")
 end
 
-# The primitive variables use the mixing ratios with respect to dry air, as in DCMIP2016
+# The primitive variables use the mixing ratios with respect to dry air, as the Kessler
+# microphysics of DCMIP2016
 function varnames(::typeof(cons2prim),
                   ::CompressibleEulerMoistPotentialTemperatureEquations3D)
     ("rho", "v1", "v2", "v3", "p", "q_vapor", "q_cloud", "q_rain")
@@ -217,9 +219,10 @@ end
     return SVector(f1, f2, f3, f4, f5, f6, f7, f8)
 end
 
-# Kinetic energy preserving flux of Kennedy and Gruber (2008) with the potential temperature
-# and the water species advected as specific quantities, central fluxes of the falling rain,
-# and the gravity of `flux_nonconservative_souza_etal` acting on the total density
+# Kinetic energy preserving flux of Kennedy and Gruber (2008) with the virtual potential
+# temperature and the water species advected as specific quantities, central fluxes of the
+# falling rain, and the gravity of `flux_nonconservative_souza_etal` acting on the total
+# density
 @inline function flux_kennedy_gruber_souza_etal(u_ll, u_rr, aux_ll, aux_rr,
                                                 normal_direction::AbstractVector,
                                                 equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
@@ -566,8 +569,9 @@ end # @muladd
 # We do not wrap this code in `@muladd begin ... end` block. Optimizations like
 # this are handled automatically by LoopVectorization.jl.
 # We precompute `rho, v1, v2, v3, p`, the specific quantities `u[5:8] / rho`, the rain flux
-# `rho_rain * V_r * k`, and the geopotential, i.e., 13 quantities, since the kernels of
-# LoopVectorization.jl take at most 32 arguments.
+# `rho_rain * V_r * k`, and the geopotential, i.e., 13 quantities. The `@turbo` kernels of
+# Trixi.jl pass `2 * nturbovars + 5` arguments to `flux_turbo`, and LoopVectorization.jl
+# allows at most 32, so `V_r` and `k` are not precomputed separately.
 @inline function Trixi.nturbovars(::typeof(flux_kennedy_gruber_souza_etal),
                                   ::CompressibleEulerMoistPotentialTemperatureEquations3D)
     return Val(13)

@@ -381,6 +381,22 @@ end
         @test typeof(@inferred max_abs_speed(u_ll, u_rr, aux_ll, aux_rr,
                                              normal_direction, equations)) == RealT
         @test eltype(@inferred source_terms_kessler(u, aux, x, t, equations)) == RealT
+        @test eltype(@inferred source_terms_coriolis(u, aux, x, t, equations)) == RealT
+        @test eltype(@inferred aux_field_gravity_earth(x, equations)) == RealT
+        x_sphere = SVector(RealT(EARTH_RADIUS + 1_000), RealT(2_000), RealT(1_000))
+        @test eltype(@inferred initial_condition_moist_baroclinic_instability(x_sphere, t,
+                                                                              equations)) ==
+              RealT
+        turbo_ll = @inferred Trixi.cons2turbo(flux_kennedy_gruber_souza_etal, u_ll...,
+                                              aux_ll..., equations)
+        turbo_rr = Trixi.cons2turbo(flux_kennedy_gruber_souza_etal, u_rr..., aux_rr...,
+                                    equations)
+        @test eltype(turbo_ll) == RealT
+        for flux_turbo_ in @inferred Trixi.flux_turbo(flux_kennedy_gruber_souza_etal,
+                                                      turbo_ll..., turbo_rr...,
+                                                      normal_direction..., equations)
+            @test eltype(flux_turbo_) == RealT
+        end
 
         # Adapt the real type, e.g., to move a semidiscretization to a GPU
         equations_float64 = @inferred similar(equations, Float64)

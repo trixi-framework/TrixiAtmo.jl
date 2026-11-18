@@ -166,7 +166,8 @@ function initial_condition_baroclinic_instability(x, t,
 end
 
 # Exponential perturbation of the zonal wind of the moist baroclinic wave of DCMIP2016
-# (`evaluate_exponential` in `baroclinic_wave_test.f90`) with an amplitude of 1 m/s
+# (`evaluate_exponential` in `baroclinic_wave_test.f90`) with an amplitude of 1 m/s. As in
+# DCMIP2016, it is cut off at the perturbation radius, where it jumps from `exp(-1)` to zero.
 @inline function perturbation_exponential(lon, lat, z)
     RealT = typeof(z)
     perturbation_radius = convert(RealT, 0.1) # in units of the radius of the Earth
@@ -174,9 +175,11 @@ end
     perturbation_lat = 2 * convert(RealT, pi) / 9
     pertz = 15000 # Perturbation height cap
 
-    great_circle_distance = acos(sin(perturbation_lat) * sin(lat) +
-                                 cos(perturbation_lat) * cos(lat) *
-                                 cos(lon - perturbation_lon)) / perturbation_radius
+    # The argument of `acos` can exceed one by round-off at the center of the perturbation
+    great_circle_distance = acos(min(sin(perturbation_lat) * sin(lat) +
+                                     cos(perturbation_lat) * cos(lat) *
+                                     cos(lon - perturbation_lon), 1)) /
+                            perturbation_radius
 
     if z > pertz || great_circle_distance >= 1
         return zero(RealT)

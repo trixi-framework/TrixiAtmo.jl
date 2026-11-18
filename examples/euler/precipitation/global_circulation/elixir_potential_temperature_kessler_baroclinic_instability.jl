@@ -29,7 +29,7 @@ end
 boundary_conditions = (; inside = boundary_condition_slip_wall,
                        outside = boundary_condition_slip_wall)
 
-polydeg = 5
+polydeg = 4
 surface_flux = flux_lmars_combined
 # `FluxTurbo` selects a SIMD-vectorized implementation of the flux differencing volume
 # integral, which is equivalent to `volume_flux = flux_kennedy_gruber_souza_etal`.
