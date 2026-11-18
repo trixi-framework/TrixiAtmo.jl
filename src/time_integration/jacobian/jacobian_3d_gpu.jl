@@ -60,9 +60,7 @@ Base.@propagate_inbounds function copy_node_from_columns!(b, u_vertical,
     b[3, i, j, k, element] = rho_v[2]
     b[4, i, j, k, element] = rho_v[3]
     b[5, i, j, k, element] = inv_norm_Ja3 * u_vertical[column, 3, k, layer]
-    # The remaining variables, i.e., the geopotential of the
-    # `CompressibleEulerPotentialTemperatureEquationsWithGravity3D` (whose right-hand side
-    # vanishes) and the moisture variables of the
+    # The remaining variables, i.e., the moisture variables of the
     # `CompressibleEulerMoistPotentialTemperatureEquations3D`, are solved with `J = 0`
     for v in 6:size(b, 1)
         b[v, i, j, k, element] *= gamma_dt

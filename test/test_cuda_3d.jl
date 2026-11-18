@@ -13,19 +13,17 @@ end
                         # Expected errors similar to reference on CPU
                         l2=[
                             0.0005231487476660257,
-                            0.01697962311431438,
-                            0.015947211723936594,
-                            0.016561823433691548,
-                            0.14232904565449617,
-                            98.99596252593312
+                            0.016979615333645174,
+                            0.01594720348014934,
+                            0.01656181338485904,
+                            0.14232904565449617
                         ],
                         linf=[
-                            0.004219636209495059,
-                            1.1709300104924298,
-                            0.6920569865271409,
-                            1.1056507865964287,
-                            0.9997828853548185,
-                            333.1178018152714
+                            0.004219636334529486,
+                            1.1709299053252764,
+                            0.6920569567036126,
+                            1.1056508753293657,
+                            0.9997829208047619
                         ],
                         tspan=(0.0, 20.0), trees_per_cube_face=(2, 2),
                         storage_type=CuArray)
@@ -45,6 +43,7 @@ end
     @test Trixi.storage_type(semi.cache.interfaces) === CuArray
     @test Trixi.storage_type(semi.cache.boundaries) === CuArray
     @test Trixi.storage_type(semi.cache.mortars) === CuArray
+    @test semi.cache.aux_vars.aux isa CuArray
 
     # Ensure that the RHS computation overwrites existing data in `du` correctly.
     u_ode = copy(ode.u0)
@@ -63,17 +62,15 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_potential_temperature_baroclinic_instability_turbo.jl"),
                         l2=Float32[0.00052923214,
-                                   0.017052146,
+                                   0.017115094,
                                    0.01605738,
-                                   0.016616695,
-                                   0.14386448,
-                                   101.35988],
+                                   0.016549863,
+                                   0.14386448],
                         linf=Float32[0.0044720173,
                                      1.1709296,
                                      0.695263,
                                      1.1052238,
-                                     1.0602722,
-                                     380.0],
+                                     1.0655212],
                         tspan=(0.0, 20.0), trees_per_cube_face=(2, 2),
                         RealT_for_test_tolerances=Float32,
                         rtol=1.0f-3,
@@ -95,6 +92,7 @@ end
     @test Trixi.storage_type(semi.cache.interfaces) === CuArray
     @test Trixi.storage_type(semi.cache.boundaries) === CuArray
     @test Trixi.storage_type(semi.cache.mortars) === CuArray
+    @test semi.cache.aux_vars.aux isa CuArray{Float32}
 
     # Ensure that the RHS computation overwrites existing data in `du` correctly.
     u_ode = copy(ode.u0)
@@ -118,16 +116,14 @@ end
                             0.05144411394023726,
                             0.05238807358575555,
                             0.012609443441337428,
-                            0.8067575925333563,
-                            570.8566086563927
+                            0.8067575925333563
                         ],
                         linf=[
                             0.021751907036954288,
                             0.8297225783677513,
                             1.2589734934841315,
                             0.9103791727770297,
-                            4.833051748224818,
-                            1704.147344700992
+                            4.833051748224818
                         ],
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
                         dt=20,
@@ -172,14 +168,12 @@ end
                                    0.051523436,
                                    0.05246645,
                                    0.012602088,
-                                   0.807088,
-                                   570.9487],
+                                   0.807088],
                         linf=Float32[0.021747112,
                                      0.8327257,
                                      1.2596467,
                                      0.91195524,
-                                     4.8730164,
-                                     1748.0],
+                                     4.8730164],
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
                         dt=20,
                         RealT_for_test_tolerances=Float32,
