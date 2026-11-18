@@ -1273,7 +1273,8 @@ end
 
 ###############################################################################
 # Dense LU factorization and solve of the local Schur complement `S_e` of one element
-# (indexed `[column, i, j, layer]`, `N = nnodes - 2`)
+# (indexed `[column, i, j, layer]`, `N = nnodes - 2`, or `N = nnodes - 1` for the
+# factorization in `jacobian_one_sided.jl`)
 Base.@propagate_inbounds function lu_dense!(A, ::Val{N}, column, layer) where {N}
     for j in 1:(N - 1)
         # One division and `N - j` multiplications instead of `N - j` divisions
