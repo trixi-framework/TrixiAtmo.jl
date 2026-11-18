@@ -14,7 +14,8 @@
 #   variable,
 # - `max_terminal_velocity(moisture, rho_dry, microphysics)`: the largest terminal velocity
 #   of the falling water,
-# - `microphysics_tendencies(moisture, rho_dry, T, p, microphysics)`: the isobaric heating
-#   rate in K/s and the right-hand sides of the moisture variables.
+# - `microphysics_tendencies(moisture, rho_dry, T, p, c_p, microphysics)`: the isobaric
+#   heating rate in K/s and the right-hand sides of the moisture variables, where `c_p` is
+#   the specific heat of dry air at constant pressure of the equations.
 
 include("kessler.jl")

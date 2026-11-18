@@ -180,9 +180,9 @@ end
     water_normal = water * k_normal
 
     return SVector(water_normal,
-                   water_normal * u[2] / rho,
-                   water_normal * u[3] / rho,
-                   water_normal * u[4] / rho,
+                   water_normal * (u[2] / rho),
+                   water_normal * (u[3] / rho),
+                   water_normal * (u[4] / rho),
                    zero(water_normal),
                    (moisture * k_normal)...)
 end
@@ -256,7 +256,8 @@ end
                 normal_direction[1] * gravity,
                 normal_direction[2] * gravity,
                 normal_direction[3] * gravity,
-                ntuple(_ -> zero_, Val(nvariables(equations) - 4))...)
+                zero_,
+                ntuple(_ -> zero_, Val(nvariables(equations) - 5))...)
 
     return flux + g, flux - g
 end
@@ -456,6 +457,7 @@ change the dry air, the right-hand side of
 
     heating, source_moisture = microphysics_tendencies(moisture_variables(u, equations),
                                                        rho_dry, exner * theta, p,
+                                                       equations.c_p,
                                                        equations.microphysics)
     source_rho_theta_v = rho_dry * virtual_factor * heating / exner +
                          equations.R_v / equations.R * theta * source_moisture[1]
@@ -495,7 +497,7 @@ end
     RealT = typeof(rho)
     rho_dry = rho - rho_vapor - rho_cloud - rho_rain
     rain_positive = max(rho_rain, zero(RealT))
-    rain = convert(RealT, 36.34 * 1.0e-3^0.1364) *
+    rain = equations.microphysics.rain_flux_coefficient *
            exp(convert(RealT, 1.1364) * log(rain_positive)) *
            sqrt(equations.microphysics.rho_surface / rho_dry)
 

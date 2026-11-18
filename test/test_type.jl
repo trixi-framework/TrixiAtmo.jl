@@ -407,7 +407,6 @@ end
         @test typeof(equations_float64.c_p) == Float64
         @test typeof(equations_float64.microphysics.condensation_time) == Float64
         @test typeof(@inferred KesslerMicrophysics(latent_heat = RealT(2.5e6),
-                                                   c_p = RealT(1003),
                                                    rho_surface = RealT(1.15),
                                                    condensation_time = one(RealT))) ==
               KesslerMicrophysics{RealT}

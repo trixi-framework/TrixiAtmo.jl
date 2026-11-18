@@ -979,6 +979,8 @@ end
     #   semi-implicit update `A + C_r = (q_r_ref - q_r) / dt * (1 + 2.2 dt q_r^0.875)`;
     # - condensation: supersaturated air without condensate, where the reference condenses
     #   the amount `condensation_time * C` in one step.
+    # The reference uses `c_p = 1003` J/(kg K) in the latent heating, which the equations
+    # below match with the same gas constant `R = c_p - c_v = 287` J/(kg K).
     cases_evap = [
         (245.50998664661992, 73997.41793135805, 1.0499832912908547, 0.00011903200024704985,
          0.0, 0.006393154400063015, 1.0,
@@ -1044,8 +1046,8 @@ end
          0.0, 10.0,
          289.8202293979613, 0.03243851999064151, 1.785659149807772e-6, 0.0)
     ]
-    equations = CompressibleEulerMoistPotentialTemperatureEquations3D(c_p = 1004.5,
-                                                                      c_v = 717.5,
+    equations = CompressibleEulerMoistPotentialTemperatureEquations3D(c_p = 1003.0,
+                                                                      c_v = 716.0,
                                                                       gravity = 9.80616,
                                                                       R_v = 461.5)
     aux = SVector(1000.0, 0.0, 0.0, 1.0)

@@ -2,8 +2,7 @@
 #! format: noindent
 
 @doc raw"""
-    KesslerMicrophysics(; latent_heat = 2.5e6, c_p = 1003, rho_surface = 1.15,
-                        condensation_time = 1)
+    KesslerMicrophysics(; latent_heat = 2.5e6, rho_surface = 1.15, condensation_time = 1)
 
 Warm-rain microphysics of Kessler (1969) in the form of Klemp and Wilhelmson (1978, KW) as in
 DCMIP2016, with the moisture variables water vapor, cloud water, and rain water, i.e., the
@@ -36,8 +35,9 @@ with
       \frac{\max(q_{vs} - q_v, 0)}{r q_{vs}},
   ```
 and the isobaric latent heating ``\partial_t T = L / c_p (C - E)`` with the latent heat of
-vaporization `latent_heat` ``L`` in J/kg and the specific heat `c_p` in J/(kg K). The
-default values are the ones of DCMIP2016.
+vaporization `latent_heat` ``L`` in J/kg and the specific heat ``c_p`` of dry air at constant
+pressure of the equations. The default values are the ones of DCMIP2016, whose `kessler.f90`
+uses ``c_p = 1003`` J/(kg K) instead of the one of the dynamical core.
 
 ## References
 
@@ -53,23 +53,28 @@ default values are the ones of DCMIP2016.
 """
 struct KesslerMicrophysics{RealT <: Real}
     latent_heat::RealT # latent heat of vaporization in J/kg
-    c_p::RealT # specific heat of the latent heating in J/(kg K)
     rho_surface::RealT # density at the surface in the terminal velocity of rain in kg/m³
     condensation_time::RealT # relaxation time of the condensation in s
+    # Coefficient of `rho_rain^1.1364` in `rho_rain * V_r` of `terminal_velocity_rain`,
+    # stored since GPU code evaluates `^` at run time even for constant arguments
+    rain_flux_coefficient::RealT
 end
 
-function KesslerMicrophysics(; latent_heat = 2.5e6, c_p = 1003, rho_surface = 1.15,
+function KesslerMicrophysics(; latent_heat = 2.5e6, rho_surface = 1.15,
                              condensation_time = 1)
-    return KesslerMicrophysics(promote(latent_heat, c_p, rho_surface,
-                                       condensation_time)...)
+    latent_heat, rho_surface, condensation_time = promote(latent_heat, rho_surface,
+                                                          condensation_time)
+    rain_flux_coefficient = convert(typeof(latent_heat), 36.34 * 1.0e-3^0.1364)
+    return KesslerMicrophysics(latent_heat, rho_surface, condensation_time,
+                               rain_flux_coefficient)
 end
 
 function Base.similar(microphysics::KesslerMicrophysics,
                       ::Type{NewRealT}) where {NewRealT}
-    (; latent_heat, c_p, rho_surface, condensation_time) = microphysics
-    return KesslerMicrophysics(convert.(NewRealT,
-                                        (latent_heat, c_p, rho_surface,
-                                         condensation_time))...)
+    (; latent_heat, rho_surface, condensation_time) = microphysics
+    return KesslerMicrophysics(; latent_heat = convert(NewRealT, latent_heat),
+                               rho_surface = convert(NewRealT, rho_surface),
+                               condensation_time = convert(NewRealT, condensation_time))
 end
 
 @inline nmoisturevariables(::KesslerMicrophysics) = 3
@@ -111,7 +116,8 @@ end
     rho_rain = max(moisture[3], zero(RealT))
     # `rho_rain * V_r` of `terminal_velocity_rain` as a single power of `rho_rain`, whose
     # derivative is finite (zero) without rain
-    rain = convert(RealT, 36.34 * 1.0e-3^0.1364) * rho_rain^convert(RealT, 1.1364) *
+    rain = microphysics.rain_flux_coefficient *
+           rho_rain^convert(RealT, 1.1364) *
            sqrt(microphysics.rho_surface / rho_dry)
     return rain, SVector(zero(RealT), zero(RealT), rain)
 end
@@ -135,14 +141,14 @@ q_{vs}(T, p) = \frac{380}{p} \exp\left(17.27 \frac{T - 273}{T - 36}\right).
     return convert(RealT, 380) / p * exp(convert(RealT, 17.27) * (T - 273) / (T - 36))
 end
 
-@inline function microphysics_tendencies(moisture, rho_dry, T, p,
+@inline function microphysics_tendencies(moisture, rho_dry, T, p, c_p,
                                          microphysics::KesslerMicrophysics)
     RealT = eltype(moisture)
     zero_ = zero(RealT)
     q_v = max(moisture[1], zero_) / rho_dry
     q_c = max(moisture[2], zero_) / rho_dry
     q_r = max(moisture[3], zero_) / rho_dry
-    latent_heat_over_c_p = microphysics.latent_heat / microphysics.c_p
+    latent_heat_over_c_p = microphysics.latent_heat / c_p
 
     # Condensation, where the denominator accounts for the increase of the saturation
     # mixing ratio due to the latent heating, with the constant `237.3` of `kessler.f90` of
