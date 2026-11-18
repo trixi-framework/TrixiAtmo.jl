@@ -9,23 +9,23 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
                                  "elixir_potential_temperature_kessler_baroclinic_instability.jl"),
                         l2=[
-                            3.02819362e-03,
-                            5.38928593e-02,
-                            5.42095982e-02,
-                            1.06451870e-02,
-                            8.08388170e-01,
-                            3.50556090e-04,
-                            1.87168066e-05,
+                            3.02819435e-03,
+                            5.38928584e-02,
+                            5.42095985e-02,
+                            1.06452404e-02,
+                            8.08388234e-01,
+                            3.50556109e-04,
+                            1.87168102e-05,
                             0.0
                         ],
                         linf=[
-                            1.95688081e-02,
-                            7.24931479e-01,
-                            9.51262498e-01,
-                            6.28694988e-02,
-                            4.83883365e+00,
-                            2.05221817e-03,
-                            8.70597151e-05,
+                            1.95688119e-02,
+                            7.24931346e-01,
+                            9.51262535e-01,
+                            6.28703226e-02,
+                            4.83882936e+00,
+                            2.05221861e-03,
+                            8.70597186e-05,
                             0.0
                         ],
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2))
@@ -50,9 +50,23 @@ end
     Setup,
     EulerMoistPotentialTemperature3D
 ] tags=[:euler_moist_potential_temperature_3d] begin
+    # Rain water below 5 km and none above, such that the rain falls, evaporates, and
+    # leaves the domain through the lower boundary
+    function initial_condition_rain(x, t, equations)
+        u = initial_condition_moist_baroclinic_instability(x, t, equations)
+        rho, v1, v2, v3, p, q_v, q_c, _ = cons2prim(u, equations)
+        z = sqrt(sum(abs2, x)) - EARTH_RADIUS
+        q_r = 1.0e-3 * max(1 - z / 5000, 0)^2
+        rho_dry = rho / (1 + q_v + q_c)
+        return prim2cons(SVector(rho_dry * (1 + q_v + q_c + q_r), v1, v2, v3, p,
+                                 q_v, q_c, q_r),
+                         equations)
+    end
+
     trixi_include(@__MODULE__,
                   joinpath(EXAMPLES_DIR, "global_circulation",
                            "elixir_potential_temperature_kessler_baroclinic_instability.jl"),
+                  initial_condition = initial_condition_rain,
                   tspan = (0.0, 100.0), trees_per_cube_face = (2, 2))
     u_ode_specialized = copy(sol.u[end])
 
@@ -61,11 +75,19 @@ end
     trixi_include(@__MODULE__,
                   joinpath(EXAMPLES_DIR, "global_circulation",
                            "elixir_potential_temperature_kessler_baroclinic_instability.jl"),
+                  initial_condition = initial_condition_rain,
                   volume_flux = flux_kennedy_gruber_souza_etal,
                   tspan = (0.0, 100.0), trees_per_cube_face = (2, 2))
     u_ode = copy(sol.u[end])
 
     @test u_ode_specialized ≈ u_ode
+    # The mass of dry air is conserved, while the water decreases since the rain leaves the
+    # domain through the lower boundary
+    dry_air(u, equations) = u[1] - u[6] - u[7] - u[8]
+    water(u, equations) = u[6] + u[7] + u[8]
+    @test isapprox(Trixi.integrate(dry_air, sol.u[end], semi),
+                   Trixi.integrate(dry_air, ode.u0, semi), rtol = 1e-12)
+    @test Trixi.integrate(water, sol.u[end], semi) < Trixi.integrate(water, ode.u0, semi)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)

@@ -80,6 +80,7 @@ export CompressibleMoistEulerEquations2D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity2D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity3D,
        CompressibleEulerMoistPotentialTemperatureEquations3D,
+       KesslerMicrophysics,
        CompressibleEulerEnergyEquationsWithGravity2D,
        CompressibleEulerEnergyEquationsWithGravity3D,
        CompressibleEulerInternalEnergyEquationsWithGravity2D,
@@ -133,7 +134,7 @@ export aux_field_gravity_earth
 
 export boundary_condition_horizontal_slip_wall
 
-export source_terms_coriolis_small_earth, source_terms_kessler
+export source_terms_coriolis_small_earth, source_terms_microphysics
 
 export MountainWaveSetup, SchärMountain, WitchOfAgnesi, terrain_following_faces
 

@@ -370,7 +370,11 @@ end
         @test eltype(@inferred prim2cons(u, equations)) == RealT
         @test typeof(@inferred pressure(u, equations)) == RealT
         @test typeof(@inferred TrixiAtmo.temperature(u, equations)) == RealT
-        @test typeof(@inferred TrixiAtmo.terminal_velocity_rain(u, equations)) == RealT
+        @test typeof(@inferred TrixiAtmo.terminal_velocity_rain(TrixiAtmo.density_dry(u,
+                                                                                      equations),
+                                                                u[8],
+                                                                equations.microphysics)) ==
+              RealT
         @test typeof(@inferred TrixiAtmo.density_dry(u, equations)) == RealT
         @test typeof(@inferred TrixiAtmo.saturation_mixing_ratio_tetens(RealT(280),
                                                                         RealT(90_000))) ==
@@ -380,7 +384,7 @@ end
                                                    normal_direction, equations)) == RealT
         @test typeof(@inferred max_abs_speed(u_ll, u_rr, aux_ll, aux_rr,
                                              normal_direction, equations)) == RealT
-        @test eltype(@inferred source_terms_kessler(u, aux, x, t, equations)) == RealT
+        @test eltype(@inferred source_terms_microphysics(u, aux, x, t, equations)) == RealT
         @test eltype(@inferred source_terms_coriolis(u, aux, x, t, equations)) == RealT
         @test eltype(@inferred aux_field_gravity_earth(x, equations)) == RealT
         x_sphere = SVector(RealT(EARTH_RADIUS + 1_000), RealT(2_000), RealT(1_000))
@@ -401,7 +405,12 @@ end
         # Adapt the real type, e.g., to move a semidiscretization to a GPU
         equations_float64 = @inferred similar(equations, Float64)
         @test typeof(equations_float64.c_p) == Float64
-        @test typeof(equations_float64.condensation_time) == Float64
+        @test typeof(equations_float64.microphysics.condensation_time) == Float64
+        @test typeof(@inferred KesslerMicrophysics(latent_heat = RealT(2.5e6),
+                                                   c_p = RealT(1003),
+                                                   rho_surface = RealT(1.15),
+                                                   condensation_time = one(RealT))) ==
+              KesslerMicrophysics{RealT}
         @test typeof(@inferred similar(equations_float64, RealT)) == typeof(equations)
     end
 end

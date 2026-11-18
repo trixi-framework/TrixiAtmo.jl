@@ -196,21 +196,24 @@ end
                                                    equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
 
 Initial condition of the moist baroclinic wave of DCMIP2016 (test case 161) on a spherical
-shell of inner radius [`EARTH_RADIUS`](@ref). The pressure and the zonal wind are the ones of
-the balanced state of [`initial_condition_baroclinic_instability`](@ref), whose temperature
-is the virtual temperature ``T_v``. The specific humidity ``q_v = \varrho_v / \varrho`` is
+shell of inner radius [`EARTH_RADIUS`](@ref). The pressure, the total density, and the zonal
+wind are the ones of the balanced state of [`initial_condition_baroclinic_instability`](@ref),
+whose temperature is the virtual temperature ``T_v``. The specific humidity
+``q_v = \varrho_v / \varrho`` is
 ```math
 q_v = q_0 \exp\left(-\left(\frac{\varphi}{\varphi_w}\right)^4\right)
       \exp\left(-\left(\frac{(\eta - 1) p_0}{p_w}\right)^2\right)
 ```
 for ``\eta = p / p_0 > 0.1`` and ``q_v = 10^{-12}`` above, with ``q_0 = 0.018``,
-``\varphi_w = 2\pi / 9``, ``p_0 = 10^5`` Pa, and ``p_w = 34000`` Pa, and the temperature is
-``T = T_v / (1 + 0.608 q_v)``. Initially, there is no cloud and rain water. The instability
+``\varphi_w = 2\pi / 9``, ``p_0 = 10^5`` Pa, and ``p_w = 34000`` Pa. The temperature follows
+from the equation of state, i.e., it is ``T = T_v / (1 + 0.608 q_v)`` for the gas constants
+``R = 287`` J/(kg K) and ``R_v = 461.5`` J/(kg K) of DCMIP2016. Initially, all other moisture
+variables vanish. The instability
 is triggered by the exponential perturbation of the zonal wind of DCMIP2016 with an
 amplitude of 1 m/s, centered at the longitude ``\pi / 9`` and the latitude ``2 \pi / 9``.
 The corresponding auxiliary variables are given by [`aux_field_gravity_earth`](@ref).
 
-This initial condition is meant to be used together with [`source_terms_kessler`](@ref) and
+This initial condition is meant to be used together with [`source_terms_microphysics`](@ref) and
 [`source_terms_coriolis`](@ref).
 
 - Paul A. Ullrich et al. (2016)
@@ -225,11 +228,8 @@ function initial_condition_moist_baroclinic_instability(x, t,
     # Make sure that the r is not smaller than radius_earth
     z = max(r - radius_earth, 0)
 
-    # Unperturbed basic state, whose density follows from the virtual temperature with the
-    # gas constant 287 J/(kg K)
-    rho_virtual, u, p = basic_state_baroclinic_instability_longitudinal_velocity(lon, lat,
-                                                                                 z)
-    temperature_virtual = p / (287 * rho_virtual)
+    # Unperturbed basic state, whose density is the total density of the moist air
+    rho, u, p = basic_state_baroclinic_instability_longitudinal_velocity(lon, lat, z)
 
     eta = p / 100_000
     if eta > convert(RealT, 0.1)
@@ -238,7 +238,6 @@ function initial_condition_moist_baroclinic_instability(x, t,
     else
         q_v = convert(RealT, 1.0e-12)
     end
-    temperature = temperature_virtual / (1 + convert(RealT, 0.608) * q_v)
 
     u += perturbation_exponential(lon, lat, z)
 
@@ -250,11 +249,9 @@ function initial_condition_moist_baroclinic_instability(x, t,
     # `q_v` is the specific humidity `rho_vapor / rho`, while the primitive variables contain
     # the mixing ratio `rho_vapor / rho_dry`
     r_v = q_v / (1 - q_v)
-    rho_dry = p / (temperature * (equations.R + r_v * equations.R_v))
-    rho = rho_dry * (1 + r_v)
 
-    return prim2cons(SVector(rho, v1, v2, v3, p, r_v, zero(RealT), zero(RealT)),
-                     equations)
+    moisture = SVector(r_v, ntuple(_ -> zero(RealT), Val(nvariables(equations) - 6))...)
+    return prim2cons(SVector(rho, v1, v2, v3, p, moisture...), equations)
 end
 
 @doc raw"""
@@ -370,7 +367,7 @@ end
 # Coriolis force for a rotation about the z axis with the given angular velocity, used by
 # `source_terms_coriolis` and `source_terms_coriolis_small_earth`
 @inline function coriolis_source(u, angular_velocity,
-                                 equations::AbstractCompressibleEulerEquations{3, 6})
+                                 equations::AbstractCompressibleEulerEquations{3})
     du0 = zero(eltype(u))
     angular_velocity = convert(eltype(u), angular_velocity)
 
@@ -378,7 +375,8 @@ end
     du2 = 2 * angular_velocity * u[3]
     du3 = -2 * angular_velocity * u[2]
 
-    return SVector(du0, du2, du3, du0, du0, du0)
+    return SVector(du0, du2, du3, du0,
+                   ntuple(_ -> du0, Val(nvariables(equations) - 4))...)
 end
 
 @doc raw"""
@@ -401,14 +399,7 @@ end
 # The Coriolis force acts on the momentum of the total density
 @inline function source_terms_coriolis(u, aux, x, t,
                                        equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
-    du0 = zero(eltype(u))
-    angular_velocity = convert(eltype(u), EARTH_ROTATION_RATE)
-
-    # Coriolis term, -2Ω × ρv = -2 * angular_velocity * (0, 0, 1) × u[2:4]
-    du2 = 2 * angular_velocity * u[3]
-    du3 = -2 * angular_velocity * u[2]
-
-    return SVector(du0, du2, du3, du0, du0, du0, du0, du0)
+    return coriolis_source(u, EARTH_ROTATION_RATE, equations)
 end
 
 @doc raw"""

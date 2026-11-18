@@ -15,14 +15,15 @@ using Trixi, TrixiAtmo
 
 equations = CompressibleEulerMoistPotentialTemperatureEquations3D(c_p = 1004.5,
                                                                   c_v = 717.5,
-                                                                  gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+                                                                  gravity = EARTH_GRAVITATIONAL_ACCELERATION,
+                                                                  microphysics = KesslerMicrophysics())
 
 initial_condition = initial_condition_moist_baroclinic_instability
 
 # Microphysics and Coriolis force of the rotating Earth
-@inline function source_terms_kessler_coriolis(u, aux, x, t,
-                                               equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
-    return (source_terms_kessler(u, aux, x, t, equations) +
+@inline function source_terms_microphysics_coriolis(u, aux, x, t,
+                                                    equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
+    return (source_terms_microphysics(u, aux, x, t, equations) +
             source_terms_coriolis(u, aux, x, t, equations))
 end
 
@@ -42,7 +43,7 @@ mesh = P4estMeshCubedSphereTopography(trees_per_cube_face..., EARTH_RADIUS, 3000
                                       polydeg = polydeg, initial_refinement_level = 0)
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
-                                    source_terms = source_terms_kessler_coriolis,
+                                    source_terms = source_terms_microphysics_coriolis,
                                     boundary_conditions = boundary_conditions,
                                     aux_field = aux_field_gravity_earth)
 

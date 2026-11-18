@@ -945,7 +945,9 @@ end
     # sedimentation through a face whose normal is horizontal, and the full terminal
     # velocity through a face whose normal is vertical
     v_ll = SVector(u_ll[2], u_ll[3], u_ll[4]) / u_ll[1]
-    rain = u_ll[8] * TrixiAtmo.terminal_velocity_rain(u_ll, equations)
+    rain = u_ll[8] *
+           TrixiAtmo.terminal_velocity_rain(TrixiAtmo.density_dry(u_ll, equations), u_ll[8],
+                                            equations.microphysics)
     vertical = SVector(aux_ll[2], aux_ll[3], aux_ll[4])
     horizontal = SVector(x_ll[2], -x_ll[1], 0.0) / 1.0e5
     @test flux(u_ll, aux_ll, horizontal, equations)[8] ≈ u_ll[8] * sum(v_ll .* horizontal)
@@ -1066,7 +1068,7 @@ end
 
     for (T, p, rho_d, q_v, q_c, q_r, dt, T_ref, q_v_ref, q_c_ref, q_r_ref) in cases_evap
         u, exner = state(T, p, rho_d, q_v, q_c, q_r)
-        du = source_terms_kessler(u, aux, nothing, 0.0, equations)
+        du = source_terms_microphysics(u, aux, nothing, 0.0, equations)
         evaporation = (q_r - q_r_ref) / dt
         @test isapprox(du[8] / rho_d, -evaporation, rtol = 1e-10)
         @test isapprox(du[6] / rho_d, evaporation, rtol = 1e-10)
@@ -1077,25 +1079,27 @@ end
 
     for (T, p, rho_d, q_v, q_c, q_r, dt, T_ref, q_v_ref, q_c_ref, q_r_ref) in cases_acc
         u, _ = state(T, p, rho_d, q_v, q_c, q_r)
-        du = source_terms_kessler(u, aux, nothing, 0.0, equations)
+        du = source_terms_microphysics(u, aux, nothing, 0.0, equations)
         @test isapprox(du[8] / rho_d, (q_r_ref - q_r) / dt * (1 + dt * 2.2 * q_r^0.875),
                        rtol = 1e-10)
     end
 
     for (T, p, rho_d, q_v, q_c, q_r, dt, T_ref, q_v_ref, q_c_ref, q_r_ref) in cases_adj
         u, exner = state(T, p, rho_d, q_v, q_c, q_r)
-        du = source_terms_kessler(u, aux, nothing, 0.0, equations)
+        du = source_terms_microphysics(u, aux, nothing, 0.0, equations)
         condensation = du[7] / rho_d
-        @test isapprox(equations.condensation_time * condensation, q_c_ref, rtol = 1e-10)
-        @test isapprox(equations.condensation_time * source_rho_theta(du, T, p, q_v) /
+        @test isapprox(equations.microphysics.condensation_time * condensation, q_c_ref,
+                       rtol = 1e-10)
+        @test isapprox(equations.microphysics.condensation_time *
+                       source_rho_theta(du, T, p, q_v) /
                        rho_d * exner, T_ref - T, rtol = 1e-8)
     end
 
     # The microphysics only moves water between the species and does not change the
     # total density and the momentum
     for (T, p, rho_d, q_v, q_c, q_r) in vcat(cases_evap, cases_acc, cases_adj)
-        du = source_terms_kessler(state(T, p, rho_d, q_v, q_c, q_r)[1], aux, nothing,
-                                  0.0, equations)
+        du = source_terms_microphysics(state(T, p, rho_d, q_v, q_c, q_r)[1], aux, nothing,
+                                       0.0, equations)
         @test isapprox(du[6] + du[7] + du[8], 0, atol = 1e-15)
         @test du[1] == du[2] == du[3] == du[4] == 0
     end
