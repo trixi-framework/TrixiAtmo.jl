@@ -20,6 +20,15 @@ for human readability.
   With adaptive time stepping, results change slightly since the geopotential no longer
   enters the error estimate of the time integrator.
 
+#### Added
+- The `CompressibleEulerPotentialTemperatureEquationsWithGravity3D` and the
+  `CompressibleEulerMoistPotentialTemperatureEquations3D` take a turbulence model as
+  keyword argument `turbulence` (default `NoTurbulence()`), whose turbulent fluxes are the
+  parabolic terms `TurbulentDiffusion3D` of a `SemidiscretizationHyperbolicParabolic`
+  with the keyword argument `aux_field`. A `HorizontalVerticalTurbulence` combines a
+  horizontal and a vertical model, e.g., `ConstantEddyViscosity`, with respect to the
+  upward unit vector, i.e., the normalized gradient of the geopotential.
+
 ## Changes in the v0.1 lifecycle
 
 #### Added

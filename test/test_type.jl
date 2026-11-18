@@ -428,6 +428,37 @@ end
     end
 end
 
+@testitem "Type stability: Turbulent Diffusion 3D" setup=[Setup] tags=[:type_stable_tests] begin
+    for RealT in (Float32, Float64)
+        turbulence = HorizontalVerticalTurbulence(ConstantEddyViscosity(RealT(1.0e5)),
+                                                  ConstantEddyViscosity(RealT(1)))
+        equations_dry = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = RealT(1004),
+                                                                                              c_v = RealT(717),
+                                                                                              gravity = RealT(EARTH_GRAVITATIONAL_ACCELERATION),
+                                                                                              turbulence = turbulence)
+        equations_moist = @inferred CompressibleEulerMoistPotentialTemperatureEquations3D(c_p = RealT(1004),
+                                                                                          c_v = RealT(717),
+                                                                                          gravity = RealT(EARTH_GRAVITATIONAL_ACCELERATION),
+                                                                                          turbulence = turbulence)
+        x = SVector(RealT(4.0e6), RealT(-3.0e6), RealT(2.5e6))
+        k = SVector(RealT(0.6), zero(RealT), RealT(0.8))
+        for equations in (equations_dry, equations_moist)
+            equations_parabolic = @inferred TurbulentDiffusion3D(equations)
+            nvars = nvariables(equations)
+            u = SVector(ntuple(v -> RealT(1 + v / 10), nvars))
+            gradients = ntuple(d -> SVector(ntuple(v -> RealT(d - v / 10), nvars)), 3)
+            w = @inferred cons2specific(u, equations_parabolic)
+            @test eltype(w) == RealT
+            for orientation in 1:3
+                @test eltype(@inferred flux(w, gradients, k, orientation,
+                                            equations_parabolic)) == RealT
+            end
+            @test eltype(@inferred TrixiAtmo.upward_unit_vector(x, aux_field_gravity_earth,
+                                                                equations)) == RealT
+        end
+    end
+end
+
 @testitem "Type stability: Compressible Euler Moist Euler 2D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
         equations = @inferred CompressibleMoistEulerEquations2D(c_pd = RealT(2.1),

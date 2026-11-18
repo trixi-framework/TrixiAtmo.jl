@@ -165,6 +165,38 @@ end
                                                                     jacobian_cache, semi)
 end
 
+@testitem "Euler potential temperature 3D: elixir_potential_temperature_baroclinic_instability_turbulence" setup=[
+    Setup,
+    EulerPotentialTemperature3D
+] tags=[:euler_potential_temperature_3d] begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
+                                 "elixir_potential_temperature_baroclinic_instability_turbulence.jl"),
+                        l2=[
+                            0.003031777673411901,
+                            0.051523875638834524,
+                            0.05246443994827504,
+                            0.012594810991886378,
+                            0.8067706647208186
+                        ],
+                        linf=[
+                            0.021713721259518204,
+                            0.8313541828542199,
+                            1.2490179094366172,
+                            0.9091888600567941,
+                            4.833058699565186
+                        ],
+                        tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
+                        dt=20)
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities). `Trixi.solve!` calls the right-hand side inside the
+    # timer section "main loop", so the first call outside of it creates new timer
+    # sections, which allocates.
+    TrixiAtmo.Trixi.rhs_hyperbolic!(similar(sol.u[end]), sol.u[end], semi, sol.t[end])
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
+    TrixiAtmo.Trixi.rhs_parabolic!(similar(sol.u[end]), sol.u[end], semi, sol.t[end])
+    @test_allocations(TrixiAtmo.Trixi.rhs_parabolic!, semi, sol, 1000)
+end
+
 @testitem "Euler potential temperature 3D: elixir_potential_temperature_baroclinic_instability Souza" setup=[
     Setup,
     EulerPotentialTemperature3D
