@@ -165,6 +165,122 @@ function initial_condition_baroclinic_instability(x, t,
     return prim2cons(SVector(rho, v1, v2, v3, p, phi), equations)
 end
 
+# Exponential perturbation of the zonal wind of the moist baroclinic wave of DCMIP2016
+# (`evaluate_exponential` in `baroclinic_wave_test.f90`) with an amplitude of 1 m/s
+@inline function perturbation_exponential(lon, lat, z)
+    RealT = typeof(z)
+    perturbation_radius = convert(RealT, 0.1) # in units of the radius of the Earth
+    perturbation_lon = convert(RealT, pi) / 9
+    perturbation_lat = 2 * convert(RealT, pi) / 9
+    pertz = 15000 # Perturbation height cap
+
+    great_circle_distance = acos(sin(perturbation_lat) * sin(lat) +
+                                 cos(perturbation_lat) * cos(lat) *
+                                 cos(lon - perturbation_lon)) / perturbation_radius
+
+    if z > pertz || great_circle_distance >= 1
+        return zero(RealT)
+    end
+
+    # Vertical tapering
+    perttaper = 1 - 3 * z^2 / pertz^2 + 2 * z^3 / pertz^3
+
+    return perttaper * exp(-great_circle_distance^2)
+end
+
+@doc raw"""
+    initial_condition_moist_baroclinic_instability(x, t,
+                                                   equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
+
+Initial condition of the moist baroclinic wave of DCMIP2016 (test case 161) on a spherical
+shell of inner radius [`EARTH_RADIUS`](@ref). The pressure and the zonal wind are the ones of
+the balanced state of [`initial_condition_baroclinic_instability`](@ref), whose temperature
+is the virtual temperature ``T_v``. The specific humidity ``q_v = \varrho_v / \varrho`` is
+```math
+q_v = q_0 \exp\left(-\left(\frac{\varphi}{\varphi_w}\right)^4\right)
+      \exp\left(-\left(\frac{(\eta - 1) p_0}{p_w}\right)^2\right)
+```
+for ``\eta = p / p_0 > 0.1`` and ``q_v = 10^{-12}`` above, with ``q_0 = 0.018``,
+``\varphi_w = 2\pi / 9``, ``p_0 = 10^5`` Pa, and ``p_w = 34000`` Pa, and the temperature is
+``T = T_v / (1 + 0.608 q_v)``. Initially, there is no cloud and rain water. The instability
+is triggered by the exponential perturbation of the zonal wind of DCMIP2016 with an
+amplitude of 1 m/s, centered at the longitude ``\pi / 9`` and the latitude ``2 \pi / 9``.
+The corresponding auxiliary variables are given by [`aux_field_gravity_earth`](@ref).
+
+This initial condition is meant to be used together with [`source_terms_kessler`](@ref) and
+[`source_terms_coriolis`](@ref).
+
+- Paul A. Ullrich et al. (2016)
+  Dynamical Core Model Intercomparison Project (DCMIP2016) test case document
+  [DOI: 10.5281/zenodo.1298671](https://doi.org/10.5281/zenodo.1298671)
+"""
+function initial_condition_moist_baroclinic_instability(x, t,
+                                                        equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
+    RealT = eltype(x)
+    lon, lat, r = cartesian_to_sphere(x)
+    radius_earth = convert(RealT, EARTH_RADIUS)
+    # Make sure that the r is not smaller than radius_earth
+    z = max(r - radius_earth, 0)
+
+    # Unperturbed basic state, whose density follows from the virtual temperature with the
+    # gas constant 287 J/(kg K)
+    rho_virtual, u, p = basic_state_baroclinic_instability_longitudinal_velocity(lon, lat,
+                                                                                 z)
+    temperature_virtual = p / (287 * rho_virtual)
+
+    eta = p / 100_000
+    if eta > convert(RealT, 0.1)
+        q_v = convert(RealT, 0.018) * exp(-(lat / (2 * convert(RealT, pi) / 9))^4) *
+              exp(-((eta - 1) * 100_000 / 34_000)^2)
+    else
+        q_v = convert(RealT, 1.0e-12)
+    end
+    temperature = temperature_virtual / (1 + convert(RealT, 0.608) * q_v)
+
+    u += perturbation_exponential(lon, lat, z)
+
+    # Convert spherical velocity to Cartesian
+    v1 = -sin(lon) * u
+    v2 = cos(lon) * u
+    v3 = zero(RealT)
+
+    # `q_v` is the specific humidity `rho_vapor / rho`, while the primitive variables contain
+    # the mixing ratio `rho_vapor / rho_dry`
+    r_v = q_v / (1 - q_v)
+    rho_dry = p / (temperature * (equations.R + r_v * equations.R_v))
+    rho = rho_dry * (1 + r_v)
+
+    return prim2cons(SVector(rho, v1, v2, v3, p, r_v, zero(RealT), zero(RealT)),
+                     equations)
+end
+
+@doc raw"""
+    aux_field_gravity_earth(x,
+                            equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
+
+Geopotential
+```math
+\phi(\vec{x}) = g \left(a - \frac{a^2}{\lVert \vec{x} \rVert}\right)
+```
+of the gravity of the Earth, which points to the center of the Earth and decreases with
+``1 / \lVert \vec{x} \rVert^2``, and the upward unit vector
+``\hat{k} = \vec{x} / \lVert \vec{x} \rVert``. Here, ``a`` is the radius of the Earth
+([`EARTH_RADIUS`](@ref)) and ``g`` the gravitational acceleration at its surface
+([`EARTH_GRAVITATIONAL_ACCELERATION`](@ref)), where ``\phi = 0``. They are returned as the
+auxiliary variables `SVector(phi, k1, k2, k3)`, see `Trixi.nauxvariables`, and passed as
+`aux_field` to `SemidiscretizationHyperbolic`.
+"""
+@inline function aux_field_gravity_earth(x,
+                                         equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
+    RealT = eltype(x)
+    radius_earth = convert(RealT, EARTH_RADIUS)
+    gravitational_acceleration = convert(RealT, EARTH_GRAVITATIONAL_ACCELERATION)
+    r = norm(x)
+    phi = gravitational_acceleration * (radius_earth - radius_earth^2 / r)
+
+    return SVector(phi, x[1] / r, x[2] / r, x[3] / r)
+end
+
 @doc raw"""
     initial_condition_isothermal(x, t,
                                  equations::AbstractCompressibleEulerEquations{3, 6})
@@ -277,6 +393,19 @@ See also [`source_terms_coriolis_small_earth`](@ref) for the reduced-radius conf
 @inline function source_terms_coriolis(u, x, t,
                                        equations::AbstractCompressibleEulerEquations{3, 6})
     return coriolis_source(u, EARTH_ROTATION_RATE, equations)
+end
+
+# The Coriolis force acts on the momentum of the total density
+@inline function source_terms_coriolis(u, aux, x, t,
+                                       equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
+    du0 = zero(eltype(u))
+    angular_velocity = convert(eltype(u), EARTH_ROTATION_RATE)
+
+    # Coriolis term, -2Ω × ρv = -2 * angular_velocity * (0, 0, 1) × u[2:4]
+    du2 = 2 * angular_velocity * u[3]
+    du3 = -2 * angular_velocity * u[2]
+
+    return SVector(du0, du2, du3, du0, du0, du0, du0, du0)
 end
 
 @doc raw"""

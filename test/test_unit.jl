@@ -841,3 +841,253 @@ end
         end
     end
 end
+
+@testitem "Unit: Consistency check for fluxes with Moist Potential Temperature: CEMPTE3D" setup=[Setup] tags=[:unit_fluxes] begin
+    equations = CompressibleEulerMoistPotentialTemperatureEquations3D(c_p = 1004.0,
+                                                                      c_v = 717.0,
+                                                                      gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+    u_ll = SVector(1.1, -0.5, 2.34, 0.7, 310.0, 0.012, 0.003, 0.002)
+    u_rr = SVector(1.05, 0.4, -1.3, -0.2, 300.0, 0.01, 0.0, 0.004)
+    # Geopotential and radial upward unit vector at two nearby points on a sphere
+    function aux_sphere(x)
+        r = sqrt(sum(abs2, x))
+        return SVector(EARTH_GRAVITATIONAL_ACCELERATION * (r - 3.0e5), x[1] / r, x[2] / r,
+                       x[3] / r)
+    end
+    x_ll = SVector(2.0e5, -1.0e5, 2.0e5)
+    x_rr = SVector(2.1e5, -0.9e5, 2.05e5)
+    aux_ll = aux_sphere(x_ll)
+    aux_rr = aux_sphere(x_rr)
+
+    normal_directions = [SVector(1.0, 0.0, 0.0),
+        SVector(0.0, 1.0, 0.0),
+        SVector(0.0, 0.0, 1.0),
+        SVector(0.5, -0.5, 0.2),
+        SVector(-1.2, 0.3, 1.4)]
+
+    for normal_direction in normal_directions, (u, aux) in ((u_ll, aux_ll), (u_rr, aux_rr))
+        for i in 1:2
+            @test flux_lmars_combined(u, u, aux, aux, normal_direction, equations)[i] ≈
+                  flux(u, aux, normal_direction, equations)
+            @test flux_kennedy_gruber_souza_etal(u, u, aux, aux, normal_direction,
+                                                 equations)[i] ≈
+                  flux(u, aux, normal_direction, equations)
+        end
+    end
+
+    for normal_direction in normal_directions
+        # The conservative part of the volume flux is symmetric and the nonconservative
+        # part is antisymmetric
+        flux_left, flux_right = flux_kennedy_gruber_souza_etal(u_ll, u_rr, aux_ll, aux_rr,
+                                                               normal_direction,
+                                                               equations)
+        flux_left_swapped, flux_right_swapped = flux_kennedy_gruber_souza_etal(u_rr, u_ll,
+                                                                               aux_rr,
+                                                                               aux_ll,
+                                                                               normal_direction,
+                                                                               equations)
+        @test flux_left + flux_right ≈ flux_left_swapped + flux_right_swapped
+        @test flux_left - flux_right ≈ -(flux_left_swapped - flux_right_swapped)
+
+        # The surface flux and the wave speed estimates are homogeneous of degree one in
+        # the normal direction
+        for i in 1:2
+            @test flux_lmars_combined(u_ll, u_rr, aux_ll, aux_rr, 2.5 * normal_direction,
+                                      equations)[i] ≈
+                  2.5 * flux_lmars_combined(u_ll, u_rr, aux_ll, aux_rr,
+                                      normal_direction, equations)[i]
+        end
+        @test max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr, 2.5 * normal_direction,
+                                  equations) ≈
+              2.5 * max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
+                                  equations)
+        @test max_abs_speed(u_ll, u_rr, aux_ll, aux_rr, 2.5 * normal_direction,
+                            equations) ≈
+              2.5 * max_abs_speed(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)
+        @test max_abs_speed(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations) <=
+              max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)
+    end
+
+    # Without water, the fluxes are the ones of the dry equations, which carry the
+    # geopotential in the state
+    equations_dry = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
+                                                                                c_v = 717.0,
+                                                                                gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+    dry(u) = SVector(u[1], u[2], u[3], u[4], u[5], 0.0, 0.0, 0.0)
+    dry_with_geopotential(u, aux) = SVector(u[1], u[2], u[3], u[4], u[5], aux[1])
+    u_ll_dry = dry_with_geopotential(u_ll, aux_ll)
+    u_rr_dry = dry_with_geopotential(u_rr, aux_rr)
+    for normal_direction in normal_directions
+        @test flux(dry(u_ll), aux_ll, normal_direction, equations)[1:5] ≈
+              flux(u_ll_dry, normal_direction, equations_dry)[1:5]
+        for i in 1:2
+            @test flux_lmars_combined(dry(u_ll), dry(u_rr), aux_ll, aux_rr,
+                                      normal_direction, equations)[i][1:5] ≈
+                  flux_lmars_combined(u_ll_dry, u_rr_dry, normal_direction,
+                                      equations_dry)[i][1:5]
+            @test flux_kennedy_gruber_souza_etal(dry(u_ll), dry(u_rr), aux_ll, aux_rr,
+                                                 normal_direction, equations)[i][1:5] ≈
+                  flux_kennedy_gruber_souza_etal(u_ll_dry, u_rr_dry, normal_direction,
+                                                 equations_dry)[i][1:5]
+        end
+    end
+
+    # The rain falls in the direction of the auxiliary variables: there is no
+    # sedimentation through a face whose normal is horizontal, and the full terminal
+    # velocity through a face whose normal is vertical
+    v_ll = SVector(u_ll[2], u_ll[3], u_ll[4]) / u_ll[1]
+    rain = u_ll[8] * TrixiAtmo.terminal_velocity_rain(u_ll, equations)
+    vertical = SVector(aux_ll[2], aux_ll[3], aux_ll[4])
+    horizontal = SVector(x_ll[2], -x_ll[1], 0.0) / 1.0e5
+    @test flux(u_ll, aux_ll, horizontal, equations)[8] ≈ u_ll[8] * sum(v_ll .* horizontal)
+    @test flux(u_ll, aux_ll, vertical, equations)[8] ≈
+          u_ll[8] * sum(v_ll .* vertical) - rain
+
+    # The rain leaves the domain through the lower boundary but does not enter it through
+    # the upper boundary
+    flux_bottom = boundary_condition_slip_wall(u_ll, aux_ll, -2 * vertical, x_ll, 0.0,
+                                               flux_lmars_combined, equations)
+    flux_top = boundary_condition_slip_wall(u_ll, aux_ll, 2 * vertical, x_ll, 0.0,
+                                            flux_lmars_combined, equations)
+    @test flux_bottom[8] ≈ 2 * rain
+    @test flux_bottom[1] ≈ 2 * rain
+    @test isapprox(flux_top[8], 0, atol = 1e-12)
+    @test isapprox(flux_top[1], 0, atol = 1e-12)
+end
+
+@testitem "Unit: Consistency check for Kessler source terms: CEMPTE3D" setup=[Setup] tags=[:unit_source_terms] begin
+    # Reference values of the unmodified `interface/kessler.f90` of DCMIP2016-v1.0, compiled
+    # with `gfortran -fdefault-real-8` and called on a column with two levels 1e12 m apart,
+    # such that the sedimentation vanishes. The inputs are
+    # `(T, p, rho_d, q_v, q_c, q_r, dt)` and the outputs `(T, q_v, q_c, q_r)` after one
+    # call. The states are chosen such that one step of the reference isolates a single
+    # process, which makes the rates recoverable exactly:
+    # - rain evaporation: no cloud, subsaturated air, and no active limit, i.e.,
+    #   `q_r` decreases by `dt * E`;
+    # - autoconversion and accretion: supersaturated air without evaporation and the
+    #   semi-implicit update `A + C_r = (q_r_ref - q_r) / dt * (1 + 2.2 dt q_r^0.875)`;
+    # - condensation: supersaturated air without condensate, where the reference condenses
+    #   the amount `condensation_time * C` in one step.
+    cases_evap = [
+        (245.50998664661992, 73997.41793135805, 1.0499832912908547, 0.00011903200024704985,
+         0.0, 0.006393154400063015, 1.0,
+         245.5036540052133, 0.00012157265597939809, 0.0, 0.006390613744330666),
+        (296.35049717342577, 31587.777324256378, 0.3550477579366977, 0.028626266804346493,
+         0.0, 0.003731926498856784, 1.0,
+         296.31113128261774, 0.028642060399738673, 0.0, 0.003716132903464603),
+        (250.7753430577538, 61818.16354439236, 0.8581864416592901, 0.0005267777206176081,
+         0.0, 0.006069668253512719, 1.0,
+         250.7690603696752, 0.0005292983350747266, 0.0, 0.0060671476390556),
+        (275.6460746683124, 82240.213872993, 1.0347295886276209, 0.002904519781261292, 0.0,
+         0.009921625517690312, 1.0,
+         275.61172446315226, 0.002918301083571528, 0.0, 0.009907844215380076),
+        (286.67191053564613, 97714.05982903691, 1.172832052842216, 0.00785934566403949, 0.0,
+         0.0016833001691726457, 1.0,
+         286.6661654032873, 0.007861650611141866, 0.0, 0.0016809952220702695),
+        (257.37306392152624, 35104.93090225085, 0.47323164035742876, 0.0026538242501123093,
+         0.0, 0.0031831304051924674, 1.0,
+         257.370362613704, 0.002654908014810588, 0.0, 0.0031820466404941885)
+    ]
+    cases_acc = [
+        (288.71421777755427, 59557.576438472744, 0.6974786440154381, 0.018979358547250663,
+         0.0016283580189628585, 0.00584538192872492, 10.0,
+         288.9054240925639, 0.0189026465736688, 0.001380044487208449, 0.006170407434061194),
+        (264.16208683569846, 44567.65919018755, 0.5836767601416812, 0.0044477511228992244,
+         0.0016070674996579966, 0.002704639928955728, 10.0,
+         264.2697176949871, 0.004404569622152644, 0.0014667958137769754,
+         0.0028880931155833294),
+        (248.06498973676273, 51099.97867003122, 0.716618293055866, 0.0009823104325069128,
+         0.0005059320530804828, 0.0022687157312843635, 10.0,
+         248.07778476812564, 0.0009771770659240987, 0.0004622296595094133,
+         0.002317551491438247),
+        (239.13887147827748, 36204.20583137108, 0.5270026531816496, 0.0005933243900429469,
+         0.0016422105065254248, 0.003270197190982811, 10.0,
+         239.14622998890806, 0.0005903721555779585, 0.001428946789064268,
+         0.003486413142908956),
+        (302.9645922419518, 31769.295210032924, 0.32148422642530144, 0.08489497152304637,
+         0.0012371135773060191, 0.0013274845241556088, 10.0,
+         303.3104413715413, 0.08475621685225505, 0.00129613145315346,
+         0.0014072213190994866),
+        (308.4970964719618, 102531.08608987181, 1.0956234592201892, 0.035426673322217925,
+         0.0029139658834745077, 0.004995226953357617, 10.0,
+         308.61415982317095, 0.0353797075057128, 0.002433198063936951,
+         0.0055229605894002946)
+    ]
+    cases_adj = [
+        (249.5156179563099, 86694.81311489329, 1.2093597477695357, 0.0006561386014287879,
+         0.0, 0.0, 10.0,
+         249.51611783312103, 0.000655938050852163, 2.005505766248733e-7, 0.0),
+        (254.23609963123334, 72019.924953978, 0.9851399109581318, 0.0011977363056368782,
+         0.0, 0.0, 10.0,
+         254.24102853125575, 0.0011957588309478976, 1.9774746889806047e-6, 0.0),
+        (300.69145676048333, 46537.86978536745, 0.4992140912135074, 0.049894533548792544,
+         0.0, 0.0, 10.0,
+         300.7404531400263, 0.04987487620131989, 1.965734747265266e-5, 0.0),
+        (272.22984078615616, 83817.9821516052, 1.0654402035149335, 0.004296997070198336,
+         0.0, 0.0, 10.0,
+         272.24600424373887, 0.004290512291016155, 6.484779182180898e-6, 0.0),
+        (265.42754684726765, 26987.417817790632, 0.34977338941256425, 0.007993464987640687,
+         0.0, 0.0, 10.0,
+         265.4575089225474, 0.007981444203038441, 1.2020784602245963e-5, 0.0),
+        (289.8157786024733, 36791.915105501896, 0.420402066170489, 0.03244030564979132, 0.0,
+         0.0, 10.0,
+         289.8202293979613, 0.03243851999064151, 1.785659149807772e-6, 0.0)
+    ]
+    equations = CompressibleEulerMoistPotentialTemperatureEquations3D(c_p = 1004.5,
+                                                                      c_v = 717.5,
+                                                                      gravity = 9.80616,
+                                                                      R_v = 461.5)
+    aux = SVector(1000.0, 0.0, 0.0, 1.0)
+    function state(T, p, rho_d, q_v, q_c, q_r)
+        exner = (p / equations.p_0)^(equations.R / equations.c_p)
+        theta_m = T / exner * (1 + equations.R_v / equations.R * q_v)
+        u = SVector(rho_d * (1 + q_v + q_c + q_r), 1.0, -2.0, 0.5, rho_d * theta_m,
+                    rho_d * q_v, rho_d * q_c, rho_d * q_r)
+        # The states of the reference satisfy the equation of state
+        @test pressure(u, equations) ≈ p
+        return u, exner
+    end
+    # Right-hand side of the dry potential temperature `rho_d * theta` from the ones of
+    # `rho_d * theta_m = rho_d * theta * (1 + q_v R_v / R)` and of the vapor
+    function source_rho_theta(du, T, p, q_v)
+        exner = (p / equations.p_0)^(equations.R / equations.c_p)
+        return (du[5] - equations.R_v / equations.R * T / exner * du[6]) /
+               (1 + equations.R_v / equations.R * q_v)
+    end
+
+    for (T, p, rho_d, q_v, q_c, q_r, dt, T_ref, q_v_ref, q_c_ref, q_r_ref) in cases_evap
+        u, exner = state(T, p, rho_d, q_v, q_c, q_r)
+        du = source_terms_kessler(u, aux, nothing, 0.0, equations)
+        evaporation = (q_r - q_r_ref) / dt
+        @test isapprox(du[8] / rho_d, -evaporation, rtol = 1e-10)
+        @test isapprox(du[6] / rho_d, evaporation, rtol = 1e-10)
+        # Isobaric latent cooling
+        @test isapprox(source_rho_theta(du, T, p, q_v) / rho_d * exner, (T_ref - T) / dt,
+                       rtol = 1e-8)
+    end
+
+    for (T, p, rho_d, q_v, q_c, q_r, dt, T_ref, q_v_ref, q_c_ref, q_r_ref) in cases_acc
+        u, _ = state(T, p, rho_d, q_v, q_c, q_r)
+        du = source_terms_kessler(u, aux, nothing, 0.0, equations)
+        @test isapprox(du[8] / rho_d, (q_r_ref - q_r) / dt * (1 + dt * 2.2 * q_r^0.875),
+                       rtol = 1e-10)
+    end
+
+    for (T, p, rho_d, q_v, q_c, q_r, dt, T_ref, q_v_ref, q_c_ref, q_r_ref) in cases_adj
+        u, exner = state(T, p, rho_d, q_v, q_c, q_r)
+        du = source_terms_kessler(u, aux, nothing, 0.0, equations)
+        condensation = du[7] / rho_d
+        @test isapprox(equations.condensation_time * condensation, q_c_ref, rtol = 1e-10)
+        @test isapprox(equations.condensation_time * source_rho_theta(du, T, p, q_v) /
+                       rho_d * exner, T_ref - T, rtol = 1e-8)
+    end
+
+    # The microphysics only moves water between the species and does not change the
+    # total density and the momentum
+    for (T, p, rho_d, q_v, q_c, q_r) in vcat(cases_evap, cases_acc, cases_adj)
+        du = source_terms_kessler(state(T, p, rho_d, q_v, q_c, q_r)[1], aux, nothing,
+                                  0.0, equations)
+        @test isapprox(du[6] + du[7] + du[8], 0, atol = 1e-15)
+        @test du[1] == du[2] == du[3] == du[4] == 0
+    end
+end

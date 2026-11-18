@@ -76,6 +76,7 @@ export CompressibleMoistEulerEquations2D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity1D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity2D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity3D,
+       CompressibleEulerMoistPotentialTemperatureEquations3D,
        CompressibleEulerEnergyEquationsWithGravity2D,
        CompressibleEulerEnergyEquationsWithGravity3D,
        CompressibleEulerInternalEnergyEquationsWithGravity2D,
@@ -122,11 +123,13 @@ export initial_condition_gaussian, initial_condition_geostrophic_balance,
 
 export initial_condition_adiabatic, initial_condition_gravity_waves,
        initial_condition_baroclinic_instability, initial_condition_isothermal,
-       initial_condition_vortex_shedding
+       initial_condition_vortex_shedding, initial_condition_moist_baroclinic_instability
+
+export aux_field_gravity_earth
 
 export boundary_condition_horizontal_slip_wall
 
-export source_terms_coriolis_small_earth
+export source_terms_coriolis_small_earth, source_terms_kessler
 
 export MountainWaveSetup, SchärMountain, WitchOfAgnesi, terrain_following_faces
 
