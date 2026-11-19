@@ -1,8 +1,9 @@
 # Constructs cache variables including auxiliary variables for covariant equations and DGMultiMeshes
-function Trixi.create_cache(mesh::DGMultiMesh{NDIMS}, equations::AbstractCovariantEquations,
-                            dg::Trixi.DGMultiWeakForm,
-                            RealT, metric_terms, auxiliary_field,
-                            uEltype) where {NDIMS}
+function Trixi.create_cache_hyperbolic(mesh::DGMultiMesh{NDIMS},
+                                       equations::AbstractCovariantEquations,
+                                       dg::Trixi.DGMultiWeakForm,
+                                       RealT, metric_terms, auxiliary_field,
+                                       uEltype) where {NDIMS}
     if auxiliary_field != nothing && typeof(equations) <: CovariantShallowWaterEquations2D
         error("
             Currently, bottom topography in the shallow water equations is implemented as a
@@ -44,8 +45,8 @@ function Trixi.create_cache(mesh::DGMultiMesh{NDIMS}, equations::AbstractCovaria
     # interpolate J to quadrature points for weight-adjusted DG (WADG)
     invJ = inv.(area_element.(aux_quad_values, equations))
 
-    solution_container = Trixi.initialize_dgmulti_solution_container(mesh, equations, dg,
-                                                                     uEltype)
+    solution_container = Trixi.init_dgmulti_solution_container(mesh, equations, dg,
+                                                               uEltype)
 
     cache = (; md, weak_differentiation_matrices, lift_scalings, invJ,
              solution_container, auxiliary_container)

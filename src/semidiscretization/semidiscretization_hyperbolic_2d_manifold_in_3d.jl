@@ -19,8 +19,8 @@ function Trixi.SemidiscretizationHyperbolic(mesh::P4estMesh{2},
                                             metric_terms = MetricTermsCrossProduct(),
                                             auxiliary_field = nothing)
     cache = (;
-             Trixi.create_cache(mesh, equations, solver, RealT, metric_terms,
-                                auxiliary_field, uEltype)...)
+             Trixi.create_cache_hyperbolic(mesh, equations, solver, RealT, metric_terms,
+                                           auxiliary_field, uEltype)...)
     _boundary_conditions = Trixi.digest_boundary_conditions(boundary_conditions, mesh,
                                                             solver,
                                                             cache)
@@ -53,8 +53,8 @@ function Trixi.SemidiscretizationHyperbolic(mesh::DGMultiMesh,
                                             metric_terms = MetricTermsCovariant(),
                                             auxiliary_field = nothing)
     cache = (;
-             Trixi.create_cache(mesh, equations, solver, RealT, metric_terms,
-                                auxiliary_field, uEltype)..., initial_cache...)
+             Trixi.create_cache_hyperbolic(mesh, equations, solver, RealT, metric_terms,
+                                           auxiliary_field, uEltype)..., initial_cache...)
     _boundary_conditions = Trixi.digest_boundary_conditions(boundary_conditions, mesh,
                                                             solver,
                                                             cache)
@@ -89,8 +89,8 @@ function Trixi.SemidiscretizationHyperbolic(mesh::P4estMesh{NDIMS, NDIMS_AMBIENT
                                             auxiliary_field = nothing) where {NDIMS,
                                                                               NDIMS_AMBIENT}
     cache = (;
-             Trixi.create_cache(mesh, equations, solver, RealT, metric_terms,
-                                auxiliary_field, uEltype)...)
+             Trixi.create_cache_hyperbolic(mesh, equations, solver, RealT, metric_terms,
+                                           auxiliary_field, uEltype)...)
     _boundary_conditions = Trixi.digest_boundary_conditions(boundary_conditions, mesh,
                                                             solver,
                                                             cache)
