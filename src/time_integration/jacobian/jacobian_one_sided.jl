@@ -31,8 +31,8 @@ condensation (block-tridiagonal reduced system) of
 The approximate Jacobian is the same as the one of [`JacobianVerticalTwoSided`](@ref), see
 there for the approximations of the dissipation and the gravity, and it is passed in the
 same way, e.g., `Trixi.solve(ode, SSPRW32(); dt, jacobian = JacobianVerticalOneSided())`.
-Only the condensation of the linear systems differs, so both solve the same linear systems
-up to round-off errors.
+Only the condensation of the linear systems differs, so both give the same solution up to
+round-off errors.
 
 ### Permutation
 The unknowns of a column are the density `rho`, the vertical momentum `rho_w`, i.e., the
@@ -42,9 +42,9 @@ elements of polynomial degree `polydeg` (`M = polydeg + 1` LGL nodes), the unkno
 grouped into a *local* block per element and a *global* (edge) block shared by the whole
 column:
 
-* the `rho` DOFs `1..M-1` of element 1, then
-* the `rho_theta` DOFs `1..M-1` of element 1, then
-* the `rho_w` DOFs `1..M-1` of element 1, then
+* the `rho` DOFs `1, ..., M-1` of element 1, then
+* the `rho_theta` DOFs `1, ..., M-1` of element 1, then
+* the `rho_w` DOFs `1, ..., M-1` of element 1, then
 * ... (repeated, element by element) ...
 * finally, 3 edge DOFs per element, ordered element by element:
   `rho_M, rho_w_M, rho_theta_M`.
@@ -75,8 +75,9 @@ Example for `nz = 4`, `polydeg = 5` (`M = 6`), in the permuted ordering above:
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠁⠀⠀⠥⠤⢜⣒⣒⠀⠀⠀⠀⠱⣦
 ```
 
-`A` (block-diagonal, one block per element) holds, for the nodes `1..M-1`, the diagonals
-of `rho`, `rho_theta`, and `rho_w`, which are `I / gamma_dt` except for the first node,
+`A` (block-diagonal, one block per element) holds, for the nodes `1, ..., M-1`,
+the diagonals of `rho`, `rho_theta`, and `rho_w`,
+which are `I / gamma_dt` except for the first node,
 where the LMARS flux adds dissipation to `rho_theta` and `rho_w` at an interface between
 elements and to `rho_w` at the wall, the coupling (LGL derivative operator) of `rho` and
 `rho_theta` to `rho_w` (mass and potential temperature fluxes) and of `rho_w` to
@@ -120,10 +121,11 @@ whenever the Jacobian is updated (see the keyword argument `update_interval` of
 All kernels use KernelAbstractions.jl with the backend of the arrays of the
 semidiscretization, i.e., the CPU backend of KernelAbstractions.jl for `Array`s
 (independently of the threading backend of Trixi.jl) or a GPU backend. Columns are
-independent, so the sequential recurrences (global Schur complement, block LU
-factorization and solve) use one thread per column, the copies between Trixi.jl's layout
-and the columns use one thread per node, and the independent work per element (fill,
-forward elimination, back-substitution) uses one thread per `(column, element)`. The
+independent. The block LU factorization and solve are sequential recurrences, and every
+element also adds to the diagonal block of the element below in the global Schur
+complement, so these kernels use one thread per column. The copies between Trixi.jl's
+layout and the columns use one thread per node, and the independent work per element
+(fill, forward elimination, back-substitution) uses one thread per `(column, element)`. The
 contributions of an element to the right-hand side of the condensed system of the element
 below are added by a separate kernel, so that no atomic operations are needed.
 
@@ -172,7 +174,7 @@ struct JacobianVerticalOneSidedCache{NLAYERS, NNODES, RealT <: Real, BackendType
     theta::ArrayRealT3
     dp_drho_theta::ArrayRealT3
     # LU factors of the local Schur complements `S_e` of the elements in the nodes
-    # `1..M-1`, `[column, node, node, layer]`
+    # `1, ..., M-1`, `[column, node, node, layer]`
     schur_element::ArrayRealT4
     # Global Schur complement `S`, a block-tridiagonal matrix with the diagonal blocks
     # `[column, row, column_block, layer]` and the blocks below and above the diagonal
@@ -182,19 +184,22 @@ struct JacobianVerticalOneSidedCache{NLAYERS, NNODES, RealT <: Real, BackendType
     schur_diagonal::ArrayRealT4
     schur_lower::ArrayRealT4
     schur_upper::ArrayRealT4
-    # Block LU factors of `S` after the elimination of `rho_M` (see `lu_block_per_column!`):
+    # Block LU factors of `S` after the elimination of `rho_M` (see the block LU below):
     # the 2x2 blocks of the inverse diagonal, of the lower factor, and of the upper factor,
     # `[column, row, column_block, layer]`
     lu_inv_diagonal::ArrayRealT4
     lu_lower::ArrayRealT4
     lu_upper::ArrayRealT4
     # Right-hand side and solution of the condensed system, `[column, row]`, and the
-    # contributions of every element to the right-hand side of the edge DOFs of the element
-    # below, `[column, v, layer]`
+    # contributions of the element above to the right-hand side of the edge DOFs of every
+    # element but the top one, `[column, v, layer]`
     schur_rhs::MatrixRealT
     schur_rhs_lower::ArrayRealT3
 end
 
+# Number of layers of elements of a column and number of nodes per coordinate direction of
+# the elements (as `nnodes(solver)`), stored as type parameters such that they are
+# compile-time constants in the kernels
 @inline function nlayers(::JacobianVerticalOneSidedCache{NLAYERS}) where {NLAYERS}
     return NLAYERS
 end
@@ -229,7 +234,7 @@ function check_axes_columns(jacobian::JacobianVerticalOneSidedCache)
     Trixi.check_axes(lu_upper, (columns, Base.OneTo(2), Base.OneTo(2), interfaces))
     # 3 edge unknowns per layer
     Trixi.check_axes(schur_rhs, (columns, Base.OneTo(3 * length(layers))))
-    Trixi.check_axes(schur_rhs_lower, (columns, Base.OneTo(3), layers))
+    Trixi.check_axes(schur_rhs_lower, (columns, Base.OneTo(3), interfaces))
     return nothing
 end
 
@@ -283,7 +288,8 @@ function create_cache_jacobian(jacobian::JacobianVerticalOneSided, semi, u_ode)
     lu_lower = KernelAbstractions.zeros(backend, RealT, ncolumns, 2, 2, nlayers_ - 1)
     lu_upper = KernelAbstractions.zeros(backend, RealT, ncolumns, 2, 2, nlayers_ - 1)
     schur_rhs = KernelAbstractions.zeros(backend, RealT, ncolumns, 3 * nlayers_)
-    schur_rhs_lower = KernelAbstractions.zeros(backend, RealT, ncolumns, 3, nlayers_)
+    schur_rhs_lower = KernelAbstractions.zeros(backend, RealT, ncolumns, 3,
+                                               nlayers_ - 1)
 
     return JacobianVerticalOneSidedCache{nlayers_, nnodes_, RealT, typeof(backend),
                                          typeof(schur_rhs), typeof(gravity),
@@ -353,7 +359,7 @@ function solve_jacobian!(b_ode, jacobian::JacobianVerticalOneSidedCache, semi, g
 
     @trixi_timeit_ext backend timer() "block solve" ldiv_block!(backend, jacobian)
 
-    # Solution of the degrees of freedom in the nodes `1..M-1` from the edge ones
+    # Solution of the degrees of freedom in the nodes `1, ..., M-1` from the edge ones
     @trixi_timeit_ext backend timer() "backward substitution" ldiv_interior_backward!(backend,
                                                                                       jacobian,
                                                                                       u_vertical,
@@ -373,11 +379,13 @@ end
 # Entries of the derivative blocks of `A`, `B`, and `C`, which are computed from
 # `derivative_hat`, `metric_factor`, `theta`, and `dp_drho_theta` where they are needed.
 # The entries `(1, 1)` of `A13`, `A23`, and `A32` differ from
-# `metric_factor * derivative_hat`: at an interface between elements, the central part of
-# the LMARS flux cancels the boundary term of the derivative, and at the wall the flux of
-# `rho` and `rho_theta` vanishes, while the pressure doubles the boundary term of the
-# momentum. Thus, the entries `(1, 1)` are multiplied by `factor_11_a13 = 1` (`A13` and
-# `A23`) and `factor_11_a32 = -1` (`A32`) in the lowest layer and by zero otherwise.
+# `metric_factor * derivative_hat`, where `derivative_hat[1, 1] = 1 / (2 w_1)`, by the flux
+# in the first node: at an interface between elements, the central part of the LMARS flux
+# adds `-1 / (2 w_1)`, which cancels the entry, and at the wall, the flux of `rho` and
+# `rho_theta` vanishes, while the wall pressure adds `-1 / w_1`, which flips the sign of the
+# entry of the momentum. Thus, the entries `(1, 1)` are multiplied by `factor_11_a13 = 1`
+# (`A13` and `A23`) and `factor_11_a32 = -1` (`A32`) in the lowest layer and by zero
+# otherwise.
 
 # Entry `(i, j)` of `A13` (`factor_11 = factor_11_a13`), of `A23` (multiplied by
 # `theta_j`), or of `A32` (`factor_11 = factor_11_a32`, multiplied by `dp_drho_theta_j`)
@@ -446,13 +454,14 @@ Base.@propagate_inbounds function first_node_entries(theta, dp_drho_theta,
         zero_ = zero(SMatrix{3, 2, RealT})
         return zero(RealT), gamma_dt, zero_, zero_
     end
+    theta_ll = theta[column, NNODES, layer - 1]
+    dp_drho_theta_ll = dp_drho_theta[column, NNODES, layer - 1]
+    theta_rr = theta[column, 1, layer]
+    dp_drho_theta_rr = dp_drho_theta[column, 1, layer]
     factor_ll = 0.5f0 * metric_factor[column, NNODES, layer - 1] * inv_boundary_weight
     factor_rr = 0.5f0 * metric_factor[column, 1, layer] * inv_boundary_weight
-    a12_1, a22_1, _, b, c = lower_interface_entries(theta[column, NNODES, layer - 1],
-                                                    dp_drho_theta[column, NNODES,
-                                                                  layer - 1],
-                                                    theta[column, 1, layer],
-                                                    dp_drho_theta[column, 1, layer],
+    a12_1, a22_1, _, b, c = lower_interface_entries(theta_ll, dp_drho_theta_ll,
+                                                    theta_rr, dp_drho_theta_rr,
                                                     factor_ll, factor_rr,
                                                     speed_of_sound, inv_speed_of_sound)
     return a12_1, inv(inv(gamma_dt) + a22_1), b, c
@@ -465,8 +474,8 @@ end
 # `A` in the first node and of `B` and `C` at the interfaces are computed where they are
 # needed.
 
-# Fill of element `layer` of the column `column`, which writes only the entries of this
-# element and reads the state of the neighboring elements
+# Fill of element `layer` of the column `column`, which writes only the entries with index
+# `layer` and reads the state of the neighboring elements
 Base.@propagate_inbounds function fill_jacobian_one_sided_per_element!(schur_element,
                                                                        schur_diagonal,
                                                                        schur_lower,
@@ -571,7 +580,8 @@ Base.@propagate_inbounds function fill_jacobian_one_sided_per_element!(schur_ele
     if layer < NLAYERS
         # Dissipation of the LMARS flux at the upper interface, with this layer as `ll` and
         # the layer above as `rr`; the central part cancels the boundary term of the
-        # derivative
+        # derivative. These are the counterparts in the rows of `ll` of `A12[1, 1]`,
+        # `A33[1, 1]`, and `A22[1, 1]` in `lower_interface_entries`.
         theta_rr = u_vertical[column, 3, 1, layer + 1] /
                    u_vertical[column, 1, 1, layer + 1]
         theta_interface = 0.5f0 * (theta_M + theta_rr)
@@ -582,8 +592,7 @@ Base.@propagate_inbounds function fill_jacobian_one_sided_per_element!(schur_ele
         d13 = dp_drho_theta_M * inv_speed_of_sound * factor_ll
         d23 = zero_
         d33 = inv_gamma_dt +
-              theta_interface * dp_drho_theta_M * inv_speed_of_sound *
-              factor_ll
+              theta_interface * dp_drho_theta_M * inv_speed_of_sound * factor_ll
     else
         # Wall
         derivative_MM = metric_factor_M * derivative_hat[NNODES, NNODES]
@@ -672,28 +681,26 @@ function fill_jacobian!(backend::Backend, jacobian::JacobianVerticalOneSidedCach
 end
 
 ###############################################################################
-# Boundary Schur complement: the contributions of the nodes `1..M-1` of every element,
+# Boundary Schur complement: the contributions of the nodes `1, ..., M-1` of every element,
 # eliminated with the local Schur complements `schur_element`, to the block-tridiagonal
 # matrix `schur_diagonal`, `schur_lower`, `schur_upper`
 
 # Solve `A_e x = b` with the local Schur complement `S_e` for the right-hand sides `b` in the
-# columns `r` of `x_rho_theta[:, r]` and `x_rho_w[:, r]`, which are solved together so that
-# the entries of `A_e` and `S_e` are loaded once. With the blocks `A_ij` of `A_e`, `x`
-# follows from
+# columns `r` of `x_rho_theta[:, r]` and `x_rho_w[:, r]` (a vector is a single column),
+# which are solved together so that the entries of `A_e` and `S_e` are loaded once. With
+# the blocks `A_ij` of `A_e`, `x` follows from
 #   S_e x_rho_w = b_rho_w - A31 A11^{-1} b_rho - (A32 - A31 A11^{-1} A12) A22^{-1} b_rho_theta,
 #   x_rho_theta = A22^{-1} (b_rho_theta - A23 x_rho_w).
 # On entry, `x_rho_theta` holds `b_rho_theta` and `x_rho_w` holds
 # `b_rho_w - A31 A11^{-1} b_rho`. Both are overwritten by the components of `x`. The density
-# `x_rho` is not needed, since `C` does not couple to the density in the nodes `1..M-1`.
-Base.@propagate_inbounds function eliminate_local_one_sided!(x_rho_theta, x_rho_w,
-                                                             schur_element, gravity,
-                                                             theta, dp_drho_theta,
-                                                             metric_factor,
-                                                             derivative_hat,
-                                                             a12_1, inv_a22_1,
-                                                             gamma_dt, ::Val{NNODES},
-                                                             column,
-                                                             layer) where {NNODES}
+# `x_rho` is not needed, since `C` does not couple to the density
+# in the nodes `1, ..., M-1`.
+Base.@propagate_inbounds function eliminate_local!(x_rho_theta, x_rho_w,
+                                                   schur_element, gravity, theta,
+                                                   dp_drho_theta, metric_factor,
+                                                   derivative_hat, a12_1, inv_a22_1,
+                                                   gamma_dt, ::Val{NNODES},
+                                                   column, layer) where {NNODES}
     factor_11_a13, factor_11_a32 = factors_11(layer)
     rhs = axes(x_rho_w, 2)
     # Right-hand side of `S_e x_rho_w`
@@ -737,7 +744,7 @@ Base.@propagate_inbounds function eliminate_local_one_sided!(x_rho_theta, x_rho_
     return nothing
 end
 
-# `ldiv_dense!` for the right-hand sides in the columns of `b`
+# `ldiv_dense!` for the right-hand sides in the columns of `b` (a vector is a single column)
 Base.@propagate_inbounds function ldiv_dense_columns!(b, A, ::Val{N}, column,
                                                       layer) where {N}
     rhs = axes(b, 2)
@@ -767,11 +774,11 @@ Base.@propagate_inbounds function ldiv_dense_columns!(b, A, ::Val{N}, column,
 end
 
 # Entries `-C x` in the rows `rho_M`, `rho_w_M`, and `rho_theta_M` of element `layer`, with
-# the column `r` of `x_rho_theta` and `x_rho_w` from `eliminate_local_one_sided!`
-Base.@propagate_inbounds function minus_c_x_one_sided(x_rho_theta, x_rho_w, theta,
-                                                      dp_drho_theta, metric_factor,
-                                                      derivative_hat, ::Val{NNODES},
-                                                      column, layer, r) where {NNODES}
+# the column `r` of `x_rho_theta` and `x_rho_w` from `eliminate_local!`
+Base.@propagate_inbounds function minus_C_x_edge(x_rho_theta, x_rho_w, theta,
+                                                 dp_drho_theta, metric_factor,
+                                                 derivative_hat, ::Val{NNODES},
+                                                 column, layer, r) where {NNODES}
     metric_factor_M = metric_factor[column, NNODES, layer]
     rho_M = rho_w_M = rho_theta_M = zero(eltype(x_rho_w))
     for j in 1:(NNODES - 1)
@@ -783,10 +790,10 @@ Base.@propagate_inbounds function minus_c_x_one_sided(x_rho_theta, x_rho_w, thet
     return rho_M, rho_w_M, rho_theta_M
 end
 
-# Contribution `-C A^{-1} B` of element `layer` of the column `column`; the layers of a
-# column are processed in order by the same thread, which adds the contributions of the
-# columns of `B` of the edge DOFs of the layer below to the blocks of that layer. The
-# column of `rho_M` of `B` vanishes.
+# Contribution `-C A^{-1} B` of element `layer` of the column `column`. The layers of a
+# column are processed by the same thread, since every element also adds to the diagonal
+# block of the layer below through the rows of `C` of the edge DOFs of the layer below.
+# The column of `rho_M` of `B` vanishes.
 Base.@propagate_inbounds function schur_complement_boundary_one_sided_per_element!(schur_diagonal,
                                                                                    schur_lower,
                                                                                    schur_upper,
@@ -828,22 +835,21 @@ Base.@propagate_inbounds function schur_complement_boundary_one_sided_per_elemen
         x_rho_theta[i, 2] = zero_
         x_rho_w[i, 2] = derivative_iM * dp_drho_theta_M
     end
-    eliminate_local_one_sided!(x_rho_theta, x_rho_w, schur_element, gravity, theta,
-                               dp_drho_theta, metric_factor, derivative_hat, a12_1,
-                               inv_a22_1, gamma_dt, Val(NNODES), column, layer)
+    eliminate_local!(x_rho_theta, x_rho_w, schur_element, gravity, theta,
+                     dp_drho_theta, metric_factor, derivative_hat,
+                     a12_1, inv_a22_1, gamma_dt, Val(NNODES), column, layer)
     for r in 1:2
-        minus_c_x = minus_c_x_one_sided(x_rho_theta, x_rho_w, theta, dp_drho_theta,
-                                        metric_factor, derivative_hat, Val(NNODES),
-                                        column, layer, r)
+        minus_C_x = minus_C_x_edge(x_rho_theta, x_rho_w, theta, dp_drho_theta,
+                                   metric_factor, derivative_hat, Val(NNODES),
+                                   column, layer, r)
         for i in 1:3
-            schur_diagonal[column, i, r + 1, layer] += minus_c_x[i]
+            schur_diagonal[column, i, r + 1, layer] += minus_C_x[i]
         end
         # `C` of the layer below couples to the first node of this layer
         if layer > 1
             for i in 1:3
-                schur_upper[column, i, r, layer - 1] -= c_lower[i, 1] * x_rho_w[1, r] +
-                                                        c_lower[i, 2] *
-                                                        x_rho_theta[1, r]
+                c_x = c_lower[i, 1] * x_rho_w[1, r] + c_lower[i, 2] * x_rho_theta[1, r]
+                schur_upper[column, i, r, layer - 1] -= c_x
             end
         end
     end
@@ -861,20 +867,18 @@ Base.@propagate_inbounds function schur_complement_boundary_one_sided_per_elemen
             x_rho_theta[1, r] = b_lower[3, r]
             x_rho_w[1, r] = b_lower[2, r] - gravity_1 * gamma_dt * b_lower[1, r]
         end
-        eliminate_local_one_sided!(x_rho_theta, x_rho_w, schur_element, gravity, theta,
-                                   dp_drho_theta, metric_factor, derivative_hat, a12_1,
-                                   inv_a22_1, gamma_dt, Val(NNODES), column, layer)
+        eliminate_local!(x_rho_theta, x_rho_w, schur_element, gravity, theta,
+                         dp_drho_theta, metric_factor, derivative_hat,
+                         a12_1, inv_a22_1, gamma_dt, Val(NNODES), column, layer)
         for r in 1:2
-            minus_c_x = minus_c_x_one_sided(x_rho_theta, x_rho_w, theta, dp_drho_theta,
-                                            metric_factor, derivative_hat, Val(NNODES),
-                                            column, layer, r)
+            minus_C_x = minus_C_x_edge(x_rho_theta, x_rho_w, theta, dp_drho_theta,
+                                       metric_factor, derivative_hat, Val(NNODES),
+                                       column, layer, r)
             for i in 1:3
-                schur_lower[column, i, r, layer - 1] += minus_c_x[i]
+                schur_lower[column, i, r, layer - 1] += minus_C_x[i]
                 # `C` of the layer below couples to the first node of this layer
-                schur_diagonal[column, i, r + 1, layer - 1] -= c_lower[i, 1] *
-                                                               x_rho_w[1, r] +
-                                                               c_lower[i, 2] *
-                                                               x_rho_theta[1, r]
+                c_x = c_lower[i, 1] * x_rho_w[1, r] + c_lower[i, 2] * x_rho_theta[1, r]
+                schur_diagonal[column, i, r + 1, layer - 1] -= c_x
             end
         end
     end
@@ -960,8 +964,7 @@ end
 # 2x2 blocks of `v` of the diagonal block `layer`, of the block below the diagonal in the
 # block row `layer` (i.e., `schur_lower[:, :, :, layer - 1]`), and of the block above the
 # diagonal in the block row `layer`, after the elimination of `u` with the multiplier `m`
-Base.@propagate_inbounds function block_diagonal_one_sided(schur_diagonal, m, column,
-                                                           layer)
+Base.@propagate_inbounds function block_diagonal_2x2(schur_diagonal, m, column, layer)
     return SMatrix{2, 2}(schur_diagonal[column, 2, 2, layer] -
                          m * schur_diagonal[column, 1, 2, layer],
                          schur_diagonal[column, 3, 2, layer],
@@ -970,8 +973,8 @@ Base.@propagate_inbounds function block_diagonal_one_sided(schur_diagonal, m, co
                          schur_diagonal[column, 3, 3, layer])
 end
 
-Base.@propagate_inbounds function block_offdiagonal_one_sided(schur_offdiagonal, m,
-                                                              column, index)
+Base.@propagate_inbounds function block_offdiagonal_2x2(schur_offdiagonal, m,
+                                                        column, index)
     return SMatrix{2, 2}(schur_offdiagonal[column, 2, 1, index] -
                          m * schur_offdiagonal[column, 1, 1, index],
                          schur_offdiagonal[column, 3, 1, index],
@@ -980,14 +983,14 @@ Base.@propagate_inbounds function block_offdiagonal_one_sided(schur_offdiagonal,
                          schur_offdiagonal[column, 3, 2, index])
 end
 
-Base.@propagate_inbounds function store_block!(A, block, column, index)
+Base.@propagate_inbounds function store_block_2x2!(A, block, column, index)
     for j in 1:2, i in 1:2
         A[column, i, j, index] = block[i, j]
     end
     return nothing
 end
 
-Base.@propagate_inbounds function load_block(A, column, index)
+Base.@propagate_inbounds function load_block_2x2(A, column, index)
     return SMatrix{2, 2}(A[column, 1, 1, index], A[column, 2, 1, index],
                          A[column, 1, 2, index], A[column, 2, 2, index])
 end
@@ -998,21 +1001,21 @@ Base.@propagate_inbounds function lu_block_per_column!(lu_inv_diagonal, lu_lower
                                                        ::Val{NLAYERS},
                                                        column) where {NLAYERS}
     m, _ = multiplier_rho_M(schur_diagonal, column, 1)
-    inv_diagonal = inv(block_diagonal_one_sided(schur_diagonal, m, column, 1))
-    store_block!(lu_inv_diagonal, inv_diagonal, column, 1)
+    inv_diagonal = inv(block_diagonal_2x2(schur_diagonal, m, column, 1))
+    store_block_2x2!(lu_inv_diagonal, inv_diagonal, column, 1)
     for layer in 2:NLAYERS
         # The block above the diagonal in the block row `layer - 1`, with the multiplier
         # `m` of that block row
-        upper = block_offdiagonal_one_sided(schur_upper, m, column, layer - 1)
-        store_block!(lu_upper, upper, column, layer - 1)
+        upper = block_offdiagonal_2x2(schur_upper, m, column, layer - 1)
+        store_block_2x2!(lu_upper, upper, column, layer - 1)
 
         m, _ = multiplier_rho_M(schur_diagonal, column, layer)
-        lower = block_offdiagonal_one_sided(schur_lower, m, column, layer - 1) *
+        lower = block_offdiagonal_2x2(schur_lower, m, column, layer - 1) *
                 inv_diagonal
-        store_block!(lu_lower, lower, column, layer - 1)
-        inv_diagonal = inv(block_diagonal_one_sided(schur_diagonal, m, column, layer) -
+        store_block_2x2!(lu_lower, lower, column, layer - 1)
+        inv_diagonal = inv(block_diagonal_2x2(schur_diagonal, m, column, layer) -
                            lower * upper)
-        store_block!(lu_inv_diagonal, inv_diagonal, column, layer)
+        store_block_2x2!(lu_inv_diagonal, inv_diagonal, column, layer)
     end
     return nothing
 end
@@ -1055,7 +1058,7 @@ Base.@propagate_inbounds function ldiv_block_per_column!(b, lu_inv_diagonal, lu_
         b[column, offset + 2] -= m * b[column, offset + 1]
         v = SVector(b[column, offset + 2], b[column, offset + 3])
         if layer > 1
-            v -= load_block(lu_lower, column, layer - 1) * v_previous
+            v -= load_block_2x2(lu_lower, column, layer - 1) * v_previous
         end
         b[column, offset + 2] = v[1]
         b[column, offset + 3] = v[2]
@@ -1067,10 +1070,10 @@ Base.@propagate_inbounds function ldiv_block_per_column!(b, lu_inv_diagonal, lu_
         offset = 3 * (layer - 1)
         v = SVector(b[column, offset + 2], b[column, offset + 3])
         if layer < NLAYERS
-            v -= load_block(lu_upper, column, layer) *
+            v -= load_block_2x2(lu_upper, column, layer) *
                  SVector(b[column, offset + 5], b[column, offset + 6])
         end
-        v = load_block(lu_inv_diagonal, column, layer) * v
+        v = load_block_2x2(lu_inv_diagonal, column, layer) * v
         b[column, offset + 2] = v[1]
         b[column, offset + 3] = v[2]
     end
@@ -1123,13 +1126,13 @@ end
 ###############################################################################
 # Forward substitution: the right-hand side of the condensed system
 #   `schur_rhs = b_D - C * A^{-1} * b_A`,
-# where `A` is the block of the nodes `1..M-1` and `D` the block of the edge degrees of
+# where `A` is the block of the nodes `1, ..., M-1` and `D` the block of the edge degrees of
 # freedom
 
 # Entries of `schur_rhs` of element `layer` of the column `column`, and the contribution
 # `-C x` of this element to the edge DOFs of the layer below in `schur_rhs_lower`, which is
 # added by `add_schur_rhs_lower_KAkernel!`. `x_rho_theta` and `x_rho_w` hold the components
-# of `A^{-1} b_A`, see `eliminate_local_one_sided!`.
+# of `A^{-1} b_A`, see `eliminate_local!`.
 Base.@propagate_inbounds function ldiv_interior_forward_one_sided_per_element!(schur_rhs,
                                                                                schur_rhs_lower,
                                                                                x_rho_theta,
@@ -1160,20 +1163,20 @@ Base.@propagate_inbounds function ldiv_interior_forward_one_sided_per_element!(s
         x_rho_w[i] = b[column, 2, i, layer] -
                      gravity[column, i, layer] * gamma_dt * b[column, 1, i, layer]
     end
-    eliminate_local_one_sided!(x_rho_theta, x_rho_w, schur_element, gravity, theta,
-                               dp_drho_theta, metric_factor, derivative_hat, a12_1,
-                               inv_a22_1, gamma_dt, Val(NNODES), column, layer)
-    minus_c_x = minus_c_x_one_sided(x_rho_theta, x_rho_w, theta, dp_drho_theta,
-                                    metric_factor, derivative_hat, Val(NNODES), column,
-                                    layer, 1)
+    eliminate_local!(x_rho_theta, x_rho_w, schur_element, gravity, theta,
+                     dp_drho_theta, metric_factor, derivative_hat,
+                     a12_1, inv_a22_1, gamma_dt, Val(NNODES), column, layer)
+    minus_C_x = minus_C_x_edge(x_rho_theta, x_rho_w, theta, dp_drho_theta,
+                               metric_factor, derivative_hat, Val(NNODES),
+                               column, layer, 1)
     offset = 3 * (layer - 1)
     for i in 1:3
-        schur_rhs[column, offset + i] = b[column, i, NNODES, layer] + minus_c_x[i]
+        schur_rhs[column, offset + i] = b[column, i, NNODES, layer] + minus_C_x[i]
     end
     if layer > 1
         for i in 1:3
-            schur_rhs_lower[column, i, layer] = -(c_lower[i, 1] * x_rho_w[1] +
-                                                  c_lower[i, 2] * x_rho_theta[1])
+            schur_rhs_lower[column, i, layer - 1] = -(c_lower[i, 1] * x_rho_w[1] +
+                                                      c_lower[i, 2] * x_rho_theta[1])
         end
     end
     return nothing
@@ -1215,7 +1218,7 @@ end
     column, layer = @index(Global, NTuple)
     offset = 3 * (layer - 1)
     for i in 1:3
-        schur_rhs[column, offset + i] += schur_rhs_lower[column, i, layer + 1]
+        schur_rhs[column, offset + i] += schur_rhs_lower[column, i, layer]
     end
 end
 
@@ -1239,20 +1242,18 @@ function ldiv_interior_forward!(backend::Backend,
             metric_factor, derivative_hat, speed_of_sound, inv_speed_of_sound,
             inv_boundary_weight, gamma_dt, Val(nnodes_);
             ndrange = (ncolumns, nlayers_), layer_kernel_workgroupsize()...)
-    if nlayers_ > 1
-        kernel! = add_schur_rhs_lower_KAkernel!(backend)
-        kernel!(schur_rhs, schur_rhs_lower;
-                ndrange = (ncolumns, nlayers_ - 1), layer_kernel_workgroupsize()...)
-    end
+    kernel! = add_schur_rhs_lower_KAkernel!(backend)
+    kernel!(schur_rhs, schur_rhs_lower;
+            ndrange = (ncolumns, nlayers_ - 1), layer_kernel_workgroupsize()...)
     return nothing
 end
 
 ###############################################################################
 # Backward substitution: the solution of the edge degrees of freedom `schur_rhs` and of
-# the degrees of freedom in the nodes `1..M-1`
+# the degrees of freedom in the nodes `1, ..., M-1`
 
 # Solution of element `layer` of the column `column`; `x_rho`, `x_rho_theta`, and `x_rho_w`
-# hold the components of the three variables in the nodes `1..M-1`
+# hold the components of the three variables in the nodes `1, ..., M-1`
 Base.@propagate_inbounds function ldiv_interior_backward_one_sided_per_element!(b,
                                                                                 x_rho,
                                                                                 x_rho_theta,
@@ -1308,9 +1309,9 @@ Base.@propagate_inbounds function ldiv_interior_backward_one_sided_per_element!(
     for i in 1:(NNODES - 1)
         x_rho_w[i] -= gravity[column, i, layer] * gamma_dt * x_rho[i]
     end
-    eliminate_local_one_sided!(x_rho_theta, x_rho_w, schur_element, gravity, theta,
-                               dp_drho_theta, metric_factor, derivative_hat, a12_1,
-                               inv_a22_1, gamma_dt, Val(NNODES), column, layer)
+    eliminate_local!(x_rho_theta, x_rho_w, schur_element, gravity, theta,
+                     dp_drho_theta, metric_factor, derivative_hat,
+                     a12_1, inv_a22_1, gamma_dt, Val(NNODES), column, layer)
     # `x_rho = A11^{-1} (b_rho - A12 x_rho_theta - A13 x_rho_w)`
     factor_11_a13 = first(factors_11(layer))
     x_rho[1] -= a12_1 * x_rho_theta[1]

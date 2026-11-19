@@ -15,7 +15,7 @@ for human readability.
   GPUs ([#243]).
 - `JacobianVerticalOneSided` is the same vertical Jacobian as `JacobianVerticalTwoSided`,
   but with the one-sided condensation of the nested Schur-complement solver, whose reduced
-  system is block-tridiagonal with 3x3 blocks ([#269]).
+  system is block-tridiagonal with 3x3 blocks, also on GPUs ([#269]).
 - The `CompressibleEulerVectorInvariantEquationsWithGravity3D` are the compressible Euler
   equations with gravity in vector-invariant form with the potential temperature as
   prognostic variable. They come with the entropy and total energy conservative volume flux
