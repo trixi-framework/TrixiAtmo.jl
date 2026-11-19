@@ -79,6 +79,10 @@ struct CompressibleEulerMoistPotentialTemperatureEquations3D{NVARS, RealT <: Rea
         R_v = convert(RealT, R_v)
         microphysics = similar(microphysics, RealT)
         turbulence = similar(turbulence, RealT)
+        if nturbulencevariables(turbulence) > 0
+            throw(ArgumentError("turbulence models with prognostic variables are not " *
+                                "available for the moist equations"))
+        end
         p_0 = 100_000
         R = c_p - c_v
         gamma = c_p / c_v

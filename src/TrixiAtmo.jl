@@ -83,6 +83,7 @@ export CompressibleMoistEulerEquations2D,
        KesslerMicrophysics,
        TurbulentDiffusion3D, NoTurbulence, HorizontalVerticalTurbulence,
        ConstantEddyViscosity, ReedJablonowskiBoundaryLayer, BoundaryConditionSurfaceFluxes,
+       DeardorffTKE, density_turbulent_kinetic_energy, turbulence_sources_exact!,
        CompressibleEulerEnergyEquationsWithGravity2D,
        CompressibleEulerEnergyEquationsWithGravity3D,
        CompressibleEulerInternalEnergyEquationsWithGravity2D,
@@ -106,7 +107,8 @@ export flux_nonconservative_zeros, flux_nonconservative_ec,
        flux_ec_rain, flux_LMARS, flux_nonconservative_es, flux_conservative_es,
        flux_conservative_etec, flux_nonconservative_etec
 
-export flux_lmars_combined, flux_kennedy_gruber_souza_etal, flux_lmars_es
+export flux_lmars_combined, flux_kennedy_gruber_souza_etal, flux_lmars_es,
+       flux_ec_isothermal
 
 export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!
 

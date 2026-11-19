@@ -33,8 +33,13 @@ function Trixi.SemidiscretizationHyperbolicParabolic(mesh::P4estMesh{3},
 
     (; cache) = semi
     aux_vars = Trixi.init_aux_vars(mesh, equations_hyperbolic, solver, cache, aux_field)
-    upward_unit_vectors = compute_upward_unit_vectors(aux_field, equations_hyperbolic,
-                                                      solver, cache)
+    upward_unit_vectors, gravitational_accelerations = compute_upward_unit_vectors(aux_field,
+                                                                                   equations_hyperbolic,
+                                                                                   solver,
+                                                                                   cache)
+    vertical_grid_spacings = compute_vertical_grid_spacings(equations_hyperbolic,
+                                                            solver,
+                                                            cache)
     lowest_level_weights, lowest_level_directions = compute_lowest_levels(last(equations).lowest_level_height,
                                                                           aux_field,
                                                                           nlayers_,
@@ -46,10 +51,35 @@ function Trixi.SemidiscretizationHyperbolicParabolic(mesh::P4estMesh{3},
     lowest_level = zeros(eltype(cache.elements.node_coordinates),
                          nvariables(equations_hyperbolic) + 4, nnodes_, nnodes_,
                          nelements(solver, cache) ÷ nlayers_)
+    # Right-hand side computed by `turbulence_sources_exact!` for the gradients
+    du_splitting = zeros(eltype(cache.elements.node_coordinates),
+                         Trixi.ndofs(mesh, solver, cache) *
+                         nvariables(equations_hyperbolic))
     return setproperties(semi;
                          cache = (; cache..., aux_vars, upward_unit_vectors,
+                                  gravitational_accelerations, vertical_grid_spacings,
                                   lowest_level_weights, lowest_level_directions,
-                                  lowest_level, nlayers = nlayers_))
+                                  lowest_level, du_splitting, nlayers = nlayers_))
+end
+
+# Vertical grid spacings, i.e., the heights of the elements along the columns of nodes
+# divided by the number of nodes, laid out as `[i, j, element]`
+function compute_vertical_grid_spacings(equations, solver, cache)
+    (; node_coordinates) = cache.elements
+    nnodes_ = nnodes(solver)
+    vertical_grid_spacings = zeros(eltype(node_coordinates), nnodes_, nnodes_,
+                                   nelements(solver, cache))
+    for element in Trixi.eachelement(solver, cache), j in Trixi.eachnode(solver),
+        i in Trixi.eachnode(solver)
+
+        x_bottom = Trixi.get_node_coords(node_coordinates, equations, solver, i, j, 1,
+                                         element)
+        x_top = Trixi.get_node_coords(node_coordinates, equations, solver, i, j,
+                                      nnodes_,
+                                      element)
+        vertical_grid_spacings[i, j, element] = (norm(x_top) - norm(x_bottom)) / nnodes_
+    end
+    return vertical_grid_spacings
 end
 
 # Lowest levels of the columns at the height `height` above the surface: the values
@@ -101,10 +131,13 @@ function lagrange_polynomials(xi, nodes)
                    end)
 end
 
-# Upward unit vectors `k` of all nodes, laid out as `[component, i, j, k, element]`
+# Upward unit vectors `k` of all nodes, laid out as `[component, i, j, k, element]`, and the
+# gravitational accelerations `|∇φ|`, laid out as `[i, j, k, element]`
 function compute_upward_unit_vectors(aux_field, equations, solver, cache)
     (; node_coordinates) = cache.elements
     upward_unit_vectors = similar(node_coordinates)
+    gravitational_accelerations = similar(node_coordinates,
+                                          size(node_coordinates)[2:end])
     Trixi.@threaded for element in Trixi.eachelement(solver, cache)
         for k in Trixi.eachnode(solver), j in Trixi.eachnode(solver),
             i in Trixi.eachnode(solver)
@@ -115,17 +148,20 @@ function compute_upward_unit_vectors(aux_field, equations, solver, cache)
             for d in 1:3
                 upward_unit_vectors[d, i, j, k, element] = k_hat[d]
             end
+            gravitational_accelerations[i, j, k, element] = gravitational_acceleration(x,
+                                                                                       aux_field,
+                                                                                       equations)
         end
     end
-    return upward_unit_vectors
+    return upward_unit_vectors, gravitational_accelerations
 end
 
 # Arrays of the columns passed to the kernels
 function columns_parabolic(cache)
-    (; upward_unit_vectors, lowest_level_weights, lowest_level_directions, lowest_level,
-    nlayers) = cache
-    return (; upward_unit_vectors, lowest_level_weights, lowest_level_directions,
-            lowest_level, nlayers)
+    (; upward_unit_vectors, gravitational_accelerations, vertical_grid_spacings,
+    lowest_level_weights, lowest_level_directions, lowest_level, nlayers) = cache
+    return (; upward_unit_vectors, gravitational_accelerations, vertical_grid_spacings,
+            lowest_level_weights, lowest_level_directions, lowest_level, nlayers)
 end
 
 function Trixi.calc_parabolic_fluxes!(flux_parabolic, gradients, u_transformed,
@@ -220,7 +256,7 @@ Base.@propagate_inbounds function calc_parabolic_fluxes_per_node!(flux_parabolic
     v_a = SVector(w_a[2], w_a[3], w_a[4])
     wind_speed = norm(v_a - dot(v_a, k_a) * k_a)
     z_a = equations_parabolic.lowest_level_height
-    column_variables = SVector(wind_speed, z_a)
+    aux = aux_turbulence(wind_speed, z_a, columns, i, j, k, element)
 
     if k == 1 && element == element_lowest
         for v in eachindex(w_a)
@@ -234,15 +270,15 @@ Base.@propagate_inbounds function calc_parabolic_fluxes_per_node!(flux_parabolic
     end
 
     Trixi.set_node_vars!(flux_parabolic_x,
-                         flux(w_node, gradients_node, k_node, column_variables, 1,
+                         flux(w_node, gradients_node, k_node, aux, 1,
                               equations_parabolic),
                          equations_parabolic, dg, i, j, k, element)
     Trixi.set_node_vars!(flux_parabolic_y,
-                         flux(w_node, gradients_node, k_node, column_variables, 2,
+                         flux(w_node, gradients_node, k_node, aux, 2,
                               equations_parabolic),
                          equations_parabolic, dg, i, j, k, element)
     Trixi.set_node_vars!(flux_parabolic_z,
-                         flux(w_node, gradients_node, k_node, column_variables, 3,
+                         flux(w_node, gradients_node, k_node, aux, 3,
                               equations_parabolic),
                          equations_parabolic, dg, i, j, k, element)
     return nothing
@@ -253,6 +289,106 @@ Base.@propagate_inbounds function get_upward_unit_vector(upward_unit_vectors, i,
     return SVector(upward_unit_vectors[1, i, j, k, element],
                    upward_unit_vectors[2, i, j, k, element],
                    upward_unit_vectors[3, i, j, k, element])
+end
+
+# Auxiliary variables of the turbulence models at the node, see `eddy_diffusivities`
+Base.@propagate_inbounds function aux_turbulence(wind_speed, z_a, columns, i, j, k,
+                                                 element)
+    (; vertical_grid_spacings, gravitational_accelerations) = columns
+    return SVector(wind_speed, z_a, vertical_grid_spacings[i, j, element],
+                   gravitational_accelerations[i, j, k, element])
+end
+
+"""
+    turbulence_sources_exact!(u_ode, semi, t, dt)
+
+Integrate the source terms of the turbulence model of the `TurbulentDiffusion3D` of the
+`SemidiscretizationHyperbolicParabolic` `semi`, e.g., of the [`DeardorffTKE`](@ref),
+exactly over the time `dt` with the gradients and the auxiliary variables of `u_ode` at the
+time `t`, which are computed by the parabolic right-hand side. Pass it as keyword argument
+`source_splitting!` to `Trixi.solve` with a linearly implicit method such as
+[`SSPRW32`](@ref), which applies it by Strang splitting.
+"""
+function turbulence_sources_exact!(u_ode, semi, t, dt)
+    (; mesh, equations_parabolic, solver, cache, cache_parabolic) = semi
+    Trixi.rhs_parabolic!(cache.du_splitting, u_ode, semi, t)
+    u = wrap_array(u_ode, semi)
+    (; u_transformed, gradients) = cache_parabolic.parabolic_container
+    columns = columns_parabolic(cache)
+    backend = trixi_backend(u_ode)
+    @trixi_timeit_ext backend timer() "turbulence sources" begin
+        if backend === nothing
+            Trixi.@threaded for element in Trixi.eachelement(solver, cache)
+                for k in Trixi.eachnode(solver), j in Trixi.eachnode(solver),
+                    i in Trixi.eachnode(solver)
+
+                    @inbounds turbulence_sources_exact_per_node!(u, u_transformed,
+                                                                 gradients, columns, dt,
+                                                                 equations_parabolic,
+                                                                 solver,
+                                                                 i, j, k, element)
+                end
+            end
+        else
+            kernel! = turbulence_sources_exact_KAkernel!(backend)
+            kernel!(u, u_transformed, gradients, columns, dt, equations_parabolic,
+                    solver,
+                    ndrange = (Trixi.element_node_ndrange(mesh, solver)...,
+                               Trixi.nelements(solver, cache)))
+        end
+    end
+    return nothing
+end
+
+@kernel inbounds=true function turbulence_sources_exact_KAkernel!(u, u_transformed,
+                                                                  gradients, columns,
+                                                                  dt,
+                                                                  equations_parabolic,
+                                                                  dg)
+    i, j, k, element = @index(Global, NTuple)
+    turbulence_sources_exact_per_node!(u, u_transformed, gradients, columns, dt,
+                                       equations_parabolic, dg, i, j, k, element)
+end
+
+# Increment `u` by the exact solution of the source terms of the turbulence model, with the
+# lowest level of the column stored by `calc_parabolic_fluxes!`
+Base.@propagate_inbounds function turbulence_sources_exact_per_node!(u, u_transformed,
+                                                                     gradients, columns,
+                                                                     dt,
+                                                                     equations_parabolic,
+                                                                     dg, i, j, k,
+                                                                     element)
+    (; upward_unit_vectors, lowest_level, nlayers) = columns
+    gradients_x, gradients_y, gradients_z = gradients
+    w_node = Trixi.get_node_vars(u_transformed, equations_parabolic, dg,
+                                 i, j, k, element)
+    gradients_node = (Trixi.get_node_vars(gradients_x, equations_parabolic, dg,
+                                          i, j, k, element),
+                      Trixi.get_node_vars(gradients_y, equations_parabolic, dg,
+                                          i, j, k, element),
+                      Trixi.get_node_vars(gradients_z, equations_parabolic, dg,
+                                          i, j, k, element))
+    k_node = get_upward_unit_vector(upward_unit_vectors, i, j, k, element)
+
+    column = (element - 1) ÷ nlayers + 1
+    nvars = nvariables(equations_parabolic)
+    v_a = SVector(lowest_level[2, i, j, column], lowest_level[3, i, j, column],
+                  lowest_level[4, i, j, column])
+    k_a = SVector(lowest_level[nvars + 1, i, j, column],
+                  lowest_level[nvars + 2, i, j, column],
+                  lowest_level[nvars + 3, i, j, column])
+    wind_speed = norm(v_a - dot(v_a, k_a) * k_a)
+    z_a = lowest_level[nvars + 4, i, j, column]
+    aux = aux_turbulence(wind_speed, z_a, columns, i, j, k, element)
+
+    (; equations_hyperbolic) = equations_parabolic
+    increments = integrate_turbulence_sources(w_node, gradients_node, k_node, aux, dt,
+                                              equations_hyperbolic.turbulence,
+                                              equations_hyperbolic)
+    u_node = Trixi.get_node_vars(u, equations_parabolic, dg, i, j, k, element)
+    Trixi.set_node_vars!(u, u_node + increments, equations_parabolic, dg, i, j, k,
+                         element)
+    return nothing
 end
 
 function check_axes_parabolic_fluxes(flux_parabolic, gradients, u_transformed, columns,
@@ -271,6 +407,10 @@ function check_axes_parabolic_fluxes(flux_parabolic, gradients, u_transformed, c
     column_axes = (Trixi.eachnode(dg), Trixi.eachnode(dg),
                    Base.OneTo(Trixi.nelements(dg, cache) ÷ nlayers))
     Trixi.check_axes(upward_unit_vectors, (Base.OneTo(3), node_axes...))
+    Trixi.check_axes(columns.gravitational_accelerations, node_axes)
+    Trixi.check_axes(columns.vertical_grid_spacings,
+                     (Trixi.eachnode(dg), Trixi.eachnode(dg),
+                      Trixi.eachelement(dg, cache)))
     Trixi.check_axes(lowest_level_weights, (Trixi.eachnode(dg), column_axes...))
     Trixi.check_axes(lowest_level_directions, (Base.OneTo(3), column_axes...))
     Trixi.check_axes(lowest_level,

@@ -87,9 +87,9 @@ Drag coefficient ``C_d = C_{d0} + C_{d1} \lVert \vec{v}_a \rVert`` for wind spee
                   c_d0 + c_d1 * wind_speed, turbulence.drag_coefficient_max)
 end
 
-@inline function eddy_diffusivities(w, gradients, k, column,
+@inline function eddy_diffusivities(w, gradients, k, aux,
                                     turbulence::ReedJablonowskiBoundaryLayer, equations)
-    wind_speed, height = column
+    wind_speed, height = aux[1], aux[2]
     p = pressure_specific(w, equations)
     (; pressure_top, pressure_decay) = turbulence
     decay = ifelse(p >= pressure_top, one(p),

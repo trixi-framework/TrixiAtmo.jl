@@ -32,6 +32,14 @@ for human readability.
   of DCMIP2016, whose eddy viscosity and diffusivity depend on the horizontal velocity and
   the height of the lowest level of the column, at the height `lowest_level_height` of the
   `TurbulentDiffusion3D` above the surface.
+- The `DeardorffTKE` is a vertical model of the turbulent kinetic energy, whose density is a
+  prognostic variable of the `CompressibleEulerPotentialTemperatureEquationsWithGravity3D`,
+  which then have `5 + nturbulencevariables(turbulence)` variables. Its source terms are
+  integrated exactly by `turbulence_sources_exact!`, passed as keyword argument
+  `source_splitting!` to `Trixi.solve` with the Rosenbrock-W and linear IMEX methods, which
+  also accept the keyword arguments `stage_limiter!` and `step_limiter!`, e.g., the
+  `PositivityPreservingLimiterZhangShu` for `density_turbulent_kinetic_energy`. `FluxTurbo`
+  is not available with the variables of a turbulence model.
   The `BoundaryConditionSurfaceFluxes` are the corresponding bulk fluxes of the momentum and
   the potential temperature through the surface for the
   `CompressibleEulerPotentialTemperatureEquationsWithGravity3D`.

@@ -251,6 +251,74 @@ end
     @test isapprox(integral_final, integral_initial, rtol = 1e-13)
 end
 
+@testitem "Euler potential temperature 3D: elixir_potential_temperature_baroclinic_instability_tke" setup=[
+    Setup,
+    EulerPotentialTemperature3D
+] tags=[:euler_potential_temperature_3d] begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
+                                 "elixir_potential_temperature_baroclinic_instability_tke.jl"),
+                        l2=[
+                            0.003031955269636003,
+                            0.051447790683065917,
+                            0.05238872281687363,
+                            0.012601492193565095,
+                            0.8067719044850182,
+                            0.0047374098991777025
+                        ],
+                        linf=[
+                            0.02174811457604786,
+                            0.8296783161486423,
+                            1.254064387929117,
+                            0.9093387329541114,
+                            4.833144661988285,
+                            0.014518002322880372
+                        ],
+                        tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
+                        dt=20)
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities). `Trixi.solve!` calls the right-hand side inside the
+    # timer section "main loop", so the first call outside of it creates new timer
+    # sections, which allocates.
+    TrixiAtmo.Trixi.rhs_hyperbolic!(similar(sol.u[end]), sol.u[end], semi, sol.t[end])
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
+    TrixiAtmo.Trixi.rhs_parabolic!(similar(sol.u[end]), sol.u[end], semi, sol.t[end])
+    @test_allocations(TrixiAtmo.Trixi.rhs_parabolic!, semi, sol, 1000)
+
+    # The TKE is nonnegative
+    u = Trixi.wrap_array(sol.u[end], semi)
+    @test all(>=(0), u[6, :, :, :, :])
+
+    # The limiter changes only the density of the TKE of an element with a negative node
+    # and a positive mean value, which it conserves
+    u_ode = copy(sol.u[end])
+    u = Trixi.wrap_array(u_ode, semi)
+    u[6, :, :, :, 1] .= 0.01
+    u[6, 1, 1, 1, 1] = -0.005
+    u_before = copy(u[:, :, :, :, 1])
+    (; weights) = semi.solver.basis
+    (; inverse_jacobian) = semi.cache.elements
+    mean_tke(u) = sum(weights[i] * weights[j] * weights[k] * u[6, i, j, k, 1] /
+                      abs(inverse_jacobian[i, j, k, 1])
+                      for i in eachindex(weights), j in eachindex(weights),
+                          k in eachindex(weights))
+    tke_before = mean_tke(u)
+    limiter!(u_ode, nothing, semi, 0.0)
+    @test minimum(Array(u[6, :, :, :, 1])) >= -1.0e-15
+    @test minimum(Array(u[6, :, :, :, 1])) < 1.0e-14
+    @test u[1:5, :, :, :, 1] == u_before[1:5, :, :, :]
+    @test mean_tke(u) ≈ tke_before
+
+    # The exact integration of the source terms keeps the TKE nonnegative and does not
+    # change the density and the momentum
+    u_ode = copy(sol.u[end])
+    turbulence_sources_exact!(u_ode, semi, sol.t[end], 1000.0)
+    u = Trixi.wrap_array(u_ode, semi)
+    u_end = Trixi.wrap_array(sol.u[end], semi)
+    @test all(>=(0), u[6, :, :, :, :])
+    @test u[1:4, :, :, :, :] == u_end[1:4, :, :, :, :]
+    @test all(u[5, :, :, :, :] .>= u_end[5, :, :, :, :])
+end
+
 @testitem "Euler potential temperature 3D: elixir_potential_temperature_baroclinic_instability Souza" setup=[
     Setup,
     EulerPotentialTemperature3D

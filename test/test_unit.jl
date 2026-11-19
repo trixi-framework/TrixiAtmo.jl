@@ -1320,3 +1320,150 @@ end
     @test boundary_condition(w_a, w_a, normal, 6.4e6 * k_a, 0.0,
                              TrixiAtmo.Trixi.Gradient(), equations_parabolic) == w_a
 end
+
+@testitem "Unit: Consistency check for the Deardorff TKE: TurbulentDiffusion3D" setup=[Setup] tags=[:unit_fluxes] begin
+    using LinearAlgebra: norm
+    tke = DeardorffTKE()
+    turbulence = HorizontalVerticalTurbulence(ConstantEddyViscosity(1.0e5), tke)
+    equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
+                                                                            c_v = 717.0,
+                                                                            gravity = EARTH_GRAVITATIONAL_ACCELERATION,
+                                                                            turbulence = turbulence)
+    equations_no_tke = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
+                                                                                   c_v = 717.0,
+                                                                                   gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+    @test nvariables(equations) == 6
+    @test varnames(cons2cons, equations)[end] == "rho_e"
+    @test varnames(cons2prim, equations)[end] == "e"
+
+    # The TKE is advected as a specific quantity and does not change the other fluxes
+    u_ll = SVector(1.1, -0.5, 2.34, 0.7, 330.0, 0.022)
+    u_rr = SVector(1.05, 0.4, -1.3, -0.2, 310.0, 0.004)
+    aux_ll = SVector(1000.0)
+    aux_rr = SVector(1300.0)
+    @test prim2cons(cons2prim(u_ll, equations), equations) ≈ u_ll
+    for normal_direction in (SVector(1.0, 0.0, 0.0), SVector(0.5, -0.5, 0.2))
+        f = flux(u_ll, aux_ll, normal_direction, equations)
+        @test f[1:5] ≈ flux(u_ll[1:5], aux_ll, normal_direction, equations_no_tke)
+        @test f[6] ≈ f[1] * u_ll[6] / u_ll[1]
+        for volume_flux in (flux_ec, flux_tec, flux_etec, flux_kennedy_gruber)
+            @test volume_flux(u_ll, u_ll, aux_ll, aux_ll, normal_direction, equations) ≈ f
+            f_lr = volume_flux(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)
+            @test f_lr[1:5] ≈
+                  volume_flux(u_ll[1:5], u_rr[1:5], aux_ll, aux_rr, normal_direction,
+                              equations_no_tke)
+            @test f_lr[6] ≈ f_lr[1] * 0.5 * (u_ll[6] / u_ll[1] + u_rr[6] / u_rr[1])
+        end
+        for surface_flux in (flux_lmars_es, flux_lmars_combined)
+            f_lr, _ = surface_flux(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
+                                   equations)
+            f_no_tke, _ = surface_flux(u_ll[1:5], u_rr[1:5], aux_ll, aux_rr,
+                                       normal_direction, equations_no_tke)
+            @test f_lr[1:5] ≈ f_no_tke
+            # Upwinded with the mass flux
+            @test f_lr[6] ≈ f_lr[1] * (f_lr[1] > 0 ? u_ll[6] / u_ll[1] : u_rr[6] / u_rr[1])
+        end
+        noncons = flux_nonconservative_isothermal(u_ll, u_rr, aux_ll, aux_rr,
+                                                  normal_direction, equations)
+        @test noncons[6] == 0
+        flux_left, flux_right = flux_ec_isothermal(u_ll, u_rr, aux_ll, aux_rr,
+                                                   normal_direction, equations)
+        f_ec = flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)
+        @test flux_left ≈ f_ec + 0.5 * noncons
+        @test flux_right ≈ f_ec - 0.5 * noncons
+
+        # `FluxTurbo` with the density of the TKE as sixth variable
+        for (volume_flux, conservative, nonconservative) in (((flux_ec,
+                                                               flux_nonconservative_isothermal),
+                                                              flux_ec,
+                                                              flux_nonconservative_isothermal),
+                                                             ((flux_kennedy_gruber,
+                                                               flux_nonconservative_souza_etal),
+                                                              flux_kennedy_gruber,
+                                                              flux_nonconservative_souza_etal))
+            @test Trixi.nturbovars(volume_flux, equations) == Val(8)
+            turbo_ll = Trixi.cons2turbo(volume_flux, u_ll..., aux_ll..., equations)
+            turbo_rr = Trixi.cons2turbo(volume_flux, u_rr..., aux_rr..., equations)
+            @test turbo_ll[8] ≈ u_ll[6] / u_ll[1]
+            turbo_left, turbo_right = Trixi.flux_turbo(volume_flux, turbo_ll...,
+                                                       turbo_rr..., normal_direction...,
+                                                       equations)
+            f_cons = conservative(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
+                                  equations)
+            f_noncons = nonconservative(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
+                                        equations)
+            @test SVector(turbo_left) ≈ f_cons + 0.5 * f_noncons
+            @test SVector(turbo_right) ≈ f_cons - 0.5 * f_noncons
+        end
+    end
+
+    # Exact integration of the source terms compared with the classical Runge-Kutta method
+    # with many steps for `de/dt = A sqrt(e) - epsilon(e)` with
+    # `A = c_k Delta (du/dz^2 - N^2)`, for the vertical shear `du/dz` and the vertical
+    # gradient of the potential temperature `dtheta/dz`
+    k = SVector(0.0, 0.0, 1.0)
+    grid_spacing = 500.0
+    g = 9.81
+    aux = SVector(5.0, 65.0, grid_spacing, g)
+    theta = 300.0
+    rho = 1.1
+    function reference(e0, du_dz, dtheta_dz, dt)
+        N2 = g * dtheta_dz / theta
+        A = tke.c_k * grid_spacing * (du_dz^2 - N2)
+        rhs(e) = A * sqrt(max(e, 0.0)) -
+                 TrixiAtmo.dissipation_tke(max(e, 0.0), N2, grid_spacing, tke)
+        nsteps = 200_000
+        h = dt / nsteps
+        e = e0
+        integral_dissipation = 0.0
+        for _ in 1:nsteps
+            k1 = rhs(e)
+            k2 = rhs(e + h / 2 * k1)
+            k3 = rhs(e + h / 2 * k2)
+            k4 = rhs(e + h * k3)
+            d(e_) = TrixiAtmo.dissipation_tke(max(e_, 0.0), N2, grid_spacing, tke)
+            integral_dissipation += h / 6 *
+                                    (d(e) + 2 * d(e + h / 2 * k1) + 2 * d(e + h / 2 * k2) +
+                                     d(e + h * k3))
+            e = max(e + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4), 0.0)
+        end
+        return e, integral_dissipation
+    end
+    for (e0, du_dz, dtheta_dz, dt) in ((0.5, 0.02, -0.001, 100.0), # unstable, growth
+                                       (0.5, 0.005, 0.003, 100.0), # stable, decay
+                                       (1.0e-4, 0.03, 0.001, 300.0), # stable, growth
+                                       (2.0, 0.0, 0.004, 50.0)) # stable, decay
+        w = SVector(rho, 0.0, 0.0, 0.0, theta, e0)
+        gradients = (zero(w), zero(w), SVector(0.0, du_dz, 0.0, 0.0, dtheta_dz, 0.0))
+        increments = TrixiAtmo.integrate_turbulence_sources(w, gradients, k, aux, dt,
+                                                            turbulence, equations)
+        e_reference, dissipation_reference = reference(e0, du_dz, dtheta_dz, dt)
+        @test isapprox(e0 + increments[6] / rho, e_reference, rtol = 1.0e-7,
+                       atol = 1.0e-12)
+        p = TrixiAtmo.pressure_specific(w, equations)
+        exner = (p / equations.p_0)^(equations.R / equations.c_p)
+        @test isapprox(increments[5], rho * dissipation_reference / (equations.c_p * exner),
+                       rtol = 1.0e-6, atol = 1.0e-14)
+        @test increments[1:4] == zero(SVector{4, Float64})
+
+        # The derivative at `dt = 0` are the right-hand sides of the source terms
+        sources = TrixiAtmo.turbulence_sources(w, gradients, k, aux, turbulence,
+                                               equations)
+        increments_small = TrixiAtmo.integrate_turbulence_sources(w, gradients, k, aux,
+                                                                  1.0e-6, turbulence,
+                                                                  equations)
+        @test isapprox(increments_small / 1.0e-6, sources, rtol = 1.0e-4)
+    end
+
+    # The TKE decays to zero in finite time for a strong stratification and stays zero
+    w = SVector(rho, 0.0, 0.0, 0.0, theta, 0.01)
+    gradients = (zero(w), zero(w), SVector(0.0, 0.0, 0.0, 0.0, 0.01, 0.0))
+    increments = TrixiAtmo.integrate_turbulence_sources(w, gradients, k, aux, 1000.0,
+                                                        turbulence, equations)
+    @test increments[6] == -rho * 0.01
+    @test increments[5] > 0
+    w_zero = SVector(rho, 0.0, 0.0, 0.0, theta, 0.0)
+    @test TrixiAtmo.integrate_turbulence_sources(w_zero, gradients, k, aux, 1000.0,
+                                                 turbulence, equations) ==
+          zero(SVector{6, Float64})
+end

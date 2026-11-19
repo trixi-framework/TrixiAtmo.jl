@@ -134,6 +134,43 @@ end
     @test all(isfinite, du_ode)
 end
 
+@testitem "KernelAbstractions CPU 3D: elixir_potential_temperature_baroclinic_instability_tke native" setup=[
+    Setup,
+    KernelAbstractionsExamples
+] tags=[:kernelabstractions] begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_potential_temperature_baroclinic_instability_tke.jl"),
+                        # Expected errors are the same as on CPU
+                        l2=[
+                            0.003031955269636003,
+                            0.051447790683065917,
+                            0.05238872281687363,
+                            0.012601492193565095,
+                            0.8067719044850182,
+                            0.0047374098991777025
+                        ],
+                        linf=[
+                            0.02174811457604786,
+                            0.8296783161486423,
+                            1.254064387929117,
+                            0.9093387329541114,
+                            4.833144661988285,
+                            0.014518002322880372
+                        ],
+                        tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
+                        dt=20)
+    @test Trixi.trixi_backend(ode.u0) isa TrixiAtmo.KernelAbstractions.CPU
+    @test semi.cache.upward_unit_vectors isa Array
+    @test semi.cache.lowest_level isa Array
+
+    # Ensure that the RHS computation overwrites existing data in `du` correctly.
+    u_ode = copy(ode.u0)
+    du_ode = similar(u_ode)
+    fill!(du_ode, convert(eltype(du_ode), NaN))
+    Trixi.rhs_parabolic!(du_ode, u_ode, semi, first(ode.tspan))
+    @test all(isfinite, du_ode)
+end
+
 @testitem "KernelAbstractions CPU 3D: elixir_potential_temperature_baroclinic_instability_turbo native" setup=[
     Setup,
     KernelAbstractionsExamples

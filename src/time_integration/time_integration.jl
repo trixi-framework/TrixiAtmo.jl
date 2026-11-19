@@ -8,6 +8,21 @@
 # Abstract supertype of the time integrators of TrixiAtmo.jl for dispatch
 abstract type AbstractTimeIntegrator end
 
+# Default `stage_limiter!` and `step_limiter!` of the time integrators, with the signature
+# `limiter!(u_ode, integrator, semi, t)` of OrdinaryDiffEq.jl, e.g., of the
+# `PositivityPreservingLimiterZhangShu` of Trixi.jl
+trivial_limiter!(u_ode, integrator, semi, t) = nothing
+
+# Strang splitting of the time integrators with the exact solution `source_splitting!` of
+# local source terms, with the signature `source_splitting!(u_ode, semi, t, dt)`, e.g.,
+# `turbulence_sources_exact!`, applied over half a time step before and after every time step
+apply_source_splitting!(::Nothing, u_ode, semi, t, dt) = nothing
+
+function apply_source_splitting!(source_splitting!, u_ode, semi, t, dt)
+    @trixi_timeit timer() "source splitting" source_splitting!(u_ode, semi, t, dt)
+    return nothing
+end
+
 # This struct is needed to fake https://github.com/SciML/OrdinaryDiffEq.jl/blob/0c2048a502101647ac35faabd80da8a5645beac7/src/integrators/type.jl#L1
 # It is the same as the options of the time integrators of Trixi.jl, e.g.,
 # `Trixi.SimpleIntegratorSSPOptions`.

@@ -460,6 +460,54 @@ end
     end
 end
 
+@testitem "Type stability: Deardorff TKE" setup=[Setup] tags=[:type_stable_tests] begin
+    for RealT in (Float32, Float64)
+        turbulence = HorizontalVerticalTurbulence(ConstantEddyViscosity(RealT(1.0e5)),
+                                                  DeardorffTKE(c_k = RealT(0.125)))
+        equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = RealT(1004),
+                                                                                          c_v = RealT(717),
+                                                                                          gravity = RealT(EARTH_GRAVITATIONAL_ACCELERATION),
+                                                                                          turbulence = turbulence)
+        equations_parabolic = @inferred TurbulentDiffusion3D(equations)
+        u_ll = SVector(RealT(1.1), RealT(-0.5), RealT(2.3), RealT(0.7), RealT(330),
+                       RealT(0.02))
+        u_rr = SVector(RealT(1.05), RealT(0.4), RealT(-1.3), RealT(-0.2), RealT(310),
+                       RealT(0.004))
+        aux_ll = SVector(RealT(1000))
+        aux_rr = SVector(RealT(1300))
+        normal_direction = SVector(one(RealT), one(RealT), one(RealT))
+        @test eltype(@inferred flux(u_ll, aux_ll, normal_direction, equations)) == RealT
+        for volume_flux in (flux_ec, flux_tec, flux_etec, flux_kennedy_gruber)
+            @test eltype(@inferred volume_flux(u_ll, u_rr, aux_ll, aux_rr,
+                                               normal_direction, equations)) == RealT
+        end
+        for i in 1:2
+            @test eltype(@inferred flux_lmars_es(u_ll, u_rr, aux_ll, aux_rr,
+                                                 normal_direction, equations)[i]) == RealT
+            @test eltype(@inferred flux_ec_isothermal(u_ll, u_rr, aux_ll, aux_rr,
+                                                      normal_direction, equations)[i]) ==
+                  RealT
+        end
+        @test eltype(@inferred cons2prim(u_ll, equations)) == RealT
+        @test eltype(@inferred prim2cons(cons2prim(u_ll, equations), equations)) == RealT
+
+        w = @inferred cons2specific(u_ll, equations_parabolic)
+        gradients = ntuple(d -> SVector(ntuple(v -> RealT(d - v / 10) / 1000, 6)), 3)
+        k = SVector(RealT(0.6), zero(RealT), RealT(0.8))
+        aux = SVector(RealT(7), RealT(65), RealT(500), RealT(9.8))
+        for orientation in 1:3
+            @test eltype(@inferred flux(w, gradients, k, aux, orientation,
+                                        equations_parabolic)) == RealT
+        end
+        @test eltype(@inferred TrixiAtmo.turbulence_sources(w, gradients, k, aux,
+                                                            turbulence, equations)) == RealT
+        @test eltype(@inferred TrixiAtmo.integrate_turbulence_sources(w, gradients, k, aux,
+                                                                      RealT(85),
+                                                                      turbulence,
+                                                                      equations)) == RealT
+    end
+end
+
 @testitem "Type stability: Compressible Euler Moist Euler 2D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
         equations = @inferred CompressibleMoistEulerEquations2D(c_pd = RealT(2.1),

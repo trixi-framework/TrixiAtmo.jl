@@ -10,7 +10,11 @@
 # see `RosenbrockTableau`: every stage solves one linear system with the matrix
 # `I / (gamma * dt) - J`, where `J` is the approximate Jacobian of the right-hand side
 # passed to `Trixi.solve` (see `jacobian.jl`), and no matrix-vector product with the Jacobian is needed.
-# A concrete method provides `tableau(alg, RealT)`.
+# A concrete method provides `tableau(alg, RealT)`. The keyword arguments `stage_limiter!`
+# and `step_limiter!` of `Trixi.solve`, e.g., a `PositivityPreservingLimiterZhangShu`, are
+# applied to the argument of the right-hand side of every stage and to the solution after
+# every time step. The keyword argument `source_splitting!`, e.g.,
+# `turbulence_sources_exact!`, integrates local source terms by Strang splitting.
 abstract type AbstractRosenbrockAlgorithm{N} <: AbstractTimeIntegrationAlgorithm end
 
 nstages(::AbstractRosenbrockAlgorithm{N}) where {N} = N
@@ -20,7 +24,8 @@ nstages(::AbstractRosenbrockAlgorithm{N}) where {N} = N
 # https://diffeq.sciml.ai/v6.8/basics/integrator/#Handing-Integrators-1
 # which are used in Trixi.jl.
 mutable struct RosenbrockIntegrator{RealT <: Real, uType, Params, Sol, F, Alg,
-                                    Tableau, Options, NSTAGES, Jacobian} <:
+                                    Tableau, Options, NSTAGES, Jacobian, StageLimiter,
+                                    StepLimiter, SourceSplitting} <:
                AbstractTimeIntegrator
     u::uType
     du::uType
@@ -39,6 +44,9 @@ mutable struct RosenbrockIntegrator{RealT <: Real, uType, Params, Sol, F, Alg,
     const jacobian::Jacobian # arrays of the approximate Jacobian, see `jacobian.jl`
     const update_interval::Int # number of time steps between two updates of the Jacobian
     dt_jacobian::RealT # time step of the current factorization of the Jacobian
+    const stage_limiter!::StageLimiter # applied to the argument of every right-hand side
+    const step_limiter!::StepLimiter # applied to the solution after every time step
+    const source_splitting!::SourceSplitting # applied before and after every time step
     opts::Options
     finalstep::Bool # added for convenience
     const dtchangeable::Bool
@@ -47,7 +55,8 @@ end
 
 function init(ode::ODEProblem, alg::AbstractRosenbrockAlgorithm;
               dt, callback::Union{CallbackSet, Nothing} = nothing, jacobian = nothing,
-              update_interval = 1, kwargs...)
+              update_interval = 1, stage_limiter! = trivial_limiter!,
+              step_limiter! = trivial_limiter!, source_splitting! = nothing, kwargs...)
     u = copy(ode.u0)
     du = similar(u)
     u_tmp = similar(u)
@@ -65,6 +74,7 @@ function init(ode::ODEProblem, alg::AbstractRosenbrockAlgorithm;
     integrator = RosenbrockIntegrator(u, du, u_tmp, stages, t, tdir, dt, dt, iter,
                                       ode.p, (prob = ode,), ode.f, alg, tableau_,
                                       jacobian_cache, update_interval, zero(dt),
+                                      stage_limiter!, step_limiter!, source_splitting!,
                                       TimeIntegratorOptions(callback, ode.tspan;
                                                             kwargs...),
                                       false, true, false)
@@ -106,9 +116,14 @@ function step!(integrator::RosenbrockIntegrator)
             integrator.dt_jacobian = integrator.dt
         end
 
+        apply_source_splitting!(integrator.source_splitting!, integrator.u,
+                                integrator.p, integrator.t, integrator.dt / 2)
         for stage in 1:nstages(alg)
             rosenbrock_stage!(integrator, stage, gamma_dt)
         end
+        apply_source_splitting!(integrator.source_splitting!, integrator.u,
+                                integrator.p, integrator.t + integrator.dt / 2,
+                                integrator.dt / 2)
     end
 
     integrator.iter += 1
@@ -164,7 +179,9 @@ function rosenbrock_stage!(integrator::RosenbrockIntegrator, stage, gamma_dt)
                                                                                   c_row,
                                                                                   Val(N))
 
-    integrator.f(du, u_tmp, p, t + tableau.c_stage[stage] * dt)
+    t_stage = t + tableau.c_stage[stage] * dt
+    integrator.stage_limiter!(u_tmp, integrator, p, t_stage)
+    integrator.f(du, u_tmp, p, t_stage)
 
     @trixi_timeit_ext backend timer() "stage residual" rosenbrock_stage_residual!(backend,
                                                                                   res,
@@ -180,6 +197,7 @@ function rosenbrock_stage!(integrator::RosenbrockIntegrator, stage, gamma_dt)
                                                                                 stages,
                                                                                 tableau.m,
                                                                                 Val(N))
+        integrator.step_limiter!(u, integrator, p, t + dt)
     end
 
     return nothing

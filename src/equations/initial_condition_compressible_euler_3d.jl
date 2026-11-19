@@ -174,8 +174,9 @@ auxiliary variables, see `Trixi.nauxvariables`, and passed as `aux_field` to
 `SemidiscretizationHyperbolic`.
 """
 @inline function aux_field_gravity_earth(x,
-                                         equations::AbstractCompressibleEulerEquations{3,
-                                                                                       5})
+                                         equations::Union{AbstractCompressibleEulerEquations{3,
+                                                                                             5},
+                                                          CompressibleEulerPotentialTemperatureEquationsWithGravity3D})
     RealT = eltype(x)
     radius_earth = convert(RealT, EARTH_RADIUS)
     gravitational_acceleration = convert(RealT, EARTH_GRAVITATIONAL_ACCELERATION)
@@ -437,7 +438,9 @@ whose variables contain the velocity instead of the momentum, this is the Coriol
 See also [`source_terms_coriolis_small_earth`](@ref) for the reduced-radius configuration.
 """
 @inline function source_terms_coriolis(u, aux, x, t,
-                                       equations::AbstractCompressibleEulerEquations{3, 5})
+                                       equations::Union{AbstractCompressibleEulerEquations{3,
+                                                                                           5},
+                                                        CompressibleEulerPotentialTemperatureEquationsWithGravity3D})
     return coriolis_source(u, EARTH_ROTATION_RATE, equations)
 end
 
@@ -455,7 +458,8 @@ Counterpart of [`source_terms_coriolis`](@ref) for the reduced-radius ("small Ea
 configuration, using the scaled rotation rate [`SMALL_EARTH_ROTATION_RATE`](@ref).
 """
 @inline function source_terms_coriolis_small_earth(u, aux, x, t,
-                                                   equations::AbstractCompressibleEulerEquations{3,
-                                                                                                 5})
+                                                   equations::Union{AbstractCompressibleEulerEquations{3,
+                                                                                                       5},
+                                                                    CompressibleEulerPotentialTemperatureEquationsWithGravity3D})
     return coriolis_source(u, SMALL_EARTH_ROTATION_RATE, equations)
 end

@@ -14,7 +14,11 @@
 # the Jacobian is needed. This form requires an IMEX method whose implicit part is lower
 # triangular with an explicit first stage (vanishing first row), a constant nonzero diagonal
 # `gamma` in the other stages, and the same weights as the explicit part. A concrete method
-# provides `tableau(alg, RealT)`.
+# provides `tableau(alg, RealT)`. The keyword arguments `stage_limiter!` and `step_limiter!`
+# of `Trixi.solve`, e.g., a `PositivityPreservingLimiterZhangShu`, are applied to the stage
+# values of the implicit stages and to the solution after every time step. The keyword
+# argument `source_splitting!`, e.g., `turbulence_sources_exact!`, integrates local source
+# terms by Strang splitting.
 #
 # Compared to the Rosenbrock-W methods (see `rosenbrock.jl`), every stage evaluates the
 # right-hand side once, and every stage except the explicit first one solves one linear
@@ -32,7 +36,8 @@ nstages(::AbstractLinearIMEXAlgorithm{N}) where {N} = N
 # https://diffeq.sciml.ai/v6.8/basics/integrator/#Handing-Integrators-1
 # which are used in Trixi.jl.
 mutable struct LinearIMEXIntegrator{RealT <: Real, uType, Params, Sol, F, Alg,
-                                    Tableau, Options, NSTAGES, Jacobian} <:
+                                    Tableau, Options, NSTAGES, Jacobian, StageLimiter,
+                                    StepLimiter, SourceSplitting} <:
                AbstractTimeIntegrator
     u::uType
     du::uType
@@ -52,6 +57,9 @@ mutable struct LinearIMEXIntegrator{RealT <: Real, uType, Params, Sol, F, Alg,
     const jacobian::Jacobian # arrays of the approximate Jacobian, see `jacobian.jl`
     const update_interval::Int # number of time steps between two updates of the Jacobian
     dt_jacobian::RealT # time step of the current factorization of the Jacobian
+    const stage_limiter!::StageLimiter # applied to the stage values of the implicit stages
+    const step_limiter!::StepLimiter # applied to the solution after every time step
+    const source_splitting!::SourceSplitting # applied before and after every time step
     opts::Options
     finalstep::Bool # added for convenience
     const dtchangeable::Bool
@@ -60,7 +68,8 @@ end
 
 function init(ode::ODEProblem, alg::AbstractLinearIMEXAlgorithm;
               dt, callback::Union{CallbackSet, Nothing} = nothing, jacobian = nothing,
-              update_interval = 1, kwargs...)
+              update_interval = 1, stage_limiter! = trivial_limiter!,
+              step_limiter! = trivial_limiter!, source_splitting! = nothing, kwargs...)
     u = copy(ode.u0)
     du = similar(u)
     u_tmp = similar(u)
@@ -80,6 +89,7 @@ function init(ode::ODEProblem, alg::AbstractLinearIMEXAlgorithm;
     integrator = LinearIMEXIntegrator(u, du, u_tmp, stages, rhs_stages, t, tdir, dt, dt,
                                       iter, ode.p, (prob = ode,), ode.f, alg, tableau_,
                                       jacobian_cache, update_interval, zero(dt),
+                                      stage_limiter!, step_limiter!, source_splitting!,
                                       TimeIntegratorOptions(callback, ode.tspan;
                                                             kwargs...),
                                       false, true, false)
@@ -121,9 +131,14 @@ function step!(integrator::LinearIMEXIntegrator)
             integrator.dt_jacobian = integrator.dt
         end
 
+        apply_source_splitting!(integrator.source_splitting!, integrator.u,
+                                integrator.p, integrator.t, integrator.dt / 2)
         for stage in 1:nstages(alg)
             linear_imex_stage!(integrator, stage, gamma_dt)
         end
+        apply_source_splitting!(integrator.source_splitting!, integrator.u,
+                                integrator.p, integrator.t + integrator.dt / 2,
+                                integrator.dt / 2)
     end
 
     integrator.iter += 1
@@ -197,6 +212,8 @@ function linear_imex_stage!(integrator::LinearIMEXIntegrator, stage, gamma_dt)
                                                                                  stages,
                                                                                  d_row,
                                                                                  Val(N))
+        integrator.stage_limiter!(stages[stage], integrator, p,
+                                  t + tableau.c[stage] * dt)
     end
 
     integrator.f(rhs_stages[stage], stages[stage], p, t + tableau.c[stage] * dt)
@@ -208,6 +225,7 @@ function linear_imex_stage!(integrator::LinearIMEXIntegrator, stage, gamma_dt)
                                                                                  tableau.b *
                                                                                  dt,
                                                                                  Val(N))
+        integrator.step_limiter!(u, integrator, p, t + dt)
     end
 
     return nothing
