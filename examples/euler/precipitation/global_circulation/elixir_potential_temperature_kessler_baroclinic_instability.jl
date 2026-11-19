@@ -1,6 +1,5 @@
 # The moist baroclinic wave of DCMIP2016 (test case 161) with the Kessler warm-rain
-# microphysics. For optimal results consider increasing the resolution, e.g., to
-# `trees_per_cube_face = (16, 8)`.
+# microphysics.
 #
 # References:
 # - Paul A. Ullrich, Thomas Melvin, Christiane Jablonowski, Andrew Staniforth (2013)
