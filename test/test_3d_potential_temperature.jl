@@ -224,18 +224,16 @@ end
     function test_same_solution(semi, u_ode, t)
         RealT = eltype(u_ode)
         gamma_dt = convert(RealT, 20)
-        jacobian_one_sided = TrixiAtmo.create_cache_jacobian(JacobianVerticalOneSided(c = 340),
-                                                             semi, u_ode)
-        jacobian_two_sided = TrixiAtmo.create_cache_jacobian(JacobianVerticalTwoSided(c = 340),
-                                                             semi, u_ode)
-        TrixiAtmo.update_jacobian!(jacobian_one_sided, u_ode, semi, gamma_dt)
-        TrixiAtmo.update_jacobian!(jacobian_two_sided, u_ode, semi, gamma_dt)
         b_ode = similar(u_ode)
         Trixi.rhs_hyperbolic!(b_ode, u_ode, semi, t)
-        x_one_sided = copy(b_ode)
-        x_two_sided = copy(b_ode)
-        TrixiAtmo.solve_jacobian!(x_one_sided, jacobian_one_sided, semi, gamma_dt)
-        TrixiAtmo.solve_jacobian!(x_two_sided, jacobian_two_sided, semi, gamma_dt)
+        x_one_sided, x_two_sided = map((JacobianVerticalOneSided(c = 340),
+                                        JacobianVerticalTwoSided(c = 340))) do jacobian
+            jacobian_cache = TrixiAtmo.create_cache_jacobian(jacobian, semi, u_ode)
+            TrixiAtmo.update_jacobian!(jacobian_cache, u_ode, semi, gamma_dt)
+            x_ode = copy(b_ode)
+            TrixiAtmo.solve_jacobian!(x_ode, jacobian_cache, semi, gamma_dt)
+            return x_ode
+        end
         # Preserve original memory since it will be `unsafe_wrap`ped and might
         # thus otherwise be garbage collected
         GC.@preserve x_one_sided x_two_sided begin
@@ -243,7 +241,7 @@ end
             x2 = Trixi.wrap_array(x_two_sided, semi)
             # Compare the variables separately, since they have very different magnitudes.
             # The condensations differ only in the order of the operations, and the
-            # solutions differ by about 10 times the machine epsilon.
+            # relative differences of the solutions are below 10 times the machine epsilon.
             for v in 1:5
                 @test isapprox(view(x1, v, ..), view(x2, v, ..), rtol = 1000 * eps(RealT))
             end
@@ -256,9 +254,8 @@ end
         trixi_include(@__MODULE__,
                       joinpath(EXAMPLES_DIR, "global_circulation",
                                "elixir_potential_temperature_baroclinic_instability.jl");
-                      tspan = (0.0, 40.0), dt = 20,
-                      jacobian = JacobianVerticalOneSided(c = 340), kwargs...)
-        test_same_solution(semi, sol.u[end], sol.t[end])
+                      sol = nothing, kwargs...)
+        test_same_solution(semi, ode.u0, first(ode.tspan))
     end
 end
 

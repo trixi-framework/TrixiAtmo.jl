@@ -75,12 +75,11 @@ Example for `nz = 4`, `polydeg = 5` (`M = 6`), in the permuted ordering above:
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠁⠀⠀⠥⠤⢜⣒⣒⠀⠀⠀⠀⠱⣦
 ```
 
-`A` (block-diagonal, one block per element) holds, for the nodes `1, ..., M-1`,
-the diagonals of `rho`, `rho_theta`, and `rho_w`,
-which are `I / gamma_dt` except for the first node,
-where the LMARS flux adds dissipation to `rho_theta` and `rho_w` at an interface between
-elements and to `rho_w` at the wall, the coupling (LGL derivative operator) of `rho` and
-`rho_theta` to `rho_w` (mass and potential temperature fluxes) and of `rho_w` to
+`A` (block-diagonal, one block per element) holds, for the nodes `1, ..., M-1`, the
+diagonals of `rho`, `rho_theta`, and `rho_w`, which are `I / gamma_dt` except for the first
+node, where the LMARS flux adds dissipation to `rho_theta` and `rho_w` at an interface
+between elements and to `rho_w` at the wall, the coupling (LGL derivative operator) of
+`rho` and `rho_theta` to `rho_w` (mass and potential temperature fluxes) and of `rho_w` to
 `rho_theta` (pressure gradient), the pointwise coupling of `rho_w` to `rho` (gravity), and,
 at the first node at an interface, the coupling of `rho` to `rho_theta` through the LMARS
 mass flux. At an interface, the derivative coupling of the first node to itself vanishes,
@@ -88,7 +87,7 @@ since the central part of the LMARS flux cancels the boundary term of the deriva
 
 `B` connects the local DOFs to the edge `rho_w_M`/`rho_theta_M` of the same element (dense
 LGL coupling) and, through the LMARS flux at the lower interface, the first node of the
-element to the edge DOFs of the element below. `C` connects the edge DOFs to the local
+element to the edge `rho_w_M`/`rho_theta_M` of the element below. `C` connects the edge DOFs to the local
 `rho_w`/`rho_theta` of the same element (dense LGL coupling) and, through the LMARS flux at
 the upper interface, to the first node of the element above.
 
@@ -935,8 +934,8 @@ function schur_complement_boundary!(backend::Backend,
     kernel! = schur_complement_boundary_one_sided_KAkernel!(backend)
     kernel!(schur_diagonal, schur_lower, schur_upper, schur_element, gravity, theta,
             dp_drho_theta, metric_factor, derivative_hat, speed_of_sound,
-            inv_speed_of_sound, inv_boundary_weight, gamma_dt, Val(nlayers_),
-            Val(nnodes_);
+            inv_speed_of_sound, inv_boundary_weight, gamma_dt,
+            Val(nlayers_), Val(nnodes_);
             ndrange = ncolumns, column_kernel_workgroupsize()...)
     return nothing
 end
@@ -961,9 +960,8 @@ Base.@propagate_inbounds function multiplier_rho_M(schur_diagonal, column, layer
     return schur_diagonal[column, 2, 1, layer] * inv_pivot, inv_pivot
 end
 
-# 2x2 blocks of `v` of the diagonal block `layer`, of the block below the diagonal in the
-# block row `layer` (i.e., `schur_lower[:, :, :, layer - 1]`), and of the block above the
-# diagonal in the block row `layer`, after the elimination of `u` with the multiplier `m`
+# 2x2 block of `v` of the diagonal block `layer` after the elimination of `u` with the
+# multiplier `m` of the block row `layer`
 Base.@propagate_inbounds function block_diagonal_2x2(schur_diagonal, m, column, layer)
     return SMatrix{2, 2}(schur_diagonal[column, 2, 2, layer] -
                          m * schur_diagonal[column, 1, 2, layer],
@@ -973,6 +971,9 @@ Base.@propagate_inbounds function block_diagonal_2x2(schur_diagonal, m, column, 
                          schur_diagonal[column, 3, 3, layer])
 end
 
+# 2x2 block of `v` of the block `schur_offdiagonal[:, :, :, index]` below or above the
+# diagonal after the elimination of `u` with the multiplier `m` of its block row, i.e.,
+# `index + 1` for `schur_lower` and `index` for `schur_upper`
 Base.@propagate_inbounds function block_offdiagonal_2x2(schur_offdiagonal, m,
                                                         column, index)
     return SMatrix{2, 2}(schur_offdiagonal[column, 2, 1, index] -
