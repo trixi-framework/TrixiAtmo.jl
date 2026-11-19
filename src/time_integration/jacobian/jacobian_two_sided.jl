@@ -58,9 +58,9 @@ degree `polydeg` (`M = polydeg + 1` LGL nodes), the unknowns are grouped, by var
 a small *local* block per element and a small *global* (edge) block shared by the whole
 column:
 
-* all `rho` DOFs of element 1 (nodes `1..M`), then
-* the `rho_theta` DOFs `2..M-1` of element 1 (interior only), then
-* the `rho_w` DOFs `2..M-1` of element 1 (interior only), then
+* all `rho` DOFs of element 1 (nodes `1, ..., M`), then
+* the `rho_theta` DOFs `2, ..., M-1` of element 1 (interior only), then
+* the `rho_w` DOFs `2, ..., M-1` of element 1 (interior only), then
 * ... (repeated, element by element) ...
 * finally, 4 edge DOFs per element, ordered element by element:
   `rho_theta_1, rho_w_1, rho_w_M, rho_theta_M`.
