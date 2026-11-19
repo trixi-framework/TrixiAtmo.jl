@@ -964,6 +964,11 @@ end
     @test flux_bottom[1] ≈ 2 * rain
     @test isapprox(flux_top[8], 0, atol = 1e-12)
     @test isapprox(flux_top[1], 0, atol = 1e-12)
+
+    # `prim2cons` is the inverse of `cons2prim`
+    for (u, aux) in ((u_ll, aux_ll), (u_rr, aux_rr))
+        @test prim2cons(cons2prim(u, aux, equations), aux, equations) ≈ u
+    end
 end
 
 @testitem "Unit: Consistency check for Kessler source terms: CEMPTE3D" setup=[Setup] tags=[:unit_source_terms] begin

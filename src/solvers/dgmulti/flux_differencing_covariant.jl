@@ -1,10 +1,11 @@
 @muladd begin
 #! format: noindent
 
-function Trixi.create_cache(mesh::DGMultiMesh, equations::AbstractCovariantEquations,
-                            dg::Trixi.DGMultiFluxDiffSBP,
-                            RealT, metric_terms, auxiliary_field,
-                            uEltype)
+function Trixi.create_cache_hyperbolic(mesh::DGMultiMesh,
+                                       equations::AbstractCovariantEquations,
+                                       dg::Trixi.DGMultiFluxDiffSBP,
+                                       RealT, metric_terms, auxiliary_field,
+                                       uEltype)
     rd = dg.basis
     md = mesh.md
 
@@ -19,9 +20,9 @@ function Trixi.create_cache(mesh::DGMultiMesh, equations::AbstractCovariantEquat
     du_local_threaded = [zeros(SVector{nvars, uEltype}, rd.Nq)
                          for _ in 1:Threads.maxthreadid()]
 
-    solution_container = Trixi.initialize_dgmulti_solution_container(mesh, equations,
-                                                                     dg,
-                                                                     uEltype)
+    solution_container = Trixi.init_dgmulti_solution_container(mesh, equations,
+                                                               dg,
+                                                               uEltype)
 
     aux_values = Trixi.allocate_nested_array(uEltype, naux, size(md.x), dg)
     aux_quad_values = Trixi.allocate_nested_array(uEltype, naux, size(md.xq), dg)

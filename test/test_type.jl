@@ -366,8 +366,8 @@ end
                   RealT
         end
 
-        @test eltype(@inferred cons2prim(u, equations)) == RealT
-        @test eltype(@inferred prim2cons(u, equations)) == RealT
+        @test eltype(@inferred cons2prim(u, aux, equations)) == RealT
+        @test eltype(@inferred prim2cons(u, aux, equations)) == RealT
         @test typeof(@inferred pressure(u, equations)) == RealT
         @test typeof(@inferred TrixiAtmo.temperature(u, equations)) == RealT
         @test typeof(@inferred TrixiAtmo.terminal_velocity_rain(TrixiAtmo.density_dry(u,
