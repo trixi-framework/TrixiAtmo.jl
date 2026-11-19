@@ -37,10 +37,7 @@ with
   ```
 and the isobaric latent heating ``\partial_t T = L / c_p (C - E)`` with the latent heat of
 vaporization `latent_heat` ``L`` in J/kg and the specific heat ``c_p`` of dry air at constant
-pressure of the equations. The default latent heat is the one of DCMIP2016, whose
-microphysics uses ``237.3`` instead of ``237 = 273 - 36`` in ``C``, adjusts to saturation
-instantaneously, and uses the density of the lowest level of each column as
-``\varrho_{sfc}`` in [`terminal_velocity_rain`](@ref).
+pressure of the equations. The default latent heat is the one of DCMIP2016.
 
 ## References
 
@@ -59,10 +56,6 @@ instantaneously, and uses the density of the lowest level of each column as
 - Paul A. Ullrich et al. (2016)
   Dynamical Core Model Intercomparison Project (DCMIP2016) test case document
   [DOI: 10.5281/zenodo.1298671](https://doi.org/10.5281/zenodo.1298671)
-- Yassine Tissaoui et al. (2023)
-  A non-column based, fully unstructured implementation of Kessler's microphysics with
-  warm rain using continuous and discontinuous spectral elements
-  [DOI: 10.1029/2022MS003283](https://doi.org/10.1029/2022MS003283)
 """
 struct KesslerMicrophysics{RealT <: Real}
     latent_heat::RealT # latent heat of vaporization in J/kg
@@ -113,9 +106,9 @@ V_r = 36.34 \left(10^{-3} \varrho_r\right)^{0.1364} \sqrt{\frac{\varrho_{sfc}}{\
 ```
 with the rain water density ``\varrho_r = \varrho_d q_r`` in kg/m³, i.e.,
 ``10^{-3} \varrho_r`` in g/cm³. As the base-state density at the ground of Klemp and
-Wilhelmson and as in Tissaoui et al. (2023), the density ``\varrho_{sfc}`` is the constant
-`rho_surface` of the microphysics. Its default value of 1.2 kg/m³ is close to the mean
-density of dry air at the ground in the moist baroclinic wave of DCMIP2016.
+Wilhelmson, the density ``\varrho_{sfc}`` is the constant `rho_surface` of the microphysics.
+Its default value of 1.2 kg/m³ is close to the mean density of dry air at the ground in the
+moist baroclinic wave of DCMIP2016.
 """
 @inline function terminal_velocity_rain(rho_dry, rho_rain,
                                         microphysics::KesslerMicrophysics)
