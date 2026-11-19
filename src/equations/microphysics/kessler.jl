@@ -20,7 +20,7 @@ with
 - the condensation (``C > 0``) or evaporation of cloud water (``C < 0``),
   ```math
   C = \frac{1}{\tau} \max\left(\frac{q_v - q_{vs}}
-      {1 + q_{vs} \frac{237.3 \cdot 17.27 L / c_p}{(T - 36)^2}}, -q_c\right),
+      {1 + q_{vs} \frac{237 \cdot 17.27 L / c_p}{(T - 36)^2}}, -q_c\right),
   ```
   i.e., the saturation adjustment of KW (3.10) relaxed with the time scale
   ``\tau`` `= condensation_time` in s, with the saturation mixing ratio ``q_{vs}`` of
@@ -36,8 +36,8 @@ with
   ```
 and the isobaric latent heating ``\partial_t T = L / c_p (C - E)`` with the latent heat of
 vaporization `latent_heat` ``L`` in J/kg and the specific heat ``c_p`` of dry air at constant
-pressure of the equations. The default values are the ones of DCMIP2016, whose `kessler.f90`
-uses ``c_p = 1003`` J/(kg K) instead of the one of the dynamical core.
+pressure of the equations. The default values are the ones of DCMIP2016, whose microphysics
+uses ``237.3`` instead of ``237 = 273 - 36`` in ``C``.
 
 ## References
 
@@ -55,8 +55,7 @@ struct KesslerMicrophysics{RealT <: Real}
     latent_heat::RealT # latent heat of vaporization in J/kg
     rho_surface::RealT # density at the surface in the terminal velocity of rain in kg/m³
     condensation_time::RealT # relaxation time of the condensation in s
-    # Coefficient of `rho_rain^1.1364` in `rho_rain * V_r` of `terminal_velocity_rain`,
-    # stored since GPU code evaluates `^` at run time even for constant arguments
+    # Coefficient of `rho_rain^1.1364` in `rho_rain * V_r` of `terminal_velocity_rain`
     rain_flux_coefficient::RealT
 end
 
@@ -151,12 +150,12 @@ end
     latent_heat_over_c_p = microphysics.latent_heat / c_p
 
     # Condensation, where the denominator accounts for the increase of the saturation
-    # mixing ratio due to the latent heating, with the constant `237.3` of `kessler.f90` of
-    # DCMIP2016 instead of the exact value `237 = 273 - 36`
+    # mixing ratio due to the latent heating with the derivative
+    # `d q_vs / dT = q_vs * 17.27 * 237 / (T - 36)^2` of `saturation_mixing_ratio_tetens`
     q_vs = saturation_mixing_ratio_tetens(T, p)
     condensation = max((q_v - q_vs) /
                        (1 +
-                        q_vs * convert(RealT, 237.3 * 17.27) * latent_heat_over_c_p /
+                        q_vs * convert(RealT, 237 * 17.27) * latent_heat_over_c_p /
                         (T - 36)^2), -q_c) / microphysics.condensation_time
 
     # Autoconversion and accretion

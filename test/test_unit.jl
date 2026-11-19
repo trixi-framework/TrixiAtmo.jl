@@ -972,7 +972,7 @@ end
 end
 
 @testitem "Unit: Consistency check for Kessler source terms: CEMPTE3D" setup=[Setup] tags=[:unit_source_terms] begin
-    # Reference values of the unmodified `interface/kessler.f90` of DCMIP2016-v1.0, compiled
+    # Reference values of the unmodified Kessler microphysics of DCMIP2016 (v1.0), compiled
     # with `gfortran -fdefault-real-8` and called on a column with two levels 1e12 m apart,
     # such that the sedimentation vanishes. The inputs are
     # `(T, p, rho_d, q_v, q_c, q_r, dt)` and the outputs `(T, q_v, q_c, q_r)` after one
@@ -983,7 +983,8 @@ end
     # - autoconversion and accretion: supersaturated air without evaporation and the
     #   semi-implicit update `A + C_r = (q_r_ref - q_r) / dt * (1 + 2.2 dt q_r^0.875)`;
     # - condensation: supersaturated air without condensate, where the reference condenses
-    #   the amount `condensation_time * C` in one step.
+    #   the amount `condensation_time * C` in one step, but with the constant `237.3`
+    #   instead of `237` in the denominator of `C`.
     # The reference uses `c_p = 1003` J/(kg K) in the latent heating, which the equations
     # below match with the same gas constant `R = c_p - c_v = 287` J/(kg K).
     cases_evap = [
@@ -1095,11 +1096,14 @@ end
         u, exner = state(T, p, rho_d, q_v, q_c, q_r)
         du = source_terms_microphysics(u, aux, nothing, 0.0, equations)
         condensation = du[7] / rho_d
-        @test isapprox(equations.microphysics.condensation_time * condensation, q_c_ref,
-                       rtol = 1e-10)
+        latent_factor = TrixiAtmo.saturation_mixing_ratio_tetens(T, p) * 17.27 *
+                        equations.microphysics.latent_heat / equations.c_p / (T - 36)^2
+        scaling = (1 + 237.3 * latent_factor) / (1 + 237 * latent_factor)
+        @test isapprox(equations.microphysics.condensation_time * condensation,
+                       scaling * q_c_ref, rtol = 1e-10)
         @test isapprox(equations.microphysics.condensation_time *
                        source_rho_theta(du, T, p, q_v) /
-                       rho_d * exner, T_ref - T, rtol = 1e-8)
+                       rho_d * exner, scaling * (T_ref - T), rtol = 1e-8)
     end
 
     # The microphysics only moves water between the species and does not change the
