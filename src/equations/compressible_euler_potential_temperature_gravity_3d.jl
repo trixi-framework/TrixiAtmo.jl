@@ -245,8 +245,8 @@ end
                                          equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     a = flux_lmars.speed_of_sound
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
     v_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2] +
            v3_ll * normal_direction[3]
@@ -293,8 +293,8 @@ contributions are given by the plain LMARS flux and no gravity term is computed 
     a = 340
 
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
     v_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2] +
            v3_ll * normal_direction[3]
@@ -344,8 +344,8 @@ contribution of the surface flux as a tuple, see
                                normal_direction::AbstractVector,
                                equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
     _, _, _, _, rho_theta_ll = u_ll
     _, _, _, _, rho_theta_rr = u_rr
 
@@ -449,8 +449,8 @@ that is consistent with [`CompressibleEulerPotentialTemperatureEquationsWithGrav
     # Unpack left and right state
     rho_theta_ll = u_ll[5]
     rho_theta_rr = u_rr[5]
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
     # Average each factor of products in flux
     rho_avg = 0.5f0 * (rho_ll + rho_rr)
@@ -496,8 +496,8 @@ a single `volume_flux` instead of the tuple
     rho_theta_rr = u_rr[5]
     phi_ll = aux_ll[1]
     phi_rr = aux_rr[1]
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
     # Average each factor of products in flux
     rho_avg = 0.5f0 * (rho_ll + rho_rr)
@@ -543,8 +543,8 @@ Total energy conservative two-point flux by
                           normal_direction::AbstractVector,
                           equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
     v_dot_n_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2] +
                  v3_ll * normal_direction[3]
@@ -585,8 +585,8 @@ Entropy conservative two-point flux by
                          normal_direction::AbstractVector,
                          equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
     v_dot_n_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2] +
                  v3_ll * normal_direction[3]
     v_dot_n_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2] +
@@ -624,8 +624,8 @@ Entropy and total energy conservative two-point flux by
                            normal_direction::AbstractVector,
                            equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
     v_dot_n_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2] +
                  v3_ll * normal_direction[3]
     v_dot_n_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2] +
@@ -661,7 +661,13 @@ end
     return SVector(rho, rho_v1, rho_v2, rho_v3, rho_theta)
 end
 
-@inline function cons2prim(u,
+# The conversion does not depend on the geopotential
+@inline function Trixi.prim2cons(prim, aux,
+                                 equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+    return prim2cons(prim, equations)
+end
+
+@inline function cons2prim(u, aux,
                            equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     rho, rho_v1, rho_v2, rho_v3, rho_theta = u
     v1 = rho_v1 / rho
@@ -676,7 +682,7 @@ end
     return u
 end
 
-@inline function cons2entropy(u,
+@inline function cons2entropy(u, aux,
                               equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     rho, rho_v1, rho_v2, rho_v3, rho_theta = u
 
@@ -686,7 +692,7 @@ end
     return SVector(w1, zero(eltype(u)), zero(eltype(u)), zero(eltype(u)), w5)
 end
 
-@inline function entropy(cons,
+@inline function entropy(cons, aux,
                          equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     p = equations.K * cons[5]^equations.gamma
     # Thermodynamic entropy
@@ -723,8 +729,8 @@ end
 # maximum velocity magnitude plus the maximum speed of sound
 @inline function max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr, orientation::Integer,
                                      equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
     # Get the velocity value in the appropriate direction
     if orientation == 1
@@ -747,8 +753,8 @@ end
 @inline function max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr,
                                      normal_direction::AbstractVector,
                                      equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
     # Calculate normal velocities and sound speed
     # left
@@ -768,8 +774,8 @@ end
 # Less "cautious", i.e., less overestimating `λ_max` compared to `max_abs_speed_naive`
 @inline function max_abs_speed(u_ll, u_rr, aux_ll, aux_rr, orientation::Integer,
                                equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
     # Get the velocity value in the appropriate direction
     if orientation == 1
@@ -793,8 +799,8 @@ end
 @inline function max_abs_speed(u_ll, u_rr, aux_ll, aux_rr,
                                normal_direction::AbstractVector,
                                equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
     # Calculate normal velocities and sound speeds
     # left
@@ -814,7 +820,7 @@ end
 
 @inline function max_abs_speeds(u, aux,
                                 equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
-    rho, v1, v2, v3, p = cons2prim(u, equations)
+    rho, v1, v2, v3, p = cons2prim(u, aux, equations)
     c = sqrt(equations.gamma * p / rho)
 
     return abs(v1) + c, abs(v2) + c, abs(v3) + c

@@ -2,9 +2,9 @@
 # It constructs the basic `cache` used throughout the simulation to compute
 # the RHS etc, and is modified here to use custom metric terms as well as provide the
 # option to # use auxiliary variables.
-function Trixi.create_cache(mesh::P4estMesh, equations::AbstractEquations, dg::DG, ::Any,
-                            metric_terms, auxiliary_field,
-                            ::Type{uEltype}) where {uEltype <: Real}
+function Trixi.create_cache_hyperbolic(mesh::P4estMesh, equations::AbstractEquations,
+                                       dg::DG, ::Any, metric_terms, auxiliary_field,
+                                       ::Type{uEltype}) where {uEltype <: Real}
     # Make sure to balance the `p4est` before creating any containers
     # in case someone has tampered with the `p4est` after creating the mesh
     Trixi.balance!(mesh)
@@ -18,8 +18,9 @@ function Trixi.create_cache(mesh::P4estMesh, equations::AbstractEquations, dg::D
 
     # Add specialized parts of the cache required to compute the volume integral etc.
     cache = (; cache...,
-             Trixi.create_cache(mesh, equations, dg.volume_integral, dg, cache, uEltype)...)
-    cache = (; cache..., Trixi.create_cache(mesh, equations, dg.mortar, uEltype)...)
+             Trixi.create_cache_all_volume_integrals(mesh, equations, dg.volume_integral,
+                                                     dg, cache, uEltype)...)
+    cache = (; cache..., Trixi.create_cache_mortar(mesh, equations, dg.mortar, uEltype)...)
 
     # Add specialized parts of the cache for auxiliary node variables
     cache = (; cache...,

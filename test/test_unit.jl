@@ -319,7 +319,7 @@ end
     @test length(turbo_ll) == 7
     # rho, v1, v2, v3, theta, p, phi
     @test SVector(turbo_ll[1], turbo_ll[2], turbo_ll[3], turbo_ll[4], turbo_ll[6]) ≈
-          cons2prim(u_ll, equations)
+          cons2prim(u_ll, aux_ll, equations)
     @test turbo_ll[5] ≈ u_ll[5] / u_ll[1]
     @test turbo_ll[7] == aux_ll[1]
 
@@ -822,9 +822,10 @@ end
     epsilon = 1.0e-6
     for v in (1, 5)
         e_v = SVector(ntuple(i -> i == v ? epsilon : 0.0, 5))
-        @test isapprox(cons2entropy(u_ll, equations)[v],
-                       (entropy(u_ll + e_v, equations) -
-                        entropy(u_ll - e_v, equations)) / (2 * epsilon); rtol = 1.0e-6)
+        @test isapprox(cons2entropy(u_ll, aux_ll, equations)[v],
+                       (entropy(u_ll + e_v, aux_ll, equations) -
+                        entropy(u_ll - e_v, aux_ll, equations)) / (2 * epsilon);
+                       rtol = 1.0e-6)
     end
 end
 
@@ -865,5 +866,25 @@ end
                   2.5 * flux_lmars_es(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
                                 equations)[i]
         end
+    end
+end
+
+@testitem "Unit: Conversions with auxiliary variables for 3D equations with gravity" setup=[Setup] tags=[:unit_fluxes] begin
+    # The conversions do not depend on the geopotential, so the methods with auxiliary
+    # variables must agree with the ones without
+    prim = SVector(1.1, 2.0, -1.5, 0.5, 9.0e4)
+    aux = SVector(1700.0)
+    for equations in (CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
+                                                                                  c_v = 717.0,
+                                                                                  gravity = EARTH_GRAVITATIONAL_ACCELERATION),
+                      CompressibleEulerEnergyEquationsWithGravity3D(c_p = 1004.0,
+                                                                    c_v = 717.0,
+                                                                    gravity = EARTH_GRAVITATIONAL_ACCELERATION),
+                      CompressibleEulerVectorInvariantEquationsWithGravity3D(c_p = 1004.0,
+                                                                             c_v = 717.0,
+                                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION))
+        u = prim2cons(prim, equations)
+        @test prim2cons(prim, aux, equations) == u
+        @test cons2prim(u, aux, equations) ≈ prim
     end
 end

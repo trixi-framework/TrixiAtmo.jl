@@ -14,15 +14,22 @@ for human readability.
   auxiliary variable of Trixi.jl (see `Trixi.nauxvariables`) instead of as last variable
   of the state. Thus, they have one variable less, their pointwise functions take the
   auxiliary variables as additional arguments after the states, e.g.,
-  `flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)` and
-  `source_terms_coriolis(u, aux, x, t, equations)`, and `SemidiscretizationHyperbolic`
-  requires the keyword argument `aux_field`, e.g., `aux_field_gravity_earth`.
+  `flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)`,
+  `source_terms_coriolis(u, aux, x, t, equations)`, and `cons2prim(u, aux, equations)`
+  (also `cons2entropy` and `entropy`, as required by Trixi.jl v0.18), and
+  `SemidiscretizationHyperbolic` requires the keyword argument `aux_field`, e.g.,
+  `aux_field_gravity_earth`.
   With adaptive time stepping, results change slightly since the geopotential no longer
   enters the error estimate of the time integrator.
 
 ## Changes in the v0.1 lifecycle
 
 #### Added
+- `JacobianVerticalTwoSided` enables horizontally explicit, vertically implicit (HEVI) time
+  integration of the `CompressibleEulerPotentialTemperatureEquationsWithGravity3D` on a
+  `P4estMeshCubedSphereTopography` as linear operator of linearly implicit methods, i.e.,
+  Rosenbrock-W methods such as `SSPRW32` and linear IMEX methods such as `ARS343`, also on
+  GPUs ([#243]).
 - The `CompressibleEulerVectorInvariantEquationsWithGravity3D` are the compressible Euler
   equations with gravity in vector-invariant form with the potential temperature as
   prognostic variable. They come with the entropy and total energy conservative volume flux

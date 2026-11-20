@@ -294,7 +294,13 @@ end
     return SVector(rho, v1, v2, v3, rho_theta)
 end
 
-@inline function cons2prim(u,
+# The conversion does not depend on the geopotential
+@inline function Trixi.prim2cons(prim, aux,
+                                 equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
+    return prim2cons(prim, equations)
+end
+
+@inline function cons2prim(u, aux,
                            equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
     rho, v1, v2, v3, rho_theta = u
     p = equations.K * rho_theta^equations.gamma
@@ -310,7 +316,7 @@ end
 
 # Entropy variables w = ∂U/∂u of the entropy U = -ρ s / (γ - 1) with s = log(p) - γ log(ρ),
 # see `entropy`. They vanish for the velocity, since U does not depend on it.
-@inline function cons2entropy(u,
+@inline function cons2entropy(u, aux,
                               equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
     rho, _, _, _, rho_theta = u
 
@@ -322,7 +328,7 @@ end
     return SVector(w1, zero_, zero_, zero_, w5)
 end
 
-@inline function entropy(cons,
+@inline function entropy(cons, aux,
                          equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
     p = equations.K * cons[5]^equations.gamma
     # Thermodynamic entropy
@@ -339,7 +345,7 @@ end
 
 @inline function max_abs_speeds(u, aux,
                                 equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
-    rho, v1, v2, v3, p = cons2prim(u, equations)
+    rho, v1, v2, v3, p = cons2prim(u, aux, equations)
     c = sqrt(equations.gamma * p / rho)
 
     return abs(v1) + c, abs(v2) + c, abs(v3) + c

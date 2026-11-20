@@ -107,6 +107,64 @@ end
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
+@testitem "Euler potential temperature 3D: elixir_potential_temperature_baroclinic_instability" setup=[
+    Setup,
+    EulerPotentialTemperature3D
+] tags=[:euler_potential_temperature_3d] begin
+    @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
+                                 "elixir_potential_temperature_baroclinic_instability.jl"),
+                        l2=[
+                            0.0030320086112184466,
+                            0.05144411394023726,
+                            0.05238807358575555,
+                            0.012609443441337428,
+                            0.8067575925333563
+                        ],
+                        linf=[
+                            0.021751907036954288,
+                            0.8297225783677513,
+                            1.2589734934841315,
+                            0.9103791727770297,
+                            4.833051748224818
+                        ],
+                        tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
+                        dt=20)
+    # Ensure that we do not have excessive memory allocations
+    # (e.g., from type instabilities). `Trixi.solve!` calls the right-hand side inside the
+    # timer section "main loop", so the first call outside of it creates new timer
+    # sections, which allocates.
+    TrixiAtmo.Trixi.rhs_hyperbolic!(similar(sol.u[end]), sol.u[end], semi, sol.t[end])
+    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
+
+    # Check that the total mass and the total mass-weighted potential temperature are
+    # conserved up to round-off errors. The explicit part of the scheme is conservative, and
+    # the implicit stages are conservative as well since the vertical Jacobian is in flux
+    # form with the same quadrature weights and metric terms as the semidiscretization.
+    for v in (1, 5)
+        integral_initial = Trixi.integrate((u, aux, equations) -> u[v], ode.u0, semi)
+        integral_final = Trixi.integrate((u, aux, equations) -> u[v], sol.u[end], semi)
+        @test isapprox(integral_final, integral_initial, rtol = 1e-13)
+    end
+
+    # The kernels of the vertical Jacobian access the arrays without bounds checks, so the
+    # explicit bounds checks before launching them must catch arrays of the wrong size
+    jacobian_cache = TrixiAtmo.create_cache_jacobian(jacobian, semi, ode.u0)
+    backend = jacobian_cache.backend
+    (; u_vertical) = jacobian_cache
+    @test isnothing(TrixiAtmo.check_axes_columns(jacobian_cache))
+    u_vertical_too_small = similar(u_vertical, Base.front(size(u_vertical))...,
+                                   size(u_vertical, 4) - 1)
+    @test_throws DimensionMismatch TrixiAtmo.ldiv_interior_forward!(backend,
+                                                                    jacobian_cache,
+                                                                    u_vertical_too_small,
+                                                                    20.0)
+    @test_throws DimensionMismatch TrixiAtmo.copy_state_to_columns!(backend,
+                                                                    u_vertical_too_small,
+                                                                    Trixi.wrap_array(ode.u0,
+                                                                                     semi),
+                                                                    jacobian_cache, semi)
+end
+
 @testitem "Euler potential temperature 3D: elixir_potential_temperature_baroclinic_instability Souza" setup=[
     Setup,
     EulerPotentialTemperature3D
@@ -114,56 +172,54 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
                                  "elixir_potential_temperature_baroclinic_instability.jl"),
                         l2=[
-                            0.0005402393238279539,
-                            0.01550420011077671,
-                            0.01381076289049231,
-                            0.012941056324550382,
-                            0.1399799820386323
+                            0.003030220313693854,
+                            0.05335666293346016,
+                            0.05427229406574965,
+                            0.012822475231476501,
+                            0.8068192103031516
                         ],
                         linf=[
-                            0.0046516384374393205,
-                            1.1039753387835978,
-                            0.6663546823502753,
-                            1.127630481159228,
-                            1.0013116465979692
+                            0.019652674426639427,
+                            0.8433669261309379,
+                            1.17137194041459,
+                            0.9095778771181094,
+                            4.8231112405632075
                         ],
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
-                        # Avoid intermediate time stops of the `SaveSolutionCallback`, which
-                        # make the adaptive time step sensitive to round-off differences
-                        dt=100000,
-                        atol=4e-9)
+                        dt=20,
+                        volume_flux=(flux_tec, flux_nonconservative_souza_etal))
     # Ensure that we do not have excessive memory allocations
-    # (e.g., from type instabilities)
+    # (e.g., from type instabilities). `Trixi.solve!` calls the right-hand side inside the
+    # timer section "main loop", so the first call outside of it creates new timer
+    # sections, which allocates.
+    TrixiAtmo.Trixi.rhs_hyperbolic!(similar(sol.u[end]), sol.u[end], semi, sol.t[end])
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
-@testitem "Euler potential temperature 3D: elixir_potential_temperature_baroclinic_instability isothermal" setup=[
+@testitem "Euler potential temperature 3D: elixir_potential_temperature_baroclinic_instability FluxTurbo(flux_ec, flux_nonconservative_isothermal)" setup=[
     Setup,
     EulerPotentialTemperature3D
 ] tags=[:euler_potential_temperature_3d] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
-                                 "elixir_potential_temperature_baroclinic_instability.jl"),
-                        l2=[
-                            0.0005196271201210046,
-                            0.014181825905456531,
-                            0.01231325412075897,
-                            0.012925495519842033,
-                            0.13992540482870974
-                        ],
-                        linf=[
-                            0.004229567471452977,
-                            1.121979078608027,
-                            0.6394800112775647,
-                            1.1308637692864063,
-                            1.001518609998982
-                        ],
-                        tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
-                        # Avoid intermediate time stops of the `SaveSolutionCallback`, which
-                        # make the adaptive time step sensitive to round-off differences
-                        dt=100000,
-                        volume_flux=(flux_ec, flux_nonconservative_isothermal))
+    trixi_include(@__MODULE__,
+                  joinpath(EXAMPLES_DIR, "global_circulation",
+                           "elixir_potential_temperature_baroclinic_instability.jl"),
+                  tspan = (0.0, 100.0), trees_per_cube_face = (2, 2), dt = 20)
+    u_ode_specialized = copy(sol.u[end])
+
+    # Standard implementation with tuples of conservative and nonconservative fluxes
+    trixi_include(@__MODULE__,
+                  joinpath(EXAMPLES_DIR, "global_circulation",
+                           "elixir_potential_temperature_baroclinic_instability.jl"),
+                  volume_flux = (flux_ec, flux_nonconservative_isothermal),
+                  tspan = (0.0, 100.0), trees_per_cube_face = (2, 2), dt = 20)
+    u_ode = copy(sol.u[end])
+
+    @test u_ode_specialized ≈ u_ode
     # Ensure that we do not have excessive memory allocations
-    # (e.g., from type instabilities)
+    # (e.g., from type instabilities). `Trixi.solve!` calls the right-hand side inside the
+    # timer section "main loop", so the first call outside of it creates new timer
+    # sections, which allocates.
+    TrixiAtmo.Trixi.rhs_hyperbolic!(similar(sol.u[end]), sol.u[end], semi, sol.t[end])
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
@@ -174,27 +230,27 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR, "global_circulation",
                                  "elixir_potential_temperature_baroclinic_instability.jl"),
                         l2=[
-                            0.0005237192322911491,
-                            0.014655087121427119,
-                            0.012853488121869804,
-                            0.012929752307425608,
-                            0.13994217749435772
+                            0.0030269733595988573,
+                            0.0524806653891805,
+                            0.05340928705922288,
+                            0.012749946942035753,
+                            0.8068491880533599
                         ],
                         linf=[
-                            0.004240678176210988,
-                            1.1141184103385866,
-                            0.6517477337297323,
-                            1.1292928534049589,
-                            1.0016135249983336
+                            0.02037252533491385,
+                            0.8360193905634581,
+                            1.2146162508728153,
+                            0.9110979159038155,
+                            4.832699312170291
                         ],
-                        rtol=8e-8,
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
-                        # Avoid intermediate time stops of the `SaveSolutionCallback`, which
-                        # make the adaptive time step sensitive to round-off differences
-                        dt=100000,
+                        dt=20,
                         volume_flux=(flux_etec, flux_nonconservative_artiano_etal))
     # Ensure that we do not have excessive memory allocations
-    # (e.g., from type instabilities)
+    # (e.g., from type instabilities). `Trixi.solve!` calls the right-hand side inside the
+    # timer section "main loop", so the first call outside of it creates new timer
+    # sections, which allocates.
+    TrixiAtmo.Trixi.rhs_hyperbolic!(similar(sol.u[end]), sol.u[end], semi, sol.t[end])
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
 end
 
@@ -217,9 +273,10 @@ end
                   tspan = (0.0, 100.0), trees_per_cube_face = (2, 2))
     u_ode_combined = copy(sol.u[end])
 
+    # Standard implementation with tuples of conservative and nonconservative fluxes
     trixi_include(@__MODULE__,
                   joinpath(EXAMPLES_DIR, "global_circulation",
-                           "elixir_potential_temperature_baroclinic_instability.jl"),
+                           "elixir_potential_temperature_baroclinic_instability_turbo.jl"),
                   surface_flux = (FluxLMARS(340), flux_zero),
                   volume_flux = (flux_kennedy_gruber, flux_nonconservative_souza_etal),
                   tspan = (0.0, 100.0), trees_per_cube_face = (2, 2))
