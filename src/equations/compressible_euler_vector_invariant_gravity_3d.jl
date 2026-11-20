@@ -26,9 +26,16 @@ p = p_0 \left( \frac{R \rho \theta}{p_0} \right)^\gamma
 ```
 the pressure, where ``p_0 = 10^5\,\mathrm{Pa}`` is the reference pressure and
 ``R = c_p - c_v`` the gas constant.
+
+The geopotential ``\phi`` is the only auxiliary variable, see `Trixi.nauxvariables`. Its
+values are given by the function `aux_field(x, equations)` passed to
+`SemidiscretizationHyperbolic`, e.g., [`aux_field_gravity_earth`](@ref). Thus,
+the pointwise functions take the auxiliary variables `aux = SVector(phi)` as additional
+argument after the state, e.g.,
+`flux_etec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)`.
 """
 struct CompressibleEulerVectorInvariantEquationsWithGravity3D{RealT <: Real} <:
-       AbstractCompressibleEulerEquations{3, 6}
+       AbstractCompressibleEulerEquations{3, 5}
     p_0::RealT # reference pressure in Pa
     c_p::RealT # specific heat at constant pressure in J/(kg K)
     c_v::RealT # specific heat at constant volume in J/(kg K)
@@ -53,22 +60,26 @@ end
 
 function varnames(::typeof(cons2cons),
                   ::CompressibleEulerVectorInvariantEquationsWithGravity3D)
-    ("rho", "v1", "v2", "v3", "rho_theta", "phi")
+    ("rho", "v1", "v2", "v3", "rho_theta")
 end
 
 varnames(::typeof(cons2prim), ::CompressibleEulerVectorInvariantEquationsWithGravity3D) = ("rho",
                                                                                            "v1",
                                                                                            "v2",
                                                                                            "v3",
-                                                                                           "p",
-                                                                                           "phi")
+                                                                                           "p")
+
+@inline Trixi.nauxvariables(::CompressibleEulerVectorInvariantEquationsWithGravity3D) = 1
+
+Trixi.auxvarnames(::CompressibleEulerVectorInvariantEquationsWithGravity3D) = ("phi",)
 
 have_nonconservative_terms(::CompressibleEulerVectorInvariantEquationsWithGravity3D) = Trixi.True()
 
 # The numerical fluxes of these equations combine the conservative and the nonconservative
 # contributions. Thus, the boundary condition returns only the first contribution of the
-# surface flux.
-@inline function boundary_condition_slip_wall(u_inner,
+# surface flux. There are no separate auxiliary variables outside of the domain, so the
+# inner ones are used on both sides.
+@inline function boundary_condition_slip_wall(u_inner, aux_inner,
                                               normal_direction::AbstractVector,
                                               x, t,
                                               surface_flux_function::Union{typeof(flux_etec),
@@ -84,16 +95,17 @@ have_nonconservative_terms(::CompressibleEulerVectorInvariantEquationsWithGravit
                          u_inner[2] - 2 * u_normal * normal[1],
                          u_inner[3] - 2 * u_normal * normal[2],
                          u_inner[4] - 2 * u_normal * normal[3],
-                         u_inner[5], u_inner[6])
+                         u_inner[5])
 
     # calculate the boundary flux
-    flux, _ = surface_flux_function(u_inner, u_boundary, normal_direction, equations)
+    flux, _ = surface_flux_function(u_inner, u_boundary, aux_inner, aux_inner,
+                                    normal_direction, equations)
 
     return flux
 end
 
 """
-    flux_etec(u_ll, u_rr, normal_direction,
+    flux_etec(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
               equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
 
 Entropy and total energy conservative two-point flux by
@@ -105,10 +117,13 @@ Entropy and total energy conservative two-point flux by
 It returns the conservative and the nonconservative contribution of the flux as a tuple,
 see [`Trixi.combine_conservative_and_nonconservative_fluxes`](@ref).
 """
-@inline function flux_etec(u_ll, u_rr, normal_direction::AbstractVector,
+@inline function flux_etec(u_ll, u_rr, aux_ll, aux_rr,
+                           normal_direction::AbstractVector,
                            equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
-    rho_ll, v1_ll, v2_ll, v3_ll, rho_theta_ll, phi_ll = u_ll
-    rho_rr, v1_rr, v2_rr, v3_rr, rho_theta_rr, phi_rr = u_rr
+    rho_ll, v1_ll, v2_ll, v3_ll, rho_theta_ll = u_ll
+    rho_rr, v1_rr, v2_rr, v3_rr, rho_theta_rr = u_rr
+    phi_ll = aux_ll[1]
+    phi_rr = aux_rr[1]
     exner_ll = exner_pressure(u_ll, equations)
     exner_rr = exner_pressure(u_rr, equations)
 
@@ -155,11 +170,8 @@ see [`Trixi.combine_conservative_and_nonconservative_fluxes`](@ref).
     g3 = vorticity_2 + gradient * normal_direction[2]
     g4 = vorticity_3 + gradient * normal_direction[3]
 
-    zero_ = zero(eltype(u_ll))
-    flux_left = SVector(f1, f2 + 0.5f0 * g2, f3 + 0.5f0 * g3, f4 + 0.5f0 * g4, f5,
-                        zero_)
-    flux_right = SVector(f1, f2 - 0.5f0 * g2, f3 - 0.5f0 * g3, f4 - 0.5f0 * g4, f5,
-                         zero_)
+    flux_left = SVector(f1, f2 + 0.5f0 * g2, f3 + 0.5f0 * g3, f4 + 0.5f0 * g4, f5)
+    flux_right = SVector(f1, f2 - 0.5f0 * g2, f3 - 0.5f0 * g3, f4 - 0.5f0 * g4, f5)
 
     return flux_left, flux_right
 end
@@ -167,7 +179,7 @@ end
 @inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_etec), ::CompressibleEulerVectorInvariantEquationsWithGravity3D) = Trixi.True()
 
 """
-    flux_lmars_es(u_ll, u_rr, normal_direction,
+    flux_lmars_es(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
                   equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
 
 Entropy-stable and well-balanced version of the low Mach number approximate Riemann solver
@@ -185,7 +197,8 @@ The geopotential is continuous across interfaces, so the nonconservative gravity
 is proportional to the jump of the geopotential, vanishes on the surface and is not computed
 here.
 """
-@inline function flux_lmars_es(u_ll, u_rr, normal_direction::AbstractVector,
+@inline function flux_lmars_es(u_ll, u_rr, aux_ll, aux_rr,
+                               normal_direction::AbstractVector,
                                equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
     rho_ll, v1_ll, v2_ll, v3_ll, rho_theta_ll = u_ll
     rho_rr, v1_rr, v2_rr, v3_rr, rho_theta_rr = u_rr
@@ -266,11 +279,8 @@ here.
     g3 = vorticity_2 + theta_grad_exner * normal_direction[2]
     g4 = vorticity_3 + theta_grad_exner * normal_direction[3]
 
-    zero_ = zero(eltype(u_ll))
-    flux_left = SVector(f1, f2 + 0.5f0 * g2, f3 + 0.5f0 * g3, f4 + 0.5f0 * g4, f5,
-                        zero_)
-    flux_right = SVector(f1, f2 - 0.5f0 * g2, f3 - 0.5f0 * g3, f4 - 0.5f0 * g4, f5,
-                         zero_)
+    flux_left = SVector(f1, f2 + 0.5f0 * g2, f3 + 0.5f0 * g3, f4 + 0.5f0 * g4, f5)
+    flux_right = SVector(f1, f2 - 0.5f0 * g2, f3 - 0.5f0 * g3, f4 - 0.5f0 * g4, f5)
 
     return flux_left, flux_right
 end
@@ -279,16 +289,22 @@ end
 
 @inline function Trixi.prim2cons(prim,
                                  equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
-    rho, v1, v2, v3, p, phi = prim
+    rho, v1, v2, v3, p = prim
     rho_theta = (p / equations.K)^(1 / equations.gamma)
-    return SVector(rho, v1, v2, v3, rho_theta, phi)
+    return SVector(rho, v1, v2, v3, rho_theta)
 end
 
-@inline function cons2prim(u,
+# The conversion does not depend on the geopotential
+@inline function Trixi.prim2cons(prim, aux,
+                                 equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
+    return prim2cons(prim, equations)
+end
+
+@inline function cons2prim(u, aux,
                            equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
-    rho, v1, v2, v3, rho_theta, phi = u
+    rho, v1, v2, v3, rho_theta = u
     p = equations.K * rho_theta^equations.gamma
-    return SVector(rho, v1, v2, v3, p, phi)
+    return SVector(rho, v1, v2, v3, p)
 end
 
 # Exner pressure π = (p / p_0)^(R / c_p) = (R ρθ / p_0)^(R / c_v)
@@ -300,7 +316,7 @@ end
 
 # Entropy variables w = ∂U/∂u of the entropy U = -ρ s / (γ - 1) with s = log(p) - γ log(ρ),
 # see `entropy`. They vanish for the velocity, since U does not depend on it.
-@inline function cons2entropy(u,
+@inline function cons2entropy(u, aux,
                               equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
     rho, _, _, _, rho_theta = u
 
@@ -309,10 +325,10 @@ end
     w5 = -equations.gamma * rho / rho_theta * equations.inv_gamma_minus_one
 
     zero_ = zero(eltype(u))
-    return SVector(w1, zero_, zero_, zero_, w5, zero_)
+    return SVector(w1, zero_, zero_, zero_, w5)
 end
 
-@inline function entropy(cons,
+@inline function entropy(cons, aux,
                          equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
     p = equations.K * cons[5]^equations.gamma
     # Thermodynamic entropy
@@ -327,9 +343,9 @@ end
     return p
 end
 
-@inline function max_abs_speeds(u,
+@inline function max_abs_speeds(u, aux,
                                 equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
-    rho, v1, v2, v3, p = cons2prim(u, equations)
+    rho, v1, v2, v3, p = cons2prim(u, aux, equations)
     c = sqrt(equations.gamma * p / rho)
 
     return abs(v1) + c, abs(v2) + c, abs(v3) + c
@@ -340,7 +356,7 @@ end # @muladd
 # We do not wrap this code in `@muladd begin ... end` block. Optimizations like
 # this are handled automatically by LoopVectorization.jl.
 # We precompute `rho, v1, v2, v3, theta, exner, phi, log(theta)`, i.e., two quantities more
-# than the number of variables.
+# than the number of variables and auxiliary variables.
 @inline function Trixi.nturbovars(::typeof(flux_etec),
                                   ::CompressibleEulerVectorInvariantEquationsWithGravity3D)
     return Val(8)
@@ -417,9 +433,8 @@ end
     g3 = vorticity_2 + gradient * normal_direction_2
     g4 = vorticity_3 + gradient * normal_direction_3
 
-    zero_ = zero(RealT)
-    flux_left = (f1, f2 + 0.5f0 * g2, f3 + 0.5f0 * g3, f4 + 0.5f0 * g4, f5, zero_)
-    flux_right = (f1, f2 - 0.5f0 * g2, f3 - 0.5f0 * g3, f4 - 0.5f0 * g4, f5, zero_)
+    flux_left = (f1, f2 + 0.5f0 * g2, f3 + 0.5f0 * g3, f4 + 0.5f0 * g4, f5)
+    flux_right = (f1, f2 - 0.5f0 * g2, f3 - 0.5f0 * g3, f4 - 0.5f0 * g4, f5)
 
     return flux_left, flux_right
 end

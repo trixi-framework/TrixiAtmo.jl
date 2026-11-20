@@ -21,8 +21,8 @@ end
                               callback = callbacks)
 
     @test sol_rosenbrock.t[end] == 10.0
-    # Compare the variables separately, since the geopotential (which does not change) is
-    # much larger than the other variables and would dominate a comparison of the vectors
+    # Compare the variables separately, since they differ by orders of magnitude and the
+    # largest ones would dominate a comparison of the vectors
     u_rosenbrock = Trixi.wrap_array(sol_rosenbrock.u[end], semi)
     u_ssprk33 = Trixi.wrap_array(sol_ssprk33.u[end], semi)
     u_initial = Trixi.wrap_array(ode.u0, semi)
@@ -143,8 +143,6 @@ end
         @test all(isfinite, u)
         # The solution changed, i.e., the stages were actually computed
         @test !(view(u, 2, ..) ≈ view(u_initial, 2, ..))
-        # The geopotential does not change
-        @test view(u, 6, ..) == view(u_initial, 6, ..)
 
         # Ensure that we do not have excessive memory allocations
         # (e.g., from type instabilities). `Trixi.solve!` calls the right-hand side inside
@@ -234,8 +232,7 @@ end
     # thus otherwise be garbage collected
     GC.@preserve solutions begin
         u = map(u_ode -> Trixi.wrap_array(u_ode, semi), solutions)
-        # Compare the variables separately, since they have very different magnitudes. The
-        # geopotential does not change.
+        # Compare the variables separately, since they have very different magnitudes.
         for v in 1:5
             differences = [norm(view(u[i], v, ..) - view(u[i + 1], v, ..), Inf)
                            for i in 1:3]
