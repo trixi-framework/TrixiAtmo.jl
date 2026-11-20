@@ -31,9 +31,10 @@ sum of the ones of the densities of water, and ``S_x`` and the isobaric heating 
 ```math
 \theta_v = \frac{p}{\varrho R \pi} = \theta \frac{1 + q_v R_v / R}{1 + \sum_x q_x}
 ```
-includes the weight of the condensed water, with the dry potential temperature
-``\theta = T / \pi``, the Exner pressure ``\pi = (p / p_0)^{R / c_p}``, and the mixing
-ratios ``q_x = \varrho_x / \varrho_d``. The water falls in the direction ``-\hat{k}``, where
+includes the weight of the condensed water, with the gas constants ``R = c_p - c_v`` of dry
+air and ``R_v`` of water vapor, the dry potential temperature ``\theta = T / \pi``, the
+Exner pressure ``\pi = (p / p_0)^{R / c_p}``, and the mixing ratios
+``q_x = \varrho_x / \varrho_d``. The water falls in the direction ``-\hat{k}``, where
 ``\hat{k}`` is the upward unit vector. The pressure follows from Dalton's law
 ``p = (\varrho_d R + \varrho_v R_v) T``, i.e., ``p = K (\varrho \theta_v)^\gamma``, which
 depends on the fifth variable only.
