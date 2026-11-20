@@ -20,7 +20,7 @@ using LinearAlgebra: Diagonal, I, UpperTriangular, cross, norm, dot, det, diagm,
 using Reexport: @reexport
 using LoopVectorization: @turbo
 using QuadGK: quadgk
-using ForwardDiff: derivative
+using ForwardDiff: ForwardDiff, derivative
 using HDF5: HDF5, h5open, attributes, create_dataset, datatype, dataspace
 
 @reexport using StaticArrays: SVector, SMatrix
@@ -81,6 +81,8 @@ export CompressibleMoistEulerEquations2D,
        CompressibleEulerPotentialTemperatureEquationsWithGravity3D,
        CompressibleEulerMoistPotentialTemperatureEquations3D,
        KesslerMicrophysics,
+       TurbulentDiffusion3D, NoTurbulence, HorizontalVerticalTurbulence,
+       ConstantEddyViscosity,
        CompressibleEulerEnergyEquationsWithGravity2D,
        CompressibleEulerEnergyEquationsWithGravity3D,
        CompressibleEulerInternalEnergyEquationsWithGravity2D,
@@ -108,7 +110,8 @@ export flux_lmars_combined, flux_kennedy_gruber_souza_etal, flux_lmars_es
 
 export source_terms_lagrange_multiplier, clean_solution_lagrange_multiplier!
 
-export cons2prim_and_vorticity, contravariant2global, contravariant_cons2global_prim
+export cons2prim_and_vorticity, contravariant2global, contravariant_cons2global_prim,
+       cons2specific
 
 export P4estMeshCubedSphere2D, P4estMeshQuadIcosahedron2D, DGMultiMeshTriIcosahedron2D,
        MetricTermsCrossProduct, MetricTermsInvariantCurl, MetricTermsCovariant,
@@ -130,7 +133,7 @@ export initial_condition_adiabatic, initial_condition_gravity_waves,
        initial_condition_baroclinic_instability, initial_condition_isothermal,
        initial_condition_vortex_shedding, initial_condition_moist_baroclinic_instability
 
-export aux_field_gravity_earth
+export aux_field_gravity_earth, aux_field_gravity_small_earth
 
 export boundary_condition_horizontal_slip_wall
 

@@ -373,6 +373,11 @@ abstract type AbstractCompressibleRainyEulerEquations{NDIMS, NVARS} <:
     return zero(u_ll)
 end
 
+# Same as above for equations with auxiliary variables
+@inline function flux_zero(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)
+    return zero(u_ll)
+end
+
 include("covariant_advection.jl")
 include("covariant_shallow_water.jl")
 include("covariant_shallow_water_split.jl")
@@ -384,9 +389,11 @@ include("compressible_euler_potential_temperature_2d.jl")
 include("compressible_euler_potential_temperature_3d.jl")
 include("compressible_euler_potential_temperature_gravity_1d.jl")
 include("compressible_euler_potential_temperature_gravity_2d.jl")
+include("turbulence/turbulence.jl")
 include("compressible_euler_potential_temperature_gravity_3d.jl")
 include("microphysics/microphysics.jl")
 include("compressible_euler_moist_potential_temperature_3d.jl")
+include("turbulent_diffusion_3d.jl")
 include("compressible_euler_energy_with_gravity_2d.jl")
 include("compressible_euler_energy_with_gravity_3d.jl")
 include("compressible_euler_internal_energy_with_gravity_2d.jl")

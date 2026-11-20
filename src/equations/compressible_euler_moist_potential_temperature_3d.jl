@@ -4,7 +4,8 @@
 @doc raw"""
     CompressibleEulerMoistPotentialTemperatureEquations3D(; c_p, c_v, gravity,
                                                           R_v = 461.5,
-                                                          microphysics = KesslerMicrophysics())
+                                                          microphysics = KesslerMicrophysics(),
+                                                          turbulence = NoTurbulence())
 
 The compressible Euler equations with gravity in potential temperature formulation with
 moisture, whose moisture variables, falling water, and right-hand sides are given by the
@@ -50,9 +51,14 @@ The numerical fluxes return the conservative and the nonconservative contributio
 see [`Trixi.combine_conservative_and_nonconservative_fluxes`](@ref), i.e., use
 [`flux_kennedy_gruber_souza_etal`](@ref) as `volume_flux` and
 [`flux_lmars_combined`](@ref) as `surface_flux`.
+
+The turbulent fluxes of the model `turbulence`, e.g., a
+[`HorizontalVerticalTurbulence`](@ref), are the parabolic terms of
+[`TurbulentDiffusion3D`](@ref).
 """
 struct CompressibleEulerMoistPotentialTemperatureEquations3D{NVARS, RealT <: Real,
-                                                             Microphysics} <:
+                                                             Microphysics,
+                                                             Turbulence} <:
        AbstractCompressibleEulerEquations{3, NVARS}
     p_0::RealT # reference pressure in Pa
     c_p::RealT # specific heat of dry air at constant pressure in J/(kg K)
@@ -64,21 +70,27 @@ struct CompressibleEulerMoistPotentialTemperatureEquations3D{NVARS, RealT <: Rea
     # Scaling factor between the pressure and the weighted potential temperature
     K::RealT # = p_0 * (R / p_0)^gamma
     microphysics::Microphysics
+    turbulence::Turbulence
     function CompressibleEulerMoistPotentialTemperatureEquations3D(; c_p, c_v, gravity,
                                                                    R_v = 461.5,
-                                                                   microphysics = KesslerMicrophysics())
+                                                                   microphysics = KesslerMicrophysics(),
+                                                                   turbulence = NoTurbulence())
         c_p, c_v, g = promote(c_p, c_v, gravity)
         RealT = typeof(c_p)
         R_v = convert(RealT, R_v)
         microphysics = similar(microphysics, RealT)
+        turbulence = similar(turbulence, RealT)
         p_0 = 100_000
         R = c_p - c_v
         gamma = c_p / c_v
         K = p_0 * (R / p_0)^gamma
-        NVARS = 5 + nmoisturevariables(microphysics)
-        return new{NVARS, RealT, typeof(microphysics)}(p_0, c_p, c_v, g, R, R_v, gamma,
-                                                       K,
-                                                       microphysics)
+        NVARS = 5 + nmoisturevariables(microphysics) + nturbulencevariables(turbulence)
+        return new{NVARS, RealT, typeof(microphysics), typeof(turbulence)}(p_0, c_p,
+                                                                           c_v,
+                                                                           g, R, R_v,
+                                                                           gamma, K,
+                                                                           microphysics,
+                                                                           turbulence)
     end
 end
 
@@ -92,9 +104,11 @@ function Base.similar(equations::CompressibleEulerMoistPotentialTemperatureEquat
                                       (equations.c_p, equations.c_v, equations.g,
                                        equations.R_v))
     microphysics = similar(equations.microphysics, NewRealT)
+    turbulence = similar(equations.turbulence, NewRealT)
     return CompressibleEulerMoistPotentialTemperatureEquations3D(; c_p, c_v, gravity,
                                                                  R_v,
-                                                                 microphysics)
+                                                                 microphysics,
+                                                                 turbulence)
 end
 
 function varnames(::typeof(cons2cons),

@@ -5,6 +5,30 @@ TrixiAtmo.jl follows the interpretation of
 used in the Julia ecosystem. Notable changes will be documented in this file
 for human readability.
 
+## Changes when updating to v0.2 from v0.1.x
+
+#### Changed
+- The `CompressibleEulerPotentialTemperatureEquationsWithGravity3D`, the
+  `CompressibleEulerEnergyEquationsWithGravity3D`, and the
+  `CompressibleEulerVectorInvariantEquationsWithGravity3D` store the geopotential as
+  auxiliary variable of Trixi.jl (see `Trixi.nauxvariables`) instead of as last variable
+  of the state. Thus, they have one variable less, their pointwise functions take the
+  auxiliary variables as additional arguments after the states, e.g.,
+  `flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)` and
+  `source_terms_coriolis(u, aux, x, t, equations)`, and `SemidiscretizationHyperbolic`
+  requires the keyword argument `aux_field`, e.g., `aux_field_gravity_earth`.
+  With adaptive time stepping, results change slightly since the geopotential no longer
+  enters the error estimate of the time integrator.
+
+#### Added
+- The `CompressibleEulerPotentialTemperatureEquationsWithGravity3D` and the
+  `CompressibleEulerMoistPotentialTemperatureEquations3D` take a turbulence model as
+  keyword argument `turbulence` (default `NoTurbulence()`), whose turbulent fluxes are the
+  parabolic terms `TurbulentDiffusion3D` of a `SemidiscretizationHyperbolicParabolic`
+  with the keyword argument `aux_field`. A `HorizontalVerticalTurbulence` combines a
+  horizontal and a vertical model, e.g., `ConstantEddyViscosity`, with respect to the
+  upward unit vector, i.e., the normalized gradient of the geopotential.
+
 ## Changes in the v0.1 lifecycle
 
 #### Added
