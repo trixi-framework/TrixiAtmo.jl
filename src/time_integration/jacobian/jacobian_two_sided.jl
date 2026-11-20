@@ -21,7 +21,8 @@
     JacobianVerticalTwoSided(; c = 340)
 
 Approximate Jacobian of the vertical dynamics (vertically propagating acoustic waves and
-gravity) of the [`CompressibleEulerPotentialTemperatureEquationsWithGravity3D`](@ref) on a
+gravity) of the [`CompressibleEulerPotentialTemperatureEquationsWithGravity3D`](@ref) and
+the [`CompressibleEulerMoistPotentialTemperatureEquations3D`](@ref) on a
 [`P4estMeshCubedSphereTopography`](@ref), used as linear operator of linearly implicit time
 integration methods, i.e., Rosenbrock-W methods such as [`SSPRW32`](@ref) and linear IMEX
 methods such as [`ARS343`](@ref), for horizontally explicit, vertically implicit (HEVI)
@@ -48,6 +49,11 @@ the equations in the radial direction, projected onto the vertical direction, al
 geopotential of the semidiscretization yields a gravitational acceleration that varies with
 the height (e.g., `phi = -a^2 g / norm(x)` with the radius `a` of the Earth in
 [`initial_condition_baroclinic_instability`](@ref)).
+
+For the [`CompressibleEulerMoistPotentialTemperatureEquations3D`](@ref), the unknowns are the
+total density, the vertical momentum, and the virtual potential temperature density
+`rho_theta_v`, on which the pressure depends as on `rho_theta` for dry air. The moisture
+variables are treated explicitly, i.e., with `J = 0`.
 
 ### Permutation
 The unknowns of a column are the density `rho`, the vertical momentum `rho_w`, i.e., the
@@ -272,9 +278,13 @@ end
 
 function create_cache_jacobian(jacobian::JacobianVerticalTwoSided, semi, u_ode)
     (; mesh, equations, solver, cache) = semi
-    if !(equations isa CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+    if !(equations isa
+         Union{CompressibleEulerPotentialTemperatureEquationsWithGravity3D,
+               CompressibleEulerMoistPotentialTemperatureEquations3D})
         throw(ArgumentError("`JacobianVerticalTwoSided` requires the " *
-                            "`CompressibleEulerPotentialTemperatureEquationsWithGravity3D`"))
+                            "`CompressibleEulerPotentialTemperatureEquationsWithGravity3D` " *
+                            "or the " *
+                            "`CompressibleEulerMoistPotentialTemperatureEquations3D`"))
     end
     nlayers_ = nlayers(mesh)
     nnodes_ = nnodes(solver)
