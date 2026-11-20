@@ -119,8 +119,8 @@ particular, do **not** run
   threaded tests),
 - `TRIXI_TEST=all` or `TRIXI_TEST=upstream`,
 - whole test files such as `include("test/test_3d_potential_temperature.jl")`,
-- the special suites `mpi` and `threaded`, which relaunch Julia via `mpiexec`
-  or with multiple threads.
+- the special suites `mpi`, `threaded`, and `kernelabstractions`, which relaunch
+  Julia via `mpiexec`, with multiple threads, or with a different threading backend.
 
 Instead, run only the individual test items related to the code you changed.
 Tests are isolated `@testitem`s (TestItems.jl) run with TestItemRunner.jl. Test
@@ -135,7 +135,10 @@ defined in `test/runtests.jl` and providing the helpers from
 defined at the top of the corresponding test file and setting `EXAMPLES_DIR`)
 and its test group via `tags = [...]`. The value of the environment variable
 `TRIXI_TEST` selects the test items with the corresponding tag (see
-`test/runtests.jl`); CI runs all tests (`.github/workflows/ci.yml`).
+`test/runtests.jl`); CI runs all tests on Ubuntu, with the special suites `mpi`,
+`threaded`, and `kernelabstractions` in separate jobs (`TRIXI_TEST=serial`, `mpi`,
+`threaded`, `kernelabstractions`), and only `mpi` and `threaded` on macOS and Windows
+(see `.github/workflows/ci.yml`).
 
 ### The `run_agents` Julia project
 
@@ -247,9 +250,8 @@ Notes:
   function name, or equation type you changed, e.g.,
   `rg -n "elixir_hoeck_bubble" test/` (or `grep -rn`). Remember that elixirs
   can be included by other elixirs and tests via `trixi_include`.
-- Some reference values differ slightly on macOS. The affected test items use
-  a larger tolerance only on GitHub Actions (`CI_ON_MACOS` in
-  `test/test_trixiatmo.jl`), so they can fail locally on macOS (e.g.,
+- CI checks the reference values only on Ubuntu, so some of them can differ
+  slightly on macOS (e.g., in
   `"Euler potential temperature 3D: elixir_potential_temperature_held_suarez"`).
   Compare with the behavior on the unchanged code before attributing such a
   failure to your change.
@@ -426,7 +428,7 @@ starts the Julia sessions itself.
 - Never loosen tolerances (`atol`, `rtol`) just to make a failing test pass.
   A local, commented tolerance is acceptable only for small differences whose
   cause is understood and outside TrixiAtmo.jl (e.g., platform-dependent
-  floating-point differences as for `CI_ON_MACOS`); mention it to the user.
+  floating-point differences); mention it to the user.
 - When adding a numerical flux or wave speed estimate, add unit tests to
   `test/test_unit.jl` (see the existing `"Unit: Consistency check for ..."`
   test items). For a conservative numerical flux `f`, check consistency with

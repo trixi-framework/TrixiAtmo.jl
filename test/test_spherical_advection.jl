@@ -128,15 +128,16 @@ end
     @test_trixi_include(joinpath(EXAMPLES_DIR, "advection", "covariant",
                                  "elixir_tri_icosahedron.jl"),
                         l2=[
-                            0.00037441291907931983,
-                            1.0851024650858329e-13,
-                            1.0760196451424737e-13
+                            0.10391470112410056,
+                            8.024280757448678e-12,
+                            7.414543117985246e-12
                         ],
                         linf=[
-                            0.010071157495758598,
-                            5.18004530328936e-13,
-                            5.133704062982442e-13
-                        ])
+                            1.2274145133320644,
+                            3.1933149863532656e-11,
+                            2.944622056090399e-11
+                        ],
+                        initial_refinement_level=2)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
