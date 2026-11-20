@@ -366,8 +366,8 @@ end
                   RealT
         end
 
-        @test eltype(@inferred cons2prim(u, equations)) == RealT
-        @test eltype(@inferred prim2cons(u, equations)) == RealT
+        @test eltype(@inferred cons2prim(u, aux, equations)) == RealT
+        @test eltype(@inferred prim2cons(u, aux, equations)) == RealT
         @test typeof(@inferred pressure(u, equations)) == RealT
         @test typeof(@inferred TrixiAtmo.temperature(u, equations)) == RealT
         @test typeof(@inferred TrixiAtmo.terminal_velocity_rain(TrixiAtmo.density_dry(u,
@@ -407,7 +407,7 @@ end
         @test typeof(equations_float64.c_p) == Float64
         @test typeof(equations_float64.microphysics.condensation_time) == Float64
         @test typeof(@inferred KesslerMicrophysics(latent_heat = RealT(2.5e6),
-                                                   rho_surface = RealT(1.15),
+                                                   rho_surface = RealT(1.2),
                                                    condensation_time = one(RealT))) ==
               KesslerMicrophysics{RealT}
         @test typeof(@inferred similar(equations_float64, RealT)) == typeof(equations)
