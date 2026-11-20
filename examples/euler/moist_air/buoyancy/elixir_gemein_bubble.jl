@@ -53,8 +53,9 @@ coordinates_max = (20000.0, 10000.0)
 cells_per_dimension = (64, 32)
 
 # Create curved mesh with 64 x 32 elements
-mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
-                      periodicity = (false, false))
+mesh = P4estMesh(cells_per_dimension, polydeg = 1,
+                 coordinates_min = coordinates_min, coordinates_max = coordinates_max,
+                 periodicity = (false, false))
 
 ###############################################################################
 # create the semi discretization object

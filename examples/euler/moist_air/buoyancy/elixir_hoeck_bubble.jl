@@ -28,9 +28,7 @@ end
 
 equations = CompressibleRainyEulerEquations2D()
 
-boundary_conditions = (; x_neg = boundary_condition_periodic,
-                       x_pos = boundary_condition_periodic,
-                       y_neg = boundary_condition_slip_wall,
+boundary_conditions = (; y_neg = boundary_condition_slip_wall,
                        y_pos = boundary_condition_slip_wall)
 
 polydeg = 3
@@ -46,8 +44,9 @@ coordinates_min = (0.0, 0.0)
 coordinates_max = (20_000.0, 10_000.0)
 
 cells_per_dimension = (128, 64)
-mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
-                      periodicity = (true, false))
+mesh = P4estMesh(cells_per_dimension, polydeg = 1,
+                 coordinates_min = coordinates_min, coordinates_max = coordinates_max,
+                 periodicity = (true, false))
 
 semi = SemidiscretizationHyperbolic(mesh, equations,
                                     initial_condition_moist, solver,

@@ -122,6 +122,9 @@ end
             @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, orientation,
                                                        equations)) == RealT
         end
+        @test eltype(@inferred boundary_condition_slip_wall(u_inner, normal_direction,
+                                                            x, t, surface_flux_function,
+                                                            equations)) == RealT
 
         @test eltype(@inferred flux(u, normal_direction, equations)) == RealT
         @test eltype(@inferred flux_ec(u_ll, u_rr, normal_direction, equations)) ==
@@ -422,6 +425,10 @@ end
                                                                 surface_flux_function,
                                                                 equations)) == RealT
         end
+        @test eltype(@inferred boundary_condition_simple_slip_wall(u, normal_direction,
+                                                                   x, t,
+                                                                   surface_flux_function,
+                                                                   equations)) == RealT
         for orientation in orientations
             @test eltype(@inferred max_abs_speed(u_ll, u_rr, orientation, equations)) ==
                   RealT
