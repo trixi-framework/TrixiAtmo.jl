@@ -46,6 +46,17 @@ for human readability.
 - GPU support including adaptation to `Float32` via `trixi_adapt` ([#242]).
 
 #### Changed
+- The `CompressibleEulerPotentialTemperatureEquationsWithGravity2D`, the
+  `CompressibleEulerEnergyEquationsWithGravity2D`, and the
+  `CompressibleEulerInternalEnergyEquationsWithGravity2D` store the geopotential as
+  auxiliary variable of Trixi.jl (see `Trixi.nauxvariables`) instead of as last variable
+  of the state. Thus, they have one variable less, their pointwise functions take the
+  auxiliary variables as additional arguments after the states, e.g.,
+  `flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)`, and
+  `SemidiscretizationHyperbolic` requires the keyword argument `aux_field`, e.g., the new
+  `aux_field_geopotential`. Since auxiliary variables are only available for `P4estMesh`es,
+  the elixirs `elixir_potential_temperature_inertia_gravity_waves.jl` and
+  `elixir_energy_inertia_gravity_waves.jl` use a `P4estMesh` instead of a `StructuredMesh`.
 - Fixes a bug in `flux_nonconservative_waruszewski_etal` for the
   `CompressibleEulerEnergyEquationsWithGravity2D` and the
   `CompressibleEulerEnergyEquationsWithGravity3D`: The gravity term of the momentum did

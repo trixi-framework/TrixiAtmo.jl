@@ -1,7 +1,7 @@
 @muladd begin
 #! format: noindent
 struct CompressibleEulerPotentialTemperatureEquationsWithGravity2D{RealT <: Real} <:
-       AbstractCompressibleEulerEquations{2, 5}
+       AbstractCompressibleEulerEquations{2, 4}
     p_0::RealT # reference pressure in Pa
     c_p::RealT # specific heat at constant pressure in J/(kg K)
     c_v::RealT # specific heat at constant volume in J/(kg K)
@@ -40,21 +40,27 @@ end
 
 function varnames(::typeof(cons2cons),
                   ::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
-    ("rho", "rho_v1", "rho_v2", "rho_theta", "phi")
+    ("rho", "rho_v1", "rho_v2", "rho_theta")
 end
 
 varnames(::typeof(cons2prim),
 ::CompressibleEulerPotentialTemperatureEquationsWithGravity2D) = ("rho",
                                                                   "v1",
                                                                   "v2",
-                                                                  "p1", "phi")
+                                                                  "p1")
+
+# The geopotential is the only auxiliary variable, see `aux_field_geopotential`
+@inline Trixi.nauxvariables(::CompressibleEulerPotentialTemperatureEquationsWithGravity2D) = 1
+
+Trixi.auxvarnames(::CompressibleEulerPotentialTemperatureEquationsWithGravity2D) = ("phi",)
 
 have_nonconservative_terms(::CompressibleEulerPotentialTemperatureEquationsWithGravity2D) = Trixi.True()
 
 # Slip-wall boundary condition
 # Determine the boundary numerical surface flux for a slip wall condition.
-# Imposes a zero normal velocity at the wall.
-@inline function boundary_condition_slip_wall(u_inner,
+# Imposes a zero normal velocity at the wall. There are no separate auxiliary variables
+# outside of the domain, so the inner ones are used on both sides.
+@inline function boundary_condition_slip_wall(u_inner, aux_inner,
                                               normal_direction::AbstractVector,
                                               x, t,
                                               surface_flux_functions,
@@ -70,18 +76,20 @@ have_nonconservative_terms(::CompressibleEulerPotentialTemperatureEquationsWithG
     u_boundary = SVector(u_inner[1],
                          u_inner[2] - 2 * u_normal * normal[1],
                          u_inner[3] - 2 * u_normal * normal[2],
-                         u_inner[4], u_inner[5])
+                         u_inner[4])
 
     # calculate the boundary flux
-    flux = surface_flux_function(u_inner, u_boundary, normal_direction, equations)
-    noncons_flux = nonconservative_flux_function(u_inner, u_boundary, normal_direction,
-                                                 equations)
+    flux = surface_flux_function(u_inner, u_boundary, aux_inner, aux_inner,
+                                 normal_direction, equations)
+    noncons_flux = nonconservative_flux_function(u_inner, u_boundary,
+                                                 aux_inner, aux_inner,
+                                                 normal_direction, equations)
     return flux, noncons_flux
 end
 
 # Calculate 1D flux for a single point in the normal direction
 # Note, this directional vector is not normalized
-@inline function flux(u, normal_direction::AbstractVector,
+@inline function flux(u, aux, normal_direction::AbstractVector,
                       equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     rho, rho_v1, rho_v2, rho_theta = u
     v1 = rho_v1 / rho
@@ -95,11 +103,11 @@ end
     f3 = (rho_v_normal) * v2 + p * normal_direction[2]
     f4 = (rho_theta) * v_normal
 
-    return SVector(f1, f2, f3, f4, zero(eltype(u)))
+    return SVector(f1, f2, f3, f4)
 end
 
 # Calculate 1D flux for a single point
-@inline function flux(u, orientation::Integer,
+@inline function flux(u, aux, orientation::Integer,
                       equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     rho, rho_v1, rho_v2, rho_theta = u
     v1 = rho_v1 / rho
@@ -116,11 +124,12 @@ end
         f3 = rho_v2 * v2 + p
         f4 = rho_theta * v2
     end
-    return SVector(f1, f2, f3, f4, zero(eltype(u)))
+    return SVector(f1, f2, f3, f4)
 end
 
 """
-    flux_nonconservative_isothermal(u_ll, u_rr, normal_direction::AbstractVector,
+    flux_nonconservative_isothermal(u_ll, u_rr, aux_ll, aux_rr,
+                                    normal_direction::AbstractVector,
                                     equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
 
 Well-balanced gravity term for an isothermal background state
@@ -131,21 +140,24 @@ developed by
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)
 """
-@inline function flux_nonconservative_isothermal(u_ll, u_rr,
+@inline function flux_nonconservative_isothermal(u_ll, u_rr, aux_ll, aux_rr,
                                                  normal_direction::AbstractVector,
                                                  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
-    rho_ll, _, _, _, phi_ll = u_ll
-    rho_rr, _, _, _, phi_rr = u_rr
+    rho_ll = u_ll[1]
+    rho_rr = u_rr[1]
+    phi_ll = aux_ll[1]
+    phi_rr = aux_rr[1]
     rho_avg = ln_mean(rho_ll, rho_rr)
     phi_jump = phi_rr - phi_ll
     return SVector(zero(eltype(u_ll)),
                    normal_direction[1] * rho_avg * phi_jump,
-                   normal_direction[2] * rho_avg * phi_jump, zero(eltype(u_ll)),
-                   zero(eltype(u_ll)))
+                   normal_direction[2] * rho_avg * phi_jump, zero(eltype(u_ll)))
 end
 
 """
-    flux_nonconservative_artiano_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+    flux_nonconservative_artiano_etal(u_ll, u_rr, aux_ll, aux_rr,
+                                      normal_direction::AbstractVector,
+                                      equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
 
 Well-balanced gravity term for constant potential temperature background state by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
@@ -153,39 +165,43 @@ Well-balanced gravity term for constant potential temperature background state b
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)
 """
-@inline function flux_nonconservative_artiano_etal(u_ll, u_rr,
+@inline function flux_nonconservative_artiano_etal(u_ll, u_rr, aux_ll, aux_rr,
                                                    normal_direction::AbstractVector,
                                                    equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
-    rho_ll, _, _, _, phi_ll = u_ll
-    rho_rr, _, _, _, phi_rr = u_rr
+    rho_ll = u_ll[1]
+    rho_rr = u_rr[1]
+    phi_ll = aux_ll[1]
+    phi_rr = aux_rr[1]
     rho_avg = stolarsky_mean(rho_ll, rho_rr, equations.gamma)
     phi_jump = phi_rr - phi_ll
     return SVector(zero(eltype(u_ll)),
                    normal_direction[1] * rho_avg * phi_jump,
                    normal_direction[2] * rho_avg * phi_jump,
-                   zero(eltype(u_ll)),
                    zero(eltype(u_ll)))
 end
 
 """
-    flux_nonconservative_souza_etal(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+    flux_nonconservative_souza_etal(u_ll, u_rr, aux_ll, aux_rr,
+                                    normal_direction::AbstractVector,
+                                    equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
 
 -  Souza et al.
    The Flux-Differencing Discontinuous {G}alerkin Method Applied to
    an Idealized Fully Compressible Nonhydrostatic Dry Atmosphere
    [DOI: 10.1029/2022MS003527] (https://doi.org/10.1029/2022MS003527)
 """
-@inline function flux_nonconservative_souza_etal(u_ll, u_rr,
+@inline function flux_nonconservative_souza_etal(u_ll, u_rr, aux_ll, aux_rr,
                                                  normal_direction::AbstractVector,
                                                  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
-    rho_ll, _, _, _, phi_ll = u_ll
-    rho_rr, _, _, _, phi_rr = u_rr
+    rho_ll = u_ll[1]
+    rho_rr = u_rr[1]
+    phi_ll = aux_ll[1]
+    phi_rr = aux_rr[1]
     rho_avg = 0.5f0 * (rho_ll + rho_rr)
     phi_jump = phi_rr - phi_ll
     return SVector(zero(eltype(u_ll)),
                    normal_direction[1] * rho_avg * phi_jump,
                    normal_direction[2] * rho_avg * phi_jump,
-                   zero(eltype(u_ll)),
                    zero(eltype(u_ll)))
 end
 
@@ -195,7 +211,8 @@ end
 # Coordinate Monthly Weather Review Vol. 141.7, pages 2526–2544, 2013,
 # https://journals.ametsoc.org/view/journals/mwre/141/7/mwr-d-12-00129.1.xml.
 
-@inline function (flux_lmars::FluxLMARS)(u_ll, u_rr, normal_direction::AbstractVector,
+@inline function (flux_lmars::FluxLMARS)(u_ll, u_rr, aux_ll, aux_rr,
+                                         normal_direction::AbstractVector,
                                          equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     a = flux_lmars.speed_of_sound
     # Unpack left and right state
@@ -221,11 +238,11 @@ end
     return SVector(f1,
                    f2 + p_interface * normal_direction[1],
                    f3 + p_interface * normal_direction[2],
-                   f4, zero(eltype(u_ll)))
+                   f4)
 end
 
 """
-    flux_lmars_es(u_ll, u_rr, normal_direction,
+    flux_lmars_es(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
                   equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
 
 Entropy-stable and well-balanced version of the low Mach number approximate Riemann solver
@@ -238,7 +255,8 @@ Entropy-stable and well-balanced version of the low Mach number approximate Riem
 It returns the conservative and the nonconservative contribution of the surface flux as a
 tuple, see [`Trixi.combine_conservative_and_nonconservative_fluxes`](@ref).
 """
-@inline function flux_lmars_es(u_ll, u_rr, normal_direction::AbstractVector,
+@inline function flux_lmars_es(u_ll, u_rr, aux_ll, aux_rr,
+                               normal_direction::AbstractVector,
                                equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     # Unpack left and right state
     rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
@@ -290,7 +308,7 @@ tuple, see [`Trixi.combine_conservative_and_nonconservative_fluxes`](@ref).
     flux = SVector(f1,
                    f2 + p_interface * normal_direction[1],
                    f3 + p_interface * normal_direction[2],
-                   f4, zero(eltype(u_ll)))
+                   f4)
 
     return flux, flux
 end
@@ -299,7 +317,7 @@ end
 
 # The boundary condition must also be specialized for a combined surface flux such that it
 # returns only the first contribution of the surface flux.
-@inline function boundary_condition_slip_wall(u_inner,
+@inline function boundary_condition_slip_wall(u_inner, aux_inner,
                                               normal_direction::AbstractVector,
                                               x, t,
                                               surface_flux_function::typeof(flux_lmars_es),
@@ -313,16 +331,18 @@ end
     u_boundary = SVector(u_inner[1],
                          u_inner[2] - 2 * u_normal * normal[1],
                          u_inner[3] - 2 * u_normal * normal[2],
-                         u_inner[4], u_inner[5])
+                         u_inner[4])
 
     # calculate the boundary flux
-    flux, _ = surface_flux_function(u_inner, u_boundary, normal_direction, equations)
+    flux, _ = surface_flux_function(u_inner, u_boundary, aux_inner, aux_inner,
+                                 normal_direction, equations)
 
     return flux
 end
 
 """
-    flux_ec(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerEquationsPotentialTemperatureWithGravity2D)
+    flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector,
+            equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
 
 Entropy conservative two-point flux by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
@@ -330,7 +350,8 @@ Entropy conservative two-point flux by
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)
 """
-@inline function flux_ec(u_ll, u_rr, normal_direction::AbstractVector,
+@inline function flux_ec(u_ll, u_rr, aux_ll, aux_rr,
+                         normal_direction::AbstractVector,
                          equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     # Unpack left and right state
     rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
@@ -351,11 +372,12 @@ Entropy conservative two-point flux by
     f2 = f1 * v1_avg + p_avg * normal_direction[1]
     f3 = f1 * v2_avg + p_avg * normal_direction[2]
     f4 = f1 * inv_ln_mean(rho_ll / rho_theta_ll, rho_rr / rho_theta_rr)
-    return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
+    return SVector(f1, f2, f3, f4)
 end
 
 """
-    flux_tec(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerEquationsPotentialTemperatureWithGravity2D)
+    flux_tec(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector,
+             equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
 
 Total energy conservative two-point flux by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
@@ -363,7 +385,8 @@ Total energy conservative two-point flux by
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)
 """
-@inline function flux_tec(u_ll, u_rr, normal_direction::AbstractVector,
+@inline function flux_tec(u_ll, u_rr, aux_ll, aux_rr,
+                          normal_direction::AbstractVector,
                           equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
     rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
@@ -386,11 +409,12 @@ Total energy conservative two-point flux by
     f2 = f1 * v1_avg + p_avg * normal_direction[1]
     f3 = f1 * v2_avg + p_avg * normal_direction[2]
     f4 = gammamean * 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
-    return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
+    return SVector(f1, f2, f3, f4)
 end
 
 """
-    flux_etec(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerEquationsPotentialTemperatureWithGravity2D)
+    flux_etec(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector,
+              equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
 
 Entropy and total energy conservative two-point flux by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
@@ -398,7 +422,8 @@ Entropy and total energy conservative two-point flux by
    in Potential Temperature Formulation for Atmospheric Flows
    (https://arxiv.org/abs/2509.10311)
 """
-@inline function flux_etec(u_ll, u_rr, normal_direction::AbstractVector,
+@inline function flux_etec(u_ll, u_rr, aux_ll, aux_rr,
+                           normal_direction::AbstractVector,
                            equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     # Unpack left and right state
     rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
@@ -418,25 +443,25 @@ Entropy and total energy conservative two-point flux by
     f2 = f1 * v1_avg + p_avg * normal_direction[1]
     f3 = f1 * v2_avg + p_avg * normal_direction[2]
 
-    return SVector(f1, f2, f3, f4, zero(eltype(u_ll)))
+    return SVector(f1, f2, f3, f4)
 end
 
 @inline function prim2cons(prim,
                            equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
-    rho, v1, v2, p, phi = prim
+    rho, v1, v2, p = prim
     rho_v1 = rho * v1
     rho_v2 = rho * v2
     rho_theta = (p / equations.p_0)^(1 / equations.gamma) * equations.p_0 / equations.R
-    return SVector(rho, rho_v1, rho_v2, rho_theta, phi)
+    return SVector(rho, rho_v1, rho_v2, rho_theta)
 end
 
 @inline function cons2prim(u,
                            equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
-    rho, rho_v1, rho_v2, rho_theta, phi = u
+    rho, rho_v1, rho_v2, rho_theta = u
     v1 = rho_v1 / rho
     v2 = rho_v2 / rho
     p = equations.K * rho_theta^equations.gamma
-    return SVector(rho, v1, v2, p, phi)
+    return SVector(rho, v1, v2, p)
 end
 
 @inline function cons2cons(u,
@@ -451,7 +476,7 @@ end
     w1 = log(equations.K * (rho_theta / rho)^equations.gamma) - equations.gamma
     w4 = rho / rho_theta * equations.gamma
 
-    return SVector(w1, zero(eltype(u)), zero(eltype(u)), w4, zero(eltype(u)))
+    return SVector(w1, zero(eltype(u)), zero(eltype(u)), w4)
 end
 
 @inline function entropy_thermodynamic(cons,
@@ -489,7 +514,7 @@ end
     return 0.5f0 * (cons[2]^2 + cons[3]^2) / (cons[1])
 end
 
-@inline function max_abs_speeds(u,
+@inline function max_abs_speeds(u, aux,
                                 equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     rho, v1, v2, p = cons2prim(u, equations)
     c = sqrt(equations.gamma * p / rho)
@@ -497,7 +522,8 @@ end
     return abs(v1) + c, abs(v2) + c
 end
 
-@inline function max_abs_speed_naive(u_ll, u_rr, normal_direction::AbstractVector,
+@inline function max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr,
+                                     normal_direction::AbstractVector,
                                      equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
     rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
@@ -518,7 +544,8 @@ end
 end
 
 # Less "cautious", i.e., less overestimating `λ_max` compared to `max_abs_speed_naive`
-@inline function max_abs_speed(u_ll, u_rr, normal_direction::AbstractVector,
+@inline function max_abs_speed(u_ll, u_rr, aux_ll, aux_rr,
+                               normal_direction::AbstractVector,
                                equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
     rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)

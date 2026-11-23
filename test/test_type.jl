@@ -152,27 +152,31 @@ end
         x = SVector(zero(RealT))
         t = zero(RealT)
         u = u_ll = u_rr = u_inner = cons = SVector(one(RealT), one(RealT), one(RealT),
-                                                   one(RealT), one(RealT))
+                                                   one(RealT))
+        aux = aux_ll = aux_rr = aux_inner = SVector(one(RealT))
 
         normal_direction = SVector(one(RealT), one(RealT))
         surface_flux_function = (flux_lax_friedrichs, flux_zero)
 
-        @test eltype(@inferred boundary_condition_slip_wall(u_inner, normal_direction,
+        @test eltype(@inferred boundary_condition_slip_wall(u_inner, aux_inner,
+                                                            normal_direction,
                                                             x, t, surface_flux_function,
                                                             equations)) ==
-              SVector{5, RealT}
-        @test eltype(@inferred flux(u, normal_direction, equations)) == RealT
-        @test eltype(@inferred flux_ec(u_ll, u_rr, normal_direction, equations)) ==
+              SVector{4, RealT}
+        @test eltype(@inferred flux(u, aux, normal_direction, equations)) == RealT
+        @test eltype(@inferred flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)) ==
               RealT
-        @test eltype(@inferred flux_tec(u_ll, u_rr, normal_direction, equations)) ==
+        @test eltype(@inferred flux_tec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)) ==
               RealT
-        @test eltype(@inferred flux_etec(u_ll, u_rr, normal_direction, equations)) ==
+        @test eltype(@inferred flux_etec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)) ==
               RealT
         for i in 1:2
-            @test eltype(@inferred flux_lmars_es(u_ll, u_rr, normal_direction, equations)[i]) ==
+            @test eltype(@inferred flux_lmars_es(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)[i]) ==
                   RealT
         end
 
+        x_2d = SVector(zero(RealT), one(RealT))
+        @test eltype(@inferred aux_field_geopotential(x_2d, equations)) == RealT
         @test eltype(@inferred cons2prim(u, equations)) == RealT
         @test eltype(@inferred prim2cons(u, equations)) == RealT
         @test eltype(@inferred cons2entropy(u, equations)) == RealT
@@ -180,10 +184,10 @@ end
         @test typeof(@inferred entropy(cons, equations)) == RealT
         @test typeof(@inferred energy_kinetic(cons, equations)) == RealT
         @test typeof(@inferred energy_total(cons, equations)) == RealT
-        @test eltype(@inferred Trixi.max_abs_speeds(u, equations)) == RealT
-        @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, normal_direction,
+        @test eltype(@inferred Trixi.max_abs_speeds(u, aux, equations)) == RealT
+        @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
                                                    equations)) == RealT
-        @test typeof(@inferred max_abs_speed(u_ll, u_rr, normal_direction,
+        @test typeof(@inferred max_abs_speed(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
                                              equations)) == RealT
 
         # Adapt the real type, e.g., to move a semidiscretization to a GPU
@@ -448,40 +452,41 @@ end
         x = SVector(zero(RealT))
         t = zero(RealT)
         u = u_ll = u_rr = u_inner = cons = SVector(one(RealT), one(RealT), one(RealT),
-                                                   one(RealT), one(RealT))
+                                                   one(RealT))
+        aux = aux_ll = aux_rr = aux_inner = SVector(one(RealT))
 
         normal_direction = SVector(one(RealT), one(RealT))
         surface_flux_function = (flux_lax_friedrichs, flux_zero)
-        @test eltype(@inferred flux(u, normal_direction, equations)) == RealT
-        @test eltype(@inferred flux_ranocha(u_ll, u_rr, normal_direction, equations)) ==
+        @test eltype(@inferred flux(u, aux, normal_direction, equations)) == RealT
+        @test eltype(@inferred flux_ranocha(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)) ==
               RealT
-        @test eltype(@inferred flux_kennedy_gruber(u_ll, u_rr, normal_direction,
+        @test eltype(@inferred flux_kennedy_gruber(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
                                                    equations)) ==
               RealT
-        @test eltype(@inferred flux_shima_etal(u_ll, u_rr, normal_direction, equations)) ==
+        @test eltype(@inferred flux_shima_etal(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)) ==
               RealT
-        @test eltype(@inferred flux_nonconservative_artiano_etal(u_ll, u_rr,
+        @test eltype(@inferred flux_nonconservative_artiano_etal(u_ll, u_rr, aux_ll, aux_rr,
                                                                  normal_direction,
                                                                  equations)) ==
               RealT
-        @test eltype(@inferred flux_nonconservative_waruszewski_etal(u_ll, u_rr,
+        @test eltype(@inferred flux_nonconservative_waruszewski_etal(u_ll, u_rr, aux_ll, aux_rr,
                                                                      normal_direction,
                                                                      equations)) ==
               RealT
-        @test eltype(@inferred flux_nonconservative_isothermal(u_ll, u_rr,
+        @test eltype(@inferred flux_nonconservative_isothermal(u_ll, u_rr, aux_ll, aux_rr,
                                                                normal_direction,
                                                                equations)) ==
               RealT
-        @test eltype(@inferred flux_nonconservative_souza_etal(u_ll, u_rr,
+        @test eltype(@inferred flux_nonconservative_souza_etal(u_ll, u_rr, aux_ll, aux_rr,
                                                                normal_direction,
                                                                equations)) ==
               RealT
-        @test eltype(@inferred boundary_condition_slip_wall(u_inner,
+        @test eltype(@inferred boundary_condition_slip_wall(u_inner, aux_inner,
                                                             normal_direction,
                                                             x, t,
                                                             surface_flux_function,
                                                             equations)) ==
-              SVector{5, RealT}
+              SVector{4, RealT}
         @test eltype(varnames(cons2prim, equations)) == String
 
         @test eltype(@inferred cons2prim(u, equations)) == RealT
@@ -494,10 +499,10 @@ end
         @test typeof(@inferred energy_kinetic(cons, equations)) == RealT
         @test typeof(@inferred energy_total(cons, equations)) == RealT
         @test typeof(@inferred energy_internal(cons, equations)) == RealT
-        @test eltype(@inferred Trixi.max_abs_speeds(u, equations)) == RealT
-        @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, normal_direction,
+        @test eltype(@inferred Trixi.max_abs_speeds(u, aux, equations)) == RealT
+        @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
                                                    equations)) == RealT
-        @test typeof(@inferred max_abs_speed(u_ll, u_rr, normal_direction,
+        @test typeof(@inferred max_abs_speed(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
                                              equations)) == RealT
     end
 end
@@ -567,33 +572,34 @@ end
         x = SVector(zero(RealT))
         t = zero(RealT)
         u = u_ll = u_rr = u_inner = cons = SVector(one(RealT), one(RealT), one(RealT),
-                                                   RealT(2), one(RealT))
+                                                   RealT(2))
+        aux = aux_ll = aux_rr = aux_inner = SVector(one(RealT))
         surface_flux_functions = (flux_conservative_etec,
                                   flux_nonconservative_etec)
         normal_direction = SVector(one(RealT), one(RealT))
 
-        @test eltype(@inferred flux_nonconservative_etec(u_ll, u_rr,
+        @test eltype(@inferred flux_nonconservative_etec(u_ll, u_rr, aux_ll, aux_rr,
                                                          normal_direction,
                                                          equations)) ==
               RealT
-        @test eltype(@inferred flux_conservative_etec(u_ll, u_rr,
+        @test eltype(@inferred flux_conservative_etec(u_ll, u_rr, aux_ll, aux_rr,
                                                       normal_direction,
                                                       equations)) ==
               RealT
-        @test eltype(@inferred flux_nonconservative_es(u_ll, u_rr,
+        @test eltype(@inferred flux_nonconservative_es(u_ll, u_rr, aux_ll, aux_rr,
                                                        normal_direction,
                                                        equations)) ==
               RealT
-        @test eltype(@inferred flux_conservative_es(u_ll, u_rr,
+        @test eltype(@inferred flux_conservative_es(u_ll, u_rr, aux_ll, aux_rr,
                                                     normal_direction,
                                                     equations)) ==
               RealT
-        @test eltype(@inferred boundary_condition_slip_wall(u_inner,
+        @test eltype(@inferred boundary_condition_slip_wall(u_inner, aux_inner,
                                                             normal_direction,
                                                             x, t,
                                                             surface_flux_functions,
                                                             equations)) ==
-              SVector{5, RealT}
+              SVector{4, RealT}
         @test @inferred Trixi.have_nonconservative_terms(equations) === Trixi.True()
         @test eltype(varnames(cons2cons, equations)) == String
         @test eltype(varnames(cons2prim, equations)) == String
@@ -603,8 +609,8 @@ end
         @test eltype(@inferred cons2entropy(u, equations)) == RealT
         @test typeof(@inferred pressure(u, equations)) == RealT
         @test typeof(@inferred entropy(cons, equations)) == RealT
-        @test eltype(@inferred Trixi.max_abs_speeds(u, equations)) == RealT
-        @test typeof(@inferred max_abs_speed(u_ll, u_rr, normal_direction,
+        @test eltype(@inferred Trixi.max_abs_speeds(u, aux, equations)) == RealT
+        @test typeof(@inferred max_abs_speed(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
                                              equations)) == RealT
     end
 end

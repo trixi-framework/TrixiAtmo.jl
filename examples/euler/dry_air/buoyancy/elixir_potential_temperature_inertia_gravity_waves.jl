@@ -26,9 +26,11 @@ mesh = P4estMesh(cells_per_dimension, polydeg = 1,
                  periodicity = (true, false))
 source_terms = nothing
 initial_condition = initial_condition_gravity_waves
+aux_field = aux_field_geopotential
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_terms,
-                                    boundary_conditions = boundary_conditions)
+                                    boundary_conditions = boundary_conditions,
+                                    aux_field = aux_field)
 tspan = (0.0, 1800.0)
 ode = semidiscretize(semi, tspan)
 

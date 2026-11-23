@@ -373,6 +373,11 @@ abstract type AbstractCompressibleRainyEulerEquations{NDIMS, NVARS} <:
     return zero(u_ll)
 end
 
+# Same as above for equations with auxiliary variables
+@inline function flux_zero(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)
+    return zero(u_ll)
+end
+
 include("covariant_advection.jl")
 include("covariant_shallow_water.jl")
 include("covariant_shallow_water_split.jl")
