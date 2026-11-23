@@ -4,7 +4,8 @@ module TrixiAtmoMakieExt
 # Required for visualization code
 using Makie: Makie
 
-using TrixiAtmo: TrixiAtmo, @muladd, spherical_layer_data, _spherical_layer_triangulation
+using TrixiAtmo: TrixiAtmo, @muladd, PlotDataShell, LonLat
+using TrixiAtmo.Trixi: PlotDataSeries
 
 # Import functions such that they can be extended with new methods
 import TrixiAtmo: plot_spherical_layer, plot_spherical_layer!
@@ -16,18 +17,22 @@ import TrixiAtmo: plot_spherical_layer, plot_spherical_layer!
 @muladd begin
 #! format: noindent
 
-function plot_spherical_layer(func, args...;
-                              layer = :surface, nvisnodes = nothing,
-                              lon_limits = (0, 360), lat_limits = (-90, 90),
-                              levels = 10, colormap = :viridis, title = "", kwargs...)
+# Single variable of a `PlotDataShell` in longitude-latitude coordinates
+const PlotDataSeriesLonLat = PlotDataSeries{<:PlotDataShell{<:Any, <:Any, <:Any,
+                                                            <:LonLat}}
+
+function plot_spherical_layer(pds::PlotDataSeriesLonLat;
+                              lon_limits = default_lon_limits(pds.plot_data.projection),
+                              lat_limits = (-90, 90),
+                              title = pds.plot_data.variable_names[pds.variable_id],
+                              kwargs...)
     fig = Makie.Figure()
     ax = Makie.Axis(fig[1, 1]; title, xlabel = "longitude", ylabel = "latitude",
                     xticks = degree_ticks(lon_limits),
                     xtickformat = lons -> format_longitude.(lons),
                     yticks = degree_ticks(lat_limits),
                     ytickformat = lats -> format_latitude.(lats))
-    plt = plot_spherical_layer!(ax, func, args...; layer, nvisnodes, lon_limits,
-                                lat_limits, levels, colormap, kwargs...)
+    plt = plot_spherical_layer!(ax, pds; lon_limits, lat_limits, kwargs...)
     Makie.Colorbar(fig[1, 2], plt)
 
     # Make the width of the axis proportional to the plotted longitude range and its
@@ -40,32 +45,73 @@ function plot_spherical_layer(func, args...;
     return Makie.FigureAxisPlot(fig, ax, plt)
 end
 
-function plot_spherical_layer!(ax, func, args...;
-                               layer = :surface, nvisnodes = nothing,
-                               lon_limits = (0, 360), lat_limits = (-90, 90),
+function plot_spherical_layer!(ax, pds::PlotDataSeriesLonLat;
+                               lon_limits = default_lon_limits(pds.plot_data.projection),
+                               lat_limits = (-90, 90),
                                levels = 10, colormap = :viridis, kwargs...)
-    data = spherical_layer_data(func, args...; layer, nvisnodes)
+    (; plot_data, variable_id) = pds
+    (; x, y, triangles, data, projection) = plot_data
+    check_lon_limits(projection, lon_limits)
 
-    # Triangulate the visualization points of each element separately instead of letting
-    # Makie compute a Delaunay triangulation of all points. The periodic boundary of the
-    # longitude is placed at the lower limit of the plotted range.
-    (; lon, lat, values, triangles) = _spherical_layer_triangulation(data;
-                                                                     lon_min = lon_limits[1])
+    # The visualization points are already triangulated in the longitude-latitude plane
+    # with the periodic boundary of the longitude at the lower limit `lon_min` of the projection. 
+    # We use this triangulation instead of letting Makie compute a Delaunay triangulation of all points.
+    values = data[:, variable_id]
 
     if levels isa Integer
-        levels = default_levels(levels, lon, lat, values, triangles, lon_limits,
-                                lat_limits)
+        levels = default_levels(levels, x, y, values, triangles, lon_limits, lat_limits)
     end
 
     # Additional keywords (e.g., `extendlow` and `extendhigh`) are passed only to the
     # filled contours, which are returned
-    plt = Makie.tricontourf!(ax, lon, lat, values; triangulation = triangles, levels,
+    plt = Makie.tricontourf!(ax, x, y, values; triangulation = triangles, levels,
                              colormap, kwargs...)
-    Makie.tricontour!(ax, lon, lat, values; triangulation = triangles, levels,
+    Makie.tricontour!(ax, x, y, values; triangulation = triangles, levels,
                       color = :black, linewidth = 0.5)
     Makie.limits!(ax, lon_limits..., lat_limits...)
 
     return plt
+end
+
+# Plot a scalar quantity `func(u, equations)` directly from the solution, which creates a
+# `PlotDataShell` with the periodic boundary of the longitude at the lower limit of the
+# plotted range
+function plot_spherical_layer(func, args...; layer = :surface, nvisnodes = nothing,
+                              lon_limits = (0, 360), title = "", kwargs...)
+    pds = scalar_plot_data_series(func, args...; layer, nvisnodes, lon_limits)
+    return plot_spherical_layer(pds; lon_limits, title, kwargs...)
+end
+
+function plot_spherical_layer!(ax, func, args...; layer = :surface, nvisnodes = nothing,
+                               lon_limits = (0, 360), kwargs...)
+    pds = scalar_plot_data_series(func, args...; layer, nvisnodes, lon_limits)
+    return plot_spherical_layer!(ax, pds; lon_limits, kwargs...)
+end
+
+function scalar_plot_data_series(func, args...; layer, nvisnodes, lon_limits)
+    pd = PlotDataShell(args...; solution_variables = func, layer, nvisnodes,
+                       projection = LonLat(lon_min = lon_limits[1]))
+    if length(pd) != 1
+        throw(ArgumentError("`func` must return a scalar quantity, got " *
+                            "$(length(pd)) variables"))
+    end
+    return PlotDataSeries(pd, 1)
+end
+
+# The full range of longitudes of the projection
+default_lon_limits(projection::LonLat) = (projection.lon_min, projection.lon_min + 360)
+
+# The plotted range of longitudes must lie in the range covered by the triangulation
+function check_lon_limits(projection::LonLat, lon_limits)
+    lon_min, lon_max = default_lon_limits(projection)
+    if lon_limits[1] < lon_min || lon_limits[2] > lon_max
+        throw(ArgumentError("`lon_limits = $lon_limits` must lie in the range from " *
+                            "$lon_min to $lon_max of the projection " *
+                            "`LonLat(lon_min = $lon_min)`. Create the `PlotDataShell` " *
+                            "with, e.g., `projection = LonLat(lon_min = " *
+                            "$(lon_limits[1]))` to plot this range."))
+    end
+    return nothing
 end
 
 # Return `n_bands + 1` equally spaced contour levels between the extrema of the values in

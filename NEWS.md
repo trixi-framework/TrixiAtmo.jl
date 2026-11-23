@@ -8,11 +8,11 @@ for human readability.
 ## Changes in the v0.1 lifecycle
 
 #### Added
-- The new function `spherical_layer_data` extracts a scalar quantity on a horizontal
-  layer of a simulation on a spherical shell in longitude-latitude coordinates. With
-  Makie.jl loaded, `plot_spherical_layer` and `plot_spherical_layer!` create filled
-  contour plots of it, e.g., of the surface pressure of the baroclinic instability
-  ([#266]).
+- The new type `PlotDataShell` holds the variables on a horizontal layer of a
+  simulation on a spherical shell, triangulated in a map projection, currently the
+  longitude-latitude projection `LonLat`. With Makie.jl loaded, `plot_spherical_layer`
+  and `plot_spherical_layer!` create filled contour plots of its variables, e.g., of the
+  surface pressure of the baroclinic instability ([#266]).
 - `JacobianVerticalTwoSided` enables horizontally explicit, vertically implicit (HEVI) time
   integration of the `CompressibleEulerPotentialTemperatureEquationsWithGravity3D` on a
   `P4estMeshCubedSphereTopography` as linear operator of linearly implicit methods, i.e.,
