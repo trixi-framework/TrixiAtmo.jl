@@ -84,7 +84,7 @@ struct PlotDataShell{Coordinates, Data, VariableNames, Projection} <:
     projection::Projection
 end
 
-# Show only a truncated output for convenience (the full data does not make sense)
+# Show only a truncated output for convenience
 function Base.show(io::IO, pd::PlotDataShell)
     @nospecialize pd # reduce precompilation time
 
