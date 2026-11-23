@@ -54,7 +54,7 @@ function plot_spherical_layer!(ax, pds::PlotDataSeriesLonLat;
     check_lon_limits(projection, lon_limits)
 
     # The visualization points are already triangulated in the longitude-latitude plane
-    # with the periodic boundary of the longitude at the lower limit `lon_min` of the projection. 
+    # with the periodic boundary of the longitude at the lower limit `lon_min` of the projection.
     # We use this triangulation instead of letting Makie compute a Delaunay triangulation of all points.
     values = data[:, variable_id]
 
