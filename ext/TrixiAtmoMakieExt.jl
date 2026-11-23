@@ -69,13 +69,11 @@ function plot_spherical_layer!(ax, func, args...;
 end
 
 # Return `n_bands + 1` equally spaced contour levels between the extrema of the values in
-# the plotted range of longitude and latitude. As in the plots of the baroclinic
-# instability (see
-# https://github.com/MarcoArtiano/2026_nonconservative_sbp), which mask the visualization points to the plotted
-# range, the levels do not depend on the values outside of this range. We use the
-# vertices of all triangles whose bounding box overlaps the plotted range. Since the values
-# in a triangle are interpolated linearly from its vertices, the levels cover all visible
-# values, and there are no gaps in the filled contours at the boundary of the axis.
+# the plotted range of longitude and latitude. We choose the levels independently of the
+# values outside of this range. To this end, we use the vertices of all triangles whose
+# bounding box overlaps the plotted range. Since the values in a triangle are interpolated
+# linearly from its vertices, the levels cover all visible values, and there are no gaps in
+# the filled contours at the boundary of the axis.
 function default_levels(n_bands, lon, lat, values, triangles, lon_limits, lat_limits)
     value_min = typemax(eltype(values))
     value_max = typemin(eltype(values))

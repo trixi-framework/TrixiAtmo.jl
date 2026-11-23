@@ -163,13 +163,11 @@ end
 # reference element. In contrast to a Delaunay triangulation of all points, this does not
 # connect points of different elements across discontinuities of the solution and avoids
 # duplicate points, since the points at element interfaces belong to several elements.
-# As in the plots of the baroclinic instability (see
-# https://github.com/MarcoArtiano/2026_nonconservative_sbp), the longitude is shifted to the
-# range from `lon_min` to `lon_min + 360°` such that the periodic boundary of the longitude
-# is at the boundary of the plotted range starting at `lon_min`. Elements crossing this
-# periodic boundary are made contiguous in longitude. If they extend beyond `lon_min + 360°`,
-# they are added a second time shifted by -360° such that both ends of the range are
-# covered.
+# The longitude is shifted to the range from `lon_min` to `lon_min + 360°` such that the
+# periodic boundary of the longitude is at the boundary of the plotted range starting at
+# `lon_min`. Elements crossing this periodic boundary are made contiguous in longitude. If
+# they extend beyond `lon_min + 360°`, they are added a second time shifted by -360° such
+# that both ends of the range are covered.
 # A pole is a line in longitude-latitude coordinates. Thus, a triangle with a vertex at a
 # pole, where the longitude is not defined, is replaced by the quadrilateral between this
 # line and the opposite edge of the triangle.
