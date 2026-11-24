@@ -9,7 +9,7 @@
                                "elixir_potential_temperature_baroclinic_instability.jl"),
                       trees_per_cube_face = trees_per_cube_face, polydeg = 3,
                       tspan = (0.0, 100.0),
-                      # Avoid intermediate time stops of the `SaveSolutionCallback`
+                      # The simulation consists of a single time step.
                       dt = 100000)
     end
 end
@@ -38,6 +38,10 @@ end
     @test_throws KeyError pd["p"]
     @test [name for (name, _) in pd] == collect(keys(pd))
     @test startswith(repr(pd), "PlotDataShell{")
+    # The Plots.jl recipes of Trixi.jl for 2D plot data do not apply to a `PlotDataShell`
+    RecipesBase = TrixiAtmo.RecipesBase
+    @test_throws ArgumentError RecipesBase.apply_recipe(Dict{Symbol, Any}(), pd["phi"])
+    @test_throws ArgumentError RecipesBase.apply_recipe(Dict{Symbol, Any}(), pd)
 
     @test PlotDataShell(sol.u[end], semi; solution_variables = cons2cons, layer = 1,
                         nvisnodes).data == pd.data
@@ -279,6 +283,9 @@ end
     @test length(plt.computed_levels[]) == 6
     # The contour lines are drawn at the edges of the bands of the filled contours
     @test contour_lines(ax).levels[] == plt.computed_levels[]
+    @test contour_lines(ax).color[] === :black
+    @test contour_lines(ax).linewidth[] == 0.5
+    @test contour_lines(ax).linestyle[] === :solid
     # The title is the name of the variable by default
     @test ax.title[] == "p1"
     @test ax.limits[] == ((0, 240), (0, 90))
@@ -311,6 +318,27 @@ end
     # colorbar of Makie.jl
     fig, ax, plt = Makie.contourf(pd["p1"]; levels = 5, colorscale = log10)
     @test contour_lines(ax).levels[] ≈ exp10.(plt.computed_levels[])
+
+    # The style of the contour lines can be changed, and `linewidth = 0` omits them
+    fig, ax, plt = Makie.contourf(pd["p1"]; linecolor = :white, linewidth = 2,
+                                  linestyle = :dash)
+    @test contour_lines(ax).color[] === :white
+    @test contour_lines(ax).linewidth[] == 2
+    @test contour_lines(ax).linestyle[] === :dash
+    fig, ax, plt = Makie.contourf(pd["p1"]; linewidth = 0)
+    @test plt isa Makie.Tricontourf
+    @test !any(plot -> plot isa Makie.Tricontour, ax.scene.plots)
+
+    # Other plot types throw a clear error instead of the obscure errors resulting from the
+    # generic methods of Trixi.jl for 2D plot data (e.g., `Makie.plot` as heatmap)
+    @test_throws ArgumentError("a `PlotDataShell` and its variables can only be plotted " *
+                               "with `Makie.contourf` and `Makie.contourf!` (with " *
+                               "Makie.jl loaded), e.g., " *
+                               "`contourf(pd[variable_name])`") Makie.plot(pd["p1"])
+    @test_throws ArgumentError Makie.heatmap(pd["p1"])
+    @test_throws ArgumentError Makie.contour(pd["p1"])
+    @test_throws ArgumentError Makie.plot!(ax, pd["p1"])
+    @test_throws ArgumentError Makie.plot(pd)
 
     # The plotted range of longitude must lie in the range of the projection
     @test_throws ArgumentError Makie.contourf(pd["p1"]; lon_limits = (-60, 180))

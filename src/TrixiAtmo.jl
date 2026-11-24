@@ -59,6 +59,9 @@ using Trixi: wrap_array, get_node_coords, get_contravariant_vector
 # DGMulti Solvers
 using StartUpDG: MeshData, RefElemData
 
+# Visualization
+using RecipesBase: RecipesBase
+
 include("auxiliary/auxiliary.jl")
 include("equations/equations.jl")
 include("meshes/meshes.jl")

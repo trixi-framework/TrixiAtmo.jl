@@ -91,6 +91,9 @@ Keywords for plotting:
   latitude defaults to `(-90, 90)`.
 - `title`: title of the plot (only for `Makie.contourf`); defaults to the name of the variable.
 - `colormap`: colormap of the filled contours; defaults to `:viridis`.
+- `linecolor`, `linewidth`, `linestyle`: color, width, and style (e.g., `:dash`) of the
+  contour lines at the edges of the bands of the filled contours; default to `:black`, `0.5`,
+  and `:solid`. With `linewidth = 0`, no contour lines are drawn.
 
 All other keywords are passed to `Makie.tricontourf!`, e.g., `levels` for the number of
 equally spaced contour bands (10 by default) or a vector of contour levels, and
@@ -98,6 +101,9 @@ equally spaced contour bands (10 by default) or a vector of contour levels, and
 the given `levels`. Only the triangles overlapping the plotted range of longitude and latitude
 are passed to Makie.jl. Thus, the contour levels computed by Makie.jl for an integer `levels`
 (or for `mode = :relative`) depend only on the values in the plotted range.
+
+Other plotting functions of Makie.jl (e.g., `Makie.plot` or `Makie.contour`) and plots with
+Plots.jl are not supported and throw an error.
 
 # Examples
 ```julia
@@ -153,6 +159,26 @@ function Base.show(io::IO, pd::PlotDataShell)
           typeof(pd.projection),
           "}(<x>, <y>, <triangles>, <data>, <variable_names>, <projection>)")
     return nothing
+end
+
+# Since `PlotDataShell <: Trixi.AbstractPlotData{2}`, the generic plotting methods of Trixi.jl
+# for two-dimensional plot data (e.g., the Plots.jl recipes and `Makie.plot` as heatmap) would
+# apply to it. However, they assume the data structure of `Trixi.PlotData2DCartesian` and
+# fail with obscure errors. Thus, we throw a clear error instead (see also the method of
+# `Makie.convert_arguments` in the Makie.jl extension).
+function _throw_unsupported_plot()
+    throw(ArgumentError("a `PlotDataShell` and its variables can only be plotted with " *
+                        "`Makie.contourf` and `Makie.contourf!` (with Makie.jl loaded), " *
+                        "e.g., `contourf(pd[variable_name])`"))
+end
+
+function RecipesBase.apply_recipe(::AbstractDict{Symbol, Any}, ::PlotDataShell)
+    return _throw_unsupported_plot()
+end
+
+function RecipesBase.apply_recipe(::AbstractDict{Symbol, Any},
+                                  ::Trixi.PlotDataSeries{<:PlotDataShell})
+    return _throw_unsupported_plot()
 end
 
 function PlotDataShell(sol::Trixi.TrixiODESolution; kwargs...)

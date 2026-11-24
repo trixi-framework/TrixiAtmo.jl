@@ -48,7 +48,9 @@ end
 
 function Makie.contourf!(ax, pds::PlotDataSeriesLonLat;
                          lon_limits = default_lon_limits(pds.plot_data.projection),
-                         lat_limits = (-90, 90), colormap = :viridis, kwargs...)
+                         lat_limits = (-90, 90), colormap = :viridis,
+                         linecolor = :black, linewidth = 0.5, linestyle = :solid,
+                         kwargs...)
     (; plot_data, variable_id) = pds
     (; x, y, triangles, data, projection) = plot_data
     check_lon_limits(projection, lon_limits)
@@ -65,14 +67,16 @@ function Makie.contourf!(ax, pds::PlotDataSeriesLonLat;
     plt = Makie.tricontourf!(ax, x, y, values; triangulation = triangles, colormap,
                              kwargs...)
 
-    # Draw the contour lines at the edges of the bands of the filled contours. For an integer
-    # `levels`, `Makie.tricontour!` would choose other levels than `Makie.tricontourf!`.
-    # As in the colorbar of Makie.jl, the computed levels are transformed back if a
-    # `colorscale` (e.g., `log10`) is used.
-    levels = Makie.apply_scale(Makie.inverse_transform(plt.colorscale[]),
-                               plt.computed_levels[])
-    Makie.tricontour!(ax, x, y, values; triangulation = triangles, levels,
-                      color = :black, linewidth = 0.5)
+    # Draw the contour lines at the edges of the bands of the filled contours, unless
+    # `linewidth = 0`. For an integer `levels`, `Makie.tricontour!` would choose other levels
+    # than `Makie.tricontourf!`. As in the colorbar of Makie.jl, the computed levels are
+    # transformed back if a `colorscale` (e.g., `log10`) is used.
+    if !iszero(linewidth)
+        levels = Makie.apply_scale(Makie.inverse_transform(plt.colorscale[]),
+                                   plt.computed_levels[])
+        Makie.tricontour!(ax, x, y, values; triangulation = triangles, levels,
+                          color = linecolor, linewidth, linestyle)
+    end
     Makie.limits!(ax, lon_limits..., lat_limits...)
 
     return plt
@@ -86,6 +90,16 @@ end
 
 function Makie.contourf!(ax, pd::PlotDataShellLonLat; kwargs...)
     return Makie.contourf!(ax, single_variable(pd); kwargs...)
+end
+
+# All other plot types of Makie.jl (e.g., `Makie.plot`, which would create a heatmap via the
+# generic methods of Trixi.jl for two-dimensional plot data, or `Makie.contour`) convert their
+# arguments via `Makie.convert_arguments`. Since they do not support a `PlotDataShell`, we
+# throw a clear error instead of the obscure errors of Makie.jl and Trixi.jl.
+function Makie.convert_arguments(::Type{<:Makie.Plot},
+                                 ::Union{PlotDataShell,
+                                         PlotDataSeries{<:PlotDataShell}})
+    return TrixiAtmo._throw_unsupported_plot()
 end
 
 function single_variable(pd::PlotDataShell)
