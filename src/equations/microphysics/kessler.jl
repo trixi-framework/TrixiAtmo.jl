@@ -76,7 +76,7 @@ end
 
 function Base.similar(microphysics::KesslerMicrophysics,
                       ::Type{NewRealT}) where {NewRealT}
-    (; latent_heat, rho_surface, condensation_time) = microphysics
+    @unpack latent_heat, rho_surface, condensation_time = microphysics
     return KesslerMicrophysics(; latent_heat = convert(NewRealT, latent_heat),
                                rho_surface = convert(NewRealT, rho_surface),
                                condensation_time = convert(NewRealT, condensation_time))
