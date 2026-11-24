@@ -7,9 +7,6 @@ using Makie: Makie
 using TrixiAtmo: TrixiAtmo, @muladd, PlotDataShell, LonLat
 using TrixiAtmo.Trixi: PlotDataSeries
 
-# Import functions such that they can be extended with new methods
-import TrixiAtmo: plot_spherical_layer, plot_spherical_layer!
-
 # By default, Julia/LLVM does not use fused multiply-add operations (FMAs).
 # Since these FMAs can increase the performance of many numerical algorithms,
 # we need to opt-in explicitly.
@@ -17,22 +14,26 @@ import TrixiAtmo: plot_spherical_layer, plot_spherical_layer!
 @muladd begin
 #! format: noindent
 
-# Single variable of a `PlotDataShell` in longitude-latitude coordinates
-const PlotDataSeriesLonLat = PlotDataSeries{<:PlotDataShell{<:Any, <:Any, <:Any,
-                                                            <:LonLat}}
+# A `PlotDataShell` in longitude-latitude coordinates and a single variable of it
+const PlotDataShellLonLat = PlotDataShell{<:Any, <:Any, <:Any, <:LonLat}
+const PlotDataSeriesLonLat = PlotDataSeries{<:PlotDataShellLonLat}
 
-function plot_spherical_layer(pds::PlotDataSeriesLonLat;
-                              lon_limits = default_lon_limits(pds.plot_data.projection),
-                              lat_limits = (-90, 90),
-                              title = pds.plot_data.variable_names[pds.variable_id],
-                              kwargs...)
+# As for the plot data of Trixi.jl, filled contour plots of a single variable are created
+# with `Makie.contourf` and `Makie.contourf!`. The keywords are documented in the docstring
+# of `PlotDataShell`, since methods defined in this extension do not appear in the API
+# reference of TrixiAtmo.jl.
+function Makie.contourf(pds::PlotDataSeriesLonLat;
+                        lon_limits = default_lon_limits(pds.plot_data.projection),
+                        lat_limits = (-90, 90),
+                        title = pds.plot_data.variable_names[pds.variable_id],
+                        kwargs...)
     fig = Makie.Figure()
     ax = Makie.Axis(fig[1, 1]; title, xlabel = "longitude", ylabel = "latitude",
                     xticks = degree_ticks(lon_limits),
                     xtickformat = lons -> format_longitude.(lons),
                     yticks = degree_ticks(lat_limits),
                     ytickformat = lats -> format_latitude.(lats))
-    plt = plot_spherical_layer!(ax, pds; lon_limits, lat_limits, kwargs...)
+    plt = Makie.contourf!(ax, pds; lon_limits, lat_limits, kwargs...)
     Makie.Colorbar(fig[1, 2], plt)
 
     # Make the width of the axis proportional to the plotted longitude range and its
@@ -45,27 +46,31 @@ function plot_spherical_layer(pds::PlotDataSeriesLonLat;
     return Makie.FigureAxisPlot(fig, ax, plt)
 end
 
-function plot_spherical_layer!(ax, pds::PlotDataSeriesLonLat;
-                               lon_limits = default_lon_limits(pds.plot_data.projection),
-                               lat_limits = (-90, 90),
-                               levels = 10, colormap = :viridis, kwargs...)
+function Makie.contourf!(ax, pds::PlotDataSeriesLonLat;
+                         lon_limits = default_lon_limits(pds.plot_data.projection),
+                         lat_limits = (-90, 90), colormap = :viridis, kwargs...)
     (; plot_data, variable_id) = pds
     (; x, y, triangles, data, projection) = plot_data
     check_lon_limits(projection, lon_limits)
 
     # The visualization points are already triangulated in the longitude-latitude plane
     # with the periodic boundary of the longitude at the lower limit `lon_min` of the projection.
-    # We use this triangulation instead of letting Makie compute a Delaunay triangulation of all points.
-    values = data[:, variable_id]
+    # We use this triangulation instead of letting Makie compute a Delaunay triangulation of all
+    # points, but pass only the triangles in the plotted range (see `crop_triangulation`).
+    x, y, values, triangles = crop_triangulation(x, y, view(data, :, variable_id),
+                                                 triangles, lon_limits, lat_limits)
 
-    if levels isa Integer
-        levels = default_levels(levels, x, y, values, triangles, lon_limits, lat_limits)
-    end
+    # All other keywords (e.g., `levels`, `extendlow`, and `extendhigh`) are passed only to
+    # the filled contours, which are returned
+    plt = Makie.tricontourf!(ax, x, y, values; triangulation = triangles, colormap,
+                             kwargs...)
 
-    # Additional keywords (e.g., `extendlow` and `extendhigh`) are passed only to the
-    # filled contours, which are returned
-    plt = Makie.tricontourf!(ax, x, y, values; triangulation = triangles, levels,
-                             colormap, kwargs...)
+    # Draw the contour lines at the edges of the bands of the filled contours. For an integer
+    # `levels`, `Makie.tricontour!` would choose other levels than `Makie.tricontourf!`.
+    # As in the colorbar of Makie.jl, the computed levels are transformed back if a
+    # `colorscale` (e.g., `log10`) is used.
+    levels = Makie.apply_scale(Makie.inverse_transform(plt.colorscale[]),
+                               plt.computed_levels[])
     Makie.tricontour!(ax, x, y, values; triangulation = triangles, levels,
                       color = :black, linewidth = 0.5)
     Makie.limits!(ax, lon_limits..., lat_limits...)
@@ -73,27 +78,21 @@ function plot_spherical_layer!(ax, pds::PlotDataSeriesLonLat;
     return plt
 end
 
-# Plot a scalar quantity `func(u, equations)` directly from the solution, which creates a
-# `PlotDataShell` with the periodic boundary of the longitude at the lower limit of the
-# plotted range
-function plot_spherical_layer(func, args...; layer = :surface, nvisnodes = nothing,
-                              lon_limits = (0, 360), title = "", kwargs...)
-    pds = scalar_plot_data_series(func, args...; layer, nvisnodes, lon_limits)
-    return plot_spherical_layer(pds; lon_limits, title, kwargs...)
+# A `PlotDataShell` with a single variable, e.g., a scalar quantity such as the pressure,
+# can be plotted directly
+function Makie.contourf(pd::PlotDataShellLonLat; kwargs...)
+    return Makie.contourf(single_variable(pd); kwargs...)
 end
 
-function plot_spherical_layer!(ax, func, args...; layer = :surface, nvisnodes = nothing,
-                               lon_limits = (0, 360), kwargs...)
-    pds = scalar_plot_data_series(func, args...; layer, nvisnodes, lon_limits)
-    return plot_spherical_layer!(ax, pds; lon_limits, kwargs...)
+function Makie.contourf!(ax, pd::PlotDataShellLonLat; kwargs...)
+    return Makie.contourf!(ax, single_variable(pd); kwargs...)
 end
 
-function scalar_plot_data_series(func, args...; layer, nvisnodes, lon_limits)
-    pd = PlotDataShell(args...; solution_variables = func, layer, nvisnodes,
-                       projection = LonLat(lon_min = lon_limits[1]))
+function single_variable(pd::PlotDataShell)
     if length(pd) != 1
-        throw(ArgumentError("`func` must return a scalar quantity, got " *
-                            "$(length(pd)) variables"))
+        throw(ArgumentError("the `PlotDataShell` contains $(length(pd)) variables. " *
+                            "Select a single variable via `pd[variable_name]`, e.g., " *
+                            "`pd[\"$(first(keys(pd)))\"]`."))
     end
     return PlotDataSeries(pd, 1)
 end
@@ -114,33 +113,37 @@ function check_lon_limits(projection::LonLat, lon_limits)
     return nothing
 end
 
-# Return `n_bands + 1` equally spaced contour levels between the extrema of the values in
-# the plotted range of longitude and latitude. We choose the levels independently of the
-# values outside of this range. To this end, we use the vertices of all triangles whose
-# bounding box overlaps the plotted range. Since the values in a triangle are interpolated
-# linearly from its vertices, the levels cover all visible values, and there are no gaps in
-# the filled contours at the boundary of the axis.
-function default_levels(n_bands, lon, lat, values, triangles, lon_limits, lat_limits)
-    value_min = typemax(eltype(values))
-    value_max = typemin(eltype(values))
-    for triangle in eachcol(triangles)
+# Return the coordinates `lon` and `lat`, the `values`, and the `triangles` restricted to the
+# triangles whose bounding box overlaps the plotted range of longitude and latitude, with the
+# vertices of these triangles numbered consecutively.
+# Makie.jl computes the contour levels for an integer `levels` (and for `mode = :relative`)
+# from all values passed to it, independently of the limits of the axis. Since a
+# `PlotDataShell` always contains the whole sphere, we pass only these triangles to Makie.jl
+# such that the levels are chosen according to the values in the plotted range. Since the
+# values in a triangle are interpolated linearly from its vertices, the levels cover all
+# visible values, and there are no gaps in the filled contours at the boundary of the axis.
+# If no triangle overlaps the plotted range, all triangles are returned.
+function crop_triangulation(lon, lat, values, triangles, lon_limits, lat_limits)
+    is_visible = map(eachcol(triangles)) do triangle
         lon_min, lon_max = extrema(vertex -> lon[vertex], triangle)
         lat_min, lat_max = extrema(vertex -> lat[vertex], triangle)
-        if (lon_max >= lon_limits[1] && lon_min <= lon_limits[2] &&
-            lat_max >= lat_limits[1] && lat_min <= lat_limits[2])
-            for vertex in triangle
-                value_min = min(value_min, values[vertex])
-                value_max = max(value_max, values[vertex])
-            end
-        end
+        return (lon_max >= lon_limits[1] && lon_min <= lon_limits[2] &&
+                lat_max >= lat_limits[1] && lat_min <= lat_limits[2])
     end
-
-    # Use all values if no triangle overlaps the plotted range
-    if value_min > value_max
-        value_min, value_max = extrema(values)
+    if !any(is_visible)
+        return lon, lat, values, triangles
     end
+    visible_triangles = triangles[:, is_visible]
 
-    return range(value_min, value_max; length = n_bands + 1)
+    # Keep only the vertices of the visible triangles and number them consecutively
+    is_vertex = falses(length(lon))
+    is_vertex[visible_triangles] .= true
+    vertices = findall(is_vertex)
+    new_indices = zeros(Int, length(lon))
+    new_indices[vertices] .= eachindex(vertices)
+
+    return lon[vertices], lat[vertices], values[vertices],
+           new_indices[visible_triangles]
 end
 
 # Ticks at multiples of 30° within the plotted range. For small

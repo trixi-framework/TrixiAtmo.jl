@@ -10,9 +10,9 @@ for human readability.
 #### Added
 - The new type `PlotDataShell` holds the variables on a horizontal layer of a
   simulation on a spherical shell, triangulated in a map projection, currently the
-  longitude-latitude projection `LonLat`. With Makie.jl loaded, `plot_spherical_layer`
-  and `plot_spherical_layer!` create filled contour plots of its variables, e.g., of the
-  surface pressure of the baroclinic instability ([#266]).
+  longitude-latitude projection `LonLat`. With Makie.jl loaded, `Makie.contourf` and
+  `Makie.contourf!` create filled contour plots of its variables, e.g., of the surface
+  pressure of the baroclinic instability ([#266]).
 - `JacobianVerticalTwoSided` enables horizontally explicit, vertically implicit (HEVI) time
   integration of the `CompressibleEulerPotentialTemperatureEquationsWithGravity3D` on a
   `P4estMeshCubedSphereTopography` as linear operator of linearly implicit methods, i.e.,

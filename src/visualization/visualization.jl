@@ -41,9 +41,9 @@ terrain.
 All variables given by `solution_variables` are evaluated at once, and the visualization
 points are triangulated only once in the map projection, so that all variables can be plotted
 without repeating these steps. Single variables can be extracted via `pd[variable_name]` and
-plotted with [`plot_spherical_layer`](@ref) and [`plot_spherical_layer!`](@ref), which
-require Makie.jl. As for the plot data types of Trixi.jl, `keys(pd)` returns the variable
-names, and `pd` can be iterated over pairs of the variable names and the single variables.
+plotted with `Makie.contourf` and `Makie.contourf!` (see "Plotting" below). As for the plot
+data types of Trixi.jl, `keys(pd)` returns the variable names, and `pd` can be iterated over
+pairs of the variable names and the single variables.
 
 For simulations on GPUs, only the data at the nodes of the visualized layer is copied to the
 CPU. Parallel simulations with MPI are not supported.
@@ -63,6 +63,42 @@ CPU. Parallel simulations with MPI are not supported.
   twice the polynomial degree of the solver as for 2D plots in Trixi.jl.
 - `projection`: map projection of the visualization points; currently only [`LonLat`](@ref).
 
+# Plotting
+With Makie.jl loaded, a single variable `pds = pd[variable_name]` with the projection
+[`LonLat`](@ref) can be plotted as filled contours with contour lines in longitude-latitude
+coordinates via
+```julia
+fig, ax, plt = Makie.contourf(pds; kwargs...)
+plt = Makie.contourf!(ax, pds; kwargs...)
+```
+`Makie.contourf` creates a figure with an axis and a colorbar and returns a
+`Makie.FigureAxisPlot`, which can be destructured as above. `Makie.contourf!` adds the plot to
+the existing axis `ax` and returns the filled contour plot, e.g., to create a
+`Makie.Colorbar`. A `PlotDataShell` with a single variable, e.g., created with
+`solution_variables = pressure`, can also be passed directly instead of `pds`.
+
+The visualization points of each element are triangulated separately in the
+longitude-latitude plane. If a pole lies inside a cell of visualization points (e.g., for
+an odd number of trees per cube face dimension and an even `nvisnodes`), this cell cannot
+be represented and a small region around the pole remains empty.
+
+Keywords for plotting:
+- `lon_limits`, `lat_limits`: plotted range of longitude and latitude in degrees. The range of
+  longitude must lie in the range from `lon_min` to `lon_min + 360` of the projection
+  `LonLat(; lon_min)` and defaults to this range. Thus, a range of longitude including 0°,
+  e.g., `lon_limits = (-60, 180)` for the range from 60°W to 180°, requires a projection with
+  `lon_min <= -60`, e.g., `LonLat(lon_min = -60)` or `LonLat(lon_min = -180)`. The range of
+  latitude defaults to `(-90, 90)`.
+- `title`: title of the plot (only for `Makie.contourf`); defaults to the name of the variable.
+- `colormap`: colormap of the filled contours; defaults to `:viridis`.
+
+All other keywords are passed to `Makie.tricontourf!`, e.g., `levels` for the number of
+equally spaced contour bands (10 by default) or a vector of contour levels, and
+`extendlow = :auto` and `extendhigh = :auto` to also fill the regions with values outside of
+the given `levels`. Only the triangles overlapping the plotted range of longitude and latitude
+are passed to Makie.jl. Thus, the contour levels computed by Makie.jl for an integer `levels`
+(or for `mode = :relative`) depend only on the values in the plotted range.
+
 # Examples
 ```julia
 julia> pd = PlotDataShell(sol) # primitive variables at the surface
@@ -72,6 +108,28 @@ julia> keys(pd)
 
 julia> pd = PlotDataShell(sol; solution_variables = pressure, layer = 2,
                           projection = LonLat(lon_min = -180))
+```
+The surface pressure in hPa of the baroclinic instability (see
+[`initial_condition_baroclinic_instability`](@ref)) on the northern hemisphere from 0° to
+120°W can be plotted after a simulation with the elixir
+`elixir_potential_temperature_baroclinic_instability.jl` in
+`examples/euler/dry_air/global_circulation` via
+```julia
+using CairoMakie
+pressure_hpa(u, equations) = pressure(u, equations) / 100
+pd = PlotDataShell(sol; solution_variables = pressure_hpa,
+                   variable_names = "Surface pressure [hPa]")
+fig, ax, plt = contourf(pd; lon_limits = (0, 240), lat_limits = (0, 90),
+                        levels = 920:10:1030, colormap = :plasma,
+                        extendlow = :auto, extendhigh = :auto)
+save("surface_pressure.png", fig)
+```
+Several variables, e.g., the pressure and the first Cartesian component of the velocity at
+the surface, can be plotted using the same triangulation via
+```julia
+pd = PlotDataShell(sol) # primitive variables
+contourf(pd["p1"]; lon_limits = (0, 240), lat_limits = (0, 90))
+contourf(pd["v1"]; lon_limits = (0, 240), lat_limits = (0, 90))
 ```
 """
 struct PlotDataShell{Coordinates, Data, VariableNames, Projection} <:
@@ -434,84 +492,4 @@ function _push_point!(lon, lat, point_indices, lon_point, lat_point, point_index
     push!(point_indices, point_index)
     return length(lon)
 end
-
-"""
-    plot_spherical_layer(pds; kwargs...)
-    plot_spherical_layer(func, u_ode, semi; kwargs...)
-    plot_spherical_layer(func, sol; kwargs...)
-
-Create a filled contour plot in longitude-latitude coordinates of a single variable
-`pds = pd[variable_name]` of a [`PlotDataShell`](@ref) `pd` with the projection
-[`LonLat`](@ref). Return a `Makie.FigureAxisPlot` with the figure including a colorbar, the
-axis, and the filled contour plot, which can be destructured as
-`fig, ax, plt = plot_spherical_layer(...)`. This requires Makie.jl to be loaded.
-
-Since the `PlotDataShell` contains the triangulated visualization points and the values of all
-its variables, several variables can be plotted without extracting and triangulating the data
-again. For a single plot, the scalar quantity `func(u, equations)` (e.g., `pressure`) can be
-plotted directly from the solution `sol` or from `u_ode` and `semi`. This creates the
-`PlotDataShell` with `solution_variables = func` and the projection
-`LonLat(lon_min = lon_limits[1])`.
-
-The visualization points of each element are triangulated separately in the
-longitude-latitude plane. If a pole lies inside a cell of visualization points (e.g., for
-an odd number of trees per cube face dimension and an even `nvisnodes`), this cell cannot
-be represented and a small region around the pole remains empty.
-
-# Keywords
-- `layer`, `nvisnodes`: passed to [`PlotDataShell`](@ref) if it is created from `func`.
-- `lon_limits`, `lat_limits`: plotted range of longitude and latitude in degrees. The range of
-  longitude must lie in the range from `lon_min` to `lon_min + 360` of the projection
-  `LonLat(; lon_min)` and defaults to this range. Thus, a range of longitude including 0°,
-  e.g., `lon_limits = (-60, 180)` for the range from 60°W to 180°, requires a projection with
-  `lon_min <= -60`, e.g., `LonLat(lon_min = -60)` or `LonLat(lon_min = -180)`.
-- `levels`: number of equally spaced contour bands between the extrema of the values in
-  the plotted range of longitude and latitude, or vector of contour levels.
-- `colormap`: colormap of the filled contours.
-- `title`: title of the plot; defaults to the name of the variable for `pds` and to an empty
-  string for `func`.
-
-All other keywords are passed to `Makie.tricontourf!`, e.g., `extendlow = :auto` and
-`extendhigh = :auto` to also fill the regions with values outside of the given `levels`.
-
-# Examples
-The surface pressure in hPa of the baroclinic instability (see
-[`initial_condition_baroclinic_instability`](@ref)) on the northern hemisphere from 0° to
-120°W can be plotted after a simulation with the elixir
-`elixir_potential_temperature_baroclinic_instability.jl` in
-`examples/euler/dry_air/global_circulation` via
-```julia
-using CairoMakie
-pressure_hpa(u, equations) = pressure(u, equations) / 100
-pd = PlotDataShell(sol; solution_variables = pressure_hpa,
-                   variable_names = "Surface pressure [hPa]")
-fig, ax, plt = plot_spherical_layer(pd["Surface pressure [hPa]"];
-                                    lon_limits = (0, 240), lat_limits = (0, 90),
-                                    levels = 920:10:1030, colormap = :plasma,
-                                    extendlow = :auto, extendhigh = :auto)
-save("surface_pressure.png", fig)
-```
-Several variables, e.g., the pressure and the first Cartesian component of the velocity at
-the surface, can be plotted using the same triangulation via
-```julia
-pd = PlotDataShell(sol) # primitive variables
-plot_spherical_layer(pd["p1"]; lon_limits = (0, 240), lat_limits = (0, 90))
-plot_spherical_layer(pd["v1"]; lon_limits = (0, 240), lat_limits = (0, 90))
-```
-"""
-function plot_spherical_layer end
-
-"""
-    plot_spherical_layer!(ax, pds; kwargs...)
-    plot_spherical_layer!(ax, func, u_ode, semi; kwargs...)
-    plot_spherical_layer!(ax, func, sol; kwargs...)
-
-Add a filled contour plot with contour lines of a single variable `pds = pd[variable_name]`
-of a [`PlotDataShell`](@ref) `pd` or of the scalar quantity `func(u, equations)` to the
-existing Makie.jl axis `ax` and return the filled contour plot, e.g., to create a
-`Makie.Colorbar`. The keywords are the same as for [`plot_spherical_layer`](@ref) except for
-`title`, i.e., all other keywords are passed to `Makie.tricontourf!`. This requires Makie.jl
-to be loaded.
-"""
-function plot_spherical_layer! end
 end # @muladd

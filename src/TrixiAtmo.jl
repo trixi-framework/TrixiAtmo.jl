@@ -145,6 +145,6 @@ export P4estMeshCubedSphereTopography, GalChen, Sleve
 
 export examples_dir
 
-export PlotDataShell, LonLat, plot_spherical_layer, plot_spherical_layer!
+export PlotDataShell, LonLat
 
 end # module TrixiAtmo

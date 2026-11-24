@@ -256,21 +256,29 @@ end
     @test pd.triangles == triangulation.triangles
 end
 
-@testitem "Visualization: plot_spherical_layer" setup=[Setup, Visualization] tags=[:visualization] begin
+@testitem "Visualization: Makie.contourf" setup=[Setup, Visualization] tags=[:visualization] begin
     using CairoMakie: CairoMakie, Makie
 
     run_baroclinic_instability((2, 2))
+    ext = Base.get_extension(TrixiAtmo, :TrixiAtmoMakieExt)
+
+    # Contour lines drawn by `Makie.contourf!` in the axis `ax`
+    contour_lines(ax) = only(filter(plot -> plot isa Makie.Tricontour, ax.scene.plots))
 
     # Several variables of the same `PlotDataShell`
     pd = PlotDataShell(sol)
-    fap = plot_spherical_layer(pd["p1"]; lon_limits = (0, 240), lat_limits = (0, 90),
-                               levels = 5, colormap = :plasma)
+    fap = Makie.contourf(pd["p1"]; lon_limits = (0, 240), lat_limits = (0, 90),
+                         levels = 5, colormap = :plasma)
     @test fap isa Makie.FigureAxisPlot
     fig, ax, plt = fap
     @test fig isa Makie.Figure
     @test ax isa Makie.Axis
     @test plt isa Makie.Tricontourf
-    @test length(plt.levels[]) == 6
+    # An integer `levels` is passed to Makie.jl, which computes the levels
+    @test plt.levels[] == 5
+    @test length(plt.computed_levels[]) == 6
+    # The contour lines are drawn at the edges of the bands of the filled contours
+    @test contour_lines(ax).levels[] == plt.computed_levels[]
     # The title is the name of the variable by default
     @test ax.title[] == "p1"
     @test ax.limits[] == ((0, 240), (0, 90))
@@ -280,31 +288,63 @@ end
         @test isfile(filename)
     end
     # By default, the whole range of the projection is plotted
-    fig, ax, plt = plot_spherical_layer(pd["v1"]; title = "v1 [m/s]")
+    fig, ax, plt = Makie.contourf(pd["v1"]; title = "v1 [m/s]")
     @test plt isa Makie.Tricontourf
     @test ax.title[] == "v1 [m/s]"
     @test ax.limits[] == ((0, 360), (-90, 90))
+    levels = plt.computed_levels[]
+    @test first(levels) ≈ minimum(pd.data[:, 2])
+    @test last(levels) ≈ maximum(pd.data[:, 2])
+
+    # Makie.jl computes the levels only from the values of the triangles overlapping the
+    # plotted range. The surface pressure decreases towards the poles, so that its minimum
+    # between 0° and 30°N is larger than on the whole sphere.
+    fig, ax, plt = Makie.contourf(pd["p1"]; lat_limits = (0, 30))
+    _, _, values, _ = ext.crop_triangulation(pd.x, pd.y, pd.data[:, 5], pd.triangles,
+                                             (0, 360), (0, 30))
+    levels = plt.computed_levels[]
+    @test first(levels) ≈ minimum(values)
+    @test last(levels) ≈ maximum(values)
+    @test !(first(levels) ≈ minimum(pd.data[:, 5]))
+
+    # With a `colorscale`, the levels of the contour lines are transformed back as in the
+    # colorbar of Makie.jl
+    fig, ax, plt = Makie.contourf(pd["p1"]; levels = 5, colorscale = log10)
+    @test contour_lines(ax).levels[] ≈ exp10.(plt.computed_levels[])
 
     # The plotted range of longitude must lie in the range of the projection
-    @test_throws ArgumentError plot_spherical_layer(pd["p1"]; lon_limits = (-60, 180))
-    @test_throws ArgumentError plot_spherical_layer(pd["p1"]; lon_limits = (0, 400))
+    @test_throws ArgumentError Makie.contourf(pd["p1"]; lon_limits = (-60, 180))
+    @test_throws ArgumentError Makie.contourf(pd["p1"]; lon_limits = (0, 400))
     pd = PlotDataShell(sol; projection = LonLat(lon_min = -60))
-    fig, ax, plt = plot_spherical_layer(pd["p1"]; lon_limits = (-60, 180))
+    fig, ax, plt = Makie.contourf(pd["p1"]; lon_limits = (-60, 180))
     @test ax.limits[] == ((-60, 180), (-90, 90))
-    fig, ax, plt = plot_spherical_layer(pd["p1"])
+    fig, ax, plt = Makie.contourf(pd["p1"])
     @test ax.limits[] == ((-60, 300), (-90, 90))
 
-    # A scalar quantity can be plotted directly from the solution
+    # A `PlotDataShell` with a single variable can be plotted directly
     pressure_hpa(u, equations) = pressure(u, equations) / 100
-    fig, ax, plt = plot_spherical_layer(pressure_hpa, sol;
-                                        lon_limits = (-60, 180), lat_limits = (0, 90),
-                                        levels = 5, colormap = :plasma,
-                                        title = "Surface Pressure [hPa]")
+    pd = PlotDataShell(sol; solution_variables = pressure_hpa,
+                       projection = LonLat(lon_min = -60))
+    fig, ax, plt = Makie.contourf(pd; lon_limits = (-60, 180), lat_limits = (0, 90),
+                                  levels = 5, colormap = :plasma)
     @test plt isa Makie.Tricontourf
-    @test length(plt.levels[]) == 6
-    @test ax.title[] == "Surface Pressure [hPa]"
+    @test length(plt.computed_levels[]) == 6
+    @test ax.title[] == "pressure_hpa"
     @test ax.limits[] == ((-60, 180), (0, 90))
-    @test_throws ArgumentError plot_spherical_layer(cons2prim, sol)
+    fig, ax, plt = Makie.contourf(pd; title = "Surface Pressure [hPa]")
+    @test ax.title[] == "Surface Pressure [hPa]"
+    @test_throws ArgumentError Makie.contourf(PlotDataShell(sol))
+    @test_throws ArgumentError Makie.contourf!(ax, PlotDataShell(sol))
+
+    # For the nearly constant surface pressure of the initial condition, Makie.jl puts all
+    # values into a single band instead of showing round-off errors, also for the default
+    # (even) number of bands
+    pd = PlotDataShell(ode.u0, semi; solution_variables = pressure_hpa)
+    values = vec(pd.data)
+    @test isapprox(minimum(values), maximum(values))
+    fig, ax, plt = Makie.contourf(pd)
+    @test !any(level -> minimum(values) <= level <= maximum(values),
+               plt.computed_levels[])
 
     fig = Makie.Figure()
     ax = Makie.Axis(fig[1, 1])
@@ -312,30 +352,30 @@ end
                        layer = 2, nvisnodes = 6)
     levels = range(extrema(pd.data)...; length = 6)
     # Additional keywords are passed to `Makie.tricontourf!`
-    plt = plot_spherical_layer!(ax, pd["p"]; levels, extendhigh = :auto)
+    plt = Makie.contourf!(ax, pd["p"]; levels, extendhigh = :auto)
     @test plt isa Makie.Tricontourf
     @test plt.extendhigh[] === :auto
-    plt = plot_spherical_layer!(ax, pressure_hpa, sol.u[end], semi; layer = 2,
-                                nvisnodes = 6, levels, extendhigh = :auto)
+    @test plt.computed_levels[] ≈ levels
+    plt = Makie.contourf!(ax, pd; levels, extendhigh = :auto)
     @test plt isa Makie.Tricontourf
     @test plt.extendhigh[] === :auto
 
-    ext = Base.get_extension(TrixiAtmo, :TrixiAtmoMakieExt)
-
-    # The default levels only use the values at the vertices of triangles overlapping the
-    # plotted range. Here, the second triangle lies in the southern hemisphere.
-    lon = [10.0, 20.0, 10.0, 200.0, 250.0, 200.0]
-    lat = [10.0, 10.0, 20.0, -50.0, -50.0, -40.0]
-    values = [1.0, 2.0, 3.0, -100.0, 100.0, 50.0]
-    triangles = [1 4; 2 5; 3 6]
-    @test ext.default_levels(5, lon, lat, values, triangles, (0, 240), (0, 90)) ≈
-          range(1, 3; length = 6)
-    # Triangles crossing the boundary of the plotted range are used as well
-    @test ext.default_levels(5, lon, lat, values, triangles, (0, 240), (-45, 90)) ≈
-          range(-100, 100; length = 6)
-    # If no triangle overlaps the plotted range, all values are used
-    @test ext.default_levels(2, lon, lat, values, triangles, (100, 180), (0, 90)) ≈
-          range(-100, 100; length = 3)
+    # Only the triangles overlapping the plotted range are passed to Makie.jl, with their
+    # vertices numbered consecutively. Here, the first triangle lies in the southern
+    # hemisphere.
+    lon = [200.0, 250.0, 200.0, 10.0, 20.0, 10.0]
+    lat = [-50.0, -50.0, -40.0, 10.0, 10.0, 20.0]
+    values = [-100.0, 100.0, 50.0, 1.0, 2.0, 3.0]
+    triangles = [1 6; 2 4; 3 5]
+    @test ext.crop_triangulation(lon, lat, values, triangles, (0, 240), (0, 90)) ==
+          ([10.0, 20.0, 10.0], [10.0, 10.0, 20.0], [1.0, 2.0, 3.0],
+           reshape([3, 1, 2], 3, 1))
+    # Triangles crossing the boundary of the plotted range are kept as well
+    @test ext.crop_triangulation(lon, lat, values, triangles, (0, 240), (-45, 90)) ==
+          (lon, lat, values, triangles)
+    # If no triangle overlaps the plotted range, all triangles are kept
+    @test ext.crop_triangulation(lon, lat, values, triangles, (100, 180), (0, 90)) ==
+          (lon, lat, values, triangles)
 
     # Ticks and their labels
     @test ext.degree_ticks((0, 240)) == 0:30:240
