@@ -37,7 +37,7 @@ Exner pressure ``\pi = (p / p_0)^{R / c_p}``, and the mixing ratios
 ``q_x = \varrho_x / \varrho_d``. The water falls in the direction ``-\hat{k}``, where
 ``\hat{k}`` is the upward unit vector. The pressure follows from Dalton's law
 ``p = (\varrho_d R + \varrho_v R_v) T``, i.e., ``p = K (\varrho \theta_v)^\gamma``, which
-depends on the fifth variable only.
+depends on the fifth variable (``\theta_v``) only.
 
 The auxiliary variables, see `Trixi.nauxvariables`, are the geopotential ``\phi`` and the
 Cartesian components of ``\hat{k}``, i.e., `aux = SVector(phi, k1, k2, k3)`. Their values
