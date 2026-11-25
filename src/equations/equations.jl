@@ -139,8 +139,7 @@ function cartesian2global(u, x, equations::AbstractEquations)
     return u
 end
 
-# Default cons2cons and prim2cons methods which take in unused aux_vars variable
-@inline Trixi.cons2cons(u, aux_vars, ::AbstractEquations) = u
+# Default prim2cons method which takes in unused aux_vars variable
 @inline Trixi.prim2cons(u, aux_vars, ::AbstractEquations) = u
 
 # For the covariant form, the auxiliary variables are the the NDIMS*NDIMS_AMBIENT entries
