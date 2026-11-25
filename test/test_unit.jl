@@ -869,6 +869,26 @@ end
     end
 end
 
+@testitem "Unit: Conversions with auxiliary variables for 3D equations with gravity" setup=[Setup] tags=[:unit_fluxes] begin
+    # The conversions do not depend on the geopotential, so the methods with auxiliary
+    # variables must agree with the ones without
+    prim = SVector(1.1, 2.0, -1.5, 0.5, 9.0e4)
+    aux = SVector(1700.0)
+    for equations in (CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
+                                                                                  c_v = 717.0,
+                                                                                  gravity = EARTH_GRAVITATIONAL_ACCELERATION),
+                      CompressibleEulerEnergyEquationsWithGravity3D(c_p = 1004.0,
+                                                                    c_v = 717.0,
+                                                                    gravity = EARTH_GRAVITATIONAL_ACCELERATION),
+                      CompressibleEulerVectorInvariantEquationsWithGravity3D(c_p = 1004.0,
+                                                                             c_v = 717.0,
+                                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION))
+        u = prim2cons(prim, equations)
+        @test prim2cons(prim, aux, equations) == u
+        @test cons2prim(u, aux, equations) ≈ prim
+    end
+end
+
 @testitem "Unit: Consistency check for fluxes with Moist Potential Temperature: CEMPTE3D" setup=[Setup] tags=[:unit_fluxes] begin
     equations = CompressibleEulerMoistPotentialTemperatureEquations3D(c_p = 1004.0,
                                                                       c_v = 717.0,
@@ -948,8 +968,8 @@ end
     end
 
     # Without water, the physical and the volume flux are the ones of the dry equations,
-    # whose only auxiliary variable is the geopotential. The surface flux is not compared
-    # since `flux_lmars_combined` of the dry equations uses a constant speed of sound.
+    # whose auxiliary variable is the geopotential. The surface flux is not compared since
+    # `flux_lmars_combined` of the dry equations uses a constant speed of sound.
     equations_dry = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
                                                                                 c_v = 717.0,
                                                                                 gravity = EARTH_GRAVITATIONAL_ACCELERATION)
@@ -964,9 +984,8 @@ end
         for i in 1:2
             @test flux_kennedy_gruber_souza_etal(dry(u_ll), dry(u_rr), aux_ll, aux_rr,
                                                  normal_direction, equations)[i][1:5] ≈
-                  flux_kennedy_gruber_souza_etal(u_ll_dry, u_rr_dry, aux_ll_dry,
-                                                 aux_rr_dry, normal_direction,
-                                                 equations_dry)[i]
+                  flux_kennedy_gruber_souza_etal(u_ll_dry, u_rr_dry, aux_ll_dry, aux_rr_dry,
+                                                 normal_direction, equations_dry)[i]
         end
     end
 
@@ -1193,24 +1212,4 @@ end
     @test_throws ArgumentError TurbulentDiffusion3D(CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
                                                                                                                 c_v = 717.0,
                                                                                                                 gravity = EARTH_GRAVITATIONAL_ACCELERATION))
-end
-
-@testitem "Unit: Conversions with auxiliary variables for 3D equations with gravity" setup=[Setup] tags=[:unit_fluxes] begin
-    # The conversions do not depend on the geopotential, so the methods with auxiliary
-    # variables must agree with the ones without
-    prim = SVector(1.1, 2.0, -1.5, 0.5, 9.0e4)
-    aux = SVector(1700.0)
-    for equations in (CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
-                                                                                  c_v = 717.0,
-                                                                                  gravity = EARTH_GRAVITATIONAL_ACCELERATION),
-                      CompressibleEulerEnergyEquationsWithGravity3D(c_p = 1004.0,
-                                                                    c_v = 717.0,
-                                                                    gravity = EARTH_GRAVITATIONAL_ACCELERATION),
-                      CompressibleEulerVectorInvariantEquationsWithGravity3D(c_p = 1004.0,
-                                                                             c_v = 717.0,
-                                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION))
-        u = prim2cons(prim, equations)
-        @test prim2cons(prim, aux, equations) == u
-        @test cons2prim(u, aux, equations) ≈ prim
-    end
 end
