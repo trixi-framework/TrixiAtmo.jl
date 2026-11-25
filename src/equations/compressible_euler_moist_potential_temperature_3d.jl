@@ -7,7 +7,7 @@
                                                           microphysics = KesslerMicrophysics())
 
 The compressible Euler equations with gravity in potential temperature formulation with
-moisture, whose moisture variables, falling water, and right-hand sides are given by the
+moisture, whose moisture variables, precipitation, and right-hand sides are given by the
 microphysics scheme `microphysics`, e.g., [`KesslerMicrophysics`](@ref) with water vapor,
 cloud water, and rain water as in the test cases of DCMIP2016,
 ```math
@@ -24,7 +24,7 @@ cloud water, and rain water as in the test cases of DCMIP2016,
 for each moisture variable ``\varrho_x``, the first of which is the density of water vapor
 ``\varrho_v``. Here, the total density ``\varrho = \varrho_d + \sum_x \varrho_x`` sums the
 density of dry air and the moisture variables that are densities of water, ``F_x`` is the
-downward flux of the falling water of ``\varrho_x`` through a horizontal surface, ``F`` the
+downward flux of the precipitation of ``\varrho_x`` through a horizontal surface, ``F`` the
 sum of the ones of the densities of water, and ``S_x`` and the isobaric heating rate
 ``\partial_t T`` are the right-hand sides of the microphysics, see
 [`source_terms_microphysics`](@ref). The virtual potential temperature
@@ -34,10 +34,10 @@ sum of the ones of the densities of water, and ``S_x`` and the isobaric heating 
 includes the weight of the condensed water, with the gas constants ``R = c_p - c_v`` of dry
 air and ``R_v`` of water vapor, the dry potential temperature ``\theta = T / \pi``, the
 Exner pressure ``\pi = (p / p_0)^{R / c_p}``, and the mixing ratios
-``q_x = \varrho_x / \varrho_d``. The water falls in the direction ``-\hat{k}``, where
-``\hat{k}`` is the upward unit vector. The pressure follows from Dalton's law
+``q_x = \varrho_x / \varrho_d``. The precipitation falls in the direction ``-\hat{k}``,
+where ``\hat{k}`` is the upward unit vector. The pressure follows from Dalton's law
 ``p = (\varrho_d R + \varrho_v R_v) T``, i.e., ``p = K (\varrho \theta_v)^\gamma``, which
-depends on the fifth variable only.
+depends on the fifth variable (``\theta_v``) only.
 
 The auxiliary variables, see `Trixi.nauxvariables`, are the geopotential ``\phi`` and the
 Cartesian components of ``\hat{k}``, i.e., `aux = SVector(phi, k1, k2, k3)`. Their values
@@ -128,9 +128,9 @@ end
 
 # Slip-wall boundary condition
 # As usual, the external state mirrors the normal velocity, such that there is no flux of
-# mass through the boundary. In addition, the falling water leaves the domain through the
-# lower boundary (precipitation) with the sedimentation flux of the inner state, while no
-# water falls into the domain through the upper boundary. There are no separate auxiliary
+# mass through the boundary. In addition, the precipitation leaves the domain through the
+# lower boundary with the sedimentation flux of the inner state, while no precipitation
+# falls into the domain through the upper boundary. There are no separate auxiliary
 # variables outside of the domain, so the inner ones are used on both sides.
 @inline function boundary_condition_slip_wall(u_inner, aux_inner,
                                               normal_direction::AbstractVector,
@@ -169,22 +169,23 @@ end
            aux[4] * normal_direction[3]
 end
 
-# Flux of the falling water through a face with the normal direction `normal_direction`,
-# i.e., of the total density, of the momentum carried by the falling water with the
+# Flux of the precipitation through a face with the normal direction `normal_direction`,
+# i.e., of the total density, of the momentum carried by the precipitation with the
 # velocity of the state `u`, and of the moisture variables
 @inline function flux_sedimentation(u, aux, normal_direction::AbstractVector,
                                     equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
     rho = u[1]
-    water, moisture = sedimentation(moisture_variables(u, equations),
-                                    density_dry(u, equations), equations.microphysics)
+    precipitation, moisture = sedimentation(moisture_variables(u, equations),
+                                            density_dry(u, equations),
+                                            equations.microphysics)
     k_normal = vertical_component(aux, normal_direction, equations)
-    water_normal = water * k_normal
+    precipitation_normal = precipitation * k_normal
 
-    return SVector(water_normal,
-                   water_normal * (u[2] / rho),
-                   water_normal * (u[3] / rho),
-                   water_normal * (u[4] / rho),
-                   zero(water_normal),
+    return SVector(precipitation_normal,
+                   precipitation_normal * (u[2] / rho),
+                   precipitation_normal * (u[3] / rho),
+                   precipitation_normal * (u[4] / rho),
+                   zero(precipitation_normal),
                    (moisture * k_normal)...)
 end
 
@@ -213,7 +214,7 @@ end
 
 # Kinetic energy preserving flux of Kennedy and Gruber (2008) with the virtual potential
 # temperature and the moisture variables advected as specific quantities, central fluxes of
-# the falling water, and the gravity of `flux_nonconservative_souza_etal` acting on the
+# the precipitation, and the gravity of `flux_nonconservative_souza_etal` acting on the
 # total density
 @inline function flux_kennedy_gruber_souza_etal(u_ll, u_rr, aux_ll, aux_rr,
                                                 normal_direction::AbstractVector,
@@ -266,7 +267,7 @@ end
 @inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_kennedy_gruber_souza_etal), ::CompressibleEulerMoistPotentialTemperatureEquations3D) = Trixi.True()
 
 # Low Mach number approximate Riemann solver (LMARS) with the moisture variables upwinded
-# with the interface velocity and without the falling water, see `flux_lmars_combined`
+# with the interface velocity and without the precipitation, see `flux_lmars_combined`
 @inline function flux_lmars_without_sedimentation(u_ll, u_rr, aux_ll, aux_rr,
                                                   normal_direction::AbstractVector,
                                                   equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
@@ -306,7 +307,7 @@ end
                    f[5], moisture_variables(f, equations)...)
 end
 
-# LMARS with the sedimentation upwinded in the direction of the falling water. The
+# LMARS with the sedimentation upwinded in the direction of the precipitation. The
 # geopotential is continuous across interfaces, so the nonconservative gravity term
 # vanishes on the surface and both contributions are given by the conservative flux.
 @inline function flux_lmars_combined(u_ll, u_rr, aux_ll, aux_rr,
@@ -315,8 +316,8 @@ end
     flux = flux_lmars_without_sedimentation(u_ll, u_rr, aux_ll, aux_rr,
                                             normal_direction, equations)
 
-    # The water falls in the direction of `-k`, i.e., from the right state if the normal
-    # direction points upwards
+    # The precipitation falls in the direction of `-k`, i.e., from the right state if the
+    # normal direction points upwards
     k_normal = 0.5f0 * (vertical_component(aux_ll, normal_direction, equations) +
                 vertical_component(aux_rr, normal_direction, equations))
     if k_normal > 0
@@ -368,14 +369,14 @@ end
     return pressure(u, equations) / (rho_dry * equations.R + u[6] * equations.R_v)
 end
 
-# Largest terminal velocity of the falling water of the state `u`
+# Largest terminal velocity of the precipitation of the state `u`
 @inline function max_terminal_velocity(u,
                                        equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
     return max_terminal_velocity(moisture_variables(u, equations),
                                  density_dry(u, equations), equations.microphysics)
 end
 
-# The water falls with the terminal velocity in the direction of `-k`
+# The precipitation falls with the terminal velocity in the direction of `-k`
 @inline function max_abs_speeds(u, aux,
                                 equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
     rho, v1, v2, v3, p = cons2prim(u, aux, equations)

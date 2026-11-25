@@ -975,8 +975,8 @@ end
     equations = CompressibleEulerMoistPotentialTemperatureEquations3D(c_p = 1004.5,
                                                                       c_v = 717.5,
                                                                       gravity = EARTH_GRAVITATIONAL_ACCELERATION)
-    (; R, R_v, c_p, p_0) = equations
-    (; latent_heat, condensation_time) = equations.microphysics
+    @unpack R, R_v, c_p, p_0 = equations
+    @unpack latent_heat, condensation_time = equations.microphysics
     aux = SVector(1000.0, 0.0, 0.0, 1.0)
 
     # Right-hand sides of the mixing ratios `q_v`, `q_c`, and `q_r` and isobaric heating
