@@ -266,61 +266,6 @@ end
 
 @inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_kennedy_gruber_souza_etal), ::CompressibleEulerMoistPotentialTemperatureEquations3D) = Trixi.True()
 
-# `flux_ec` of the dry equations with the total density and the virtual potential
-# temperature, the moisture variables advected as specific quantities with the arithmetic
-# mean, central fluxes of the precipitation, and the gravity of
-# `flux_nonconservative_isothermal` acting on the logarithmic mean of the total density
-@inline function flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector,
-                         equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
-    rho_ll, rho_v1_ll, rho_v2_ll, rho_v3_ll, rho_theta_v_ll = u_ll
-    rho_rr, rho_v1_rr, rho_v2_rr, rho_v3_rr, rho_theta_v_rr = u_rr
-    v1_ll = rho_v1_ll / rho_ll
-    v2_ll = rho_v2_ll / rho_ll
-    v3_ll = rho_v3_ll / rho_ll
-    v1_rr = rho_v1_rr / rho_rr
-    v2_rr = rho_v2_rr / rho_rr
-    v3_rr = rho_v3_rr / rho_rr
-    p_ll = pressure(u_ll, equations)
-    p_rr = pressure(u_rr, equations)
-    v_dot_n_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2] +
-                 v3_ll * normal_direction[3]
-    v_dot_n_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2] +
-                 v3_rr * normal_direction[3]
-
-    rho_mean = ln_mean(rho_ll, rho_rr)
-    v1_avg = 0.5f0 * (v1_ll + v1_rr)
-    v2_avg = 0.5f0 * (v2_ll + v2_rr)
-    v3_avg = 0.5f0 * (v3_ll + v3_rr)
-    p_avg = 0.5f0 * (p_ll + p_rr)
-
-    # Conservative part
-    f1 = rho_mean * 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
-    f2 = f1 * v1_avg + p_avg * normal_direction[1]
-    f3 = f1 * v2_avg + p_avg * normal_direction[2]
-    f4 = f1 * v3_avg + p_avg * normal_direction[3]
-    f5 = f1 * inv_ln_mean(rho_ll / rho_theta_v_ll, rho_rr / rho_theta_v_rr)
-    f_moisture = f1 * 0.5f0 *
-                 (moisture_variables(u_ll, equations) / rho_ll +
-                  moisture_variables(u_rr, equations) / rho_rr)
-    flux = (SVector(f1, f2, f3, f4, f5, f_moisture...) -
-            0.5f0 * (flux_sedimentation(u_ll, aux_ll, normal_direction, equations) +
-             flux_sedimentation(u_rr, aux_rr, normal_direction, equations)))
-
-    # Nonconservative part, scaled by 0.5
-    gravity = 0.5f0 * rho_mean * (aux_rr[1] - aux_ll[1])
-    zero_ = zero(gravity)
-    g = SVector(zero_,
-                normal_direction[1] * gravity,
-                normal_direction[2] * gravity,
-                normal_direction[3] * gravity,
-                zero_,
-                ntuple(_ -> zero_, Val(nvariables(equations) - 5))...)
-
-    return flux + g, flux - g
-end
-
-@inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_ec), ::CompressibleEulerMoistPotentialTemperatureEquations3D) = Trixi.True()
-
 # Low Mach number approximate Riemann solver (LMARS) with the moisture variables upwinded
 # with the interface velocity and without the precipitation, see `flux_lmars_combined`
 @inline function flux_lmars_without_sedimentation(u_ll, u_rr, aux_ll, aux_rr,
@@ -520,26 +465,22 @@ change the dry air, the right-hand side of
 end
 end # @muladd
 
-# Specializations of the `FluxTurbo` interface of Trixi.jl for the volume fluxes
-# `FluxTurbo(flux_kennedy_gruber_souza_etal)` and `FluxTurbo(flux_ec)` with the
-# `KesslerMicrophysics`.
+# Specialization of the `FluxTurbo` interface of Trixi.jl for the volume flux
+# `FluxTurbo(flux_kennedy_gruber_souza_etal)` with the `KesslerMicrophysics`.
 # We do not wrap this code in `@muladd begin ... end` block. Optimizations like
 # this are handled automatically by LoopVectorization.jl.
 # We precompute `rho, v1, v2, v3, p`, the specific quantities `u[5:8] / rho`, the rain flux
 # `rho_rain * V_r * k`, and the geopotential, i.e., 13 quantities. The `@turbo` kernels of
 # Trixi.jl pass `2 * nturbovars + 5` arguments to `flux_turbo`, and LoopVectorization.jl
-# allows at most 32, so `V_r` and `k` are not precomputed separately. Both fluxes use the
-# same precomputed variables.
-@inline function Trixi.nturbovars(::Union{typeof(flux_kennedy_gruber_souza_etal),
-                                          typeof(flux_ec)},
+# allows at most 32, so `V_r` and `k` are not precomputed separately.
+@inline function Trixi.nturbovars(::typeof(flux_kennedy_gruber_souza_etal),
                                   ::CompressibleEulerMoistPotentialTemperatureEquations3D{<:Any,
                                                                                           <:Any,
                                                                                           <:KesslerMicrophysics})
     return Val(13)
 end
 
-@inline function Trixi.cons2turbo(::Union{typeof(flux_kennedy_gruber_souza_etal),
-                                          typeof(flux_ec)},
+@inline function Trixi.cons2turbo(::typeof(flux_kennedy_gruber_souza_etal),
                                   rho, rho_v1, rho_v2, rho_v3, rho_theta_v, rho_vapor,
                                   rho_cloud, rho_rain, phi, k1, k2, k3,
                                   equations::CompressibleEulerMoistPotentialTemperatureEquations3D{<:Any,
@@ -607,64 +548,6 @@ end
     # Nonconservative part, scaled by 0.5. Since it is antisymmetric, the right contribution
     # is obtained by flipping the sign.
     gravity = 0.5f0 * rho_avg * (phi_rr - phi_ll)
-    g2 = normal_direction_1 * gravity
-    g3 = normal_direction_2 * gravity
-    g4 = normal_direction_3 * gravity
-
-    flux_left = SVector(f1, f2 + g2, f3 + g3, f4 + g4, f5, f6, f7, f8)
-    flux_right = SVector(f1, f2 - g2, f3 - g3, f4 - g4, f5, f6, f7, f8)
-
-    return flux_left, flux_right
-end
-
-@inline function Trixi.flux_turbo(::typeof(flux_ec),
-                                  rho_ll, v1_ll, v2_ll, v3_ll, p_ll, theta_v_ll, q_v_ll,
-                                  q_c_ll, q_r_ll, rain_k1_ll, rain_k2_ll, rain_k3_ll,
-                                  phi_ll,
-                                  rho_rr, v1_rr, v2_rr, v3_rr, p_rr, theta_v_rr, q_v_rr,
-                                  q_c_rr, q_r_rr, rain_k1_rr, rain_k2_rr, rain_k3_rr,
-                                  phi_rr,
-                                  normal_direction_1, normal_direction_2,
-                                  normal_direction_3,
-                                  equations::CompressibleEulerMoistPotentialTemperatureEquations3D{<:Any,
-                                                                                                   <:Any,
-                                                                                                   <:KesslerMicrophysics})
-    v_dot_n_ll = v1_ll * normal_direction_1 + v2_ll * normal_direction_2 +
-                 v3_ll * normal_direction_3
-    v_dot_n_rr = v1_rr * normal_direction_1 + v2_rr * normal_direction_2 +
-                 v3_rr * normal_direction_3
-
-    rho_mean = ln_mean(rho_ll, rho_rr)
-    v1_avg = 0.5f0 * (v1_ll + v1_rr)
-    v2_avg = 0.5f0 * (v2_ll + v2_rr)
-    v3_avg = 0.5f0 * (v3_ll + v3_rr)
-    p_avg = 0.5f0 * (p_ll + p_rr)
-
-    # Central flux of the falling rain, see `flux_sedimentation`
-    sedimentation_ll = rain_k1_ll * normal_direction_1 + rain_k2_ll * normal_direction_2 +
-                       rain_k3_ll * normal_direction_3
-    sedimentation_rr = rain_k1_rr * normal_direction_1 + rain_k2_rr * normal_direction_2 +
-                       rain_k3_rr * normal_direction_3
-    sedimentation_avg = 0.5f0 * (sedimentation_ll + sedimentation_rr)
-
-    # Conservative part, i.e., `flux_ec`. Since `rho / rho_theta_v = 1 / theta_v`, the
-    # virtual potential temperature flux uses the same mean value as in `flux_ec`.
-    f1 = rho_mean * 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
-    f2 = f1 * v1_avg + p_avg * normal_direction_1 -
-         0.5f0 * (sedimentation_ll * v1_ll + sedimentation_rr * v1_rr)
-    f3 = f1 * v2_avg + p_avg * normal_direction_2 -
-         0.5f0 * (sedimentation_ll * v2_ll + sedimentation_rr * v2_rr)
-    f4 = f1 * v3_avg + p_avg * normal_direction_3 -
-         0.5f0 * (sedimentation_ll * v3_ll + sedimentation_rr * v3_rr)
-    f5 = f1 * inv_ln_mean(1 / theta_v_ll, 1 / theta_v_rr)
-    f6 = f1 * 0.5f0 * (q_v_ll + q_v_rr)
-    f7 = f1 * 0.5f0 * (q_c_ll + q_c_rr)
-    f8 = f1 * 0.5f0 * (q_r_ll + q_r_rr) - sedimentation_avg
-    f1 = f1 - sedimentation_avg
-
-    # Nonconservative part, scaled by 0.5. Since it is antisymmetric, the right contribution
-    # is obtained by flipping the sign.
-    gravity = 0.5f0 * rho_mean * (phi_rr - phi_ll)
     g2 = normal_direction_1 * gravity
     g3 = normal_direction_2 * gravity
     g4 = normal_direction_3 * gravity
