@@ -126,8 +126,7 @@ pressure_hpa(u, equations) = pressure(u, equations) / 100
 pd = PlotDataShell(sol; solution_variables = pressure_hpa,
                    variable_names = "Surface pressure [hPa]")
 fig, ax, plt = contourf(pd; lon_limits = (0, 240), lat_limits = (0, 90),
-                        levels = 920:10:1030, colormap = :plasma,
-                        extendlow = :auto, extendhigh = :auto)
+                        levels = 11, colormap = :plasma)
 save("surface_pressure.png", fig)
 ```
 Several variables, e.g., the pressure and the first Cartesian component of the velocity at
