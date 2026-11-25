@@ -612,10 +612,10 @@ end
     # Check consistency between the 2D and 3D gravity terms
     equations_2d = CompressibleEulerEnergyEquationsWithGravity2D(c_p = 1004.0, c_v = 717.0,
                                                                  gravity = EARTH_GRAVITATIONAL_ACCELERATION)
-    u_ll_2d = prim2cons(SVector(1.1, 2.0, -1.5, 9.0e4), equations_2d)
-    u_rr_2d = prim2cons(SVector(0.9, -1.0, 3.0, 7.5e4), equations_2d)
     aux_ll_2d = SVector(1700.0)
     aux_rr_2d = SVector(2900.0)
+    u_ll_2d = prim2cons(SVector(1.1, 2.0, -1.5, 9.0e4), aux_ll_2d, equations_2d)
+    u_rr_2d = prim2cons(SVector(0.9, -1.0, 3.0, 7.5e4), aux_rr_2d, equations_2d)
     u_ll_3d = prim2cons(SVector(1.1, 2.0, -1.5, 0.0, 9.0e4, 1700.0), equations)
     u_rr_3d = prim2cons(SVector(0.9, -1.0, 3.0, 0.0, 7.5e4, 2900.0), equations)
     for normal_direction in (SVector(1.0, 0.0), SVector(0.0, 1.0), SVector(0.5, -0.5),

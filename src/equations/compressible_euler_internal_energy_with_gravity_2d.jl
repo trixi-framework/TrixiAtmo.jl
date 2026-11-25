@@ -265,19 +265,13 @@ Nonconservative part of the entropy stable two-point flux by
     return SVector(zero(eltype(u_ll)), zero(eltype(u_ll)), zero(eltype(u_ll)), v_p_mean)
 end
 
-@inline function prim2cons(prim,
+@inline function prim2cons(prim, aux,
                            equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
     rho, v1, v2, p = prim
     rho_v1 = rho * v1
     rho_v2 = rho * v2
     rho_e_internal = p * equations.inv_gamma_minus_one
     return SVector(rho, rho_v1, rho_v2, rho_e_internal)
-end
-
-# The conversion does not depend on the geopotential
-@inline function prim2cons(prim, aux,
-                           equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
-    return prim2cons(prim, equations)
 end
 
 @inline function cons2prim(u, aux,
@@ -289,7 +283,7 @@ end
     return SVector(rho, v1, v2, p)
 end
 
-@inline function cons2cons(u,
+@inline function cons2cons(u, aux,
                            equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
     return u
 end
@@ -307,14 +301,14 @@ end
 
 @inline function entropy(cons, aux,
                          equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
-    p = pressure(cons, equations)
+    p = pressure(cons, aux, equations)
     # Thermodynamic entropy
     s = log(p) - equations.gamma * log(cons[1])
     S = -s * cons[1] / (equations.gamma - 1)
     return S
 end
 
-@inline function pressure(cons,
+@inline function pressure(cons, aux,
                           equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
     p = (equations.gamma - 1) * cons[4]
     return p

@@ -127,7 +127,7 @@ end
     v2 = rho_v2 / rho
     v_normal = v1 * normal_direction[1] + v2 * normal_direction[2]
     rho_v_normal = rho * v_normal
-    p = pressure(u, equations)
+    p = pressure(u, aux, equations)
 
     f1 = rho_v_normal
     f2 = (rho_v_normal) * v1 + p * normal_direction[1]
@@ -143,7 +143,7 @@ end
     rho, rho_v1, rho_v2, rho_theta = u
     v1 = rho_v1 / rho
     v2 = rho_v2 / rho
-    p = pressure(u, equations)
+    p = pressure(u, aux, equations)
     if orientation == 1
         f1 = rho_v1
         f2 = rho_v1 * v1 + p
@@ -477,19 +477,13 @@ Entropy and total energy conservative two-point flux by
     return SVector(f1, f2, f3, f4)
 end
 
-@inline function prim2cons(prim,
+@inline function prim2cons(prim, aux,
                            equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     rho, v1, v2, p = prim
     rho_v1 = rho * v1
     rho_v2 = rho * v2
     rho_theta = (p / equations.p_0)^(1 / equations.gamma) * equations.p_0 / equations.R
     return SVector(rho, rho_v1, rho_v2, rho_theta)
-end
-
-# The conversion does not depend on the geopotential
-@inline function prim2cons(prim, aux,
-                           equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
-    return prim2cons(prim, equations)
 end
 
 @inline function cons2prim(u, aux,
@@ -501,7 +495,7 @@ end
     return SVector(rho, v1, v2, p)
 end
 
-@inline function cons2cons(u,
+@inline function cons2cons(u, aux,
                            equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     return u
 end
@@ -516,7 +510,7 @@ end
     return SVector(w1, zero(eltype(u)), zero(eltype(u)), w4)
 end
 
-@inline function entropy_thermodynamic(cons,
+@inline function entropy_thermodynamic(cons, aux,
                                        equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     p = equations.K * (cons[4])^equations.gamma
     s = log(p) - equations.gamma * log(cons[1])
@@ -524,7 +518,7 @@ end
     return S
 end
 
-@inline function energy_total(cons,
+@inline function energy_total(cons, aux,
                               equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     # Mathematical entropy
     p = equations.p_0 * (equations.R * cons[4] / equations.p_0)^equations.gamma
@@ -537,16 +531,16 @@ end
 # Default entropy is the mathematical entropy
 @inline function entropy(cons, aux,
                          equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
-    entropy_thermodynamic(cons, equations)
+    entropy_thermodynamic(cons, aux, equations)
 end
 
-@inline function pressure(cons,
+@inline function pressure(cons, aux,
                           equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     p = equations.K * exp(equations.gamma * log(cons[4]))
     return p
 end
 
-@inline function energy_kinetic(cons,
+@inline function energy_kinetic(cons, aux,
                                 equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     return 0.5f0 * (cons[2]^2 + cons[3]^2) / (cons[1])
 end
