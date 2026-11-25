@@ -59,8 +59,8 @@ end
     # Check that the total mass and the total mass-weighted potential temperature are
     # conserved up to round-off errors also with the kernels of KernelAbstractions.jl
     for v in (1, 5)
-        integral_initial = Trixi.integrate((u, equations) -> u[v], ode.u0, semi)
-        integral_final = Trixi.integrate((u, equations) -> u[v], sol.u[end], semi)
+        integral_initial = Trixi.integrate((u, aux, equations) -> u[v], ode.u0, semi)
+        integral_final = Trixi.integrate((u, aux, equations) -> u[v], sol.u[end], semi)
         @test isapprox(integral_final, integral_initial, rtol = 1e-13)
     end
 end
@@ -108,6 +108,7 @@ end
                         # Expected errors are exactly the same as with CUDA, see
                         # `test_cuda_3d.jl`
                         l2=[
+<<<<<<< HEAD
                             0.0005231487476660257,
                             0.016979615333645174,
                             0.01594720348014934,
@@ -120,6 +121,20 @@ end
                             0.6920569567036126,
                             1.1056508753293657,
                             0.9997829208047619
+=======
+                            0.0005231487494040615,
+                            0.016979615333646277,
+                            0.01594720348014793,
+                            0.016561813384810754,
+                            0.14232904756222564
+                        ],
+                        linf=[
+                            0.004219636334625854,
+                            1.1709299053250506,
+                            0.6920569567040576,
+                            1.1056508753294336,
+                            0.9997829208306257
+>>>>>>> origin/ma/aux_gravity_3d
                         ],
                         tspan=(0.0, 20.0), trees_per_cube_face=(2, 2))
     # The kernels of KernelAbstractions.jl are used on the CPU

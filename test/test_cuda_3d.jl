@@ -12,6 +12,7 @@ end
                                  "elixir_potential_temperature_baroclinic_instability_turbo.jl"),
                         # Expected errors similar to reference on CPU
                         l2=[
+<<<<<<< HEAD
                             0.0005231487476660257,
                             0.016979615333645174,
                             0.01594720348014934,
@@ -24,6 +25,20 @@ end
                             0.6920569567036126,
                             1.1056508753293657,
                             0.9997829208047619
+=======
+                            0.0005231487494040615,
+                            0.016979615333646277,
+                            0.01594720348014793,
+                            0.016561813384810754,
+                            0.14232904756222564
+                        ],
+                        linf=[
+                            0.004219636334625854,
+                            1.1709299053250506,
+                            0.6920569567040576,
+                            1.1056508753294336,
+                            0.9997829208306257
+>>>>>>> origin/ma/aux_gravity_3d
                         ],
                         tspan=(0.0, 20.0), trees_per_cube_face=(2, 2),
                         storage_type=CuArray)
@@ -61,6 +76,7 @@ end
     using CUDA
     @test_trixi_include(joinpath(EXAMPLES_DIR,
                                  "elixir_potential_temperature_baroclinic_instability_turbo.jl"),
+<<<<<<< HEAD
                         l2=Float32[0.00052923214,
                                    0.017115094,
                                    0.01605738,
@@ -71,6 +87,18 @@ end
                                      0.695263,
                                      1.1052238,
                                      1.0655212],
+=======
+                        l2=Float32[0.00052934315,
+                                   0.017086187,
+                                   0.016104799,
+                                   0.016569622,
+                                   0.14389963],
+                        linf=Float32[0.004489064,
+                                     1.1706848,
+                                     0.6953281,
+                                     1.1053133,
+                                     1.0652466],
+>>>>>>> origin/ma/aux_gravity_3d
                         tspan=(0.0, 20.0), trees_per_cube_face=(2, 2),
                         RealT_for_test_tolerances=Float32,
                         rtol=1.0f-3,

@@ -141,8 +141,8 @@ end
     # the implicit stages are conservative as well since the vertical Jacobian is in flux
     # form with the same quadrature weights and metric terms as the semidiscretization.
     for v in (1, 5)
-        integral_initial = Trixi.integrate((u, equations) -> u[v], ode.u0, semi)
-        integral_final = Trixi.integrate((u, equations) -> u[v], sol.u[end], semi)
+        integral_initial = Trixi.integrate((u, aux, equations) -> u[v], ode.u0, semi)
+        integral_final = Trixi.integrate((u, aux, equations) -> u[v], sol.u[end], semi)
         @test isapprox(integral_final, integral_initial, rtol = 1e-13)
     end
 
@@ -364,16 +364,16 @@ end
                                  "elixir_potential_temperature_held_suarez.jl"),
                         l2=[
                             0.0031433358598755116,
-                            0.00013512205511938857,
-                            0.00013512205496536123,
+                            0.000135122062836147,
+                            0.00013512206271065936,
                             0.00014321100200751858,
                             0.7578315675919848
                         ],
                         linf=[
                             0.023356470865802503,
-                            0.0015824285058342448,
-                            0.0015824285029173886,
-                            0.0005066641719408516,
+                            0.001582428697662357,
+                            0.0015824287025020258,
+                            0.0005066641828528916,
                             4.885984294457614
                         ],
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY),
