@@ -7,6 +7,23 @@ for human readability.
 
 ## Changes when updating to v0.2 from v0.1.x
 
+#### Changed
+- The `CompressibleEulerPotentialTemperatureEquationsWithGravity2D`, the
+  `CompressibleEulerEnergyEquationsWithGravity2D`, and the
+  `CompressibleEulerInternalEnergyEquationsWithGravity2D` store the geopotential as
+  auxiliary variable of Trixi.jl (see `Trixi.nauxvariables`) instead of as last variable
+  of the state. Thus, they have one variable less, their pointwise functions take the
+  auxiliary variables as additional arguments after the states, e.g.,
+  `flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)` and
+  `cons2prim(u, aux, equations)` (also `cons2entropy` and `entropy`, as required by
+  Trixi.jl v0.18), and `SemidiscretizationHyperbolic` requires the keyword argument
+  `aux_field`, e.g., the new `aux_field_geopotential`. Since auxiliary variables are only
+  available for `P4estMesh`es, the elixirs
+  `elixir_potential_temperature_inertia_gravity_waves.jl` and
+  `elixir_energy_inertia_gravity_waves.jl` use a `P4estMesh` instead of a `StructuredMesh`.
+  With adaptive time stepping, results change slightly since the geopotential no longer
+  enters the error estimate of the time integrator.
+
 #### Removed
 - TrixiAtmo.jl now consistently uses `P4estMesh` for the Cartesian equations in 2D and 3D.
   Thus, the methods based on `orientation` (for `TreeMesh` and `StructuredMesh`) of
@@ -46,17 +63,6 @@ for human readability.
 - GPU support including adaptation to `Float32` via `trixi_adapt` ([#242]).
 
 #### Changed
-- The `CompressibleEulerPotentialTemperatureEquationsWithGravity2D`, the
-  `CompressibleEulerEnergyEquationsWithGravity2D`, and the
-  `CompressibleEulerInternalEnergyEquationsWithGravity2D` store the geopotential as
-  auxiliary variable of Trixi.jl (see `Trixi.nauxvariables`) instead of as last variable
-  of the state. Thus, they have one variable less, their pointwise functions take the
-  auxiliary variables as additional arguments after the states, e.g.,
-  `flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)`, and
-  `SemidiscretizationHyperbolic` requires the keyword argument `aux_field`, e.g., the new
-  `aux_field_geopotential`. Since auxiliary variables are only available for `P4estMesh`es,
-  the elixirs `elixir_potential_temperature_inertia_gravity_waves.jl` and
-  `elixir_energy_inertia_gravity_waves.jl` use a `P4estMesh` instead of a `StructuredMesh`.
 - Fixes a bug in `flux_nonconservative_waruszewski_etal` for the
   `CompressibleEulerEnergyEquationsWithGravity2D` and the
   `CompressibleEulerEnergyEquationsWithGravity3D`: The gravity term of the momentum did

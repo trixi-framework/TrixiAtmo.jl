@@ -127,8 +127,8 @@ Entropy conserving, total energy conserving and kinetic energy preserving two-po
                                         normal_direction::AbstractVector,
                                         equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
     v_dot_n_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2]
     v_dot_n_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2]
     v_dot_n_avg = 0.5f0 * (v_dot_n_ll + v_dot_n_rr)
@@ -163,8 +163,8 @@ Nonconservative part of the entropy conserving, total energy conserving and kine
                                            equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
 
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
     v_dot_n_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2]
     v_dot_n_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2]
     v_dot_n_avg = 0.5f0 * (v_dot_n_rr + v_dot_n_ll)
@@ -193,8 +193,8 @@ Entropy stable two-point flux by
                                       normal_direction::AbstractVector,
                                       equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
     v_dot_n_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2]
     v_dot_n_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2]
     v_dot_n_avg = 0.5f0 * (v_dot_n_rr + v_dot_n_ll)
@@ -245,8 +245,8 @@ Nonconservative part of the entropy stable two-point flux by
                                          normal_direction::AbstractVector,
                                          equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
     v_dot_n_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2]
     v_dot_n_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2]
     v_dot_n_avg = 0.5f0 * (v_dot_n_rr + v_dot_n_ll)
@@ -274,7 +274,13 @@ end
     return SVector(rho, rho_v1, rho_v2, rho_e_internal)
 end
 
-@inline function cons2prim(u,
+# The conversion does not depend on the geopotential
+@inline function prim2cons(prim, aux,
+                           equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
+    return prim2cons(prim, equations)
+end
+
+@inline function cons2prim(u, aux,
                            equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
     rho, rho_v1, rho_v2, rho_e_internal = u
     v1 = rho_v1 / rho
@@ -288,7 +294,7 @@ end
     return u
 end
 
-@inline function cons2entropy(u,
+@inline function cons2entropy(u, aux,
                               equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
     rho, rho_v1, rho_v2, rho_e_internal = u
 
@@ -299,7 +305,7 @@ end
     return SVector(w1, zero(eltype(u)), zero(eltype(u)), w4)
 end
 
-@inline function entropy(cons,
+@inline function entropy(cons, aux,
                          equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
     p = pressure(cons, equations)
     # Thermodynamic entropy
@@ -318,8 +324,8 @@ end
 @inline function max_abs_speed(u_ll, u_rr, aux_ll, aux_rr,
                                normal_direction::AbstractVector,
                                equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
-    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
     # Calculate normal velocities and sound speeds
     # left
@@ -339,7 +345,7 @@ end
 
 @inline function max_abs_speeds(u, aux,
                                 equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
-    rho, v1, v2, p = cons2prim(u, equations)
+    rho, v1, v2, p = cons2prim(u, aux, equations)
     c = sqrt(equations.gamma * p / rho)
 
     return abs(v1) + c, abs(v2) + c

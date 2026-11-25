@@ -138,7 +138,7 @@ end
 @inline function flux(u, aux, normal_direction::AbstractVector,
                       equations::CompressibleEulerEnergyEquationsWithGravity2D)
     rho_e = energy_total(u, equations)
-    rho, v1, v2, p = cons2prim(u, equations)
+    rho, v1, v2, p = cons2prim(u, aux, equations)
 
     v_normal = v1 * normal_direction[1] + v2 * normal_direction[2]
     rho_v_normal = rho * v_normal
@@ -328,8 +328,8 @@ The modification is in the energy flux to guarantee pressure equilibrium and was
                                  normal_direction::AbstractVector,
                                  equations::CompressibleEulerEnergyEquationsWithGravity2D)
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
     v_dot_n_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2]
     v_dot_n_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2]
 
@@ -368,8 +368,8 @@ Kinetic energy preserving two-point flux by
     # Unpack left and right state
     rho_e_ll = energy_total(u_ll, equations)
     rho_e_rr = energy_total(u_rr, equations)
-    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
     # Average each factor of products in flux
     rho_avg = 0.5f0 * (rho_ll + rho_rr)
@@ -407,8 +407,8 @@ See also
                               normal_direction::AbstractVector,
                               equations::CompressibleEulerEnergyEquationsWithGravity2D)
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
     v_dot_n_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2]
     v_dot_n_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2]
 
@@ -441,8 +441,8 @@ end
     c = flux_lmars.speed_of_sound
 
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
     v_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2]
     v_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2]
@@ -476,8 +476,8 @@ end
 @inline function max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr,
                                      normal_direction::AbstractVector,
                                      equations::CompressibleEulerEnergyEquationsWithGravity2D)
-    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
     # Calculate normal velocities and sound speed
     # left
@@ -498,8 +498,8 @@ end
 @inline function max_abs_speed(u_ll, u_rr, aux_ll, aux_rr,
                                normal_direction::AbstractVector,
                                equations::CompressibleEulerEnergyEquationsWithGravity2D)
-    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
     # Calculate normal velocities and sound speeds
     # left
@@ -520,14 +520,14 @@ end
 
 @inline function max_abs_speeds(u, aux,
                                 equations::CompressibleEulerEnergyEquationsWithGravity2D)
-    rho, v1, v2, p = cons2prim(u, equations)
+    rho, v1, v2, p = cons2prim(u, aux, equations)
     c = sqrt(equations.gamma * p / rho)
 
     return abs(v1) + c, abs(v2) + c
 end
 
 # Convert conservative variables to primitive
-@inline function cons2prim(u,
+@inline function cons2prim(u, aux,
                            equations::CompressibleEulerEnergyEquationsWithGravity2D)
     rho, rho_v1, rho_v2, rho_e = u
 
@@ -539,7 +539,7 @@ end
 end
 
 # Convert conservative variables to entropy
-@inline function cons2entropy(u,
+@inline function cons2entropy(u, aux,
                               equations::CompressibleEulerEnergyEquationsWithGravity2D)
     rho, rho_v1, rho_v2, rho_e = u
 
@@ -594,6 +594,12 @@ end
     return SVector(rho, rho_v1, rho_v2, rho_e)
 end
 
+# The conversion does not depend on the geopotential
+@inline function prim2cons(prim, aux,
+                           equations::CompressibleEulerEnergyEquationsWithGravity2D)
+    return prim2cons(prim, equations)
+end
+
 @inline function pressure(u,
                           equations::CompressibleEulerEnergyEquationsWithGravity2D)
     rho, rho_v1, rho_v2, rho_e = u
@@ -624,7 +630,7 @@ end
 end
 
 # Default entropy is the mathematical entropy
-@inline function entropy(cons,
+@inline function entropy(cons, aux,
                          equations::CompressibleEulerEnergyEquationsWithGravity2D)
     entropy_math(cons, equations)
 end
