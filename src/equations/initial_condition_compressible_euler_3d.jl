@@ -156,7 +156,8 @@ function initial_condition_baroclinic_instability(x, t,
     v2 = cos(lon) * u - sin(lat) * sin(lon) * v
     v3 = cos(lat) * v
 
-    return prim2cons(SVector(rho, v1, v2, v3, p), equations)
+    aux = aux_field_gravity_earth(x, equations)
+    return prim2cons(SVector(rho, v1, v2, v3, p), aux, equations)
 end
 
 @doc raw"""
@@ -334,7 +335,8 @@ function initial_condition_isothermal(x, t,
     # density (via ideal gas law)
     rho = p / (R * T)
 
-    return prim2cons(SVector(rho, 0, 0, 0, p), equations)
+    aux = aux_field_gravity_earth(x, equations)
+    return prim2cons(SVector(rho, 0, 0, 0, p), aux, equations)
 end
 
 @doc raw"""
@@ -380,7 +382,8 @@ function initial_condition_vortex_shedding(x, t,
             (u0 / radius_earth + 2 * angular_velocity) * (sin(lat)^2 - 1) -
             N^2 / (g^2 * k) * phi)
     rho = p / (R * T)
-    return prim2cons(SVector(rho, v1, v2, v3, p), equations)
+    aux = aux_field_gravity_small_earth(x, equations)
+    return prim2cons(SVector(rho, v1, v2, v3, p), aux, equations)
 end
 
 @doc raw"""

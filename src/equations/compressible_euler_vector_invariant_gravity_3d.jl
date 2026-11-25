@@ -124,8 +124,8 @@ see [`Trixi.combine_conservative_and_nonconservative_fluxes`](@ref).
     rho_rr, v1_rr, v2_rr, v3_rr, rho_theta_rr = u_rr
     phi_ll = aux_ll[1]
     phi_rr = aux_rr[1]
-    exner_ll = exner_pressure(u_ll, equations)
-    exner_rr = exner_pressure(u_rr, equations)
+    exner_ll = exner_pressure(u_ll, aux_ll, equations)
+    exner_rr = exner_pressure(u_rr, aux_rr, equations)
 
     v_dot_n_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2] +
                  v3_ll * normal_direction[3]
@@ -202,8 +202,8 @@ here.
                                equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
     rho_ll, v1_ll, v2_ll, v3_ll, rho_theta_ll = u_ll
     rho_rr, v1_rr, v2_rr, v3_rr, rho_theta_rr = u_rr
-    exner_ll = exner_pressure(u_ll, equations)
-    exner_rr = exner_pressure(u_rr, equations)
+    exner_ll = exner_pressure(u_ll, aux_ll, equations)
+    exner_rr = exner_pressure(u_rr, aux_rr, equations)
     theta_ll = rho_theta_ll / rho_ll
     theta_rr = rho_theta_rr / rho_rr
 
@@ -287,17 +287,11 @@ end
 
 @inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_lmars_es), ::CompressibleEulerVectorInvariantEquationsWithGravity3D) = Trixi.True()
 
-@inline function Trixi.prim2cons(prim,
+@inline function Trixi.prim2cons(prim, aux,
                                  equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
     rho, v1, v2, v3, p = prim
     rho_theta = (p / equations.K)^(1 / equations.gamma)
     return SVector(rho, v1, v2, v3, rho_theta)
-end
-
-# The conversion does not depend on the geopotential
-@inline function Trixi.prim2cons(prim, aux,
-                                 equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
-    return prim2cons(prim, equations)
 end
 
 @inline function cons2prim(u, aux,
@@ -308,7 +302,7 @@ end
 end
 
 # Exner pressure π = (p / p_0)^(R / c_p) = (R ρθ / p_0)^(R / c_v)
-@inline function exner_pressure(u,
+@inline function exner_pressure(u, aux,
                                 equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
     rho_theta = u[5]
     return (equations.R * rho_theta / equations.p_0)^(equations.R / equations.c_v)
@@ -337,7 +331,7 @@ end
     return S
 end
 
-@inline function pressure(cons,
+@inline function pressure(cons, aux,
                           equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
     p = equations.K * exp(equations.gamma * log(cons[5]))
     return p
