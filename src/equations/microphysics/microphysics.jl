@@ -9,13 +9,14 @@
 #   `cons2prim`,
 # - `density_water(moisture, microphysics)`: the sum of the moisture variables that are
 #   densities of water, which are part of the total density,
-# - `sedimentation(moisture, rho_dry, microphysics)`: the downward fluxes of the falling
-#   water through a horizontal surface, i.e., of the total density and of each moisture
+# - `sedimentation(moisture, rho_dry, microphysics)`: the downward fluxes of the
+#   precipitation through a horizontal surface, i.e., of the total density and of each moisture
 #   variable,
 # - `max_terminal_velocity(moisture, rho_dry, microphysics)`: the largest terminal velocity
-#   of the falling water,
+#   of the precipitation,
 # - `microphysics_tendencies(moisture, rho_dry, T, p, c_p, microphysics)`: the isobaric
-#   heating rate in K/s and the right-hand sides of the moisture variables, where `c_p` is
-#   the specific heat of dry air at constant pressure of the equations.
+#   heating rate in K/s, which might be ignored for moist equations with their own thermodynamics
+#   (e.g., [`CompressibleRainyEulerEquations2D`](@ref)), and the right-hand sides of the moisture
+#   variables, where `c_p` is the specific heat of dry air at constant pressure of the equations.
 
 include("kessler.jl")

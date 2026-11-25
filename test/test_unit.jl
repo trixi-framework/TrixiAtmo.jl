@@ -992,146 +992,81 @@ end
     @test flux_bottom[1] ≈ 2 * rain
     @test isapprox(flux_top[8], 0, atol = 1e-12)
     @test isapprox(flux_top[1], 0, atol = 1e-12)
+
+    # `prim2cons` is the inverse of `cons2prim`
+    for (u, aux) in ((u_ll, aux_ll), (u_rr, aux_rr))
+        @test prim2cons(cons2prim(u, aux, equations), aux, equations) ≈ u
+    end
 end
 
 @testitem "Unit: Consistency check for Kessler source terms: CEMPTE3D" setup=[Setup] tags=[:unit_source_terms] begin
-    # Reference values of the unmodified `interface/kessler.f90` of DCMIP2016-v1.0, compiled
-    # with `gfortran -fdefault-real-8` and called on a column with two levels 1e12 m apart,
-    # such that the sedimentation vanishes. The inputs are
-    # `(T, p, rho_d, q_v, q_c, q_r, dt)` and the outputs `(T, q_v, q_c, q_r)` after one
-    # call. The states are chosen such that one step of the reference isolates a single
-    # process, which makes the rates recoverable exactly:
-    # - rain evaporation: no cloud, subsaturated air, and no active limit, i.e.,
-    #   `q_r` decreases by `dt * E`;
-    # - autoconversion and accretion: supersaturated air without evaporation and the
-    #   semi-implicit update `A + C_r = (q_r_ref - q_r) / dt * (1 + 2.2 dt q_r^0.875)`;
-    # - condensation: supersaturated air without condensate, where the reference condenses
-    #   the amount `condensation_time * C` in one step.
-    # The reference uses `c_p = 1003` J/(kg K) in the latent heating, which the equations
-    # below match with the same gas constant `R = c_p - c_v = 287` J/(kg K).
-    cases_evap = [
-        (245.50998664661992, 73997.41793135805, 1.0499832912908547, 0.00011903200024704985,
-         0.0, 0.006393154400063015, 1.0,
-         245.5036540052133, 0.00012157265597939809, 0.0, 0.006390613744330666),
-        (296.35049717342577, 31587.777324256378, 0.3550477579366977, 0.028626266804346493,
-         0.0, 0.003731926498856784, 1.0,
-         296.31113128261774, 0.028642060399738673, 0.0, 0.003716132903464603),
-        (250.7753430577538, 61818.16354439236, 0.8581864416592901, 0.0005267777206176081,
-         0.0, 0.006069668253512719, 1.0,
-         250.7690603696752, 0.0005292983350747266, 0.0, 0.0060671476390556),
-        (275.6460746683124, 82240.213872993, 1.0347295886276209, 0.002904519781261292, 0.0,
-         0.009921625517690312, 1.0,
-         275.61172446315226, 0.002918301083571528, 0.0, 0.009907844215380076),
-        (286.67191053564613, 97714.05982903691, 1.172832052842216, 0.00785934566403949, 0.0,
-         0.0016833001691726457, 1.0,
-         286.6661654032873, 0.007861650611141866, 0.0, 0.0016809952220702695),
-        (257.37306392152624, 35104.93090225085, 0.47323164035742876, 0.0026538242501123093,
-         0.0, 0.0031831304051924674, 1.0,
-         257.370362613704, 0.002654908014810588, 0.0, 0.0031820466404941885)
-    ]
-    cases_acc = [
-        (288.71421777755427, 59557.576438472744, 0.6974786440154381, 0.018979358547250663,
-         0.0016283580189628585, 0.00584538192872492, 10.0,
-         288.9054240925639, 0.0189026465736688, 0.001380044487208449, 0.006170407434061194),
-        (264.16208683569846, 44567.65919018755, 0.5836767601416812, 0.0044477511228992244,
-         0.0016070674996579966, 0.002704639928955728, 10.0,
-         264.2697176949871, 0.004404569622152644, 0.0014667958137769754,
-         0.0028880931155833294),
-        (248.06498973676273, 51099.97867003122, 0.716618293055866, 0.0009823104325069128,
-         0.0005059320530804828, 0.0022687157312843635, 10.0,
-         248.07778476812564, 0.0009771770659240987, 0.0004622296595094133,
-         0.002317551491438247),
-        (239.13887147827748, 36204.20583137108, 0.5270026531816496, 0.0005933243900429469,
-         0.0016422105065254248, 0.003270197190982811, 10.0,
-         239.14622998890806, 0.0005903721555779585, 0.001428946789064268,
-         0.003486413142908956),
-        (302.9645922419518, 31769.295210032924, 0.32148422642530144, 0.08489497152304637,
-         0.0012371135773060191, 0.0013274845241556088, 10.0,
-         303.3104413715413, 0.08475621685225505, 0.00129613145315346,
-         0.0014072213190994866),
-        (308.4970964719618, 102531.08608987181, 1.0956234592201892, 0.035426673322217925,
-         0.0029139658834745077, 0.004995226953357617, 10.0,
-         308.61415982317095, 0.0353797075057128, 0.002433198063936951,
-         0.0055229605894002946)
-    ]
-    cases_adj = [
-        (249.5156179563099, 86694.81311489329, 1.2093597477695357, 0.0006561386014287879,
-         0.0, 0.0, 10.0,
-         249.51611783312103, 0.000655938050852163, 2.005505766248733e-7, 0.0),
-        (254.23609963123334, 72019.924953978, 0.9851399109581318, 0.0011977363056368782,
-         0.0, 0.0, 10.0,
-         254.24102853125575, 0.0011957588309478976, 1.9774746889806047e-6, 0.0),
-        (300.69145676048333, 46537.86978536745, 0.4992140912135074, 0.049894533548792544,
-         0.0, 0.0, 10.0,
-         300.7404531400263, 0.04987487620131989, 1.965734747265266e-5, 0.0),
-        (272.22984078615616, 83817.9821516052, 1.0654402035149335, 0.004296997070198336,
-         0.0, 0.0, 10.0,
-         272.24600424373887, 0.004290512291016155, 6.484779182180898e-6, 0.0),
-        (265.42754684726765, 26987.417817790632, 0.34977338941256425, 0.007993464987640687,
-         0.0, 0.0, 10.0,
-         265.4575089225474, 0.007981444203038441, 1.2020784602245963e-5, 0.0),
-        (289.8157786024733, 36791.915105501896, 0.420402066170489, 0.03244030564979132, 0.0,
-         0.0, 10.0,
-         289.8202293979613, 0.03243851999064151, 1.785659149807772e-6, 0.0)
-    ]
-    equations = CompressibleEulerMoistPotentialTemperatureEquations3D(c_p = 1003.0,
-                                                                      c_v = 716.0,
-                                                                      gravity = 9.80616,
-                                                                      R_v = 461.5)
+    equations = CompressibleEulerMoistPotentialTemperatureEquations3D(c_p = 1004.5,
+                                                                      c_v = 717.5,
+                                                                      gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+    @unpack R, R_v, c_p, p_0 = equations
+    @unpack latent_heat, condensation_time = equations.microphysics
     aux = SVector(1000.0, 0.0, 0.0, 1.0)
-    function state(T, p, rho_d, q_v, q_c, q_r)
-        exner = (p / equations.p_0)^(equations.R / equations.c_p)
-        rho_theta_v = rho_d * T / exner * (1 + equations.R_v / equations.R * q_v)
-        u = SVector(rho_d * (1 + q_v + q_c + q_r), 1.0, -2.0, 0.5, rho_theta_v,
+
+    # Right-hand sides of the mixing ratios `q_v`, `q_c`, and `q_r` and isobaric heating
+    # rate at the temperature `T` and the pressure `p`
+    function rates(T, p, q_v, q_c, q_r)
+        rho_d = p / ((R + R_v * q_v) * T)
+        exner = (p / p_0)^(R / c_p)
+        u = SVector(rho_d * (1 + q_v + q_c + q_r), 1.0, -2.0, 0.5,
+                    rho_d * T / exner * (1 + R_v / R * q_v),
                     rho_d * q_v, rho_d * q_c, rho_d * q_r)
-        # The states of the reference satisfy the equation of state
         @test pressure(u, equations) ≈ p
-        return u, exner
-    end
-    # Right-hand side of the dry potential temperature `rho_d * theta` from the ones of
-    # `rho * theta_v = rho_d * theta * (1 + q_v R_v / R)` and of the vapor
-    function source_rho_theta(du, T, p, q_v)
-        exner = (p / equations.p_0)^(equations.R / equations.c_p)
-        return (du[5] - equations.R_v / equations.R * T / exner * du[6]) /
-               (1 + equations.R_v / equations.R * q_v)
-    end
-
-    for (T, p, rho_d, q_v, q_c, q_r, dt, T_ref, q_v_ref, q_c_ref, q_r_ref) in cases_evap
-        u, exner = state(T, p, rho_d, q_v, q_c, q_r)
         du = source_terms_microphysics(u, aux, nothing, 0.0, equations)
-        evaporation = (q_r - q_r_ref) / dt
-        @test isapprox(du[8] / rho_d, -evaporation, rtol = 1e-10)
-        @test isapprox(du[6] / rho_d, evaporation, rtol = 1e-10)
-        # Isobaric latent cooling
-        @test isapprox(source_rho_theta(du, T, p, q_v) / rho_d * exner, (T_ref - T) / dt,
-                       rtol = 1e-8)
-    end
 
-    for (T, p, rho_d, q_v, q_c, q_r, dt, T_ref, q_v_ref, q_c_ref, q_r_ref) in cases_acc
-        u, _ = state(T, p, rho_d, q_v, q_c, q_r)
-        du = source_terms_microphysics(u, aux, nothing, 0.0, equations)
-        @test isapprox(du[8] / rho_d, (q_r_ref - q_r) / dt * (1 + dt * 2.2 * q_r^0.875),
-                       rtol = 1e-10)
-    end
-
-    for (T, p, rho_d, q_v, q_c, q_r, dt, T_ref, q_v_ref, q_c_ref, q_r_ref) in cases_adj
-        u, exner = state(T, p, rho_d, q_v, q_c, q_r)
-        du = source_terms_microphysics(u, aux, nothing, 0.0, equations)
-        condensation = du[7] / rho_d
-        @test isapprox(equations.microphysics.condensation_time * condensation, q_c_ref,
-                       rtol = 1e-10)
-        @test isapprox(equations.microphysics.condensation_time *
-                       source_rho_theta(du, T, p, q_v) /
-                       rho_d * exner, T_ref - T, rtol = 1e-8)
-    end
-
-    # The microphysics only moves water between the species and does not change the
-    # total density and the momentum
-    for (T, p, rho_d, q_v, q_c, q_r) in vcat(cases_evap, cases_acc, cases_adj)
-        du = source_terms_microphysics(state(T, p, rho_d, q_v, q_c, q_r)[1], aux, nothing,
-                                       0.0, equations)
-        @test isapprox(du[6] + du[7] + du[8], 0, atol = 1e-15)
+        # The microphysics only moves water between the species and does not change the
+        # total density and the momentum
         @test du[1] == du[2] == du[3] == du[4] == 0
+        @test isapprox(du[6] + du[7] + du[8], 0, atol = 1e-15)
+
+        # Heating rate from the right-hand sides of
+        # `rho * theta_v = rho_d * theta * (1 + q_v R_v / R)` and of the vapor, which equals
+        # the latent heat released by the condensed vapor
+        heating = exner / rho_d * (du[5] - R_v / R * T / exner * du[6]) /
+                  (1 + R_v / R * q_v)
+        @test isapprox(heating, -latent_heat / c_p * du[6] / rho_d, rtol = 1e-12,
+                       atol = 1e-15)
+        return du[6:8] / rho_d, heating
+    end
+
+    for (T, p) in ((285.0, 85000.0), (300.0, 95000.0), (260.0, 60000.0))
+        q_vs = TrixiAtmo.saturation_mixing_ratio_tetens(T, p)
+        zero_rates = SVector(0.0, 0.0, 0.0)
+
+        # No processes in subsaturated air without condensate, in saturated air with cloud
+        # water below the autoconversion threshold of 1 g/kg, and in saturated air with rain
+        @test all(iszero, rates(T, p, 0.5 * q_vs, 0.0, 0.0)[1])
+        @test isapprox(rates(T, p, q_vs, 5.0e-4, 0.0)[1], zero_rates, atol = 1e-15)
+        @test isapprox(rates(T, p, q_vs, 0.0, 2.0e-3)[1], zero_rates, atol = 1e-15)
+
+        # Autoconversion of the cloud water above the threshold
+        rates_q, _ = rates(T, p, q_vs, 2.0e-3, 0.0)
+        @test isapprox(rates_q[3], 1.0e-3 * (2.0e-3 - 1.0e-3), rtol = 1e-12)
+        @test isapprox(rates_q[2], -rates_q[3], rtol = 1e-10)
+
+        # Subsaturated air evaporates the cloud water within `condensation_time` and the
+        # rain with latent cooling
+        rates_q, _ = rates(T, p, 0.5 * q_vs, 1.0e-4, 0.0)
+        @test rates_q[2] ≈ -1.0e-4 / condensation_time
+        rates_q, heating = rates(T, p, 0.8 * q_vs, 0.0, 2.0e-3)
+        @test rates_q[3] < 0 && rates_q[2] == 0 && heating < 0
+
+        # Condensing for `condensation_time` adjusts supersaturated air to saturation up to
+        # second order in the supersaturation, since the condensation accounts for the
+        # latent heating with the derivative of `saturation_mixing_ratio_tetens`
+        residuals = map((1.0e-3, 1.0e-4)) do supersaturation
+            q_v = (1 + supersaturation) * q_vs
+            rates_q, heating = rates(T, p, q_v, 0.0, 0.0)
+            q_v_new = q_v + condensation_time * rates_q[1]
+            T_new = T + condensation_time * heating
+            return ((q_v_new - TrixiAtmo.saturation_mixing_ratio_tetens(T_new, p)) /
+                    (q_v - q_vs))
+        end
+        @test isapprox(residuals[1] / residuals[2], 10, rtol = 1e-2)
     end
 end
 

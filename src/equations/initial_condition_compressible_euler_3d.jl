@@ -185,8 +185,8 @@ auxiliary variables, see `Trixi.nauxvariables`, and passed as `aux_field` to
 end
 
 # Exponential perturbation of the zonal wind of the moist baroclinic wave of DCMIP2016
-# (`evaluate_exponential` in `baroclinic_wave_test.f90`) with an amplitude of 1 m/s. As in
-# DCMIP2016, it is cut off at the perturbation radius, where it jumps from `exp(-1)` to zero.
+# with an amplitude of 1 m/s. As in DCMIP2016, it is cut off at the perturbation radius,
+# where it jumps from `exp(-1)` to zero.
 @inline function perturbation_exponential(lon, lat, z)
     RealT = typeof(z)
     perturbation_radius = convert(RealT, 0.1) # in units of the radius of the Earth
@@ -214,10 +214,10 @@ end
     initial_condition_moist_baroclinic_instability(x, t,
                                                    equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
 
-Initial condition of the moist baroclinic wave of DCMIP2016 (test case 161) on a spherical
-shell of inner radius [`EARTH_RADIUS`](@ref). The pressure, the total density, and the zonal
-wind are the ones of the balanced state of [`initial_condition_baroclinic_instability`](@ref),
-whose temperature is the virtual temperature ``T_v``. The specific humidity
+Initial condition of the moist baroclinic wave of DCMIP2016 (test case 161) in the
+deep-atmosphere form on a spherical shell of inner radius [`EARTH_RADIUS`](@ref).
+The pressure, the total density, and the zonal wind are the ones of the balanced state of
+[`initial_condition_baroclinic_instability`](@ref), whose temperature is the virtual temperature ``T_v``. The specific humidity
 ``q_v = \varrho_v / \varrho`` is
 ```math
 q_v = q_0 \exp\left(-\left(\frac{\varphi}{\varphi_w}\right)^4\right)
@@ -270,7 +270,8 @@ function initial_condition_moist_baroclinic_instability(x, t,
     r_v = q_v / (1 - q_v)
 
     moisture = SVector(r_v, ntuple(_ -> zero(RealT), Val(nvariables(equations) - 6))...)
-    return prim2cons(SVector(rho, v1, v2, v3, p, moisture...), equations)
+    aux = aux_field_gravity_earth(x, equations)
+    return prim2cons(SVector(rho, v1, v2, v3, p, moisture...), aux, equations)
 end
 
 @doc raw"""

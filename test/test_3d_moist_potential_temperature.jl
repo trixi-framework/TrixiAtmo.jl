@@ -10,22 +10,22 @@ end
                                  "elixir_potential_temperature_kessler_baroclinic_instability.jl"),
                         l2=[
                             3.02801024e-03,
-                            5.36405488e-02,
-                            5.39538450e-02,
-                            8.75319901e-03,
+                            5.36405502e-02,
+                            5.39538464e-02,
+                            8.75320068e-03,
                             8.08173613e-01,
-                            3.50904856e-04,
-                            1.72606214e-05,
+                            3.50904877e-04,
+                            1.72606726e-05,
                             0.0
                         ],
                         linf=[
                             1.95751728e-02,
                             7.20527595e-01,
                             9.48924268e-01,
-                            6.25633147e-02,
+                            6.25633293e-02,
                             4.84258323e+00,
-                            2.05540782e-03,
-                            8.03572098e-05,
+                            2.05540789e-03,
+                            8.03574435e-05,
                             0.0
                         ],
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
@@ -39,8 +39,8 @@ end
 
     # The dynamics and the microphysics conserve the mass of dry air and, before any rain
     # reaches the lower boundary, the mass of water
-    dry_air(u, equations) = u[1] - u[6] - u[7] - u[8]
-    water(u, equations) = u[6] + u[7] + u[8]
+    dry_air(u, aux, equations) = u[1] - u[6] - u[7] - u[8]
+    water(u, aux, equations) = u[6] + u[7] + u[8]
     @test isapprox(Trixi.integrate(dry_air, sol.u[end], semi),
                    Trixi.integrate(dry_air, ode.u0, semi), rtol = 1e-12)
     @test isapprox(Trixi.integrate(water, sol.u[end], semi),
@@ -58,13 +58,14 @@ end
     # leaves the domain through the lower boundary
     function initial_condition_rain(x, t, equations)
         u = initial_condition_moist_baroclinic_instability(x, t, equations)
-        rho, v1, v2, v3, p, q_v, q_c, _ = cons2prim(u, equations)
+        aux = aux_field_gravity_earth(x, equations)
+        rho, v1, v2, v3, p, q_v, q_c, _ = cons2prim(u, aux, equations)
         z = sqrt(sum(abs2, x)) - EARTH_RADIUS
         q_r = 1.0e-3 * max(1 - z / 5000, 0)^2
         rho_dry = rho / (1 + q_v + q_c)
         return prim2cons(SVector(rho_dry * (1 + q_v + q_c + q_r), v1, v2, v3, p,
                                  q_v, q_c, q_r),
-                         equations)
+                         aux, equations)
     end
 
     trixi_include(@__MODULE__,
@@ -87,8 +88,8 @@ end
     @test u_ode_specialized ≈ u_ode
     # The mass of dry air is conserved, while the water decreases since the rain leaves the
     # domain through the lower boundary
-    dry_air(u, equations) = u[1] - u[6] - u[7] - u[8]
-    water(u, equations) = u[6] + u[7] + u[8]
+    dry_air(u, aux, equations) = u[1] - u[6] - u[7] - u[8]
+    water(u, aux, equations) = u[6] + u[7] + u[8]
     @test isapprox(Trixi.integrate(dry_air, sol.u[end], semi),
                    Trixi.integrate(dry_air, ode.u0, semi), rtol = 1e-12)
     @test Trixi.integrate(water, sol.u[end], semi) < Trixi.integrate(water, ode.u0, semi)
