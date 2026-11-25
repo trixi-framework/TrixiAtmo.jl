@@ -270,7 +270,7 @@ end
 
 # `flux_ec` of the dry equations with the total density and the virtual potential
 # temperature, the moisture variables advected as specific quantities with the arithmetic
-# mean, central fluxes of the falling water, and the gravity of
+# mean, central fluxes of the precipitation, and the gravity of
 # `flux_nonconservative_isothermal` acting on the logarithmic mean of the total density
 @inline function flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector,
                          equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
@@ -389,7 +389,7 @@ end
 @inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_lmars_combined), ::CompressibleEulerMoistPotentialTemperatureEquations3D) = Trixi.True()
 
 # Entropy-stable LMARS of `flux_lmars_es` of the dry equations with the total density and the
-# virtual potential temperature, and without the falling water. The moisture variables use
+# virtual potential temperature, and without the precipitation. The moisture variables use
 # the same upwinding of the mixing ratios `q = rho_x / rho` around their arithmetic mean
 # instead of `1 / {{1/q}}_log`, which is not defined for `q = 0`. For `q >= 0`, both keep
 # the interface value within the range of the left and right values.
@@ -467,8 +467,8 @@ end
     flux = flux_lmars_es_without_sedimentation(u_ll, u_rr, aux_ll, aux_rr,
                                                normal_direction, equations)
 
-    # The water falls in the direction of `-k`, i.e., from the right state if the normal
-    # direction points upwards
+    # The precipitation falls in the direction of `-k`, i.e., from the right state if the
+    # normal direction points upwards
     k_normal = 0.5f0 * (vertical_component(aux_ll, normal_direction, equations) +
                 vertical_component(aux_rr, normal_direction, equations))
     if k_normal > 0
@@ -482,7 +482,7 @@ end
 
 @inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_lmars_es), ::CompressibleEulerMoistPotentialTemperatureEquations3D) = Trixi.True()
 
-# Surface fluxes without the falling water, to which the slip-wall boundary condition adds
+# Surface fluxes without the precipitation, to which the slip-wall boundary condition adds
 # the outflow through the lower boundary
 @inline surface_flux_without_sedimentation(::typeof(flux_lmars_combined)) = flux_lmars_without_sedimentation
 @inline surface_flux_without_sedimentation(::typeof(flux_lmars_es)) = flux_lmars_es_without_sedimentation
