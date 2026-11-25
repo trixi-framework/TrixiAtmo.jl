@@ -135,8 +135,7 @@ end
 @inline function boundary_condition_slip_wall(u_inner, aux_inner,
                                               normal_direction::AbstractVector,
                                               x, t,
-                                              surface_flux_function::Union{typeof(flux_lmars_combined),
-                                                                           typeof(flux_lmars_es)},
+                                              surface_flux_function::typeof(flux_lmars_combined),
                                               equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
     # normalize the outward pointing direction
     normal = normal_direction / norm(normal_direction)
@@ -152,9 +151,8 @@ end
                          u_inner[5], moisture_variables(u_inner, equations)...)
 
     # calculate the boundary flux
-    flux_without_sedimentation = surface_flux_without_sedimentation(surface_flux_function)
-    flux = flux_without_sedimentation(u_inner, u_boundary, aux_inner, aux_inner,
-                                      normal_direction, equations)
+    flux = flux_lmars_without_sedimentation(u_inner, u_boundary, aux_inner, aux_inner,
+                                            normal_direction, equations)
     if vertical_component(aux_inner, normal_direction, equations) < 0
         flux = flux -
                flux_sedimentation(u_inner, aux_inner, normal_direction, equations)
@@ -387,105 +385,6 @@ end
 end
 
 @inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_lmars_combined), ::CompressibleEulerMoistPotentialTemperatureEquations3D) = Trixi.True()
-
-# Entropy-stable LMARS of `flux_lmars_es` of the dry equations with the total density and the
-# virtual potential temperature, and without the precipitation. The moisture variables use
-# the same upwinding of the mixing ratios `q = rho_x / rho` around their arithmetic mean
-# instead of `1 / {{1/q}}_log`, which is not defined for `q = 0`. For `q >= 0`, both keep
-# the interface value within the range of the left and right values.
-@inline function flux_lmars_es_without_sedimentation(u_ll, u_rr, aux_ll, aux_rr,
-                                                     normal_direction::AbstractVector,
-                                                     equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
-    # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
-
-    v_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2] +
-           v3_ll * normal_direction[3]
-    v_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2] +
-           v3_rr * normal_direction[3]
-
-    norm_ = norm(normal_direction)
-
-    # Arithmetic mean of the local speeds of sound instead of a constant
-    c_ll = sqrt(equations.gamma * p_ll / rho_ll)
-    c_rr = sqrt(equations.gamma * p_rr / rho_rr)
-    c_avg = 0.5f0 * (c_ll + c_rr)
-
-    rho_avg = 0.5f0 * (rho_ll + rho_rr)
-    rho_mean = ln_mean(rho_ll, rho_rr)
-
-    p_interface = 0.5f0 * (p_ll + p_rr) -
-                  0.5f0 * c_avg * rho_avg * (v_rr - v_ll) / norm_
-    v_interface = 0.5f0 * (v_ll + v_rr) -
-                  0.5f0 / (c_avg * rho_mean) * (p_rr - p_ll) * norm_
-
-    # Upwinded mass and momentum fluxes
-    if v_interface > 0
-        f1 = u_ll[1] * v_interface
-        f2 = u_ll[2] * v_interface
-        f3 = u_ll[3] * v_interface
-        f4 = u_ll[4] * v_interface
-        sign_v = one(f1)
-    else
-        f1 = u_rr[1] * v_interface
-        f2 = u_rr[2] * v_interface
-        f3 = u_rr[3] * v_interface
-        f4 = u_rr[4] * v_interface
-        sign_v = -one(f1)
-    end
-
-    # Entropy-stable flux of the virtual potential temperature as in `flux_lmars_es` of the
-    # dry equations
-    theta_v_ll = u_ll[5] / rho_ll
-    theta_v_rr = u_rr[5] / rho_rr
-    theta_v_mean = inv_ln_mean(rho_ll / u_ll[5], rho_rr / u_rr[5])
-    theta_v_min = min(theta_v_ll, theta_v_rr)
-    theta_v_avg = 0.5f0 * (theta_v_ll + theta_v_rr)
-    f5 = f1 *
-         (theta_v_mean -
-          theta_v_min / (2 * theta_v_avg) * (theta_v_rr - theta_v_ll) * sign_v)
-
-    q_ll = moisture_variables(u_ll, equations) / rho_ll
-    q_rr = moisture_variables(u_rr, equations) / rho_rr
-    q_min = min.(q_ll, q_rr)
-    # The upwinding vanishes for `q_min = 0` and is switched off for `q_min < 0`
-    scaling = ifelse.(q_min .> 0, q_min ./ (q_ll + q_rr), zero(q_min))
-    f_moisture = f1 * (0.5f0 * (q_ll + q_rr) - scaling .* (q_rr - q_ll) * sign_v)
-
-    return SVector(f1,
-                   f2 + p_interface * normal_direction[1],
-                   f3 + p_interface * normal_direction[2],
-                   f4 + p_interface * normal_direction[3],
-                   f5, f_moisture...)
-end
-
-# Entropy-stable LMARS with the sedimentation upwinded as in `flux_lmars_combined`
-@inline function flux_lmars_es(u_ll, u_rr, aux_ll, aux_rr,
-                               normal_direction::AbstractVector,
-                               equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
-    flux = flux_lmars_es_without_sedimentation(u_ll, u_rr, aux_ll, aux_rr,
-                                               normal_direction, equations)
-
-    # The precipitation falls in the direction of `-k`, i.e., from the right state if the
-    # normal direction points upwards
-    k_normal = 0.5f0 * (vertical_component(aux_ll, normal_direction, equations) +
-                vertical_component(aux_rr, normal_direction, equations))
-    if k_normal > 0
-        flux = flux - flux_sedimentation(u_rr, aux_rr, normal_direction, equations)
-    else
-        flux = flux - flux_sedimentation(u_ll, aux_ll, normal_direction, equations)
-    end
-
-    return flux, flux
-end
-
-@inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_lmars_es), ::CompressibleEulerMoistPotentialTemperatureEquations3D) = Trixi.True()
-
-# Surface fluxes without the precipitation, to which the slip-wall boundary condition adds
-# the outflow through the lower boundary
-@inline surface_flux_without_sedimentation(::typeof(flux_lmars_combined)) = flux_lmars_without_sedimentation
-@inline surface_flux_without_sedimentation(::typeof(flux_lmars_es)) = flux_lmars_es_without_sedimentation
 
 @inline function prim2cons(prim, aux,
                            equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
