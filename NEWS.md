@@ -5,9 +5,33 @@ TrixiAtmo.jl follows the interpretation of
 used in the Julia ecosystem. Notable changes will be documented in this file
 for human readability.
 
+## Changes when updating to v0.2 from v0.1.x
+
+#### Changed
+- The `CompressibleEulerPotentialTemperatureEquationsWithGravity2D`, the
+  `CompressibleEulerEnergyEquationsWithGravity2D`, and the
+  `CompressibleEulerInternalEnergyEquationsWithGravity2D` store the geopotential as
+  auxiliary variable of Trixi.jl (see `Trixi.nauxvariables`) instead of as last variable
+  of the state. Thus, they have one variable less, their pointwise functions take the
+  auxiliary variables as additional arguments after the states, e.g.,
+  `flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)` and
+  `cons2prim(u, aux, equations)` (also `cons2entropy` and `entropy`, as required by
+  Trixi.jl v0.18), and `SemidiscretizationHyperbolic` requires the keyword argument
+  `aux_field`, e.g., the new `aux_field_geopotential`. Since auxiliary variables are only
+  available for `P4estMesh`es, the elixirs
+  `elixir_potential_temperature_inertia_gravity_waves.jl` and
+  `elixir_energy_inertia_gravity_waves.jl` use a `P4estMesh` instead of a `StructuredMesh`.
+  With adaptive time stepping, results change slightly since the geopotential no longer
+  enters the error estimate of the time integrator.
+
 ## Changes in the v0.1 lifecycle
 
 #### Added
+- `JacobianVerticalTwoSided` enables horizontally explicit, vertically implicit (HEVI) time
+  integration of the `CompressibleEulerPotentialTemperatureEquationsWithGravity3D` on a
+  `P4estMeshCubedSphereTopography` as linear operator of linearly implicit methods, i.e.,
+  Rosenbrock-W methods such as `SSPRW32` and linear IMEX methods such as `ARS343`, also on
+  GPUs ([#243]).
 - The `CompressibleEulerVectorInvariantEquationsWithGravity3D` are the compressible Euler
   equations with gravity in vector-invariant form with the potential temperature as
   prognostic variable. They come with the entropy and total energy conservative volume flux
@@ -20,17 +44,6 @@ for human readability.
 - GPU support including adaptation to `Float32` via `trixi_adapt` ([#242]).
 
 #### Changed
-- The `CompressibleEulerPotentialTemperatureEquationsWithGravity2D`, the
-  `CompressibleEulerEnergyEquationsWithGravity2D`, and the
-  `CompressibleEulerInternalEnergyEquationsWithGravity2D` store the geopotential as
-  auxiliary variable of Trixi.jl (see `Trixi.nauxvariables`) instead of as last variable
-  of the state. Thus, they have one variable less, their pointwise functions take the
-  auxiliary variables as additional arguments after the states, e.g.,
-  `flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)`, and
-  `SemidiscretizationHyperbolic` requires the keyword argument `aux_field`, e.g., the new
-  `aux_field_geopotential`. Since auxiliary variables are only available for `P4estMesh`es,
-  the elixirs `elixir_potential_temperature_inertia_gravity_waves.jl` and
-  `elixir_energy_inertia_gravity_waves.jl` use a `P4estMesh` instead of a `StructuredMesh`.
 - Fixes a bug in `flux_nonconservative_waruszewski_etal` for the
   `CompressibleEulerEnergyEquationsWithGravity2D` and the
   `CompressibleEulerEnergyEquationsWithGravity3D`: The gravity term of the momentum did
