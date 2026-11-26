@@ -33,7 +33,8 @@ function initial_condition_gravity_waves(x, t,
     v1 = 20
     v2 = 0
 
-    return prim2cons(SVector(rho, v1, v2, p), equations)
+    aux = aux_field_geopotential(x, equations)
+    return prim2cons(SVector(rho, v1, v2, p), aux, equations)
 end
 
 @doc raw"""
@@ -66,7 +67,8 @@ function initial_condition_adiabatic(x, t,
     v1 = 0
     v2 = 0
 
-    return prim2cons(SVector(rho, v1, v2, p), equations)
+    aux = aux_field_geopotential(x, equations)
+    return prim2cons(SVector(rho, v1, v2, p), aux, equations)
 end
 
 @doc raw"""
@@ -183,7 +185,8 @@ end
     v1 = u0
     v2 = 0
 
-    return prim2cons(SVector(rho, v1, v2, p), equations)
+    aux = aux_field_geopotential(x, equations)
+    return prim2cons(SVector(rho, v1, v2, p), aux, equations)
 end
 
 # This signature is used for source terms, adding Rayleigh damping

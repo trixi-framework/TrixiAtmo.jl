@@ -118,7 +118,7 @@ end
     rho, rho_v1, rho_v2, rho_e = u
     v1 = rho_v1 / rho
     v2 = rho_v2 / rho
-    p = pressure(u, equations)
+    p = pressure(u, aux, equations)
     if orientation == 1
         f1 = rho_v1
         f2 = rho_v1 * v1 + p
@@ -137,7 +137,7 @@ end
 # Note, this directional vector is not normalized
 @inline function flux(u, aux, normal_direction::AbstractVector,
                       equations::CompressibleEulerEnergyEquationsWithGravity2D)
-    rho_e = energy_total(u, equations)
+    rho_e = energy_total(u, aux, equations)
     rho, v1, v2, p = cons2prim(u, aux, equations)
 
     v_normal = v1 * normal_direction[1] + v2 * normal_direction[2]
@@ -225,8 +225,8 @@ The well-balancedness on curvilinear coordinates was proven by
     rho_mean = ln_mean(rho_ll, rho_rr)
     # Factor of the density of the gravity term of the momentum of Eq. (73d), where
     # `b = rho / (2 p)`
-    b_ll = 0.5f0 * rho_ll / pressure(u_ll, equations)
-    b_rr = 0.5f0 * rho_rr / pressure(u_rr, equations)
+    b_ll = 0.5f0 * rho_ll / pressure(u_ll, aux_ll, equations)
+    b_rr = 0.5f0 * rho_rr / pressure(u_rr, aux_rr, equations)
     b_factor = 0.5f0 * (b_ll + b_rr) / b_ll
     phi_jump = phi_rr - phi_ll
     return SVector(zero(eltype(u_ll)),
@@ -366,8 +366,8 @@ Kinetic energy preserving two-point flux by
                                      normal_direction::AbstractVector,
                                      equations::CompressibleEulerEnergyEquationsWithGravity2D)
     # Unpack left and right state
-    rho_e_ll = energy_total(u_ll, equations)
-    rho_e_rr = energy_total(u_rr, equations)
+    rho_e_ll = energy_total(u_ll, aux_ll, equations)
+    rho_e_rr = energy_total(u_rr, aux_rr, equations)
     rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
     rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
@@ -559,7 +559,7 @@ end
     return SVector(w1, w2, w3, w4)
 end
 
-@inline function entropy2cons(w,
+@inline function entropy2cons(w, aux,
                               equations::CompressibleEulerEnergyEquationsWithGravity2D)
     # See Hughes, Franca, Mallet (1986) A new finite element formulation for CFD
     # [DOI: 10.1016/0045-7825(86)90127-1](https://doi.org/10.1016/0045-7825(86)90127-1)
@@ -585,7 +585,7 @@ end
 end
 
 # Convert primitive to conservative variables
-@inline function prim2cons(prim,
+@inline function prim2cons(prim, aux,
                            equations::CompressibleEulerEnergyEquationsWithGravity2D)
     rho, v1, v2, p = prim
     rho_v1 = rho * v1
@@ -594,13 +594,7 @@ end
     return SVector(rho, rho_v1, rho_v2, rho_e)
 end
 
-# The conversion does not depend on the geopotential
-@inline function prim2cons(prim, aux,
-                           equations::CompressibleEulerEnergyEquationsWithGravity2D)
-    return prim2cons(prim, equations)
-end
-
-@inline function pressure(u,
+@inline function pressure(u, aux,
                           equations::CompressibleEulerEnergyEquationsWithGravity2D)
     rho, rho_v1, rho_v2, rho_e = u
     p = (equations.gamma - 1) * (rho_e - 0.5f0 * (rho_v1^2 + rho_v2^2) / rho)
@@ -608,10 +602,10 @@ end
 end
 
 # Calculate thermodynamic entropy for a conservative state `cons`
-@inline function entropy_thermodynamic(cons,
+@inline function entropy_thermodynamic(cons, aux,
                                        equations::CompressibleEulerEnergyEquationsWithGravity2D)
     # Pressure
-    p = pressure(cons, equations)
+    p = pressure(cons, aux, equations)
 
     # Thermodynamic entropy
     s = log(p) - equations.gamma * log(cons[1])
@@ -620,10 +614,10 @@ end
 end
 
 # Calculate mathematical entropy for a conservative state `cons`
-@inline function entropy_math(cons,
+@inline function entropy_math(cons, aux,
                               equations::CompressibleEulerEnergyEquationsWithGravity2D)
     # Mathematical entropy
-    S = -entropy_thermodynamic(cons, equations) * cons[1] *
+    S = -entropy_thermodynamic(cons, aux, equations) * cons[1] *
         equations.inv_gamma_minus_one
 
     return S
@@ -632,22 +626,22 @@ end
 # Default entropy is the mathematical entropy
 @inline function entropy(cons, aux,
                          equations::CompressibleEulerEnergyEquationsWithGravity2D)
-    entropy_math(cons, equations)
+    entropy_math(cons, aux, equations)
 end
 
 # Calculate total energy for a conservative state `cons`
-@inline energy_total(cons, ::CompressibleEulerEnergyEquationsWithGravity2D) = cons[4]
+@inline energy_total(cons, aux, ::CompressibleEulerEnergyEquationsWithGravity2D) = cons[4]
 
 # Calculate kinetic energy for a conservative state `cons`
-@inline function energy_kinetic(u,
+@inline function energy_kinetic(u, aux,
                                 equations::CompressibleEulerEnergyEquationsWithGravity2D)
     rho, rho_v1, rho_v2, rho_e = u
     return (rho_v1^2 + rho_v2^2) / (2 * rho)
 end
 
 # Calculate internal energy for a conservative state `cons`
-@inline function energy_internal(cons,
+@inline function energy_internal(cons, aux,
                                  equations::CompressibleEulerEnergyEquationsWithGravity2D)
-    return energy_total(cons, equations) - energy_kinetic(cons, equations)
+    return energy_total(cons, aux, equations) - energy_kinetic(cons, aux, equations)
 end
 end # @muladd
