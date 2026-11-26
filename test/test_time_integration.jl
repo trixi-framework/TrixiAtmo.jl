@@ -233,7 +233,7 @@ end
     GC.@preserve solutions begin
         u = map(u_ode -> Trixi.wrap_array(u_ode, semi), solutions)
         # Compare the variables separately, since they have very different magnitudes.
-        for v in 1:5
+        for v in eachvariable(equations)
             differences = [norm(view(u[i], v, ..) - view(u[i + 1], v, ..), Inf)
                            for i in 1:3]
             orders = log2.(differences[1:(end - 1)] ./ differences[2:end])

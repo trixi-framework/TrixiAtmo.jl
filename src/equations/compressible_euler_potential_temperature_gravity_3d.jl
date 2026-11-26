@@ -32,7 +32,7 @@ The compressible Euler equations with gravity in potential temperature formulati
 ```
 for an ideal gas with ratio of specific heats ``\gamma = c_p / c_v`` in three space dimensions.
 Here, ``\rho`` is the density, ``v_1, v_2, v_3`` are the velocities, ``\theta`` is the
-potential temperature, ``\phi`` is the gravitational potential, and
+potential temperature, ``\phi`` is the geopotential, and
 ```math
 p = p_0 \left( \frac{R \rho \theta}{p_0} \right)^\gamma
 ```
@@ -41,8 +41,8 @@ the pressure, where ``p_0 = 10^5\,\mathrm{Pa}`` is the reference pressure and
 
 The geopotential ``\phi`` is the only auxiliary variable, see `Trixi.nauxvariables`. Its
 values are given by the function `aux_field(x, equations)` passed to
-`SemidiscretizationHyperbolic`, e.g., [`aux_field_gravity_earth`](@ref). Thus,
-the pointwise functions take the auxiliary variables `aux = SVector(phi)` as additional
+`SemidiscretizationHyperbolic`, e.g., [`aux_field_gravity_earth`](@ref). The pointwise
+functions take the auxiliary variables `aux = SVector(phi)` as additional
 argument after the state, e.g., `flux(u, aux, normal_direction, equations)` or
 `flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)`.
 """
@@ -102,8 +102,6 @@ Trixi.auxvarnames(::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
 
 have_nonconservative_terms(::CompressibleEulerPotentialTemperatureEquationsWithGravity3D) = Trixi.True()
 
-# There are no separate auxiliary variables outside of the domain, so the inner ones are
-# used on both sides.
 @inline function boundary_condition_slip_wall(u_inner, aux_inner,
                                               normal_direction::AbstractVector,
                                               x, t,
@@ -710,7 +708,6 @@ end
 
 @inline function energy_total(cons, aux,
                               equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
-    # Mathematical entropy
     p = equations.p_0 * (equations.R * cons[5] / equations.p_0)^equations.gamma
 
     U = (p / (equations.gamma - 1) +
