@@ -58,8 +58,7 @@ have_nonconservative_terms(::CompressibleEulerPotentialTemperatureEquationsWithG
 
 # Slip-wall boundary condition
 # Determine the boundary numerical surface flux for a slip wall condition.
-# Imposes a zero normal velocity at the wall. There are no separate auxiliary variables
-# outside of the domain, so the inner ones are used on both sides.
+# Imposes a zero normal velocity at the wall.
 @inline function boundary_condition_slip_wall(u_inner, aux_inner,
                                               normal_direction::AbstractVector,
                                               x, t,
@@ -520,7 +519,6 @@ end
 
 @inline function energy_total(cons, aux,
                               equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
-    # Mathematical entropy
     p = equations.p_0 * (equations.R * cons[4] / equations.p_0)^equations.gamma
 
     U = (p / (equations.gamma - 1) + 0.5f0 * (cons[2]^2 + cons[3]^2) / (cons[1]))

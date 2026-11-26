@@ -10,10 +10,11 @@ for human readability.
 #### Changed
 - The `CompressibleEulerPotentialTemperatureEquationsWithGravity2D`, the
   `CompressibleEulerEnergyEquationsWithGravity2D`, and the
-  `CompressibleEulerInternalEnergyEquationsWithGravity2D` store the geopotential as
-  auxiliary variable of Trixi.jl (see `Trixi.nauxvariables`) instead of as last variable
-  of the state. Thus, they have one variable less, their pointwise functions take the
-  auxiliary variables as additional arguments after the states, e.g.,
+  `CompressibleEulerInternalEnergyEquationsWithGravity2D` store the geopotential as an
+  auxiliary variable of Trixi.jl (see `Trixi.nauxvariables`) instead of as the last
+  variable of the state. Thus, they have one variable fewer, their pointwise functions,
+  including user-defined source terms and boundary conditions, take the auxiliary
+  variables as additional arguments after the states, e.g.,
   `flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)` and
   `cons2prim(u, aux, equations)` (also `cons2entropy` and `entropy`, as required by
   Trixi.jl v0.18), and `SemidiscretizationHyperbolic` requires the keyword argument
@@ -22,11 +23,23 @@ for human readability.
   `elixir_potential_temperature_inertia_gravity_waves.jl` and
   `elixir_energy_inertia_gravity_waves.jl` use a `P4estMesh` instead of a `StructuredMesh`.
   With adaptive time stepping, results change slightly since the geopotential no longer
-  enters the error estimate of the time integrator.
+  enters the error estimate of the time integrator ([#268]).
 
 ## Changes in the v0.1 lifecycle
 
 #### Added
+- The `CompressibleEulerMoistPotentialTemperatureEquations3D` are the compressible Euler
+  equations with gravity with the virtual potential temperature as prognostic variable and
+  the moisture variables of a microphysics scheme, whose right-hand sides are given by
+  `source_terms_microphysics`. The `KesslerMicrophysics` is the warm-rain Kessler
+  microphysics of DCMIP2016 with water vapor, cloud water, and falling rain water.
+  The equations store the geopotential and the upward unit vector,
+  which gives the direction of the falling water,
+  as auxiliary variables of Trixi.jl, e.g., given by `aux_field_gravity_earth`.
+  Their volume flux `flux_kennedy_gruber_souza_etal` supports `FluxTurbo` with the
+  `KesslerMicrophysics`.
+  The moist baroclinic wave of DCMIP2016 is available as
+  `initial_condition_moist_baroclinic_instability` ([#271]).
 - `JacobianVerticalTwoSided` enables horizontally explicit, vertically implicit (HEVI) time
   integration of the `CompressibleEulerPotentialTemperatureEquationsWithGravity3D` on a
   `P4estMeshCubedSphereTopography` as linear operator of linearly implicit methods, i.e.,
