@@ -388,7 +388,7 @@ end
 
 @doc raw"""
     aux_field_gravity_small_earth(x,
-                                            equations::AbstractCompressibleEulerEquations{3, 5})
+                                  equations::AbstractCompressibleEulerEquations{3, 5})
 
 Geopotential
 ```math
