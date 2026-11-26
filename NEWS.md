@@ -46,6 +46,18 @@ for human readability.
 ## Changes in the v0.1 lifecycle
 
 #### Added
+- The `CompressibleEulerMoistPotentialTemperatureEquations3D` are the compressible Euler
+  equations with gravity with the virtual potential temperature as prognostic variable and
+  the moisture variables of a microphysics scheme, whose right-hand sides are given by
+  `source_terms_microphysics`. The `KesslerMicrophysics` is the warm-rain Kessler
+  microphysics of DCMIP2016 with water vapor, cloud water, and falling rain water.
+  The equations store the geopotential and the upward unit vector,
+  which gives the direction of the falling water,
+  as auxiliary variables of Trixi.jl, e.g., given by `aux_field_gravity_earth`.
+  Their volume flux `flux_kennedy_gruber_souza_etal` supports `FluxTurbo` with the
+  `KesslerMicrophysics`.
+  The moist baroclinic wave of DCMIP2016 is available as
+  `initial_condition_moist_baroclinic_instability` ([#271]).
 - `JacobianVerticalTwoSided` enables horizontally explicit, vertically implicit (HEVI) time
   integration of the `CompressibleEulerPotentialTemperatureEquationsWithGravity3D` on a
   `P4estMeshCubedSphereTopography` as linear operator of linearly implicit methods, i.e.,
