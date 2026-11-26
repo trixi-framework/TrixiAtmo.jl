@@ -153,7 +153,7 @@ end
     v_normal = v1 * normal_direction[1] + v2 * normal_direction[2] +
                v3 * normal_direction[3]
     rho_v_normal = rho * v_normal
-    p = pressure(u, equations)
+    p = pressure(u, aux, equations)
 
     f1 = rho_v_normal
     f2 = rho_v_normal * v1 + p * normal_direction[1]
@@ -662,7 +662,7 @@ Entropy and total energy conservative two-point flux by
     return SVector(f1, f2, f3, f4, f5)
 end
 
-@inline function Trixi.prim2cons(prim,
+@inline function Trixi.prim2cons(prim, aux,
                                  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     rho, v1, v2, v3, p = prim
     rho_v1 = rho * v1
@@ -670,12 +670,6 @@ end
     rho_v3 = rho * v3
     rho_theta = (p / equations.K)^(1 / equations.gamma)
     return SVector(rho, rho_v1, rho_v2, rho_v3, rho_theta)
-end
-
-# The conversion does not depend on the geopotential
-@inline function Trixi.prim2cons(prim, aux,
-                                 equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
-    return prim2cons(prim, equations)
 end
 
 @inline function cons2prim(u, aux,
@@ -688,7 +682,7 @@ end
     return SVector(rho, v1, v2, v3, p)
 end
 
-@inline function cons2cons(u,
+@inline function cons2cons(u, aux,
                            equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     return u
 end
@@ -712,20 +706,20 @@ end
     return S
 end
 
-@inline function pressure(cons,
+@inline function pressure(cons, aux,
                           equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     p = equations.K * exp(equations.gamma * log(cons[5]))
     return p
 end
 
 # Calculate kinetic energy for a conservative state `cons`
-@inline function energy_kinetic(u,
+@inline function energy_kinetic(u, aux,
                                 equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     rho, rho_v1, rho_v2, rho_v3, _ = u
     return 0.5f0 * (rho_v1^2 + rho_v2^2 + rho_v3^2) / rho
 end
 
-@inline function energy_total(cons,
+@inline function energy_total(cons, aux,
                               equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     # Mathematical entropy
     p = equations.p_0 * (equations.R * cons[5] / equations.p_0)^equations.gamma

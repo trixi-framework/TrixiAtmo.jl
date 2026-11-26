@@ -190,7 +190,7 @@ end
                                     equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
     rho = u[1]
     precipitation, moisture = sedimentation(moisture_variables(u, equations),
-                                            density_dry(u, equations),
+                                            density_dry(u, aux, equations),
                                             equations.microphysics)
     k_normal = vertical_component(aux, normal_direction, equations)
     precipitation_normal = precipitation * k_normal
@@ -213,7 +213,7 @@ end
     v3 = rho_v3 / rho
     v_normal = v1 * normal_direction[1] + v2 * normal_direction[2] +
                v3 * normal_direction[3]
-    p = pressure(u, equations)
+    p = pressure(u, aux, equations)
 
     f1 = rho * v_normal
     f2 = rho_v1 * v_normal + p * normal_direction[1]
@@ -241,8 +241,8 @@ end
     v1_rr = rho_v1_rr / rho_rr
     v2_rr = rho_v2_rr / rho_rr
     v3_rr = rho_v3_rr / rho_rr
-    p_ll = pressure(u_ll, equations)
-    p_rr = pressure(u_rr, equations)
+    p_ll = pressure(u_ll, aux_ll, equations)
+    p_rr = pressure(u_rr, aux_rr, equations)
 
     rho_avg = 0.5f0 * (rho_ll + rho_rr)
     v1_avg = 0.5f0 * (v1_ll + v1_rr)
@@ -358,36 +358,36 @@ end
 @inline function cons2prim(u, aux,
                            equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
     rho, rho_v1, rho_v2, rho_v3 = u
-    rho_dry = density_dry(u, equations)
-    p = pressure(u, equations)
+    rho_dry = density_dry(u, aux, equations)
+    p = pressure(u, aux, equations)
     return SVector(rho, rho_v1 / rho, rho_v2 / rho, rho_v3 / rho, p,
                    (moisture_variables(u, equations) / rho_dry)...)
 end
 
-@inline function density_dry(u,
+@inline function density_dry(u, aux,
                              equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
     return u[1] -
            density_water(moisture_variables(u, equations), equations.microphysics)
 end
 
-@inline function pressure(u,
+@inline function pressure(u, aux,
                           equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
     # Dalton's law p = (rho_d R + rho_v R_v) T with T = theta * (p / p_0)^(R / c_p), i.e.,
     # p = K * (rho * theta_v)^gamma
     return equations.K * exp(equations.gamma * log(u[5]))
 end
 
-@inline function temperature(u,
+@inline function temperature(u, aux,
                              equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
-    rho_dry = density_dry(u, equations)
-    return pressure(u, equations) / (rho_dry * equations.R + u[6] * equations.R_v)
+    rho_dry = density_dry(u, aux, equations)
+    return pressure(u, aux, equations) / (rho_dry * equations.R + u[6] * equations.R_v)
 end
 
 # Largest terminal velocity of the precipitation of the state `u`
-@inline function max_terminal_velocity(u,
+@inline function max_terminal_velocity(u, aux,
                                        equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
     return max_terminal_velocity(moisture_variables(u, equations),
-                                 density_dry(u, equations), equations.microphysics)
+                                 density_dry(u, aux, equations), equations.microphysics)
 end
 
 # The precipitation falls with the terminal velocity in the direction of `-k`
@@ -395,7 +395,7 @@ end
                                 equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
     rho, v1, v2, v3, p = cons2prim(u, aux, equations)
     c = sqrt(equations.gamma * p / rho)
-    V = max_terminal_velocity(u, equations)
+    V = max_terminal_velocity(u, aux, equations)
 
     return (abs(v1) + c + V * abs(aux[2]), abs(v2) + c + V * abs(aux[3]),
             abs(v3) + c + V * abs(aux[4]))
@@ -414,8 +414,8 @@ end
            v3_rr * normal_direction[3]
     c_ll = sqrt(equations.gamma * p_ll / rho_ll)
     c_rr = sqrt(equations.gamma * p_rr / rho_rr)
-    V = max(max_terminal_velocity(u_ll, equations),
-            max_terminal_velocity(u_rr, equations))
+    V = max(max_terminal_velocity(u_ll, aux_ll, equations),
+            max_terminal_velocity(u_rr, aux_rr, equations))
     k_normal = max(abs(vertical_component(aux_ll, normal_direction, equations)),
                    abs(vertical_component(aux_rr, normal_direction, equations)))
 
@@ -440,10 +440,10 @@ end
 
     norm_ = norm(normal_direction)
     return max(abs(v_ll) + c_ll * norm_ +
-               max_terminal_velocity(u_ll, equations) *
+               max_terminal_velocity(u_ll, aux_ll, equations) *
                abs(vertical_component(aux_ll, normal_direction, equations)),
                abs(v_rr) + c_rr * norm_ +
-               max_terminal_velocity(u_rr, equations) *
+               max_terminal_velocity(u_rr, aux_rr, equations) *
                abs(vertical_component(aux_rr, normal_direction, equations)))
 end
 
@@ -460,8 +460,8 @@ change the dry air, the right-hand side of
 """
 @inline function source_terms_microphysics(u, aux, x, t,
                                            equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
-    rho_dry = density_dry(u, equations)
-    p = pressure(u, equations)
+    rho_dry = density_dry(u, aux, equations)
+    p = pressure(u, aux, equations)
     exner = (p / equations.p_0)^(equations.R / equations.c_p)
     # Dry potential temperature theta = rho * theta_v / (rho_d * (1 + q_v R_v / R))
     virtual_factor = 1 + equations.R_v / equations.R * u[6] / rho_dry
