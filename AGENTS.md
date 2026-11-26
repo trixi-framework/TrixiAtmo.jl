@@ -433,12 +433,15 @@ starts the Julia sessions itself.
   `test/test_unit.jl` (see the existing `"Unit: Consistency check for ..."`
   test items). For a conservative numerical flux `f`, check consistency with
   the physical flux, i.e.,
-  `f(u, u, orientation, equations) ≈ flux(u, orientation, equations)` and the
-  same with `normal_direction` (with `aux_vars` arguments for covariant
-  equations). Check that the 1D, 2D, and 3D versions of an equation agree for
-  corresponding states and directions. For all fluxes and wave speed estimates
-  with `normal_direction` methods, check agreement with the `orientation`
-  methods for axis-aligned unit normals.
+  `f(u, u, normal_direction, equations) ≈ flux(u, normal_direction, equations)`
+  (with `aux_vars` arguments for covariant equations), and the same with
+  `orientation` where such methods exist, i.e., for the 1D equations and the
+  equations in covariant form; the Cartesian equations in 2D and 3D only have
+  `normal_direction` methods apart from the physical flux. Check that the 1D,
+  2D, and 3D versions of an equation agree for corresponding states and
+  directions. For all fluxes and wave speed estimates with both
+  `normal_direction` and `orientation` methods, check their agreement for
+  axis-aligned unit normals.
 - Except for consistency checks, unit tests for numerical fluxes and wave speed
   estimates should use *different* left and right states: many copy-paste bugs
   are invisible for `u_ll == u_rr`.
@@ -515,9 +518,9 @@ starts the Julia sessions itself.
   using it must account for its magnitude exactly once. Numerical fluxes and
   wave speed estimates must be homogeneous of degree one in
   `normal_direction`, i.e., `f(u_ll, u_rr, α * n) == α * f(u_ll, u_rr, n)` for
-  `α > 0` (e.g., multiply sound speeds by `norm(normal_direction)`). Check
-  agreement with the corresponding `orientation` method for axis-aligned unit
-  normals.
+  `α > 0` (e.g., multiply sound speeds by `norm(normal_direction)`). Where a
+  corresponding `orientation` method exists, check agreement with it for
+  axis-aligned unit normals.
 - Nonconservative surface terms depend on the argument order: the element
   receiving the flux passes its own state first,
   `nonconservative_flux(u_own, u_neighbor, ...)`.
