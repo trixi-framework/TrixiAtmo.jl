@@ -394,10 +394,10 @@ end
 
 Geopotential
 ```math
-\phi(\vec{x}) = g \left(\lVert \vec{x} \rVert - a_s\right)
+\phi(\vec{x}) = g \left(\lVert \vec{x} \rVert - \frac{a}{X}\right)
 ```
 of a gravity of constant magnitude ``g`` ([`EARTH_GRAVITATIONAL_ACCELERATION`](@ref))
-pointing to the center of the reduced-radius Earth of radius ``a_s``
+pointing to the center of the reduced-radius Earth of radius ``a / X``
 ([`SMALL_EARTH_RADIUS`](@ref)), see [`SMALL_EARTH_SCALING`](@ref). It is returned as the
 auxiliary variables, see `Trixi.nauxvariables`, and passed as `aux_field` to
 `SemidiscretizationHyperbolic`.
