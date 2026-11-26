@@ -841,3 +841,203 @@ end
         end
     end
 end
+
+@testitem "Unit: Consistency check for fluxes with Moist Potential Temperature: CEMPTE3D" setup=[Setup] tags=[:unit_fluxes] begin
+    equations = CompressibleEulerMoistPotentialTemperatureEquations3D(c_p = 1004.0,
+                                                                      c_v = 717.0,
+                                                                      gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+    u_ll = SVector(1.1, -0.5, 2.34, 0.7, 310.0, 0.012, 0.003, 0.002)
+    u_rr = SVector(1.05, 0.4, -1.3, -0.2, 300.0, 0.01, 0.0, 0.004)
+    # Geopotential and radial upward unit vector at two nearby points on a sphere
+    function aux_sphere(x)
+        r = sqrt(sum(abs2, x))
+        return SVector(EARTH_GRAVITATIONAL_ACCELERATION * (r - 3.0e5), x[1] / r, x[2] / r,
+                       x[3] / r)
+    end
+    x_ll = SVector(2.0e5, -1.0e5, 2.0e5)
+    x_rr = SVector(2.1e5, -0.9e5, 2.05e5)
+    aux_ll = aux_sphere(x_ll)
+    aux_rr = aux_sphere(x_rr)
+
+    normal_directions = [SVector(1.0, 0.0, 0.0),
+        SVector(0.0, 1.0, 0.0),
+        SVector(0.0, 0.0, 1.0),
+        SVector(0.5, -0.5, 0.2),
+        SVector(-1.2, 0.3, 1.4)]
+
+    for normal_direction in normal_directions, (u, aux) in ((u_ll, aux_ll), (u_rr, aux_rr))
+        for i in 1:2
+            @test flux_lmars_combined(u, u, aux, aux, normal_direction, equations)[i] ≈
+                  flux(u, aux, normal_direction, equations)
+            @test flux_kennedy_gruber_souza_etal(u, u, aux, aux, normal_direction,
+                                                 equations)[i] ≈
+                  flux(u, aux, normal_direction, equations)
+        end
+    end
+
+    for normal_direction in normal_directions
+        # The conservative part of the volume flux is symmetric and the nonconservative
+        # part is antisymmetric
+        flux_left, flux_right = flux_kennedy_gruber_souza_etal(u_ll, u_rr, aux_ll, aux_rr,
+                                                               normal_direction,
+                                                               equations)
+        flux_left_swapped, flux_right_swapped = flux_kennedy_gruber_souza_etal(u_rr, u_ll,
+                                                                               aux_rr,
+                                                                               aux_ll,
+                                                                               normal_direction,
+                                                                               equations)
+        @test flux_left + flux_right ≈ flux_left_swapped + flux_right_swapped
+        @test flux_left - flux_right ≈ -(flux_left_swapped - flux_right_swapped)
+
+        # The `FluxTurbo` specialization returns the same contributions
+        turbo_ll = Trixi.cons2turbo(flux_kennedy_gruber_souza_etal, u_ll..., aux_ll...,
+                                    equations)
+        turbo_rr = Trixi.cons2turbo(flux_kennedy_gruber_souza_etal, u_rr..., aux_rr...,
+                                    equations)
+        flux_left_turbo, flux_right_turbo = Trixi.flux_turbo(flux_kennedy_gruber_souza_etal,
+                                                             turbo_ll..., turbo_rr...,
+                                                             normal_direction...,
+                                                             equations)
+        @test SVector(flux_left_turbo) ≈ flux_left
+        @test SVector(flux_right_turbo) ≈ flux_right
+
+        # The surface flux and the wave speed estimates are homogeneous of degree one in
+        # the normal direction
+        for i in 1:2
+            @test flux_lmars_combined(u_ll, u_rr, aux_ll, aux_rr, 2.5 * normal_direction,
+                                      equations)[i] ≈
+                  2.5 * flux_lmars_combined(u_ll, u_rr, aux_ll, aux_rr,
+                                      normal_direction, equations)[i]
+        end
+        @test max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr, 2.5 * normal_direction,
+                                  equations) ≈
+              2.5 * max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
+                                  equations)
+        @test max_abs_speed(u_ll, u_rr, aux_ll, aux_rr, 2.5 * normal_direction,
+                            equations) ≈
+              2.5 * max_abs_speed(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)
+        @test max_abs_speed(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations) <=
+              max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)
+    end
+
+    # Without water, the physical and the volume flux are the ones of the dry equations,
+    # which carry the geopotential in the state. The surface flux is not compared since
+    # `flux_lmars_combined` of the dry equations uses a constant speed of sound.
+    equations_dry = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
+                                                                                c_v = 717.0,
+                                                                                gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+    dry(u) = SVector(u[1], u[2], u[3], u[4], u[5], 0.0, 0.0, 0.0)
+    dry_with_geopotential(u, aux) = SVector(u[1], u[2], u[3], u[4], u[5], aux[1])
+    u_ll_dry = dry_with_geopotential(u_ll, aux_ll)
+    u_rr_dry = dry_with_geopotential(u_rr, aux_rr)
+    for normal_direction in normal_directions
+        @test flux(dry(u_ll), aux_ll, normal_direction, equations)[1:5] ≈
+              flux(u_ll_dry, normal_direction, equations_dry)[1:5]
+        for i in 1:2
+            @test flux_kennedy_gruber_souza_etal(dry(u_ll), dry(u_rr), aux_ll, aux_rr,
+                                                 normal_direction, equations)[i][1:5] ≈
+                  flux_kennedy_gruber_souza_etal(u_ll_dry, u_rr_dry, normal_direction,
+                                                 equations_dry)[i][1:5]
+        end
+    end
+
+    # The rain falls in the direction of the auxiliary variables: there is no
+    # sedimentation through a face whose normal is horizontal, and the full terminal
+    # velocity through a face whose normal is vertical
+    v_ll = SVector(u_ll[2], u_ll[3], u_ll[4]) / u_ll[1]
+    rain = u_ll[8] *
+           TrixiAtmo.terminal_velocity_rain(TrixiAtmo.density_dry(u_ll, equations), u_ll[8],
+                                            equations.microphysics)
+    vertical = SVector(aux_ll[2], aux_ll[3], aux_ll[4])
+    horizontal = SVector(x_ll[2], -x_ll[1], 0.0) / 1.0e5
+    @test flux(u_ll, aux_ll, horizontal, equations)[8] ≈ u_ll[8] * sum(v_ll .* horizontal)
+    @test flux(u_ll, aux_ll, vertical, equations)[8] ≈
+          u_ll[8] * sum(v_ll .* vertical) - rain
+
+    # The rain leaves the domain through the lower boundary but does not enter it through
+    # the upper boundary
+    flux_bottom = boundary_condition_slip_wall(u_ll, aux_ll, -2 * vertical, x_ll, 0.0,
+                                               flux_lmars_combined, equations)
+    flux_top = boundary_condition_slip_wall(u_ll, aux_ll, 2 * vertical, x_ll, 0.0,
+                                            flux_lmars_combined, equations)
+    @test flux_bottom[8] ≈ 2 * rain
+    @test flux_bottom[1] ≈ 2 * rain
+    @test isapprox(flux_top[8], 0, atol = 1e-12)
+    @test isapprox(flux_top[1], 0, atol = 1e-12)
+
+    # `prim2cons` is the inverse of `cons2prim`
+    for (u, aux) in ((u_ll, aux_ll), (u_rr, aux_rr))
+        @test prim2cons(cons2prim(u, aux, equations), aux, equations) ≈ u
+    end
+end
+
+@testitem "Unit: Consistency check for Kessler source terms: CEMPTE3D" setup=[Setup] tags=[:unit_source_terms] begin
+    equations = CompressibleEulerMoistPotentialTemperatureEquations3D(c_p = 1004.5,
+                                                                      c_v = 717.5,
+                                                                      gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+    @unpack R, R_v, c_p, p_0 = equations
+    @unpack latent_heat, condensation_time = equations.microphysics
+    aux = SVector(1000.0, 0.0, 0.0, 1.0)
+
+    # Right-hand sides of the mixing ratios `q_v`, `q_c`, and `q_r` and isobaric heating
+    # rate at the temperature `T` and the pressure `p`
+    function rates(T, p, q_v, q_c, q_r)
+        rho_d = p / ((R + R_v * q_v) * T)
+        exner = (p / p_0)^(R / c_p)
+        u = SVector(rho_d * (1 + q_v + q_c + q_r), 1.0, -2.0, 0.5,
+                    rho_d * T / exner * (1 + R_v / R * q_v),
+                    rho_d * q_v, rho_d * q_c, rho_d * q_r)
+        @test pressure(u, equations) ≈ p
+        du = source_terms_microphysics(u, aux, nothing, 0.0, equations)
+
+        # The microphysics only moves water between the species and does not change the
+        # total density and the momentum
+        @test du[1] == du[2] == du[3] == du[4] == 0
+        @test isapprox(du[6] + du[7] + du[8], 0, atol = 1e-15)
+
+        # Heating rate from the right-hand sides of
+        # `rho * theta_v = rho_d * theta * (1 + q_v R_v / R)` and of the vapor, which equals
+        # the latent heat released by the condensed vapor
+        heating = exner / rho_d * (du[5] - R_v / R * T / exner * du[6]) /
+                  (1 + R_v / R * q_v)
+        @test isapprox(heating, -latent_heat / c_p * du[6] / rho_d, rtol = 1e-12,
+                       atol = 1e-15)
+        return du[6:8] / rho_d, heating
+    end
+
+    for (T, p) in ((285.0, 85000.0), (300.0, 95000.0), (260.0, 60000.0))
+        q_vs = TrixiAtmo.saturation_mixing_ratio_tetens(T, p)
+        zero_rates = SVector(0.0, 0.0, 0.0)
+
+        # No processes in subsaturated air without condensate, in saturated air with cloud
+        # water below the autoconversion threshold of 1 g/kg, and in saturated air with rain
+        @test all(iszero, rates(T, p, 0.5 * q_vs, 0.0, 0.0)[1])
+        @test isapprox(rates(T, p, q_vs, 5.0e-4, 0.0)[1], zero_rates, atol = 1e-15)
+        @test isapprox(rates(T, p, q_vs, 0.0, 2.0e-3)[1], zero_rates, atol = 1e-15)
+
+        # Autoconversion of the cloud water above the threshold
+        rates_q, _ = rates(T, p, q_vs, 2.0e-3, 0.0)
+        @test isapprox(rates_q[3], 1.0e-3 * (2.0e-3 - 1.0e-3), rtol = 1e-12)
+        @test isapprox(rates_q[2], -rates_q[3], rtol = 1e-10)
+
+        # Subsaturated air evaporates the cloud water within `condensation_time` and the
+        # rain with latent cooling
+        rates_q, _ = rates(T, p, 0.5 * q_vs, 1.0e-4, 0.0)
+        @test rates_q[2] ≈ -1.0e-4 / condensation_time
+        rates_q, heating = rates(T, p, 0.8 * q_vs, 0.0, 2.0e-3)
+        @test rates_q[3] < 0 && rates_q[2] == 0 && heating < 0
+
+        # Condensing for `condensation_time` adjusts supersaturated air to saturation up to
+        # second order in the supersaturation, since the condensation accounts for the
+        # latent heating with the derivative of `saturation_mixing_ratio_tetens`
+        residuals = map((1.0e-3, 1.0e-4)) do supersaturation
+            q_v = (1 + supersaturation) * q_vs
+            rates_q, heating = rates(T, p, q_v, 0.0, 0.0)
+            q_v_new = q_v + condensation_time * rates_q[1]
+            T_new = T + condensation_time * heating
+            return ((q_v_new - TrixiAtmo.saturation_mixing_ratio_tetens(T_new, p)) /
+                    (q_v - q_vs))
+        end
+        @test isapprox(residuals[1] / residuals[2], 10, rtol = 1e-2)
+    end
+end
