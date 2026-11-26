@@ -1,6 +1,6 @@
 """
     initial_condition_gravity_waves(x, t,
-                                        equations::AbstractCompressibleEulerEquations{2, 4})
+                                    equations::AbstractCompressibleEulerEquations{2, 4})
 
 Test cases for linearized analytical solution by
 -  Baldauf, Michael and Brdar, Slavko (2013)

@@ -33,7 +33,7 @@ The compressible Euler equations with gravity
 0 \\ - \rho \frac{\partial}{\partial x} \phi \\ - \rho \frac{\partial}{\partial y} \phi \\
 \end{pmatrix}
 ```
-for an ideal gas with ratio of specific heats gamma in two space dimensions. Here, ``\rho`` is the density, ``v_1, v_2`` are the velocities, ``e_{\text{internal}}`` is the specific internal energy, ``\phi`` is the gravitational potential, and
+for an ideal gas with ratio of specific heats gamma in two space dimensions. Here, ``\rho`` is the density, ``v_1, v_2`` are the velocities, ``e_{\text{internal}}`` is the specific internal energy, ``\phi`` is the geopotential, and
 ```math
 p = (\gamma - 1) \rho e_{\text{internal}}
 ```
@@ -41,8 +41,8 @@ the pressure.
 
 The geopotential ``\phi`` is the only auxiliary variable, see `Trixi.nauxvariables`. Its
 values are given by the function `aux_field(x, equations)` passed to
-`SemidiscretizationHyperbolic`, e.g., [`aux_field_geopotential`](@ref). Thus, the
-pointwise functions take the auxiliary variables `aux = SVector(phi)` as additional
+`SemidiscretizationHyperbolic`, e.g., [`aux_field_geopotential`](@ref). The pointwise
+functions take the auxiliary variables `aux = SVector(phi)` as additional
 argument after the state, e.g.,
 `flux_conservative_etec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)`.
 """
@@ -85,8 +85,6 @@ Trixi.auxvarnames(::CompressibleEulerInternalEnergyEquationsWithGravity2D) = ("p
 
 have_nonconservative_terms(::CompressibleEulerInternalEnergyEquationsWithGravity2D) = True()
 
-# There are no separate auxiliary variables outside of the domain, so the inner ones are
-# used on both sides.
 @inline function boundary_condition_slip_wall(u_inner, aux_inner,
                                               normal_direction::AbstractVector,
                                               x, t,
