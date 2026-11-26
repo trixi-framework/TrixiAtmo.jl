@@ -46,7 +46,7 @@ interfaces and at the walls is the one of the LMARS flux with the constant speed
 For the same reason, the gravity term uses the constant gravitational acceleration `g` of
 the equations in the radial direction, projected onto the vertical direction, also if the
 geopotential of the semidiscretization yields a gravitational acceleration that varies with
-the height (e.g., `phi = g (a - a^2 / norm(x))` with the radius `a` of the Earth in
+the height (e.g., `phi = g a (norm(x) - a) / norm(x)` with the radius `a` of the Earth in
 [`aux_field_gravity_earth`](@ref)).
 
 ### Permutation
