@@ -992,7 +992,8 @@ end
     # velocity through a face whose normal is vertical
     v_ll = SVector(u_ll[2], u_ll[3], u_ll[4]) / u_ll[1]
     rain = u_ll[8] *
-           TrixiAtmo.terminal_velocity_rain(TrixiAtmo.density_dry(u_ll, equations), u_ll[8],
+           TrixiAtmo.terminal_velocity_rain(TrixiAtmo.density_dry(u_ll, aux_ll, equations),
+                                            u_ll[8],
                                             equations.microphysics)
     vertical = SVector(aux_ll[2], aux_ll[3], aux_ll[4])
     horizontal = SVector(x_ll[2], -x_ll[1], 0.0) / 1.0e5
@@ -1033,7 +1034,7 @@ end
         u = SVector(rho_d * (1 + q_v + q_c + q_r), 1.0, -2.0, 0.5,
                     rho_d * T / exner * (1 + R_v / R * q_v),
                     rho_d * q_v, rho_d * q_c, rho_d * q_r)
-        @test pressure(u, equations) ≈ p
+        @test pressure(u, aux, equations) ≈ p
         du = source_terms_microphysics(u, aux, nothing, 0.0, equations)
 
         # The microphysics only moves water between the species and does not change the

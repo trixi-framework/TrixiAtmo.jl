@@ -415,7 +415,7 @@ end
 
 # Coriolis force for a rotation about the z axis with the given angular velocity, used by
 # `source_terms_coriolis` and `source_terms_coriolis_small_earth`
-@inline function coriolis_source(u, angular_velocity,
+@inline function coriolis_source(u, aux, angular_velocity,
                                  equations::AbstractCompressibleEulerEquations{3})
     du0 = zero(eltype(u))
     angular_velocity = convert(eltype(u), angular_velocity)
@@ -442,13 +442,13 @@ See also [`source_terms_coriolis_small_earth`](@ref) for the reduced-radius conf
 """
 @inline function source_terms_coriolis(u, aux, x, t,
                                        equations::AbstractCompressibleEulerEquations{3, 5})
-    return coriolis_source(u, EARTH_ROTATION_RATE, equations)
+    return coriolis_source(u, aux, EARTH_ROTATION_RATE, equations)
 end
 
 # The Coriolis force acts on the momentum of the total density
 @inline function source_terms_coriolis(u, aux, x, t,
                                        equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
-    return coriolis_source(u, EARTH_ROTATION_RATE, equations)
+    return coriolis_source(u, aux, EARTH_ROTATION_RATE, equations)
 end
 
 @doc raw"""
@@ -461,5 +461,5 @@ configuration, using the scaled rotation rate [`SMALL_EARTH_ROTATION_RATE`](@ref
 @inline function source_terms_coriolis_small_earth(u, aux, x, t,
                                                    equations::AbstractCompressibleEulerEquations{3,
                                                                                                  5})
-    return coriolis_source(u, SMALL_EARTH_ROTATION_RATE, equations)
+    return coriolis_source(u, aux, SMALL_EARTH_ROTATION_RATE, equations)
 end

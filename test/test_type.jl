@@ -382,14 +382,15 @@ end
 
         @test eltype(@inferred cons2prim(u, aux, equations)) == RealT
         @test eltype(@inferred prim2cons(u, aux, equations)) == RealT
-        @test typeof(@inferred pressure(u, equations)) == RealT
-        @test typeof(@inferred TrixiAtmo.temperature(u, equations)) == RealT
+        @test typeof(@inferred pressure(u, aux, equations)) == RealT
+        @test typeof(@inferred TrixiAtmo.temperature(u, aux, equations)) == RealT
         @test typeof(@inferred TrixiAtmo.terminal_velocity_rain(TrixiAtmo.density_dry(u,
+                                                                                      aux,
                                                                                       equations),
                                                                 u[8],
                                                                 equations.microphysics)) ==
               RealT
-        @test typeof(@inferred TrixiAtmo.density_dry(u, equations)) == RealT
+        @test typeof(@inferred TrixiAtmo.density_dry(u, aux, equations)) == RealT
         @test typeof(@inferred TrixiAtmo.saturation_mixing_ratio_tetens(RealT(280),
                                                                         RealT(90_000))) ==
               RealT
