@@ -87,8 +87,8 @@ have_nonconservative_terms(::CompressibleEulerEnergyEquationsWithGravity3D) = Tr
 # Calculate 1D flux for a single point
 @inline function flux(u, aux, normal_direction::AbstractVector,
                       equations::CompressibleEulerEnergyEquationsWithGravity3D)
-    rho_e = energy_total(u, equations)
-    rho, v1, v2, v3, p = cons2prim(u, equations)
+    rho_e = energy_total(u, aux, equations)
+    rho, v1, v2, v3, p = cons2prim(u, aux, equations)
 
     v_normal = v1 * normal_direction[1] + v2 * normal_direction[2] +
                v3 * normal_direction[3]
@@ -210,8 +210,8 @@ The well balanced on curvilinear coordinates was proven by
     rho_mean = ln_mean(rho_ll, rho_rr)
     # Factor of the density of the gravity term of the momentum of Eq. (73d), where
     # `b = rho / (2 p)`
-    b_ll = 0.5f0 * rho_ll / pressure(u_ll, equations)
-    b_rr = 0.5f0 * rho_rr / pressure(u_rr, equations)
+    b_ll = 0.5f0 * rho_ll / pressure(u_ll, aux_ll, equations)
+    b_rr = 0.5f0 * rho_rr / pressure(u_rr, aux_rr, equations)
     b_factor = 0.5f0 * (b_ll + b_rr) / b_ll
     phi_jump = phi_rr - phi_ll
     return SVector(zero(eltype(u_ll)),
@@ -317,8 +317,8 @@ The modification is in the energy flux to guarantee pressure equilibrium and was
                                  normal_direction::AbstractVector,
                                  equations::CompressibleEulerEnergyEquationsWithGravity3D)
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
     v_dot_n_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2] +
                  v3_ll * normal_direction[3]
     v_dot_n_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2] +
@@ -359,10 +359,10 @@ Kinetic energy preserving two-point flux by
                                      normal_direction::AbstractVector,
                                      equations::CompressibleEulerEnergyEquationsWithGravity3D)
     # Unpack left and right state
-    rho_e_ll = energy_total(u_ll, equations)
-    rho_e_rr = energy_total(u_rr, equations)
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+    rho_e_ll = energy_total(u_ll, aux_ll, equations)
+    rho_e_rr = energy_total(u_rr, aux_rr, equations)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
     # Average each factor of products in flux
     rho_avg = 0.5f0 * (rho_ll + rho_rr)
@@ -400,8 +400,8 @@ Entropy conserving two-point flux by
                                     normal_direction::AbstractVector,
                                     equations::CompressibleEulerEnergyEquationsWithGravity3D)
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
     v_dot_n_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2] +
                  v3_ll * normal_direction[3]
@@ -454,8 +454,8 @@ See also
                               normal_direction::AbstractVector,
                               equations::CompressibleEulerEnergyEquationsWithGravity3D)
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
     v_dot_n_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2] +
                  v3_ll * normal_direction[3]
     v_dot_n_rr = v1_rr * normal_direction[1] + v2_rr * normal_direction[2] +
@@ -505,8 +505,8 @@ References:
     c = flux_lmars.speed_of_sound
 
     # Unpack left and right state
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
     v_ll = v1_ll * normal_direction[1] + v2_ll * normal_direction[2] +
            v3_ll * normal_direction[3]
@@ -542,8 +542,8 @@ end
 # maximum velocity magnitude plus the maximum speed of sound
 @inline function max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr, orientation::Integer,
                                      equations::CompressibleEulerEnergyEquationsWithGravity3D)
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
     # Get the velocity value in the appropriate direction
     if orientation == 1
@@ -566,8 +566,8 @@ end
 @inline function max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr,
                                      normal_direction::AbstractVector,
                                      equations::CompressibleEulerEnergyEquationsWithGravity3D)
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
     # Calculate normal velocities and sound speed
     # left
@@ -587,8 +587,8 @@ end
 # Less "cautious", i.e., less overestimating `λ_max` compared to `max_abs_speed_naive`
 @inline function max_abs_speed(u_ll, u_rr, aux_ll, aux_rr, orientation::Integer,
                                equations::CompressibleEulerEnergyEquationsWithGravity3D)
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
     # Get the velocity value in the appropriate direction
     if orientation == 1
@@ -612,8 +612,8 @@ end
 @inline function max_abs_speed(u_ll, u_rr, aux_ll, aux_rr,
                                normal_direction::AbstractVector,
                                equations::CompressibleEulerEnergyEquationsWithGravity3D)
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
+    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
+    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
     # Calculate normal velocities and sound speeds
     # left
@@ -633,14 +633,15 @@ end
 
 @inline function max_abs_speeds(u, aux,
                                 equations::CompressibleEulerEnergyEquationsWithGravity3D)
-    rho, v1, v2, v3, p = cons2prim(u, equations)
+    rho, v1, v2, v3, p = cons2prim(u, aux, equations)
     c = sqrt(equations.gamma * p / rho)
 
     return abs(v1) + c, abs(v2) + c, abs(v3) + c
 end
 
 # Convert conservative variables to primitive
-@inline function cons2prim(u, equations::CompressibleEulerEnergyEquationsWithGravity3D)
+@inline function cons2prim(u, aux,
+                           equations::CompressibleEulerEnergyEquationsWithGravity3D)
     rho, rho_v1, rho_v2, rho_v3, rho_e = u
 
     v1 = rho_v1 / rho
@@ -653,7 +654,7 @@ end
 end
 
 # Convert conservative variables to entropy
-@inline function cons2entropy(u,
+@inline function cons2entropy(u, aux,
                               equations::CompressibleEulerEnergyEquationsWithGravity3D)
     rho, rho_v1, rho_v2, rho_v3, rho_e = u
 
@@ -675,7 +676,7 @@ end
     return SVector(w1, w2, w3, w4, w5)
 end
 
-@inline function entropy2cons(w,
+@inline function entropy2cons(w, aux,
                               equations::CompressibleEulerEnergyEquationsWithGravity3D)
     # See Hughes, Franca, Mallet (1986) A new finite element formulation for CFD
     # [DOI: 10.1016/0045-7825(86)90127-1](https://doi.org/10.1016/0045-7825(86)90127-1)
@@ -703,7 +704,7 @@ end
 end
 
 # Convert primitive to conservative variables
-@inline function prim2cons(prim,
+@inline function prim2cons(prim, aux,
                            equations::CompressibleEulerEnergyEquationsWithGravity3D)
     rho, v1, v2, v3, p = prim
     rho_v1 = rho * v1
@@ -714,17 +715,18 @@ end
     return SVector(rho, rho_v1, rho_v2, rho_v3, rho_e)
 end
 
-@inline function pressure(u, equations::CompressibleEulerEnergyEquationsWithGravity3D)
+@inline function pressure(u, aux,
+                          equations::CompressibleEulerEnergyEquationsWithGravity3D)
     rho, rho_v1, rho_v2, rho_v3, rho_e = u
     p = (equations.gamma - 1) * (rho_e - 0.5f0 * (rho_v1^2 + rho_v2^2 + rho_v3^2) / rho)
     return p
 end
 
 # Calculate thermodynamic entropy for a conservative state `u`
-@inline function entropy_thermodynamic(u,
+@inline function entropy_thermodynamic(u, aux,
                                        equations::CompressibleEulerEnergyEquationsWithGravity3D)
     rho, _ = u
-    p = pressure(u, equations)
+    p = pressure(u, aux, equations)
 
     # Thermodynamic entropy
     s = log(p) - equations.gamma * log(rho)
@@ -733,9 +735,9 @@ end
 end
 
 # Calculate mathematical entropy for a conservative state `cons`
-@inline function entropy_math(cons,
+@inline function entropy_math(cons, aux,
                               equations::CompressibleEulerEnergyEquationsWithGravity3D)
-    S = -entropy_thermodynamic(cons, equations) * cons[1] *
+    S = -entropy_thermodynamic(cons, aux, equations) * cons[1] *
         equations.inv_gamma_minus_one
     # Mathematical entropy
 
@@ -743,23 +745,24 @@ end
 end
 
 # Default entropy is the mathematical entropy
-@inline function entropy(cons, equations::CompressibleEulerEnergyEquationsWithGravity3D)
-    entropy_math(cons, equations)
+@inline function entropy(cons, aux,
+                         equations::CompressibleEulerEnergyEquationsWithGravity3D)
+    entropy_math(cons, aux, equations)
 end
 
 # Calculate total energy for a conservative state `cons`
-@inline energy_total(cons, ::CompressibleEulerEnergyEquationsWithGravity3D) = cons[5]
+@inline energy_total(cons, aux, ::CompressibleEulerEnergyEquationsWithGravity3D) = cons[5]
 
 # Calculate kinetic energy for a conservative state `cons`
-@inline function energy_kinetic(u,
+@inline function energy_kinetic(u, aux,
                                 equations::CompressibleEulerEnergyEquationsWithGravity3D)
     rho, rho_v1, rho_v2, rho_v3, _ = u
     return 0.5f0 * (rho_v1^2 + rho_v2^2 + rho_v3^2) / rho
 end
 
 # Calculate internal energy for a conservative state `cons`
-@inline function energy_internal(cons,
+@inline function energy_internal(cons, aux,
                                  equations::CompressibleEulerEnergyEquationsWithGravity3D)
-    return energy_total(cons, equations) - energy_kinetic(cons, equations)
+    return energy_total(cons, aux, equations) - energy_kinetic(cons, aux, equations)
 end
 end # @muladd

@@ -324,13 +324,13 @@ end
         @test eltype(@inferred aux_field_gravity_earth(x_3d, equations)) == RealT
         @test eltype(@inferred aux_field_gravity_small_earth(x_3d, equations)) == RealT
         @test eltype(@inferred source_terms_coriolis(u, aux, x_3d, t, equations)) == RealT
-        @test eltype(@inferred cons2prim(u, equations)) == RealT
-        @test eltype(@inferred prim2cons(u, equations)) == RealT
-        @test eltype(@inferred cons2entropy(u, equations)) == RealT
-        @test typeof(@inferred pressure(u, equations)) == RealT
-        @test typeof(@inferred entropy(cons, equations)) == RealT
-        @test typeof(@inferred energy_kinetic(cons, equations)) == RealT
-        @test typeof(@inferred energy_total(cons, equations)) == RealT
+        @test eltype(@inferred cons2prim(u, aux, equations)) == RealT
+        @test eltype(@inferred prim2cons(u, aux, equations)) == RealT
+        @test eltype(@inferred cons2entropy(u, aux, equations)) == RealT
+        @test typeof(@inferred pressure(u, aux, equations)) == RealT
+        @test typeof(@inferred entropy(cons, aux, equations)) == RealT
+        @test typeof(@inferred energy_kinetic(cons, aux, equations)) == RealT
+        @test typeof(@inferred energy_total(cons, aux, equations)) == RealT
         @test eltype(@inferred Trixi.max_abs_speeds(u, aux, equations)) == RealT
         @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr,
                                                    normal_direction,
@@ -380,16 +380,17 @@ end
                   RealT
         end
 
-        @test eltype(@inferred cons2prim(u, equations)) == RealT
-        @test eltype(@inferred prim2cons(u, equations)) == RealT
-        @test typeof(@inferred pressure(u, equations)) == RealT
-        @test typeof(@inferred TrixiAtmo.temperature(u, equations)) == RealT
+        @test eltype(@inferred cons2prim(u, aux, equations)) == RealT
+        @test eltype(@inferred prim2cons(u, aux, equations)) == RealT
+        @test typeof(@inferred pressure(u, aux, equations)) == RealT
+        @test typeof(@inferred TrixiAtmo.temperature(u, aux, equations)) == RealT
         @test typeof(@inferred TrixiAtmo.terminal_velocity_rain(TrixiAtmo.density_dry(u,
+                                                                                      aux,
                                                                                       equations),
                                                                 u[8],
                                                                 equations.microphysics)) ==
               RealT
-        @test typeof(@inferred TrixiAtmo.density_dry(u, equations)) == RealT
+        @test typeof(@inferred TrixiAtmo.density_dry(u, aux, equations)) == RealT
         @test typeof(@inferred TrixiAtmo.saturation_mixing_ratio_tetens(RealT(280),
                                                                         RealT(90_000))) ==
               RealT
@@ -421,7 +422,7 @@ end
         @test typeof(equations_float64.c_p) == Float64
         @test typeof(equations_float64.microphysics.condensation_time) == Float64
         @test typeof(@inferred KesslerMicrophysics(latent_heat = RealT(2.5e6),
-                                                   rho_surface = RealT(1.15),
+                                                   rho_surface = RealT(1.2),
                                                    condensation_time = one(RealT))) ==
               KesslerMicrophysics{RealT}
         @test typeof(@inferred similar(equations_float64, RealT)) == typeof(equations)
@@ -488,8 +489,9 @@ end
                                                       normal_direction, equations)[i]) ==
                   RealT
         end
-        @test eltype(@inferred cons2prim(u_ll, equations)) == RealT
-        @test eltype(@inferred prim2cons(cons2prim(u_ll, equations), equations)) == RealT
+        @test eltype(@inferred cons2prim(u_ll, aux_ll, equations)) == RealT
+        @test eltype(@inferred prim2cons(cons2prim(u_ll, aux_ll, equations), aux_ll,
+                                         equations)) == RealT
 
         w = @inferred cons2specific(u_ll, equations_parabolic)
         gradients = ntuple(d -> SVector(ntuple(v -> RealT(d - v / 10) / 1000, 6)), 3)
@@ -803,16 +805,17 @@ end
                                                                normal_direction,
                                                                equations)) ==
               RealT
-        @test eltype(@inferred cons2prim(u, equations)) == RealT
-        @test eltype(@inferred prim2cons(u, equations)) == RealT
-        @test eltype(@inferred cons2entropy(u, equations)) == RealT
-        @test eltype(@inferred entropy2cons(cons2entropy(u, equations), equations)) ==
+        @test eltype(@inferred cons2prim(u, aux, equations)) == RealT
+        @test eltype(@inferred prim2cons(u, aux, equations)) == RealT
+        @test eltype(@inferred cons2entropy(u, aux, equations)) == RealT
+        @test eltype(@inferred entropy2cons(cons2entropy(u, aux, equations), aux,
+                                            equations)) ==
               RealT
-        @test typeof(@inferred pressure(u, equations)) == RealT
-        @test typeof(@inferred entropy(cons, equations)) == RealT
-        @test typeof(@inferred energy_kinetic(cons, equations)) == RealT
-        @test typeof(@inferred energy_total(cons, equations)) == RealT
-        @test typeof(@inferred energy_internal(cons, equations)) == RealT
+        @test typeof(@inferred pressure(u, aux, equations)) == RealT
+        @test typeof(@inferred entropy(cons, aux, equations)) == RealT
+        @test typeof(@inferred energy_kinetic(cons, aux, equations)) == RealT
+        @test typeof(@inferred energy_total(cons, aux, equations)) == RealT
+        @test typeof(@inferred energy_internal(cons, aux, equations)) == RealT
         @test eltype(@inferred Trixi.max_abs_speeds(u, aux, equations)) == RealT
         @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr,
                                                    normal_direction,
@@ -899,11 +902,11 @@ end
                                                     normal_direction..., equations)[i]) ==
                   RealT
         end
-        @test eltype(@inferred cons2prim(u, equations)) == RealT
-        @test eltype(@inferred prim2cons(u, equations)) == RealT
-        @test eltype(@inferred cons2entropy(u, equations)) == RealT
-        @test typeof(@inferred pressure(u, equations)) == RealT
-        @test typeof(@inferred entropy(cons, equations)) == RealT
+        @test eltype(@inferred cons2prim(u, aux, equations)) == RealT
+        @test eltype(@inferred prim2cons(u, aux, equations)) == RealT
+        @test eltype(@inferred cons2entropy(u, aux, equations)) == RealT
+        @test typeof(@inferred pressure(u, aux, equations)) == RealT
+        @test typeof(@inferred entropy(cons, aux, equations)) == RealT
         @test eltype(@inferred Trixi.max_abs_speeds(u, aux, equations)) == RealT
     end
 end

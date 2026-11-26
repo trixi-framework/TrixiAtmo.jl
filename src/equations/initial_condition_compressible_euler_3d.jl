@@ -156,7 +156,8 @@ function initial_condition_baroclinic_instability(x, t,
     v2 = cos(lon) * u - sin(lat) * sin(lon) * v
     v3 = cos(lat) * v
 
-    return prim2cons(SVector(rho, v1, v2, v3, p), equations)
+    aux = aux_field_gravity_earth(x, equations)
+    return prim2cons(SVector(rho, v1, v2, v3, p), aux, equations)
 end
 
 @doc raw"""
@@ -186,8 +187,8 @@ auxiliary variables, see `Trixi.nauxvariables`, and passed as `aux_field` to
 end
 
 # Exponential perturbation of the zonal wind of the moist baroclinic wave of DCMIP2016
-# (`evaluate_exponential` in `baroclinic_wave_test.f90`) with an amplitude of 1 m/s. As in
-# DCMIP2016, it is cut off at the perturbation radius, where it jumps from `exp(-1)` to zero.
+# with an amplitude of 1 m/s. As in DCMIP2016, it is cut off at the perturbation radius,
+# where it jumps from `exp(-1)` to zero.
 @inline function perturbation_exponential(lon, lat, z)
     RealT = typeof(z)
     perturbation_radius = convert(RealT, 0.1) # in units of the radius of the Earth
@@ -215,10 +216,10 @@ end
     initial_condition_moist_baroclinic_instability(x, t,
                                                    equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
 
-Initial condition of the moist baroclinic wave of DCMIP2016 (test case 161) on a spherical
-shell of inner radius [`EARTH_RADIUS`](@ref). The pressure, the total density, and the zonal
-wind are the ones of the balanced state of [`initial_condition_baroclinic_instability`](@ref),
-whose temperature is the virtual temperature ``T_v``. The specific humidity
+Initial condition of the moist baroclinic wave of DCMIP2016 (test case 161) in the
+deep-atmosphere form on a spherical shell of inner radius [`EARTH_RADIUS`](@ref).
+The pressure, the total density, and the zonal wind are the ones of the balanced state of
+[`initial_condition_baroclinic_instability`](@ref), whose temperature is the virtual temperature ``T_v``. The specific humidity
 ``q_v = \varrho_v / \varrho`` is
 ```math
 q_v = q_0 \exp\left(-\left(\frac{\varphi}{\varphi_w}\right)^4\right)
@@ -271,7 +272,8 @@ function initial_condition_moist_baroclinic_instability(x, t,
     r_v = q_v / (1 - q_v)
 
     moisture = SVector(r_v, ntuple(_ -> zero(RealT), Val(nvariables(equations) - 6))...)
-    return prim2cons(SVector(rho, v1, v2, v3, p, moisture...), equations)
+    aux = aux_field_gravity_earth(x, equations)
+    return prim2cons(SVector(rho, v1, v2, v3, p, moisture...), aux, equations)
 end
 
 @doc raw"""
@@ -334,7 +336,8 @@ function initial_condition_isothermal(x, t,
     # density (via ideal gas law)
     rho = p / (R * T)
 
-    return prim2cons(SVector(rho, 0, 0, 0, p), equations)
+    aux = aux_field_gravity_earth(x, equations)
+    return prim2cons(SVector(rho, 0, 0, 0, p), aux, equations)
 end
 
 @doc raw"""
@@ -380,7 +383,8 @@ function initial_condition_vortex_shedding(x, t,
             (u0 / radius_earth + 2 * angular_velocity) * (sin(lat)^2 - 1) -
             N^2 / (g^2 * k) * phi)
     rho = p / (R * T)
-    return prim2cons(SVector(rho, v1, v2, v3, p), equations)
+    aux = aux_field_gravity_small_earth(x, equations)
+    return prim2cons(SVector(rho, v1, v2, v3, p), aux, equations)
 end
 
 @doc raw"""
@@ -412,7 +416,7 @@ end
 
 # Coriolis force for a rotation about the z axis with the given angular velocity, used by
 # `source_terms_coriolis` and `source_terms_coriolis_small_earth`
-@inline function coriolis_source(u, angular_velocity,
+@inline function coriolis_source(u, aux, angular_velocity,
                                  equations::AbstractCompressibleEulerEquations{3})
     du0 = zero(eltype(u))
     angular_velocity = convert(eltype(u), angular_velocity)
@@ -441,13 +445,13 @@ See also [`source_terms_coriolis_small_earth`](@ref) for the reduced-radius conf
                                        equations::Union{AbstractCompressibleEulerEquations{3,
                                                                                            5},
                                                         CompressibleEulerPotentialTemperatureEquationsWithGravity3D})
-    return coriolis_source(u, EARTH_ROTATION_RATE, equations)
+    return coriolis_source(u, aux, EARTH_ROTATION_RATE, equations)
 end
 
 # The Coriolis force acts on the momentum of the total density
 @inline function source_terms_coriolis(u, aux, x, t,
                                        equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
-    return coriolis_source(u, EARTH_ROTATION_RATE, equations)
+    return coriolis_source(u, aux, EARTH_ROTATION_RATE, equations)
 end
 
 @doc raw"""
@@ -461,5 +465,5 @@ configuration, using the scaled rotation rate [`SMALL_EARTH_ROTATION_RATE`](@ref
                                                    equations::Union{AbstractCompressibleEulerEquations{3,
                                                                                                        5},
                                                                     CompressibleEulerPotentialTemperatureEquationsWithGravity3D})
-    return coriolis_source(u, SMALL_EARTH_ROTATION_RATE, equations)
+    return coriolis_source(u, aux, SMALL_EARTH_ROTATION_RATE, equations)
 end

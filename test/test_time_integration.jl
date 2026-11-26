@@ -232,8 +232,7 @@ end
     # thus otherwise be garbage collected
     GC.@preserve solutions begin
         u = map(u_ode -> Trixi.wrap_array(u_ode, semi), solutions)
-        # Compare the variables separately, since they have very different magnitudes. The
-        # geopotential does not change.
+        # Compare the variables separately, since they have very different magnitudes.
         for v in 1:5
             differences = [norm(view(u[i], v, ..) - view(u[i + 1], v, ..), Inf)
                            for i in 1:3]

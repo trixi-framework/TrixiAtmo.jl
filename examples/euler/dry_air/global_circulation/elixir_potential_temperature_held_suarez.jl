@@ -23,7 +23,7 @@ using Trixi, TrixiAtmo
 
     @unpack p_0, c_p, c_v, R = equations
 
-    p = pressure(u, equations)
+    p = pressure(u, aux, equations)
     lon, lat, r = cartesian_to_sphere(x)
     temperature = p / (u[1] * R)
 
