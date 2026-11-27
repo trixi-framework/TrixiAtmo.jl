@@ -24,9 +24,9 @@
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
-equations = CompressibleEulerEnergyEquationsWithGravity2D(c_p = 1004,
-                                                          c_v = 717,
-                                                          gravity = 9.81)
+equations = CompressibleEulerEnergyEquations2D(c_p = 1004,
+                                               c_v = 717,
+                                               gravity = 9.81)
 
 # We have an isothermal background state with T0 = 250 K.
 # The reference speed of sound can be computed as:

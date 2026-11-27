@@ -73,15 +73,15 @@ export CompressibleMoistEulerEquations2D,
        CovariantLinearAdvectionEquation2D, CovariantShallowWaterEquations2D,
        CovariantEulerEnergyEquations2D,
        ShallowWaterEquations3D, SplitCovariantShallowWaterEquations2D,
-       CompressibleEulerPotentialTemperatureEquationsWithGravity1D,
-       CompressibleEulerPotentialTemperatureEquationsWithGravity2D,
-       CompressibleEulerPotentialTemperatureEquationsWithGravity3D,
+       CompressibleEulerPotentialTemperatureEquations1D,
+       CompressibleEulerPotentialTemperatureEquations2D,
+       CompressibleEulerPotentialTemperatureEquations3D,
        CompressibleEulerMoistPotentialTemperatureEquations3D,
        KesslerMicrophysics,
-       CompressibleEulerEnergyEquationsWithGravity2D,
-       CompressibleEulerEnergyEquationsWithGravity3D,
-       CompressibleEulerInternalEnergyEquationsWithGravity2D,
-       CompressibleEulerVectorInvariantEquationsWithGravity3D
+       CompressibleEulerEnergyEquations2D,
+       CompressibleEulerEnergyEquations3D,
+       CompressibleEulerInternalEnergyEquations2D,
+       CompressibleEulerVectorInvariantEquations3D
 
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 

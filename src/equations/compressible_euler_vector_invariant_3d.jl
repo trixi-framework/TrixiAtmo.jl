@@ -2,7 +2,7 @@
 #! format: noindent
 
 @doc raw"""
-    CompressibleEulerVectorInvariantEquationsWithGravity3D(; c_p, c_v, gravity)
+    CompressibleEulerVectorInvariantEquations3D(; c_p, c_v, gravity)
 
 The compressible Euler equations with gravity in vector-invariant form with the potential
 temperature as prognostic variable
@@ -34,7 +34,7 @@ functions take the auxiliary variables `aux = SVector(phi)` as additional
 argument after the state, e.g.,
 `flux_etec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)`.
 """
-struct CompressibleEulerVectorInvariantEquationsWithGravity3D{RealT <: Real} <:
+struct CompressibleEulerVectorInvariantEquations3D{RealT <: Real} <:
        AbstractCompressibleEulerEquations{3, 5}
     p_0::RealT # reference pressure in Pa
     c_p::RealT # specific heat at constant pressure in J/(kg K)
@@ -44,7 +44,7 @@ struct CompressibleEulerVectorInvariantEquationsWithGravity3D{RealT <: Real} <:
     gamma::RealT # ratio of specific heats
     inv_gamma_minus_one::RealT # = inv(gamma - 1); can be used to write slow divisions as fast multiplications
     K::RealT # = p_0 * (R / p_0)^gamma; scaling factor between pressure and weighted potential temperature
-    function CompressibleEulerVectorInvariantEquationsWithGravity3D(; c_p, c_v, gravity)
+    function CompressibleEulerVectorInvariantEquations3D(; c_p, c_v, gravity)
         c_p, c_v, g = promote(c_p, c_v, gravity)
         p_0 = 100_000
         R = c_p - c_v
@@ -59,21 +59,21 @@ struct CompressibleEulerVectorInvariantEquationsWithGravity3D{RealT <: Real} <:
 end
 
 function varnames(::typeof(cons2cons),
-                  ::CompressibleEulerVectorInvariantEquationsWithGravity3D)
+                  ::CompressibleEulerVectorInvariantEquations3D)
     ("rho", "v1", "v2", "v3", "rho_theta")
 end
 
-varnames(::typeof(cons2prim), ::CompressibleEulerVectorInvariantEquationsWithGravity3D) = ("rho",
-                                                                                           "v1",
-                                                                                           "v2",
-                                                                                           "v3",
-                                                                                           "p")
+varnames(::typeof(cons2prim), ::CompressibleEulerVectorInvariantEquations3D) = ("rho",
+                                                                                "v1",
+                                                                                "v2",
+                                                                                "v3",
+                                                                                "p")
 
-@inline Trixi.nauxvariables(::CompressibleEulerVectorInvariantEquationsWithGravity3D) = 1
+@inline Trixi.nauxvariables(::CompressibleEulerVectorInvariantEquations3D) = 1
 
-Trixi.auxvarnames(::CompressibleEulerVectorInvariantEquationsWithGravity3D) = ("phi",)
+Trixi.auxvarnames(::CompressibleEulerVectorInvariantEquations3D) = ("phi",)
 
-have_nonconservative_terms(::CompressibleEulerVectorInvariantEquationsWithGravity3D) = Trixi.True()
+have_nonconservative_terms(::CompressibleEulerVectorInvariantEquations3D) = Trixi.True()
 
 # The numerical fluxes of these equations combine the conservative and the nonconservative
 # contributions. Thus, the boundary condition returns only the first contribution of the
@@ -83,7 +83,7 @@ have_nonconservative_terms(::CompressibleEulerVectorInvariantEquationsWithGravit
                                               x, t,
                                               surface_flux_function::Union{typeof(flux_etec),
                                                                            typeof(flux_lmars_es)},
-                                              equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
+                                              equations::CompressibleEulerVectorInvariantEquations3D)
     # normalize the outward pointing direction
     normal = normal_direction / norm(normal_direction)
     # compute the normal velocity
@@ -105,7 +105,7 @@ end
 
 """
     flux_etec(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
-              equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
+              equations::CompressibleEulerVectorInvariantEquations3D)
 
 Entropy and total energy conservative two-point flux by
 - Marco Artiano, Kieran Ricardo, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2026)
@@ -118,7 +118,7 @@ see [`Trixi.combine_conservative_and_nonconservative_fluxes`](@ref).
 """
 @inline function flux_etec(u_ll, u_rr, aux_ll, aux_rr,
                            normal_direction::AbstractVector,
-                           equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
+                           equations::CompressibleEulerVectorInvariantEquations3D)
     rho_ll, v1_ll, v2_ll, v3_ll, rho_theta_ll = u_ll
     rho_rr, v1_rr, v2_rr, v3_rr, rho_theta_rr = u_rr
     phi_ll = aux_ll[1]
@@ -175,11 +175,11 @@ see [`Trixi.combine_conservative_and_nonconservative_fluxes`](@ref).
     return flux_left, flux_right
 end
 
-@inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_etec), ::CompressibleEulerVectorInvariantEquationsWithGravity3D) = Trixi.True()
+@inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_etec), ::CompressibleEulerVectorInvariantEquations3D) = Trixi.True()
 
 """
     flux_lmars_es(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
-                  equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
+                  equations::CompressibleEulerVectorInvariantEquations3D)
 
 Entropy-stable and well-balanced version of the low Mach number approximate Riemann solver
 [`FluxLMARS`](@ref) by
@@ -198,7 +198,7 @@ here.
 """
 @inline function flux_lmars_es(u_ll, u_rr, aux_ll, aux_rr,
                                normal_direction::AbstractVector,
-                               equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
+                               equations::CompressibleEulerVectorInvariantEquations3D)
     rho_ll, v1_ll, v2_ll, v3_ll, rho_theta_ll = u_ll
     rho_rr, v1_rr, v2_rr, v3_rr, rho_theta_rr = u_rr
     exner_ll = exner_pressure(u_ll, aux_ll, equations)
@@ -284,17 +284,17 @@ here.
     return flux_left, flux_right
 end
 
-@inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_lmars_es), ::CompressibleEulerVectorInvariantEquationsWithGravity3D) = Trixi.True()
+@inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_lmars_es), ::CompressibleEulerVectorInvariantEquations3D) = Trixi.True()
 
 @inline function Trixi.prim2cons(prim, aux,
-                                 equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
+                                 equations::CompressibleEulerVectorInvariantEquations3D)
     rho, v1, v2, v3, p = prim
     rho_theta = (p / equations.K)^(1 / equations.gamma)
     return SVector(rho, v1, v2, v3, rho_theta)
 end
 
 @inline function cons2prim(u, aux,
-                           equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
+                           equations::CompressibleEulerVectorInvariantEquations3D)
     rho, v1, v2, v3, rho_theta = u
     p = equations.K * rho_theta^equations.gamma
     return SVector(rho, v1, v2, v3, p)
@@ -302,7 +302,7 @@ end
 
 # Exner pressure π = (p / p_0)^(R / c_p) = (R ρθ / p_0)^(R / c_v)
 @inline function exner_pressure(u, aux,
-                                equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
+                                equations::CompressibleEulerVectorInvariantEquations3D)
     rho_theta = u[5]
     return (equations.R * rho_theta / equations.p_0)^(equations.R / equations.c_v)
 end
@@ -310,7 +310,7 @@ end
 # Entropy variables w = ∂U/∂u of the entropy U = -ρ s / (γ - 1) with s = log(p) - γ log(ρ),
 # see `entropy`. They vanish for the velocity, since U does not depend on it.
 @inline function cons2entropy(u, aux,
-                              equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
+                              equations::CompressibleEulerVectorInvariantEquations3D)
     rho, _, _, _, rho_theta = u
 
     w1 = -(log(equations.K * (rho_theta / rho)^equations.gamma) - equations.gamma) *
@@ -322,7 +322,7 @@ end
 end
 
 @inline function entropy(cons, aux,
-                         equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
+                         equations::CompressibleEulerVectorInvariantEquations3D)
     p = equations.K * cons[5]^equations.gamma
     # Thermodynamic entropy
     s = log(p) - equations.gamma * log(cons[1])
@@ -331,13 +331,13 @@ end
 end
 
 @inline function pressure(cons, aux,
-                          equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
+                          equations::CompressibleEulerVectorInvariantEquations3D)
     p = equations.K * exp(equations.gamma * log(cons[5]))
     return p
 end
 
 @inline function max_abs_speeds(u, aux,
-                                equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
+                                equations::CompressibleEulerVectorInvariantEquations3D)
     rho, v1, v2, v3, p = cons2prim(u, aux, equations)
     c = sqrt(equations.gamma * p / rho)
 
@@ -351,13 +351,13 @@ end # @muladd
 # We precompute `rho, v1, v2, v3, theta, exner, phi, log(theta)`, i.e., two quantities more
 # than the number of variables and auxiliary variables.
 @inline function Trixi.nturbovars(::typeof(flux_etec),
-                                  ::CompressibleEulerVectorInvariantEquationsWithGravity3D)
+                                  ::CompressibleEulerVectorInvariantEquations3D)
     return Val(8)
 end
 
 @inline function Trixi.cons2turbo(::typeof(flux_etec),
                                   rho, v1, v2, v3, rho_theta, phi,
-                                  equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
+                                  equations::CompressibleEulerVectorInvariantEquations3D)
     theta = rho_theta / rho
     exner = exp(equations.R / equations.c_v *
                 log(equations.R * rho_theta / equations.p_0))
@@ -372,7 +372,7 @@ end
                                   log_theta_rr,
                                   normal_direction_1, normal_direction_2,
                                   normal_direction_3,
-                                  equations::CompressibleEulerVectorInvariantEquationsWithGravity3D)
+                                  equations::CompressibleEulerVectorInvariantEquations3D)
     v_dot_n_ll = v1_ll * normal_direction_1 + v2_ll * normal_direction_2 +
                  v3_ll * normal_direction_3
     v_dot_n_rr = v1_rr * normal_direction_1 + v2_rr * normal_direction_2 +

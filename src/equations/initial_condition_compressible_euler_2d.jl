@@ -192,7 +192,7 @@ end
 # This signature is used for source terms, adding Rayleigh damping
 # to avoid reflections at the boundaries.
 @inline function (setup::MountainWaveSetup)(u, aux, x, t,
-                                            equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+                                            equations::CompressibleEulerPotentialTemperatureEquations2D)
     @unpack theta_0, u0, brunt_vaisala_frequency = setup
     @unpack z_damping_start, z_damping_end = setup
     @unpack x_damping_start, x_damping_end, damping_rate = setup

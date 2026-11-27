@@ -6,7 +6,7 @@
 #! format: noindent
 
 @doc raw"""
-    CompressibleEulerEnergyEquationsWithGravity3D(; c_p, c_v, gravity)
+    CompressibleEulerEnergyEquations3D(; c_p, c_v, gravity)
 
 The compressible Euler equations with gravity
 ```math
@@ -49,7 +49,7 @@ functions take the auxiliary variables `aux = SVector(phi)` as additional
 argument after the state, e.g., `flux(u, aux, normal_direction, equations)` or
 `flux_ranocha(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)`.
 """
-struct CompressibleEulerEnergyEquationsWithGravity3D{RealT <: Real} <:
+struct CompressibleEulerEnergyEquations3D{RealT <: Real} <:
        AbstractCompressibleEulerEquations{3, 5}
     p_0::RealT # reference pressure in Pa
     c_p::RealT # specific heat at constant pressure in J/(kg K)
@@ -58,8 +58,8 @@ struct CompressibleEulerEnergyEquationsWithGravity3D{RealT <: Real} <:
     R::RealT # gas constant in J/(kg K)
     gamma::RealT # ratio of specific heats
     inv_gamma_minus_one::RealT # = inv(gamma - 1); can be used to write slow divisions as fast multiplications
-    function CompressibleEulerEnergyEquationsWithGravity3D(; c_p, c_v,
-                                                           gravity)
+    function CompressibleEulerEnergyEquations3D(; c_p, c_v,
+                                                gravity)
         c_p, c_v, g = promote(c_p, c_v, gravity)
         p_0 = 100_000
         R = c_p - c_v
@@ -71,22 +71,22 @@ struct CompressibleEulerEnergyEquationsWithGravity3D{RealT <: Real} <:
     end
 end
 
-function varnames(::typeof(cons2cons), ::CompressibleEulerEnergyEquationsWithGravity3D)
+function varnames(::typeof(cons2cons), ::CompressibleEulerEnergyEquations3D)
     ("rho", "rho_v1", "rho_v2", "rho_v3", "rho_e")
 end
-function varnames(::typeof(cons2prim), ::CompressibleEulerEnergyEquationsWithGravity3D)
+function varnames(::typeof(cons2prim), ::CompressibleEulerEnergyEquations3D)
     ("rho", "v1", "v2", "v3", "p")
 end
 
-@inline Trixi.nauxvariables(::CompressibleEulerEnergyEquationsWithGravity3D) = 1
+@inline Trixi.nauxvariables(::CompressibleEulerEnergyEquations3D) = 1
 
-Trixi.auxvarnames(::CompressibleEulerEnergyEquationsWithGravity3D) = ("phi",)
+Trixi.auxvarnames(::CompressibleEulerEnergyEquations3D) = ("phi",)
 
-have_nonconservative_terms(::CompressibleEulerEnergyEquationsWithGravity3D) = Trixi.True()
+have_nonconservative_terms(::CompressibleEulerEnergyEquations3D) = Trixi.True()
 
 # Calculate 1D flux for a single point
 @inline function flux(u, aux, normal_direction::AbstractVector,
-                      equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                      equations::CompressibleEulerEnergyEquations3D)
     rho_e = energy_total(u, aux, equations)
     rho, v1, v2, v3, p = cons2prim(u, aux, equations)
 
@@ -105,7 +105,7 @@ end
                                               normal_direction::AbstractVector,
                                               x, t,
                                               surface_flux_functions,
-                                              equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                                              equations::CompressibleEulerEnergyEquations3D)
     # normalize the outward pointing direction
     normal = normal_direction / norm(normal_direction)
     surface_flux_function, nonconservative_flux_function = surface_flux_functions
@@ -131,10 +131,10 @@ end
 """
     flux_nonconservative_isothermal(u_ll, u_rr, aux_ll, aux_rr,
                                     normal_direction::AbstractVector,
-                                    equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                                    equations::CompressibleEulerEnergyEquations3D)
 
 Well-balanced gravity term for an isothermal background state
-for the [`CompressibleEulerEnergyEquationsWithGravity3D`](@ref)
+for the [`CompressibleEulerEnergyEquations3D`](@ref)
 developed by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
    Structure-Preserving High-Order Methods for the Compressible Euler Equations
@@ -148,7 +148,7 @@ form "symmetric * jump", thus anti-symmetric.
 """
 @inline function flux_nonconservative_isothermal(u_ll, u_rr, aux_ll, aux_rr,
                                                  normal_direction::AbstractVector,
-                                                 equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                                                 equations::CompressibleEulerEnergyEquations3D)
     rho_ll, rho_v1_ll, rho_v2_ll, rho_v3_ll, _ = u_ll
     rho_rr, rho_v1_rr, rho_v2_rr, rho_v3_rr, _ = u_rr
     phi_ll = aux_ll[1]
@@ -175,7 +175,7 @@ end
 """
     flux_nonconservative_waruszewski_etal(u_ll, u_rr, aux_ll, aux_rr,
                                           normal_direction::AbstractVector,
-                                          equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                                          equations::CompressibleEulerEnergyEquations3D)
 
 Well-balanced gravity term for isothermal background state
 -  Maciej Waruszewski and Jeremy E. Kozdon and Lucas C. Wilcox and Thomas H. Gibson and Francis X. Giraldo (2022),
@@ -191,7 +191,7 @@ The well balanced on curvilinear coordinates was proven by
 """
 @inline function flux_nonconservative_waruszewski_etal(u_ll, u_rr, aux_ll, aux_rr,
                                                        normal_direction::AbstractVector,
-                                                       equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                                                       equations::CompressibleEulerEnergyEquations3D)
     rho_ll, rho_v1_ll, rho_v2_ll, rho_v3_ll, _ = u_ll
     rho_rr, rho_v1_rr, rho_v2_rr, rho_v3_rr, _ = u_rr
     phi_ll = aux_ll[1]
@@ -223,7 +223,7 @@ end
 """
     flux_nonconservative_artiano_etal(u_ll, u_rr, aux_ll, aux_rr,
                                       normal_direction::AbstractVector,
-                                      equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                                      equations::CompressibleEulerEnergyEquations3D)
 
 Well-balanced gravity term for constant potential temperature background state by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
@@ -233,7 +233,7 @@ Well-balanced gravity term for constant potential temperature background state b
 """
 @inline function flux_nonconservative_artiano_etal(u_ll, u_rr, aux_ll, aux_rr,
                                                    normal_direction::AbstractVector,
-                                                   equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                                                   equations::CompressibleEulerEnergyEquations3D)
     rho_ll, rho_v1_ll, rho_v2_ll, rho_v3_ll, _ = u_ll
     rho_rr, rho_v1_rr, rho_v2_rr, rho_v3_rr, _ = u_rr
     phi_ll = aux_ll[1]
@@ -261,7 +261,7 @@ end
 """
     flux_nonconservative_souza_etal(u_ll, u_rr, aux_ll, aux_rr,
                                     normal_direction::AbstractVector,
-                                    equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                                    equations::CompressibleEulerEnergyEquations3D)
 
 -  Souza et al.
    The Flux-Differencing Discontinuous {G}alerkin Method Applied to
@@ -270,7 +270,7 @@ end
 """
 @inline function flux_nonconservative_souza_etal(u_ll, u_rr, aux_ll, aux_rr,
                                                  normal_direction::AbstractVector,
-                                                 equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                                                 equations::CompressibleEulerEnergyEquations3D)
     rho_ll, rho_v1_ll, rho_v2_ll, rho_v3_ll, _ = u_ll
     rho_rr, rho_v1_rr, rho_v2_rr, rho_v3_rr, _ = u_rr
     phi_ll = aux_ll[1]
@@ -297,7 +297,7 @@ end
 
 """
     flux_shima_etal(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector,
-                    equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                    equations::CompressibleEulerEnergyEquations3D)
 
 This flux is a modification of the original kinetic energy preserving two-point flux by
 - Yuichi Kuya, Kosuke Totani and Soshi Kawai (2018)
@@ -313,7 +313,7 @@ The modification is in the energy flux to guarantee pressure equilibrium and was
 """
 @inline function flux_shima_etal(u_ll, u_rr, aux_ll, aux_rr,
                                  normal_direction::AbstractVector,
-                                 equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                                 equations::CompressibleEulerEnergyEquations3D)
     # Unpack left and right state
     rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
     rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
@@ -345,7 +345,7 @@ end
 
 """
     flux_kennedy_gruber(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector,
-                        equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                        equations::CompressibleEulerEnergyEquations3D)
 
 Kinetic energy preserving two-point flux by
 - Kennedy and Gruber (2008)
@@ -355,7 +355,7 @@ Kinetic energy preserving two-point flux by
 """
 @inline function flux_kennedy_gruber(u_ll, u_rr, aux_ll, aux_rr,
                                      normal_direction::AbstractVector,
-                                     equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                                     equations::CompressibleEulerEnergyEquations3D)
     # Unpack left and right state
     rho_e_ll = energy_total(u_ll, aux_ll, equations)
     rho_e_rr = energy_total(u_rr, aux_rr, equations)
@@ -386,7 +386,7 @@ Kinetic energy preserving two-point flux by
 end
 
 """
-    flux_chandrashekar(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector, equations::CompressibleEulerEnergyEquationsWithGravity3D)
+    flux_chandrashekar(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector, equations::CompressibleEulerEnergyEquations3D)
 
 Entropy conserving two-point flux by
 - Chandrashekar (2013)
@@ -396,7 +396,7 @@ Entropy conserving two-point flux by
 """
 @inline function flux_chandrashekar(u_ll, u_rr, aux_ll, aux_rr,
                                     normal_direction::AbstractVector,
-                                    equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                                    equations::CompressibleEulerEnergyEquations3D)
     # Unpack left and right state
     rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
     rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
@@ -435,7 +435,7 @@ end
 
 """
     flux_ranocha(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector,
-                 equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                 equations::CompressibleEulerEnergyEquations3D)
 
 Entropy conserving and kinetic energy preserving two-point flux by
 - Hendrik Ranocha (2018)
@@ -450,7 +450,7 @@ See also
 """
 @inline function flux_ranocha(u_ll, u_rr, aux_ll, aux_rr,
                               normal_direction::AbstractVector,
-                              equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                              equations::CompressibleEulerEnergyEquations3D)
     # Unpack left and right state
     rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
     rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
@@ -486,7 +486,7 @@ end
 
 """
     FluxLMARS(c)(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector,
-                 equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                 equations::CompressibleEulerEnergyEquations3D)
 
 Low Mach number approximate Riemann solver (LMARS) for atmospheric flows using
 an estimate `c` of the speed of sound.
@@ -499,7 +499,7 @@ References:
 """
 @inline function (flux_lmars::FluxLMARS)(u_ll, u_rr, aux_ll, aux_rr,
                                          normal_direction::AbstractVector,
-                                         equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                                         equations::CompressibleEulerEnergyEquations3D)
     c = flux_lmars.speed_of_sound
 
     # Unpack left and right state
@@ -540,7 +540,7 @@ end
 # maximum velocity magnitude plus the maximum speed of sound
 @inline function max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr,
                                      normal_direction::AbstractVector,
-                                     equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                                     equations::CompressibleEulerEnergyEquations3D)
     rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
     rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
@@ -562,7 +562,7 @@ end
 # Less "cautious", i.e., less overestimating `λ_max` compared to `max_abs_speed_naive`
 @inline function max_abs_speed(u_ll, u_rr, aux_ll, aux_rr,
                                normal_direction::AbstractVector,
-                               equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                               equations::CompressibleEulerEnergyEquations3D)
     rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
     rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
@@ -583,7 +583,7 @@ end
 end
 
 @inline function max_abs_speeds(u, aux,
-                                equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                                equations::CompressibleEulerEnergyEquations3D)
     rho, v1, v2, v3, p = cons2prim(u, aux, equations)
     c = sqrt(equations.gamma * p / rho)
 
@@ -592,7 +592,7 @@ end
 
 # Convert conservative variables to primitive
 @inline function cons2prim(u, aux,
-                           equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                           equations::CompressibleEulerEnergyEquations3D)
     rho, rho_v1, rho_v2, rho_v3, rho_e = u
 
     v1 = rho_v1 / rho
@@ -606,7 +606,7 @@ end
 
 # Convert conservative variables to entropy
 @inline function cons2entropy(u, aux,
-                              equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                              equations::CompressibleEulerEnergyEquations3D)
     rho, rho_v1, rho_v2, rho_v3, rho_e = u
 
     v1 = rho_v1 / rho
@@ -628,7 +628,7 @@ end
 end
 
 @inline function entropy2cons(w, aux,
-                              equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                              equations::CompressibleEulerEnergyEquations3D)
     # See Hughes, Franca, Mallet (1986) A new finite element formulation for CFD
     # [DOI: 10.1016/0045-7825(86)90127-1](https://doi.org/10.1016/0045-7825(86)90127-1)
     @unpack gamma = equations
@@ -656,7 +656,7 @@ end
 
 # Convert primitive to conservative variables
 @inline function prim2cons(prim, aux,
-                           equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                           equations::CompressibleEulerEnergyEquations3D)
     rho, v1, v2, v3, p = prim
     rho_v1 = rho * v1
     rho_v2 = rho * v2
@@ -667,7 +667,7 @@ end
 end
 
 @inline function pressure(u, aux,
-                          equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                          equations::CompressibleEulerEnergyEquations3D)
     rho, rho_v1, rho_v2, rho_v3, rho_e = u
     p = (equations.gamma - 1) * (rho_e - 0.5f0 * (rho_v1^2 + rho_v2^2 + rho_v3^2) / rho)
     return p
@@ -675,7 +675,7 @@ end
 
 # Calculate thermodynamic entropy for a conservative state `u`
 @inline function entropy_thermodynamic(u, aux,
-                                       equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                                       equations::CompressibleEulerEnergyEquations3D)
     rho, _ = u
     p = pressure(u, aux, equations)
 
@@ -687,7 +687,7 @@ end
 
 # Calculate mathematical entropy for a conservative state `cons`
 @inline function entropy_math(cons, aux,
-                              equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                              equations::CompressibleEulerEnergyEquations3D)
     S = -entropy_thermodynamic(cons, aux, equations) * cons[1] *
         equations.inv_gamma_minus_one
     # Mathematical entropy
@@ -697,23 +697,23 @@ end
 
 # Default entropy is the mathematical entropy
 @inline function entropy(cons, aux,
-                         equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                         equations::CompressibleEulerEnergyEquations3D)
     entropy_math(cons, aux, equations)
 end
 
 # Calculate total energy for a conservative state `cons`
-@inline energy_total(cons, aux, ::CompressibleEulerEnergyEquationsWithGravity3D) = cons[5]
+@inline energy_total(cons, aux, ::CompressibleEulerEnergyEquations3D) = cons[5]
 
 # Calculate kinetic energy for a conservative state `cons`
 @inline function energy_kinetic(u, aux,
-                                equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                                equations::CompressibleEulerEnergyEquations3D)
     rho, rho_v1, rho_v2, rho_v3, _ = u
     return 0.5f0 * (rho_v1^2 + rho_v2^2 + rho_v3^2) / rho
 end
 
 # Calculate internal energy for a conservative state `cons`
 @inline function energy_internal(cons, aux,
-                                 equations::CompressibleEulerEnergyEquationsWithGravity3D)
+                                 equations::CompressibleEulerEnergyEquations3D)
     return energy_total(cons, aux, equations) - energy_kinetic(cons, aux, equations)
 end
 end # @muladd

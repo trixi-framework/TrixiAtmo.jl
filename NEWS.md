@@ -8,6 +8,16 @@ for human readability.
 ## Changes when updating to v0.2 from v0.1.x
 
 #### Changed
+- The suffix `WithGravity` is removed from the names of the compressible Euler equations,
+  since all of them include gravity: the
+  `CompressibleEulerPotentialTemperatureEquationsWithGravity{1,2,3}D`, the
+  `CompressibleEulerEnergyEquationsWithGravity{2,3}D`, the
+  `CompressibleEulerInternalEnergyEquationsWithGravity2D`, and the
+  `CompressibleEulerVectorInvariantEquationsWithGravity3D` are renamed to the
+  `CompressibleEulerPotentialTemperatureEquations{1,2,3}D`, the
+  `CompressibleEulerEnergyEquations{2,3}D`, the
+  `CompressibleEulerInternalEnergyEquations2D`, and the
+  `CompressibleEulerVectorInvariantEquations3D`.
 - The `CompressibleEulerPotentialTemperatureEquationsWithGravity2D`, the
   `CompressibleEulerEnergyEquationsWithGravity2D`, and the
   `CompressibleEulerInternalEnergyEquationsWithGravity2D` store the geopotential as an
@@ -46,7 +56,8 @@ for human readability.
   Use the `CompressibleEulerPotentialTemperatureEquationsWithGravity1D`, the
   `CompressibleEulerPotentialTemperatureEquationsWithGravity2D`, and the
   `CompressibleEulerPotentialTemperatureEquationsWithGravity3D` instead, which include
-  gravity as a nonconservative term ([#255]).
+  gravity as a nonconservative term and are now called
+  `CompressibleEulerPotentialTemperatureEquations{1,2,3}D` ([#255]).
 - TrixiAtmo.jl now consistently uses `P4estMesh` for the Cartesian equations in 2D and 3D.
   Thus, the methods based on `orientation` (for `TreeMesh` and `StructuredMesh`) of
   `max_abs_speed_naive`, `max_abs_speed`, `flux_ec_rain`, `boundary_condition_slip_wall`,

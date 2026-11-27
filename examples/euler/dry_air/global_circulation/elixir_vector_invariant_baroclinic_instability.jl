@@ -6,8 +6,8 @@
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
-equations = CompressibleEulerVectorInvariantEquationsWithGravity3D(c_p = 1004, c_v = 717,
-                                                                   gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+equations = CompressibleEulerVectorInvariantEquations3D(c_p = 1004, c_v = 717,
+                                                        gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 
 initial_condition = initial_condition_baroclinic_instability
 aux_field = aux_field_gravity_earth

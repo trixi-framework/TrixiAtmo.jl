@@ -6,9 +6,9 @@
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
-equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004,
-                                                                        c_v = 717,
-                                                                        gravity = 9.81)
+equations = CompressibleEulerPotentialTemperatureEquations2D(c_p = 1004,
+                                                             c_v = 717,
+                                                             gravity = 9.81)
 polydeg = 2
 basis = LobattoLegendreBasis(polydeg)
 cs = 340

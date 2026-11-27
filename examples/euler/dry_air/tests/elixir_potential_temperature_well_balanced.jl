@@ -6,9 +6,9 @@
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
-equations = CompressibleEulerPotentialTemperatureEquationsWithGravity1D(c_p = 1004,
-                                                                        c_v = 717,
-                                                                        gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+equations = CompressibleEulerPotentialTemperatureEquations1D(c_p = 1004,
+                                                             c_v = 717,
+                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 polydeg = 2
 basis = LobattoLegendreBasis(polydeg)
 cs = 340.0
