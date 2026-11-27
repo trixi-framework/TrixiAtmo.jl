@@ -45,7 +45,7 @@ end
                             0.0
                         ],
                         tspan=(0.0, 0.4), surface_flux=(flux_tec, flux_zero),
-                        volume_flux=(flux_tec, flux_nonconservative_souza_etal),
+                        volume_flux=(flux_tec, flux_zero),
                         atol=2e-5)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
@@ -71,7 +71,7 @@ end
                             0.0
                         ],
                         tspan=(0.0, 0.4), surface_flux=(flux_etec, flux_zero),
-                        volume_flux=(flux_etec, flux_nonconservative_souza_etal),
+                        volume_flux=(flux_etec, flux_zero),
                         atol=2e-5)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)

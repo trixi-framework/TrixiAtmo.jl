@@ -18,7 +18,7 @@ equations = CompressibleEulerPotentialTemperatureEquations1D(c_p = 1004,
 polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
 surface_flux = (flux_ec, flux_zero)
-volume_flux = (flux_ec, flux_nonconservative_souza_etal)
+volume_flux = (flux_ec, flux_zero)
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
 solver = DGSEM(basis, surface_flux, volume_integral)
