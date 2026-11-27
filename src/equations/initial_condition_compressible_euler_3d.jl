@@ -272,7 +272,8 @@ function initial_condition_moist_baroclinic_instability(x, t,
     # the mixing ratio `rho_vapor / rho_dry`
     r_v = q_v / (1 - q_v)
 
-    moisture = SVector(r_v, ntuple(_ -> zero(RealT), Val(nvariables(equations) - 6))...)
+    moisture = SVector(r_v,
+                       ntuple(_ -> zero(RealT), Val(nmoisturevariables(equations) - 1))...)
     aux = aux_field_gravity_earth(x, equations)
     return prim2cons(SVector(rho, v1, v2, v3, p, moisture...), aux, equations)
 end

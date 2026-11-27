@@ -70,6 +70,71 @@ dispatching on the return type.
 """
 @inline have_aux_node_vars(::AbstractEquations) = False()
 
+"""
+    nmoisturevariables(equations)
+
+Number of moisture variables of `equations`, e.g., the densities of water vapor, cloud
+water, and rain water of a microphysics scheme. The default is `0`, i.e., dry air.
+
+The variables of `equations` are grouped as the dynamic variables (see
+[`ndynamicvariables`](@ref)), followed by the moisture variables and the turbulence
+variables (see [`nturbulencevariables`](@ref)).
+"""
+@inline nmoisturevariables(::AbstractEquations) = 0
+
+"""
+    nturbulencevariables(equations)
+
+Number of turbulence variables of `equations`, e.g., the density of the turbulent kinetic
+energy of a turbulence model. The default is `0`, i.e., no turbulence variables. See
+[`nmoisturevariables`](@ref) for the grouping of the variables.
+"""
+@inline nturbulencevariables(::AbstractEquations) = 0
+
+"""
+    ndynamicvariables(equations)
+
+Number of dynamic variables of `equations`, i.e., the density, the momentum or the velocity,
+and the thermodynamic variable, e.g., `(rho, rho_v1, rho_v2, rho_v3, rho_theta)` or
+`(rho, v1, v2, v3, rho_theta)` in 3D. They are the variables of `equations` without the
+moisture variables and the turbulence variables (see [`nmoisturevariables`](@ref)).
+"""
+@inline function ndynamicvariables(equations::AbstractEquations)
+    return nvariables(equations) - nmoisturevariables(equations) -
+           nturbulencevariables(equations)
+end
+
+"""
+    eachdynamicvariable(equations)
+
+Return an iterator over the indices of the dynamic variables of `equations`, see
+[`ndynamicvariables`](@ref). In particular, not the variables themselves are returned.
+"""
+@inline function eachdynamicvariable(equations::AbstractEquations)
+    return Base.OneTo(ndynamicvariables(equations))
+end
+
+"""
+    eachmoisturevariable(equations)
+
+Return an iterator over the indices of the moisture variables of `equations`, see
+[`nmoisturevariables`](@ref). In particular, not the variables themselves are returned.
+"""
+@inline function eachmoisturevariable(equations::AbstractEquations)
+    return ndynamicvariables(equations) .+ Base.OneTo(nmoisturevariables(equations))
+end
+
+"""
+    eachturbulencevariable(equations)
+
+Return an iterator over the indices of the turbulence variables of `equations`, see
+[`nturbulencevariables`](@ref). In particular, not the variables themselves are returned.
+"""
+@inline function eachturbulencevariable(equations::AbstractEquations)
+    return (ndynamicvariables(equations) + nmoisturevariables(equations)) .+
+           Base.OneTo(nturbulencevariables(equations))
+end
+
 @doc raw"""
     transform_initial_condition(initial_condition, equations)
 

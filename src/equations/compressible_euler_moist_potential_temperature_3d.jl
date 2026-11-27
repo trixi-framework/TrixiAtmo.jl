@@ -120,10 +120,15 @@ Trixi.auxvarnames(::CompressibleEulerMoistPotentialTemperatureEquations3D) = ("p
 
 have_nonconservative_terms(::CompressibleEulerMoistPotentialTemperatureEquations3D) = Trixi.True()
 
+@inline function nmoisturevariables(equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
+    return nmoisturevariables(equations.microphysics)
+end
+
 # The moisture variables follow the density, the momentum, and `rho_theta_v`
 @inline function moisture_variables(u,
                                     equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
-    return SVector(ntuple(i -> u[5 + i], Val(nvariables(equations) - 5)))
+    return SVector(ntuple(i -> u[ndynamicvariables(equations) + i],
+                          Val(nmoisturevariables(equations))))
 end
 
 # Slip-wall boundary condition
@@ -258,7 +263,7 @@ end
                 normal_direction[2] * gravity,
                 normal_direction[3] * gravity,
                 zero_,
-                ntuple(_ -> zero_, Val(nvariables(equations) - 5))...)
+                ntuple(_ -> zero_, Val(nmoisturevariables(equations)))...)
 
     return flux + g, flux - g
 end

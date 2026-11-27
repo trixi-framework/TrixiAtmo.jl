@@ -645,3 +645,30 @@ end
         @test eltype(@inferred Trixi.max_abs_speeds(u, aux, equations)) == RealT
     end
 end
+
+@testitem "Type stability: groups of variables" setup=[Setup] tags=[:type_stable_tests] begin
+    moist = CompressibleEulerMoistPotentialTemperatureEquations3D(c_p = 1004.0, c_v = 717.0,
+                                                                  gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+    dry_3d = CompressibleEulerPotentialTemperatureEquations3D(c_p = 1004.0, c_v = 717.0,
+                                                              gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+    dry_2d = CompressibleEulerEnergyEquations2D(c_p = 1004.0, c_v = 717.0,
+                                                gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+    shallow_water = ShallowWaterEquations3D(gravity = 1.0)
+    # (equations, number of dynamic variables, number of moisture variables)
+    for (equations, ndynamic, nmoisture) in ((moist, 5, 3), (dry_3d, 5, 0), (dry_2d, 4, 0),
+                                             (shallow_water, 5, 0))
+        @test @inferred(ndynamicvariables(equations)) == ndynamic
+        @test @inferred(nmoisturevariables(equations)) == nmoisture
+        @test @inferred(nturbulencevariables(equations)) == 0
+        @test @inferred(eachdynamicvariable(equations)) == 1:ndynamic
+        @test @inferred(eachmoisturevariable(equations)) ==
+              (ndynamic + 1):(ndynamic + nmoisture)
+        @test isempty(@inferred(eachturbulencevariable(equations)))
+        @test ndynamic + nmoisture == nvariables(equations)
+    end
+    # The numbers of variables are known at compile time, e.g., for `SVector`s of a group
+    @test only(Base.return_types(equations -> Val(nmoisturevariables(equations)),
+                                 (typeof(moist),))) == Val{3}
+    u = SVector{8}(1.0:8.0)
+    @test @inferred(TrixiAtmo.moisture_variables(u, moist)) == SVector(6.0, 7.0, 8.0)
+end
