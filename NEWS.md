@@ -5,6 +5,15 @@ TrixiAtmo.jl follows the interpretation of
 used in the Julia ecosystem. Notable changes will be documented in this file
 for human readability.
 
+## Changes in the v0.2 lifecycle
+
+#### Added
+
+#### Changed
+
+#### Deprecated
+
+
 ## Changes when updating to v0.2 from v0.1.x
 
 #### Changed
@@ -17,7 +26,7 @@ for human readability.
   `CompressibleEulerPotentialTemperatureEquations{1,2,3}D`, the
   `CompressibleEulerEnergyEquations{2,3}D`, the
   `CompressibleEulerInternalEnergyEquations2D`, and the
-  `CompressibleEulerVectorInvariantEquations3D`.
+  `CompressibleEulerVectorInvariantEquations3D` ([#279]).
 - The `CompressibleEulerPotentialTemperatureEquationsWithGravity3D`, the
   `CompressibleEulerEnergyEquationsWithGravity3D`, and the
   `CompressibleEulerVectorInvariantEquationsWithGravity3D` store the geopotential as an
