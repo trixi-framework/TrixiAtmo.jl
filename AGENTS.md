@@ -72,7 +72,7 @@ items tagged `upstream` in its own downstream CI.
   - equations in Cartesian coordinates, e.g.,
     `CompressibleEulerPotentialTemperatureEquations{1,2,3}D` (with
     `...WithGravity{1,2,3}D` variants including the geopotential, as the last
-    state variable in 1D and 2D and as an auxiliary variable of Trixi.jl in 3D),
+    state variable in 1D and as an auxiliary variable of Trixi.jl in 2D and 3D),
     `CompressibleEulerEnergyEquationsWithGravity{2,3}D`,
     `CompressibleMoistEulerEquations2D`, `CompressibleRainyEulerEquations2D`,
     and `ShallowWaterEquations3D` (shallow water equations on the sphere in 3D
@@ -529,10 +529,10 @@ starts the Julia sessions itself.
   receiving the flux passes its own state first,
   `nonconservative_flux(u_own, u_neighbor, ...)`.
 - Some equations carry auxiliary variables as part of the state vector, e.g.,
-  the geopotential in the `...WithGravity{1,2}D` equations or the bottom
+  the geopotential in the `...WithGravity1D` equations or the bottom
   topography in `ShallowWaterEquations3D`. Fluxes must leave them unchanged
   (zero flux), and well-balancedness tests (`elixir_*well_balanced*`) check that
-  steady states are preserved. The `...WithGravity3D` equations instead store
+  steady states are preserved. The `...WithGravity{2,3}D` equations instead store
   the geopotential as an auxiliary variable of Trixi.jl (`Trixi.nauxvariables`),
   as does `CompressibleEulerMoistPotentialTemperatureEquations3D` together with
   the upward unit vector, given by the `aux_field` of

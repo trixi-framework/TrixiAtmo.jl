@@ -234,7 +234,8 @@ end
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004.0,
                                                                             c_v = 717.0,
                                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION)
-    u = SVector(1.1, -0.5, 2.34, 330.0, 1500)
+    u = SVector(1.1, -0.5, 2.34, 330.0)
+    aux = SVector(1500.0)
 
     normal_directions = [SVector(1.0, 0.0),
         SVector(0.0, 1.0),
@@ -242,13 +243,13 @@ end
         SVector(-1.2, 0.3)]
 
     for normal_direction in normal_directions
-        @test flux_ec(u, u, normal_direction, equations) ≈
-              flux(u, normal_direction, equations)
+        @test flux_ec(u, u, aux, aux, normal_direction, equations) ≈
+              flux(u, aux, normal_direction, equations)
     end
 
     #check consistency between 1D and 2D EC fluxes
-    u_1d = SVector(u[1], u[2], u[4], u[5])
-    u_2d = SVector(u[1], u[2], 0, u[4], u[5])
+    u_1d = SVector(u[1], u[2], u[4], aux[1])
+    u_2d = SVector(u[1], u[2], 0, u[4])
     normal_1d = SVector(-0.3)
     normal_2d = SVector(normal_1d[1], 0.0)
     equations_1d = CompressibleEulerPotentialTemperatureEquationsWithGravity1D(c_p = 1004.0,
@@ -256,16 +257,17 @@ end
                                                                                gravity = EARTH_GRAVITATIONAL_ACCELERATION)
     equations_2d = equations
     flux_1d = normal_1d[1] * flux_ec(u_1d, u_1d, 1, equations_1d)
-    flux_2d = flux_ec(u_2d, u_2d, normal_2d, equations_2d)
+    flux_2d = flux_ec(u_2d, u_2d, aux, aux, normal_2d, equations_2d)
     @test flux_1d ≈ flux(u_1d, normal_1d, equations_1d)
-    @test flux_1d ≈ flux_2d[[1, 2, 4, 5]]
+    @test flux_1d[1:3] ≈ flux_2d[[1, 2, 4]]
 
     # test when u_ll is not the same as u_rr
     u_rr_1d = SVector(2.1, 0.3, 280.5, 1700)
-    u_rr_2d = SVector(u_rr_1d[1], u_rr_1d[2], 0.0, u_rr_1d[3], u_rr_1d[4])
+    u_rr_2d = SVector(u_rr_1d[1], u_rr_1d[2], 0.0, u_rr_1d[3])
+    aux_rr = SVector(u_rr_1d[4])
     flux_1d = normal_1d[1] * flux_ec(u_1d, u_rr_1d, 1, equations_1d)
-    flux_2d = flux_ec(u_2d, u_rr_2d, normal_2d, equations_2d)
-    @test flux_1d ≈ flux_2d[[1, 2, 4, 5]]
+    flux_2d = flux_ec(u_2d, u_rr_2d, aux, aux_rr, normal_2d, equations_2d)
+    @test flux_1d[1:3] ≈ flux_2d[[1, 2, 4]]
 
     # check consistency for 3D EC flux
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
@@ -339,7 +341,8 @@ end
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004.0,
                                                                             c_v = 717.0,
                                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION)
-    u = SVector(1.1, -0.5, 2.34, 330.0, 1500)
+    u = SVector(1.1, -0.5, 2.34, 330.0)
+    aux = SVector(1500.0)
 
     normal_directions = [SVector(1.0, 0.0),
         SVector(0.0, 1.0),
@@ -347,13 +350,13 @@ end
         SVector(-1.2, 0.3)]
 
     for normal_direction in normal_directions
-        @test flux_tec(u, u, normal_direction, equations) ≈
-              flux(u, normal_direction, equations)
+        @test flux_tec(u, u, aux, aux, normal_direction, equations) ≈
+              flux(u, aux, normal_direction, equations)
     end
 
     #check consistency between 1D and 2D EC fluxes
-    u_1d = SVector(u[1], u[2], u[4], u[5])
-    u_2d = SVector(u[1], u[2], 0, u[4], u[5])
+    u_1d = SVector(u[1], u[2], u[4], aux[1])
+    u_2d = SVector(u[1], u[2], 0, u[4])
     normal_1d = SVector(-0.3)
     normal_2d = SVector(normal_1d[1], 0.0)
     equations_1d = CompressibleEulerPotentialTemperatureEquationsWithGravity1D(c_p = 1004.0,
@@ -361,16 +364,17 @@ end
                                                                                gravity = EARTH_GRAVITATIONAL_ACCELERATION)
     equations_2d = equations
     flux_1d = normal_1d[1] * flux_tec(u_1d, u_1d, 1, equations_1d)
-    flux_2d = flux_tec(u_2d, u_2d, normal_2d, equations_2d)
+    flux_2d = flux_tec(u_2d, u_2d, aux, aux, normal_2d, equations_2d)
     @test flux_1d ≈ flux(u_1d, normal_1d, equations_1d)
-    @test flux_1d ≈ flux_2d[[1, 2, 4, 5]]
+    @test flux_1d[1:3] ≈ flux_2d[[1, 2, 4]]
 
     # test when u_ll is not the same as u_rr
     u_rr_1d = SVector(2.1, 0.3, 280.5, 1700)
-    u_rr_2d = SVector(u_rr_1d[1], u_rr_1d[2], 0.0, u_rr_1d[3], u_rr_1d[4])
+    u_rr_2d = SVector(u_rr_1d[1], u_rr_1d[2], 0.0, u_rr_1d[3])
+    aux_rr = SVector(u_rr_1d[4])
     flux_1d = normal_1d[1] * flux_tec(u_1d, u_rr_1d, 1, equations_1d)
-    flux_2d = flux_tec(u_2d, u_rr_2d, normal_2d, equations_2d)
-    @test flux_1d ≈ flux_2d[[1, 2, 4, 5]]
+    flux_2d = flux_tec(u_2d, u_rr_2d, aux, aux_rr, normal_2d, equations_2d)
+    @test flux_1d[1:3] ≈ flux_2d[[1, 2, 4]]
 
     # check consistency for 3D EC flux
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
@@ -404,7 +408,8 @@ end
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004.0,
                                                                             c_v = 717.0,
                                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION)
-    u = SVector(1.1, -0.5, 2.34, 330.0, 1500)
+    u = SVector(1.1, -0.5, 2.34, 330.0)
+    aux = SVector(1500.0)
 
     normal_directions = [SVector(1.0, 0.0),
         SVector(0.0, 1.0),
@@ -412,13 +417,13 @@ end
         SVector(-1.2, 0.3)]
 
     for normal_direction in normal_directions
-        @test flux_etec(u, u, normal_direction, equations) ≈
-              flux(u, normal_direction, equations)
+        @test flux_etec(u, u, aux, aux, normal_direction, equations) ≈
+              flux(u, aux, normal_direction, equations)
     end
 
     #check consistency between 1D and 2D EC fluxes
-    u_1d = SVector(u[1], u[2], u[4], u[5])
-    u_2d = SVector(u[1], u[2], 0, u[4], u[5])
+    u_1d = SVector(u[1], u[2], u[4], aux[1])
+    u_2d = SVector(u[1], u[2], 0, u[4])
     normal_1d = SVector(-0.3)
     normal_2d = SVector(normal_1d[1], 0.0)
     equations_1d = CompressibleEulerPotentialTemperatureEquationsWithGravity1D(c_p = 1004.0,
@@ -426,16 +431,17 @@ end
                                                                                gravity = EARTH_GRAVITATIONAL_ACCELERATION)
     equations_2d = equations
     flux_1d = normal_1d[1] * flux_etec(u_1d, u_1d, 1, equations_1d)
-    flux_2d = flux_etec(u_2d, u_2d, normal_2d, equations_2d)
+    flux_2d = flux_etec(u_2d, u_2d, aux, aux, normal_2d, equations_2d)
     @test flux_1d ≈ flux(u_1d, normal_1d, equations_1d)
-    @test flux_1d ≈ flux_2d[[1, 2, 4, 5]]
+    @test flux_1d[1:3] ≈ flux_2d[[1, 2, 4]]
 
     # test when u_ll is not the same as u_rr
     u_rr_1d = SVector(2.1, 0.3, 280.5, 1700)
-    u_rr_2d = SVector(u_rr_1d[1], u_rr_1d[2], 0.0, u_rr_1d[3], u_rr_1d[4])
+    u_rr_2d = SVector(u_rr_1d[1], u_rr_1d[2], 0.0, u_rr_1d[3])
+    aux_rr = SVector(u_rr_1d[4])
     flux_1d = normal_1d[1] * flux_etec(u_1d, u_rr_1d, 1, equations_1d)
-    flux_2d = flux_etec(u_2d, u_rr_2d, normal_2d, equations_2d)
-    @test flux_1d ≈ flux_2d[[1, 2, 4, 5]]
+    flux_2d = flux_etec(u_2d, u_rr_2d, aux, aux_rr, normal_2d, equations_2d)
+    @test flux_1d[1:3] ≈ flux_2d[[1, 2, 4]]
 
     # check consistency for 3D EC flux
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
@@ -470,7 +476,8 @@ end
                                                                             c_v = 717.0,
                                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION)
     flux_lmars = FluxLMARS(340)
-    u = SVector(1.1, -0.5, 2.34, 330.0, 1700)
+    u = SVector(1.1, -0.5, 2.34, 330.0)
+    aux = SVector(1700.0)
 
     normal_directions = [SVector(1.0, 0.0),
         SVector(0.0, 1.0),
@@ -478,13 +485,13 @@ end
         SVector(-1.2, 0.3)]
 
     for normal_direction in normal_directions
-        @test flux_lmars(u, u, normal_direction, equations) ≈
-              flux(u, normal_direction, equations)
+        @test flux_lmars(u, u, aux, aux, normal_direction, equations) ≈
+              flux(u, aux, normal_direction, equations)
     end
 
     #check consistency between 1D and 2D EC fluxes
-    u_1d = SVector(u[1], u[2], u[4], u[5])
-    u_2d = SVector(u[1], u[2], 0, u[4], u[5])
+    u_1d = SVector(u[1], u[2], u[4], aux[1])
+    u_2d = SVector(u[1], u[2], 0, u[4])
     normal_1d = SVector(-0.3)
     normal_2d = SVector(normal_1d[1], 0.0)
     equations_1d = CompressibleEulerPotentialTemperatureEquationsWithGravity1D(c_p = 1004.0,
@@ -492,9 +499,9 @@ end
                                                                                gravity = EARTH_GRAVITATIONAL_ACCELERATION)
     equations_2d = equations
     flux_1d = normal_1d[1] * flux_lmars(u_1d, u_1d, 1, equations_1d)
-    flux_2d = flux_lmars(u_2d, u_2d, normal_2d, equations_2d)
+    flux_2d = flux_lmars(u_2d, u_2d, aux, aux, normal_2d, equations_2d)
     @test flux_1d ≈ flux(u_1d, normal_1d, equations_1d)
-    @test flux_1d ≈ flux_2d[[1, 2, 4, 5]]
+    @test flux_1d[1:3] ≈ flux_2d[[1, 2, 4]]
 
     # check consistency for 3D EC flux
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
@@ -528,8 +535,10 @@ end
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004.0,
                                                                             c_v = 717.0,
                                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION)
-    u = SVector(1.1, -0.5, 2.34, 330.0, 1700)
-    u_rr = SVector(0.9, 0.3, -1.2, 280.5, 1500)
+    u = SVector(1.1, -0.5, 2.34, 330.0)
+    u_rr = SVector(0.9, 0.3, -1.2, 280.5)
+    aux = SVector(1700.0)
+    aux_rr = SVector(1500.0)
 
     normal_directions = [SVector(1.0, 0.0),
         SVector(0.0, 1.0),
@@ -539,13 +548,15 @@ end
     for normal_direction in normal_directions
         # Consistency with the physical flux
         for i in 1:2
-            @test flux_lmars_es(u, u, normal_direction, equations)[i] ≈
-                  flux(u, normal_direction, equations)
+            @test flux_lmars_es(u, u, aux, aux, normal_direction, equations)[i] ≈
+                  flux(u, aux, normal_direction, equations)
         end
 
-        flux_left, flux_right = flux_lmars_es(u, u_rr, normal_direction, equations)
+        flux_left, flux_right = flux_lmars_es(u, u_rr, aux, aux_rr, normal_direction,
+                                              equations)
         @test flux_left == flux_right
-        @test flux_lmars_es(u, u_rr, 2.5 * normal_direction, equations)[1] ≈ 2.5 * flux_left
+        @test flux_lmars_es(u, u_rr, aux, aux_rr, 2.5 * normal_direction,
+                            equations)[1] ≈ 2.5 * flux_left
     end
 
     # Check consistency for the 3D flux
@@ -579,17 +590,12 @@ end
     # Check consistency between the 2D and 3D fluxes for different left and right states
     u_3d = SVector(u[1], u[2], u[3], 0.0, u[4])
     u_rr_3d = SVector(u_rr[1], u_rr[2], u_rr[3], 0.0, u_rr[4])
-    aux_3d = SVector(u[5])
-    aux_rr_3d = SVector(u_rr[5])
     for normal_direction in normal_directions
         normal_3d = SVector(normal_direction[1], normal_direction[2], 0.0)
-        flux_2d = flux_lmars_es(u, u_rr, normal_direction, equations)
-        flux_3d = flux_lmars_es(u_3d, u_rr_3d, aux_3d, aux_rr_3d, normal_3d,
-                                equations_3d)
+        flux_2d = flux_lmars_es(u, u_rr, aux, aux_rr, normal_direction, equations)
+        flux_3d = flux_lmars_es(u_3d, u_rr_3d, aux, aux_rr, normal_3d, equations_3d)
         for i in 1:2
-            @test flux_2d[i][1:4] ≈ flux_3d[i][[1, 2, 3, 5]]
-            # The 2D equations carry the geopotential in the state, with zero flux
-            @test iszero(flux_2d[i][5])
+            @test flux_2d[i] ≈ flux_3d[i][[1, 2, 3, 5]]
         end
     end
 end
@@ -620,8 +626,10 @@ end
     # Check consistency between the 2D and 3D gravity terms
     equations_2d = CompressibleEulerEnergyEquationsWithGravity2D(c_p = 1004.0, c_v = 717.0,
                                                                  gravity = EARTH_GRAVITATIONAL_ACCELERATION)
-    u_ll_2d = prim2cons(SVector(1.1, 2.0, -1.5, 9.0e4, 1700.0), equations_2d)
-    u_rr_2d = prim2cons(SVector(0.9, -1.0, 3.0, 7.5e4, 2900.0), equations_2d)
+    aux_ll_2d = SVector(1700.0)
+    aux_rr_2d = SVector(2900.0)
+    u_ll_2d = prim2cons(SVector(1.1, 2.0, -1.5, 9.0e4), aux_ll_2d, equations_2d)
+    u_rr_2d = prim2cons(SVector(0.9, -1.0, 3.0, 7.5e4), aux_rr_2d, equations_2d)
     u_ll_3d = prim2cons(SVector(1.1, 2.0, -1.5, 0.0, 9.0e4), aux_ll, equations)
     u_rr_3d = prim2cons(SVector(0.9, -1.0, 3.0, 0.0, 7.5e4), aux_rr, equations)
     for normal_direction in (SVector(1.0, 0.0), SVector(0.0, 1.0), SVector(0.5, -0.5),
@@ -629,10 +637,10 @@ end
         normal_direction_3d = SVector(normal_direction[1], normal_direction[2], 0.0)
         for flux_gravity in (flux_nonconservative_waruszewski_etal,
                              flux_nonconservative_isothermal)
-            @test flux_gravity(u_ll_2d, u_rr_2d, normal_direction, equations_2d)[1:4] ≈
+            @test flux_gravity(u_ll_2d, u_rr_2d, aux_ll_2d, aux_rr_2d, normal_direction,
+                               equations_2d) ≈
                   flux_gravity(u_ll_3d, u_rr_3d, aux_ll, aux_rr, normal_direction_3d,
                                equations)[[1, 2, 3, 5]]
-            @test iszero(flux_gravity(u_ll_2d, u_rr_2d, normal_direction, equations_2d)[5])
         end
     end
 end
