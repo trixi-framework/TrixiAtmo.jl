@@ -56,53 +56,29 @@ end
     return theta, dp_drho_theta
 end
 
-# Copy the unknowns of the vertical Jacobian of the node `(i, j, k, element)` of `u`,
-# multiplied by `scaling`, to the columns. The `scaling` is one for the state and the norm
-# `n` for the right-hand side of the linear system, i.e., the diagonal similarity
-# transformation `N` of the vertical operator.
-Base.@propagate_inbounds function copy_node_to_columns!(u_vertical, u, scaling,
-                                                        vertical_direction_and_norm,
-                                                        horizontal_index_of_element,
-                                                        vertical_index_of_element,
-                                                        nnodes_, equations, solver,
-                                                        i, j, k, element)
+# Column and layer of the node `(i, j, k)` of `element` in the arrays of the columns
+Base.@propagate_inbounds function get_column_and_layer(horizontal_index_of_element,
+                                                       vertical_index_of_element,
+                                                       nnodes_,
+                                                       i, j, element)
     column = column_index(horizontal_index_of_element, nnodes_, i, j, element)
     layer = vertical_index_of_element[element]
-    vertical_direction = get_vertical_direction(vertical_direction_and_norm,
-                                                i, j, k, element)
-    u_node = get_node_vars(u, equations, solver, i, j, k, element)
-    set_column_node_vars!(u_vertical,
-                          scaling * cons2hevi(u_node, vertical_direction, equations),
-                          column, k, layer)
-    return nothing
-end
-
-# Copy the solution of the linear system, divided by the norm `n`, to `b`
-Base.@propagate_inbounds function copy_node_from_columns!(b, u_vertical,
-                                                          vertical_direction_and_norm,
-                                                          horizontal_index_of_element,
-                                                          vertical_index_of_element,
-                                                          nnodes_, gamma_dt, equations,
-                                                          solver, i, j, k, element)
-    column = column_index(horizontal_index_of_element, nnodes_, i, j, element)
-    layer = vertical_index_of_element[element]
-    vertical_direction = get_vertical_direction(vertical_direction_and_norm,
-                                                i, j, k, element)
-    inv_norm_Ja3 = inv(vertical_direction_and_norm[4, i, j, k, element])
-    x_vertical = inv_norm_Ja3 * get_column_node_vars(u_vertical, column, k, layer)
-    b_node = get_node_vars(b, equations, solver, i, j, k, element)
-    set_node_vars!(b,
-                   hevi2cons(x_vertical, b_node, vertical_direction, gamma_dt,
-                             equations),
-                   equations, solver, i, j, k, element)
-    return nothing
+    return column, layer
 end
 
 # Unit contravariant direction `nu` of the vertical reference coordinate at the node
 # `(i, j, k, element)`
-@inline function get_vertical_direction(vertical_direction_and_norm, i, j, k, element)
+Base.@propagate_inbounds function get_vertical_direction(vertical_direction_and_norm,
+                                                         i, j, k, element)
     return SVector(vertical_direction_and_norm[1, i, j, k, element],
                    vertical_direction_and_norm[2, i, j, k, element],
                    vertical_direction_and_norm[3, i, j, k, element])
+end
+
+# Norm `n = |Ja^3|` at the node `(i, j, k, element)`, i.e., the entry of the diagonal
+# similarity transformation `N` of the vertical operator
+Base.@propagate_inbounds function get_vertical_norm(vertical_direction_and_norm,
+                                                    i, j, k, element)
+    return vertical_direction_and_norm[4, i, j, k, element]
 end
 end # @muladd

@@ -15,9 +15,8 @@
 
 # Copy data between Trixi.jl's layout `[v, i, j, k, element]` and the layout of the columns
 # `[column, v, node, layer]`, with the variables `1 => rho`, `2 => rho_w` (vertical
-# momentum), and `3 => rho_theta`. The copies of the data of one node are in
-# `jacobian_3d_gpu.jl`. The kernels launch one thread per node, i.e.,
-# `indices = (i, j, k, element)`.
+# momentum), and `3 => rho_theta`, via `cons2hevi` and `hevi2cons` of the equations (see
+# `jacobian_3d_gpu.jl`). The kernels launch one thread per node `(i, j, k, element)`.
 
 # Check whether the arrays in `jacobian` have the axes we assume they must have in the copy
 # kernels between Trixi.jl's layout and the columns.
@@ -59,11 +58,15 @@ end
                                                                @Const(vertical_index_of_element),
                                                                nnodes_, equations,
                                                                solver)
-    indices = @index(Global, NTuple)
-    copy_node_to_columns!(u_vertical, u, one(eltype(u_vertical)),
-                          vertical_direction_and_norm,
-                          horizontal_index_of_element, vertical_index_of_element,
-                          nnodes_, equations, solver, indices...)
+    i, j, k, element = @index(Global, NTuple)
+    column, layer = get_column_and_layer(horizontal_index_of_element,
+                                         vertical_index_of_element, nnodes_, i, j,
+                                         element)
+    vertical_direction = get_vertical_direction(vertical_direction_and_norm,
+                                                i, j, k, element)
+    u_node = get_node_vars(u, equations, solver, i, j, k, element)
+    set_column_node_vars!(u_vertical, cons2hevi(u_node, vertical_direction, equations),
+                          column, k, layer)
 end
 
 # Copy the right-hand side `b` of the linear system, multiplied by the norm
@@ -91,12 +94,17 @@ end
                                                              @Const(horizontal_index_of_element),
                                                              @Const(vertical_index_of_element),
                                                              nnodes_, equations, solver)
-    indices = @index(Global, NTuple)
-    # The last slot of `vertical_direction_and_norm` holds the norm `n`
-    copy_node_to_columns!(u_vertical, b, vertical_direction_and_norm[end, indices...],
-                          vertical_direction_and_norm, horizontal_index_of_element,
-                          vertical_index_of_element, nnodes_, equations, solver,
-                          indices...)
+    i, j, k, element = @index(Global, NTuple)
+    column, layer = get_column_and_layer(horizontal_index_of_element,
+                                         vertical_index_of_element, nnodes_, i, j,
+                                         element)
+    vertical_direction = get_vertical_direction(vertical_direction_and_norm,
+                                                i, j, k, element)
+    norm_Ja3 = get_vertical_norm(vertical_direction_and_norm, i, j, k, element)
+    b_node = get_node_vars(b, equations, solver, i, j, k, element)
+    set_column_node_vars!(u_vertical,
+                          norm_Ja3 * cons2hevi(b_node, vertical_direction, equations),
+                          column, k, layer)
 end
 
 # Copy the solution of the linear system, divided by the norm `n`, from the
@@ -127,9 +135,18 @@ end
                                                                     @Const(vertical_index_of_element),
                                                                     nnodes_, gamma_dt,
                                                                     equations, solver)
-    indices = @index(Global, NTuple)
-    copy_node_from_columns!(b, u_vertical, vertical_direction_and_norm,
-                            horizontal_index_of_element, vertical_index_of_element,
-                            nnodes_, gamma_dt, equations, solver, indices...)
+    i, j, k, element = @index(Global, NTuple)
+    column, layer = get_column_and_layer(horizontal_index_of_element,
+                                         vertical_index_of_element, nnodes_, i, j,
+                                         element)
+    vertical_direction = get_vertical_direction(vertical_direction_and_norm,
+                                                i, j, k, element)
+    inv_norm_Ja3 = inv(get_vertical_norm(vertical_direction_and_norm, i, j, k, element))
+    x_vertical = inv_norm_Ja3 * get_column_node_vars(u_vertical, column, k, layer)
+    b_node = get_node_vars(b, equations, solver, i, j, k, element)
+    set_node_vars!(b,
+                   hevi2cons(x_vertical, b_node, vertical_direction, gamma_dt,
+                             equations),
+                   equations, solver, i, j, k, element)
 end
 end # @muladd

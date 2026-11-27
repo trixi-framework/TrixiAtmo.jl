@@ -11,10 +11,10 @@
 # element edges form a band matrix with 7 diagonals (`schur_band`), factorized by a
 # banded LU.
 # The vertical operator is the one of Eq. (34) of the reference below, transformed by the
-# diagonal matrix of the norms `n = |Ja^3|` (see `copy_node_to_columns!` in
-# `jacobian_3d_gpu.jl`), with the unit contravariant direction `nu = Ja^3 / n`
-# (`compute_vertical_direction_and_norm`) and the metric factor `n / J`
-# (`compute_metric_factor`).
+# diagonal matrix of the norms `n = |Ja^3|` (see `copy_rhs_to_columns!` and
+# `copy_solution_from_columns!` in `jacobian_gpu.jl`), with the unit contravariant
+# direction `nu = Ja^3 / n` (`compute_vertical_direction_and_norm`) and the metric factor
+# `n / J` (`compute_metric_factor`).
 # It conserves mass and mass-weighted potential temperature.
 
 """
