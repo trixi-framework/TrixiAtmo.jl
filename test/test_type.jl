@@ -1,8 +1,8 @@
-@testitem "Type stability: Compressible Euler Potential Temperature With Gravity 1D" setup=[Setup] tags=[:type_stable_tests] begin
+@testitem "Type stability: Compressible Euler Potential Temperature 1D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
-        equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity1D(c_p = RealT(1004),
-                                                                                          c_v = RealT(717),
-                                                                                          gravity = RealT(EARTH_GRAVITATIONAL_ACCELERATION))
+        equations = @inferred CompressibleEulerPotentialTemperatureEquations1D(c_p = RealT(1004),
+                                                                               c_v = RealT(717),
+                                                                               gravity = RealT(EARTH_GRAVITATIONAL_ACCELERATION))
 
         x = SVector(zero(RealT))
         t = zero(RealT)
@@ -63,11 +63,11 @@
     end
 end
 
-@testitem "Type stability: Compressible Euler Potential Temperature With Gravity 2D" setup=[Setup] tags=[:type_stable_tests] begin
+@testitem "Type stability: Compressible Euler Potential Temperature 2D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
-        equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = RealT(1004),
-                                                                                          c_v = RealT(717),
-                                                                                          gravity = RealT(EARTH_GRAVITATIONAL_ACCELERATION))
+        equations = @inferred CompressibleEulerPotentialTemperatureEquations2D(c_p = RealT(1004),
+                                                                               c_v = RealT(717),
+                                                                               gravity = RealT(EARTH_GRAVITATIONAL_ACCELERATION))
 
         x = SVector(zero(RealT))
         t = zero(RealT)
@@ -123,11 +123,11 @@ end
     end
 end
 
-@testitem "Type stability: Compressible Euler Potential Temperature With Gravity 3D" setup=[Setup] tags=[:type_stable_tests] begin
+@testitem "Type stability: Compressible Euler Potential Temperature 3D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
-        equations = @inferred CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = RealT(1004),
-                                                                                          c_v = RealT(717),
-                                                                                          gravity = RealT(EARTH_GRAVITATIONAL_ACCELERATION))
+        equations = @inferred CompressibleEulerPotentialTemperatureEquations3D(c_p = RealT(1004),
+                                                                               c_v = RealT(717),
+                                                                               gravity = RealT(EARTH_GRAVITATIONAL_ACCELERATION))
 
         x = SVector(zero(RealT))
         t = zero(RealT)
@@ -424,11 +424,11 @@ end
     end
 end
 
-@testitem "Type stability: Compressible Euler Energy With Gravity 2D" setup=[Setup] tags=[:type_stable_tests] begin
+@testitem "Type stability: Compressible Euler Energy 2D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
-        equations = @inferred CompressibleEulerEnergyEquationsWithGravity2D(c_p = RealT(1004),
-                                                                            c_v = RealT(717),
-                                                                            gravity = RealT(9.81))
+        equations = @inferred CompressibleEulerEnergyEquations2D(c_p = RealT(1004),
+                                                                 c_v = RealT(717),
+                                                                 gravity = RealT(9.81))
 
         x = SVector(zero(RealT))
         t = zero(RealT)
@@ -494,11 +494,11 @@ end
     end
 end
 
-@testitem "Type stability: Compressible Euler Energy With Gravity 3D" setup=[Setup] tags=[:type_stable_tests] begin
+@testitem "Type stability: Compressible Euler Energy 3D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
-        equations = @inferred CompressibleEulerEnergyEquationsWithGravity3D(c_p = RealT(1004),
-                                                                            c_v = RealT(717),
-                                                                            gravity = RealT(9.81))
+        equations = @inferred CompressibleEulerEnergyEquations3D(c_p = RealT(1004),
+                                                                 c_v = RealT(717),
+                                                                 gravity = RealT(9.81))
 
         x = SVector(zero(RealT))
         t = zero(RealT)
@@ -559,11 +559,11 @@ end
     end
 end
 
-@testitem "Type stability: Compressible Euler Internal Energy With Gravity 2D" setup=[Setup] tags=[:type_stable_tests] begin
+@testitem "Type stability: Compressible Euler Internal Energy 2D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
-        equations = @inferred CompressibleEulerInternalEnergyEquationsWithGravity2D(c_p = RealT(1004),
-                                                                                    c_v = RealT(717),
-                                                                                    gravity = RealT(9.81))
+        equations = @inferred CompressibleEulerInternalEnergyEquations2D(c_p = RealT(1004),
+                                                                         c_v = RealT(717),
+                                                                         gravity = RealT(9.81))
         x = SVector(zero(RealT))
         t = zero(RealT)
         u = u_ll = u_rr = u_inner = cons = SVector(one(RealT), one(RealT), one(RealT),
@@ -610,11 +610,11 @@ end
     end
 end
 
-@testitem "Type stability: Compressible Euler Vector Invariant With Gravity 3D" setup=[Setup] tags=[:type_stable_tests] begin
+@testitem "Type stability: Compressible Euler Vector Invariant 3D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
-        equations = @inferred CompressibleEulerVectorInvariantEquationsWithGravity3D(c_p = RealT(1004),
-                                                                                     c_v = RealT(717),
-                                                                                     gravity = RealT(EARTH_GRAVITATIONAL_ACCELERATION))
+        equations = @inferred CompressibleEulerVectorInvariantEquations3D(c_p = RealT(1004),
+                                                                          c_v = RealT(717),
+                                                                          gravity = RealT(EARTH_GRAVITATIONAL_ACCELERATION))
 
         u = u_ll = u_rr = cons = SVector(one(RealT), one(RealT), one(RealT),
                                          one(RealT), one(RealT))

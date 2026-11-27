@@ -6,7 +6,7 @@
 #! format: noindent
 
 @doc raw"""
-CompressibleEulerInternalEnergyEquationsWithGravity2D(; c_p, c_v, gravity)
+CompressibleEulerInternalEnergyEquations2D(; c_p, c_v, gravity)
 
 The compressible Euler equations with gravity
 ```math
@@ -46,7 +46,7 @@ functions take the auxiliary variables `aux = SVector(phi)` as additional
 argument after the state, e.g.,
 `flux_conservative_etec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)`.
 """
-struct CompressibleEulerInternalEnergyEquationsWithGravity2D{RealT <: Real} <:
+struct CompressibleEulerInternalEnergyEquations2D{RealT <: Real} <:
        AbstractCompressibleEulerEquations{2, 4}
     p_0::RealT # reference pressure in Pa
     c_p::RealT # specific heat at constant pressure in J/(kg K)
@@ -55,8 +55,8 @@ struct CompressibleEulerInternalEnergyEquationsWithGravity2D{RealT <: Real} <:
     R::RealT # gas constant in J/(kg K)
     gamma::RealT # ratio of specific heats
     inv_gamma_minus_one::RealT # = inv(gamma - 1); can be used to write slow divisions as fast multiplications
-    function CompressibleEulerInternalEnergyEquationsWithGravity2D(; c_p, c_v,
-                                                                   gravity)
+    function CompressibleEulerInternalEnergyEquations2D(; c_p, c_v,
+                                                        gravity)
         c_p, c_v, g = promote(c_p, c_v, gravity)
         p_0 = 100_000
         R = c_p - c_v
@@ -69,27 +69,27 @@ struct CompressibleEulerInternalEnergyEquationsWithGravity2D{RealT <: Real} <:
 end
 
 function varnames(::typeof(cons2cons),
-                  ::CompressibleEulerInternalEnergyEquationsWithGravity2D)
+                  ::CompressibleEulerInternalEnergyEquations2D)
     ("rho", "rho_v1", "rho_v2", "rho_e_internal")
 end
 
 varnames(::typeof(cons2prim),
-::CompressibleEulerInternalEnergyEquationsWithGravity2D) = ("rho",
-                                                            "v1",
-                                                            "v2",
-                                                            "p")
+::CompressibleEulerInternalEnergyEquations2D) = ("rho",
+                                                 "v1",
+                                                 "v2",
+                                                 "p")
 
-@inline Trixi.nauxvariables(::CompressibleEulerInternalEnergyEquationsWithGravity2D) = 1
+@inline Trixi.nauxvariables(::CompressibleEulerInternalEnergyEquations2D) = 1
 
-Trixi.auxvarnames(::CompressibleEulerInternalEnergyEquationsWithGravity2D) = ("phi",)
+Trixi.auxvarnames(::CompressibleEulerInternalEnergyEquations2D) = ("phi",)
 
-have_nonconservative_terms(::CompressibleEulerInternalEnergyEquationsWithGravity2D) = True()
+have_nonconservative_terms(::CompressibleEulerInternalEnergyEquations2D) = True()
 
 @inline function boundary_condition_slip_wall(u_inner, aux_inner,
                                               normal_direction::AbstractVector,
                                               x, t,
                                               surface_flux_functions,
-                                              equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
+                                              equations::CompressibleEulerInternalEnergyEquations2D)
     # normalize the outward pointing direction
     normal = normal_direction / norm(normal_direction)
     surface_flux_function, nonconservative_flux_function = surface_flux_functions
@@ -113,7 +113,7 @@ end
 
 """
     flux_conservative_etec(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector,
-                           equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
+                           equations::CompressibleEulerInternalEnergyEquations2D)
 
 Entropy conserving, total energy conserving and kinetic energy preserving two-point flux by
 -  Marco Artiano, Hendrik Ranocha (2026)
@@ -123,7 +123,7 @@ Entropy conserving, total energy conserving and kinetic energy preserving two-po
 """
 @inline function flux_conservative_etec(u_ll, u_rr, aux_ll, aux_rr,
                                         normal_direction::AbstractVector,
-                                        equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
+                                        equations::CompressibleEulerInternalEnergyEquations2D)
     # Unpack left and right state
     rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
     rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
@@ -148,7 +148,7 @@ end
 
 """
     flux_nonconservative_etec(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector,
-                              equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
+                              equations::CompressibleEulerInternalEnergyEquations2D)
 
 Nonconservative part of the entropy conserving, total energy conserving and kinetic energy preserving two-point flux by
 -  Marco Artiano, Hendrik Ranocha (2026)
@@ -158,7 +158,7 @@ Nonconservative part of the entropy conserving, total energy conserving and kine
 """
 @inline function flux_nonconservative_etec(u_ll, u_rr, aux_ll, aux_rr,
                                            normal_direction::AbstractVector,
-                                           equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
+                                           equations::CompressibleEulerInternalEnergyEquations2D)
 
     # Unpack left and right state
     rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
@@ -179,7 +179,7 @@ end
 
 """
     flux_conservative_es(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector,
-                         equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
+                         equations::CompressibleEulerInternalEnergyEquations2D)
 
 Entropy stable two-point flux by
 -  Marco Artiano, Hendrik Ranocha (2026)
@@ -189,7 +189,7 @@ Entropy stable two-point flux by
 """
 @inline function flux_conservative_es(u_ll, u_rr, aux_ll, aux_rr,
                                       normal_direction::AbstractVector,
-                                      equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
+                                      equations::CompressibleEulerInternalEnergyEquations2D)
     # Unpack left and right state
     rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
     rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
@@ -231,7 +231,7 @@ end
 
 """
     flux_nonconservative_es(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector,
-                            equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
+                            equations::CompressibleEulerInternalEnergyEquations2D)
 
 Nonconservative part of the entropy stable two-point flux by
 -  Marco Artiano, Hendrik Ranocha (2026)
@@ -241,7 +241,7 @@ Nonconservative part of the entropy stable two-point flux by
 """
 @inline function flux_nonconservative_es(u_ll, u_rr, aux_ll, aux_rr,
                                          normal_direction::AbstractVector,
-                                         equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
+                                         equations::CompressibleEulerInternalEnergyEquations2D)
     # Unpack left and right state
     rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
     rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
@@ -264,7 +264,7 @@ Nonconservative part of the entropy stable two-point flux by
 end
 
 @inline function prim2cons(prim, aux,
-                           equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
+                           equations::CompressibleEulerInternalEnergyEquations2D)
     rho, v1, v2, p = prim
     rho_v1 = rho * v1
     rho_v2 = rho * v2
@@ -273,7 +273,7 @@ end
 end
 
 @inline function cons2prim(u, aux,
-                           equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
+                           equations::CompressibleEulerInternalEnergyEquations2D)
     rho, rho_v1, rho_v2, rho_e_internal = u
     v1 = rho_v1 / rho
     v2 = rho_v2 / rho
@@ -282,12 +282,12 @@ end
 end
 
 @inline function cons2cons(u, aux,
-                           equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
+                           equations::CompressibleEulerInternalEnergyEquations2D)
     return u
 end
 
 @inline function cons2entropy(u, aux,
-                              equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
+                              equations::CompressibleEulerInternalEnergyEquations2D)
     rho, rho_v1, rho_v2, rho_e_internal = u
 
     w1 = log(rho_e_internal * (equations.gamma - 1) / rho^equations.gamma) -
@@ -298,7 +298,7 @@ end
 end
 
 @inline function entropy(cons, aux,
-                         equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
+                         equations::CompressibleEulerInternalEnergyEquations2D)
     p = pressure(cons, aux, equations)
     # Thermodynamic entropy
     s = log(p) - equations.gamma * log(cons[1])
@@ -307,7 +307,7 @@ end
 end
 
 @inline function pressure(cons, aux,
-                          equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
+                          equations::CompressibleEulerInternalEnergyEquations2D)
     p = (equations.gamma - 1) * cons[4]
     return p
 end
@@ -315,7 +315,7 @@ end
 # Less "cautious", i.e., less overestimating `λ_max` compared to `max_abs_speed_naive`
 @inline function max_abs_speed(u_ll, u_rr, aux_ll, aux_rr,
                                normal_direction::AbstractVector,
-                               equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
+                               equations::CompressibleEulerInternalEnergyEquations2D)
     rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
     rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
@@ -336,7 +336,7 @@ end
 end
 
 @inline function max_abs_speeds(u, aux,
-                                equations::CompressibleEulerInternalEnergyEquationsWithGravity2D)
+                                equations::CompressibleEulerInternalEnergyEquations2D)
     rho, v1, v2, p = cons2prim(u, aux, equations)
     c = sqrt(equations.gamma * p / rho)
 

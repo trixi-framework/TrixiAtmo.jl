@@ -8,6 +8,16 @@ for human readability.
 ## Changes when updating to v0.2 from v0.1.x
 
 #### Changed
+- The suffix `WithGravity` is removed from the names of the compressible Euler equations,
+  since all of them include gravity: the
+  `CompressibleEulerPotentialTemperatureEquationsWithGravity{1,2,3}D`, the
+  `CompressibleEulerEnergyEquationsWithGravity{2,3}D`, the
+  `CompressibleEulerInternalEnergyEquationsWithGravity2D`, and the
+  `CompressibleEulerVectorInvariantEquationsWithGravity3D` are renamed to the
+  `CompressibleEulerPotentialTemperatureEquations{1,2,3}D`, the
+  `CompressibleEulerEnergyEquations{2,3}D`, the
+  `CompressibleEulerInternalEnergyEquations2D`, and the
+  `CompressibleEulerVectorInvariantEquations3D`.
 - The `CompressibleEulerPotentialTemperatureEquationsWithGravity3D`, the
   `CompressibleEulerEnergyEquationsWithGravity3D`, and the
   `CompressibleEulerVectorInvariantEquationsWithGravity3D` store the geopotential as an
@@ -46,8 +56,9 @@ for human readability.
   Use the `CompressibleEulerPotentialTemperatureEquationsWithGravity1D`, the
   `CompressibleEulerPotentialTemperatureEquationsWithGravity2D`, and the
   `CompressibleEulerPotentialTemperatureEquationsWithGravity3D` instead, which include
-  gravity as a nonconservative term. With a zero geopotential, they reduce to the equations
-  without gravity, as in `elixir_potential_temperature_ec.jl` and
+  gravity as a nonconservative term and are now called
+  `CompressibleEulerPotentialTemperatureEquations{1,2,3}D`. With a zero geopotential, they
+  reduce to the equations without gravity, as in `elixir_potential_temperature_ec.jl` and
   `elixir_potential_temperature_taylor_green_vortex.jl`, and gravity can be added as a
   source term, as in `elixir_potential_temperature_robert_bubble.jl` ([#276]).
 - TrixiAtmo.jl now consistently uses `P4estMesh` for the Cartesian equations in 2D and 3D.

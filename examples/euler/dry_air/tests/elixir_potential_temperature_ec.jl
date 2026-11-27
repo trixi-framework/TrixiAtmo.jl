@@ -3,7 +3,7 @@ using Trixi, TrixiAtmo
 
 # Without gravity, i.e., with zero geopotential
 function initial_condition_density_wave(x, t,
-                                        equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
+                                        equations::CompressibleEulerPotentialTemperatureEquations1D)
     v1 = 1
     rho = 1 + exp(sinpi(2 * x[1]))
     p = 1
@@ -11,9 +11,9 @@ function initial_condition_density_wave(x, t,
     return prim2cons(SVector(rho, v1, p, phi), equations)
 end
 
-equations = CompressibleEulerPotentialTemperatureEquationsWithGravity1D(c_p = 1004,
-                                                                        c_v = 717,
-                                                                        gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+equations = CompressibleEulerPotentialTemperatureEquations1D(c_p = 1004,
+                                                             c_v = 717,
+                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 
 polydeg = 3
 basis = LobattoLegendreBasis(polydeg)

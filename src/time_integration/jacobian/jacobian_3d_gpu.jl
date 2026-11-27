@@ -6,7 +6,7 @@
 #! format: noindent
 
 # Copies of the data of one node between Trixi.jl's layout and the columns for the
-# `CompressibleEulerPotentialTemperatureEquationsWithGravity3D`, called by the copy kernels
+# `CompressibleEulerPotentialTemperatureEquations3D`, called by the copy kernels
 # in `jacobian_gpu.jl`
 
 # Copy the vertical variables of the node `(i, j, k, element)` of `u`, multiplied by

@@ -2,7 +2,7 @@
 #! format: noindent
 
 @doc raw"""
-    CompressibleEulerPotentialTemperatureEquationsWithGravity3D(; c_p, c_v, gravity)
+    CompressibleEulerPotentialTemperatureEquations3D(; c_p, c_v, gravity)
 
 The compressible Euler equations with gravity in potential temperature formulation
 ```math
@@ -46,7 +46,7 @@ functions take the auxiliary variables `aux = SVector(phi)` as additional
 argument after the state, e.g., `flux(u, aux, normal_direction, equations)` or
 `flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)`.
 """
-struct CompressibleEulerPotentialTemperatureEquationsWithGravity3D{RealT <: Real} <:
+struct CompressibleEulerPotentialTemperatureEquations3D{RealT <: Real} <:
        AbstractCompressibleEulerEquations{3, 5}
     p_0::RealT # reference pressure in Pa
     c_p::RealT # specific heat at constant pressure in J/(kg K)
@@ -57,8 +57,8 @@ struct CompressibleEulerPotentialTemperatureEquationsWithGravity3D{RealT <: Real
     inv_gamma_minus_one::RealT # = inv(gamma - 1); can be used to write slow divisions as fast multiplications
     K::RealT # = p_0 * (R / p_0)^gamma; scaling factor between pressure and weighted potential temperature
     stolarsky_factor::RealT # = (gamma - 1) / gamma; used in the stolarsky mean
-    function CompressibleEulerPotentialTemperatureEquationsWithGravity3D(; c_p, c_v,
-                                                                         gravity)
+    function CompressibleEulerPotentialTemperatureEquations3D(; c_p, c_v,
+                                                              gravity)
         c_p, c_v, g = promote(c_p, c_v, gravity)
         p_0 = 100_000
         R = c_p - c_v
@@ -77,36 +77,36 @@ end
 # this allows to move semidiscretizations and their components including
 # the equations to GPUs and adapt the floating point type, e.g.,
 # to `Float32` to improve performance on GPUs.
-function Base.similar(equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D,
+function Base.similar(equations::CompressibleEulerPotentialTemperatureEquations3D,
                       ::Type{NewRealT}) where {NewRealT}
     c_p, c_v, gravity = convert.(NewRealT, (equations.c_p, equations.c_v, equations.g))
-    return CompressibleEulerPotentialTemperatureEquationsWithGravity3D(; c_p, c_v,
-                                                                       gravity)
+    return CompressibleEulerPotentialTemperatureEquations3D(; c_p, c_v,
+                                                            gravity)
 end
 
 function varnames(::typeof(cons2cons),
-                  ::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                  ::CompressibleEulerPotentialTemperatureEquations3D)
     ("rho", "rho_v1", "rho_v2", "rho_v3", "rho_theta")
 end
 
 varnames(::typeof(cons2prim),
-::CompressibleEulerPotentialTemperatureEquationsWithGravity3D) = ("rho",
-                                                                  "v1",
-                                                                  "v2",
-                                                                  "v3",
-                                                                  "p1")
+::CompressibleEulerPotentialTemperatureEquations3D) = ("rho",
+                                                       "v1",
+                                                       "v2",
+                                                       "v3",
+                                                       "p1")
 
-@inline Trixi.nauxvariables(::CompressibleEulerPotentialTemperatureEquationsWithGravity3D) = 1
+@inline Trixi.nauxvariables(::CompressibleEulerPotentialTemperatureEquations3D) = 1
 
-Trixi.auxvarnames(::CompressibleEulerPotentialTemperatureEquationsWithGravity3D) = ("phi",)
+Trixi.auxvarnames(::CompressibleEulerPotentialTemperatureEquations3D) = ("phi",)
 
-have_nonconservative_terms(::CompressibleEulerPotentialTemperatureEquationsWithGravity3D) = Trixi.True()
+have_nonconservative_terms(::CompressibleEulerPotentialTemperatureEquations3D) = Trixi.True()
 
 @inline function boundary_condition_slip_wall(u_inner, aux_inner,
                                               normal_direction::AbstractVector,
                                               x, t,
                                               surface_flux_functions,
-                                              equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                              equations::CompressibleEulerPotentialTemperatureEquations3D)
     # normalize the outward pointing direction
     normal = normal_direction / norm(normal_direction)
     surface_flux_function, nonconservative_flux_function = surface_flux_functions
@@ -132,7 +132,7 @@ end
 # Calculate 1D flux for a single point in the normal direction
 # Note, this directional vector is not normalized
 @inline function flux(u, aux, normal_direction::AbstractVector,
-                      equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                      equations::CompressibleEulerPotentialTemperatureEquations3D)
     rho, rho_v1, rho_v2, rho_v3, rho_theta = u
     v1 = rho_v1 / rho
     v2 = rho_v2 / rho
@@ -153,10 +153,10 @@ end
 """
     flux_nonconservative_isothermal(u_ll, u_rr, aux_ll, aux_rr,
                                     normal_direction::AbstractVector,
-                                    equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                    equations::CompressibleEulerPotentialTemperatureEquations3D)
 
 Well-balanced gravity term for an isothermal background state
-for the [`CompressibleEulerPotentialTemperatureEquationsWithGravity3D`](@ref)
+for the [`CompressibleEulerPotentialTemperatureEquations3D`](@ref)
 developed by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
    Structure-Preserving High-Order Methods for the Compressible Euler Equations
@@ -165,7 +165,7 @@ developed by
 """
 @inline function flux_nonconservative_isothermal(u_ll, u_rr, aux_ll, aux_rr,
                                                  normal_direction::AbstractVector,
-                                                 equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                                 equations::CompressibleEulerPotentialTemperatureEquations3D)
     rho_ll = u_ll[1]
     rho_rr = u_rr[1]
     phi_ll = aux_ll[1]
@@ -182,7 +182,7 @@ end
 """
     flux_nonconservative_artiano_etal(u_ll, u_rr, aux_ll, aux_rr,
                                       normal_direction::AbstractVector,
-                                      equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                      equations::CompressibleEulerPotentialTemperatureEquations3D)
 
 Well-balanced gravity term for constant potential temperature background state by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
@@ -192,7 +192,7 @@ Well-balanced gravity term for constant potential temperature background state b
 """
 @inline function flux_nonconservative_artiano_etal(u_ll, u_rr, aux_ll, aux_rr,
                                                    normal_direction::AbstractVector,
-                                                   equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                                   equations::CompressibleEulerPotentialTemperatureEquations3D)
     rho_ll = u_ll[1]
     rho_rr = u_rr[1]
     phi_ll = aux_ll[1]
@@ -209,7 +209,7 @@ end
 """
     flux_nonconservative_souza_etal(u_ll, u_rr, aux_ll, aux_rr,
                                     normal_direction::AbstractVector,
-                                    equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                    equations::CompressibleEulerPotentialTemperatureEquations3D)
 
 -  Souza et al.
    The Flux-Differencing Discontinuous {G}alerkin Method Applied to
@@ -218,7 +218,7 @@ end
 """
 @inline function flux_nonconservative_souza_etal(u_ll, u_rr, aux_ll, aux_rr,
                                                  normal_direction::AbstractVector,
-                                                 equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                                 equations::CompressibleEulerPotentialTemperatureEquations3D)
     rho_ll = u_ll[1]
     rho_rr = u_rr[1]
     phi_ll = aux_ll[1]
@@ -240,7 +240,7 @@ end
 
 @inline function (flux_lmars::FluxLMARS)(u_ll, u_rr, aux_ll, aux_rr,
                                          normal_direction::AbstractVector,
-                                         equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                         equations::CompressibleEulerPotentialTemperatureEquations3D)
     a = flux_lmars.speed_of_sound
     # Unpack left and right state
     rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
@@ -273,7 +273,7 @@ end
 
 """
     flux_lmars_combined(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
-                        equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                        equations::CompressibleEulerPotentialTemperatureEquations3D)
 
 Version of the low Mach number approximate Riemann solver `FluxLMARS(340)` that returns the
 conservative and the nonconservative contribution of the surface flux as a tuple, see
@@ -286,7 +286,7 @@ contributions are given by the plain LMARS flux and no gravity term is computed 
 """
 @inline function flux_lmars_combined(u_ll, u_rr, aux_ll, aux_rr,
                                      normal_direction::AbstractVector,
-                                     equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                     equations::CompressibleEulerPotentialTemperatureEquations3D)
     # constants
     a = 340
 
@@ -321,11 +321,11 @@ contributions are given by the plain LMARS flux and no gravity term is computed 
     return flux, flux
 end
 
-@inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_lmars_combined), ::CompressibleEulerPotentialTemperatureEquationsWithGravity3D) = Trixi.True()
+@inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_lmars_combined), ::CompressibleEulerPotentialTemperatureEquations3D) = Trixi.True()
 
 """
     flux_lmars_es(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
-                  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                  equations::CompressibleEulerPotentialTemperatureEquations3D)
 
 Entropy-stable and well-balanced version of the low Mach number approximate Riemann solver
 [`FluxLMARS`](@ref) by
@@ -340,7 +340,7 @@ contribution of the surface flux as a tuple, see
 """
 @inline function flux_lmars_es(u_ll, u_rr, aux_ll, aux_rr,
                                normal_direction::AbstractVector,
-                               equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                               equations::CompressibleEulerPotentialTemperatureEquations3D)
     # Unpack left and right state
     rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
     rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
@@ -401,7 +401,7 @@ contribution of the surface flux as a tuple, see
     return flux, flux
 end
 
-@inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_lmars_es), ::CompressibleEulerPotentialTemperatureEquationsWithGravity3D) = Trixi.True()
+@inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_lmars_es), ::CompressibleEulerPotentialTemperatureEquations3D) = Trixi.True()
 
 # The boundary condition must also be specialized for a combined surface flux such that it
 # returns only the first contribution of the surface flux.
@@ -410,7 +410,7 @@ end
                                               x, t,
                                               surface_flux_function::Union{typeof(flux_lmars_combined),
                                                                            typeof(flux_lmars_es)},
-                                              equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                              equations::CompressibleEulerPotentialTemperatureEquations3D)
     # normalize the outward pointing direction
     normal = normal_direction / norm(normal_direction)
     # compute the normal velocity
@@ -432,10 +432,10 @@ end
 
 """
     flux_kennedy_gruber(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
-                        equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                        equations::CompressibleEulerPotentialTemperatureEquations3D)
 
 Modification of the kinetic-energy-preserving two-point flux by Kennedy and Gruber
-that is consistent with [`CompressibleEulerPotentialTemperatureEquationsWithGravity3D`](@ref). See:
+that is consistent with [`CompressibleEulerPotentialTemperatureEquations3D`](@ref). See:
 - Kennedy and Gruber (2008)
   Reduced aliasing formulations of the convective terms within the
   Navier-Stokes equations for a compressible fluid
@@ -443,7 +443,7 @@ that is consistent with [`CompressibleEulerPotentialTemperatureEquationsWithGrav
 """
 @inline function flux_kennedy_gruber(u_ll, u_rr, aux_ll, aux_rr,
                                      normal_direction::AbstractVector,
-                                     equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                     equations::CompressibleEulerPotentialTemperatureEquations3D)
     # Unpack left and right state
     rho_theta_ll = u_ll[5]
     rho_theta_rr = u_rr[5]
@@ -473,7 +473,7 @@ end
 
 """
     flux_kennedy_gruber_souza_etal(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
-                                   equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                   equations::CompressibleEulerPotentialTemperatureEquations3D)
 
 Fused version of [`flux_kennedy_gruber`](@ref) and [`flux_nonconservative_souza_etal`](@ref)
 that computes the conservative and the nonconservative contributions in a single kernel,
@@ -488,7 +488,7 @@ a single `volume_flux` instead of the tuple
 """
 @inline function flux_kennedy_gruber_souza_etal(u_ll, u_rr, aux_ll, aux_rr,
                                                 normal_direction::AbstractVector,
-                                                equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                                equations::CompressibleEulerPotentialTemperatureEquations3D)
     # Unpack left and right state
     rho_theta_ll = u_ll[5]
     rho_theta_rr = u_rr[5]
@@ -525,11 +525,11 @@ a single `volume_flux` instead of the tuple
            SVector(f1, f2 - g2, f3 - g3, f4 - g4, f5)
 end
 
-@inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_kennedy_gruber_souza_etal), ::CompressibleEulerPotentialTemperatureEquationsWithGravity3D) = Trixi.True()
+@inline Trixi.combine_conservative_and_nonconservative_fluxes(::typeof(flux_kennedy_gruber_souza_etal), ::CompressibleEulerPotentialTemperatureEquations3D) = Trixi.True()
 
 """
     flux_tec(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector,
-             equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+             equations::CompressibleEulerPotentialTemperatureEquations3D)
 
 Total energy conservative two-point flux by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
@@ -539,7 +539,7 @@ Total energy conservative two-point flux by
 """
 @inline function flux_tec(u_ll, u_rr, aux_ll, aux_rr,
                           normal_direction::AbstractVector,
-                          equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                          equations::CompressibleEulerPotentialTemperatureEquations3D)
     # Unpack left and right state
     rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
     rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
@@ -571,7 +571,7 @@ end
 
 """
     flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector,
-            equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+            equations::CompressibleEulerPotentialTemperatureEquations3D)
 
 Entropy conservative two-point flux by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
@@ -581,7 +581,7 @@ Entropy conservative two-point flux by
 """
 @inline function flux_ec(u_ll, u_rr, aux_ll, aux_rr,
                          normal_direction::AbstractVector,
-                         equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                         equations::CompressibleEulerPotentialTemperatureEquations3D)
     # Unpack left and right state
     rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
     rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
@@ -610,7 +610,7 @@ end
 
 """
     flux_etec(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector,
-              equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+              equations::CompressibleEulerPotentialTemperatureEquations3D)
 
 Entropy and total energy conservative two-point flux by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
@@ -620,7 +620,7 @@ Entropy and total energy conservative two-point flux by
 """
 @inline function flux_etec(u_ll, u_rr, aux_ll, aux_rr,
                            normal_direction::AbstractVector,
-                           equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                           equations::CompressibleEulerPotentialTemperatureEquations3D)
     # Unpack left and right state
     rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
     rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
@@ -650,7 +650,7 @@ Entropy and total energy conservative two-point flux by
 end
 
 @inline function Trixi.prim2cons(prim, aux,
-                                 equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                 equations::CompressibleEulerPotentialTemperatureEquations3D)
     rho, v1, v2, v3, p = prim
     rho_v1 = rho * v1
     rho_v2 = rho * v2
@@ -660,7 +660,7 @@ end
 end
 
 @inline function cons2prim(u, aux,
-                           equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                           equations::CompressibleEulerPotentialTemperatureEquations3D)
     rho, rho_v1, rho_v2, rho_v3, rho_theta = u
     v1 = rho_v1 / rho
     v2 = rho_v2 / rho
@@ -670,12 +670,12 @@ end
 end
 
 @inline function cons2cons(u, aux,
-                           equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                           equations::CompressibleEulerPotentialTemperatureEquations3D)
     return u
 end
 
 @inline function cons2entropy(u, aux,
-                              equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                              equations::CompressibleEulerPotentialTemperatureEquations3D)
     rho, rho_v1, rho_v2, rho_v3, rho_theta = u
 
     w1 = log(equations.K * (rho_theta / rho)^equations.gamma) - equations.gamma
@@ -685,7 +685,7 @@ end
 end
 
 @inline function entropy(cons, aux,
-                         equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                         equations::CompressibleEulerPotentialTemperatureEquations3D)
     p = equations.K * cons[5]^equations.gamma
     # Thermodynamic entropy
     s = log(p) - equations.gamma * log(cons[1])
@@ -694,20 +694,20 @@ end
 end
 
 @inline function pressure(cons, aux,
-                          equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                          equations::CompressibleEulerPotentialTemperatureEquations3D)
     p = equations.K * exp(equations.gamma * log(cons[5]))
     return p
 end
 
 # Calculate kinetic energy for a conservative state `cons`
 @inline function energy_kinetic(u, aux,
-                                equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                equations::CompressibleEulerPotentialTemperatureEquations3D)
     rho, rho_v1, rho_v2, rho_v3, _ = u
     return 0.5f0 * (rho_v1^2 + rho_v2^2 + rho_v3^2) / rho
 end
 
 @inline function energy_total(cons, aux,
-                              equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                              equations::CompressibleEulerPotentialTemperatureEquations3D)
     p = equations.p_0 * (equations.R * cons[5] / equations.p_0)^equations.gamma
 
     U = (p / (equations.gamma - 1) +
@@ -720,7 +720,7 @@ end
 # maximum velocity magnitude plus the maximum speed of sound
 @inline function max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr,
                                      normal_direction::AbstractVector,
-                                     equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                     equations::CompressibleEulerPotentialTemperatureEquations3D)
     rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
     rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
@@ -742,7 +742,7 @@ end
 # Less "cautious", i.e., less overestimating `λ_max` compared to `max_abs_speed_naive`
 @inline function max_abs_speed(u_ll, u_rr, aux_ll, aux_rr,
                                normal_direction::AbstractVector,
-                               equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                               equations::CompressibleEulerPotentialTemperatureEquations3D)
     rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
     rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
@@ -763,7 +763,7 @@ end
 end
 
 @inline function max_abs_speeds(u, aux,
-                                equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                equations::CompressibleEulerPotentialTemperatureEquations3D)
     rho, v1, v2, v3, p = cons2prim(u, aux, equations)
     c = sqrt(equations.gamma * p / rho)
 
@@ -785,14 +785,14 @@ const FluxECIsothermal = Tuple{typeof(flux_ec),
 # of variables and auxiliary variables. Both fluxes use the same precomputed variables.
 @inline function Trixi.nturbovars(::Union{FluxKennedyGruberSouzaEtal,
                                           FluxECIsothermal},
-                                  ::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                  ::CompressibleEulerPotentialTemperatureEquations3D)
     return Val(7)
 end
 
 @inline function Trixi.cons2turbo(::Union{FluxKennedyGruberSouzaEtal,
                                           FluxECIsothermal},
                                   rho, rho_v1, rho_v2, rho_v3, rho_theta, phi,
-                                  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                  equations::CompressibleEulerPotentialTemperatureEquations3D)
     v1 = rho_v1 / rho
     v2 = rho_v2 / rho
     v3 = rho_v3 / rho
@@ -807,7 +807,7 @@ end
                                   rho_rr, v1_rr, v2_rr, v3_rr, theta_rr, p_rr, phi_rr,
                                   normal_direction_1, normal_direction_2,
                                   normal_direction_3,
-                                  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                  equations::CompressibleEulerPotentialTemperatureEquations3D)
     # Average each factor of products in flux
     rho_avg = 0.5f0 * (rho_ll + rho_rr)
     v1_avg = 0.5f0 * (v1_ll + v1_rr)
@@ -849,7 +849,7 @@ end
                                   rho_rr, v1_rr, v2_rr, v3_rr, theta_rr, p_rr, phi_rr,
                                   normal_direction_1, normal_direction_2,
                                   normal_direction_3,
-                                  equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                  equations::CompressibleEulerPotentialTemperatureEquations3D)
     v_dot_n_ll = v1_ll * normal_direction_1 + v2_ll * normal_direction_2 +
                  v3_ll * normal_direction_3
     v_dot_n_rr = v1_rr * normal_direction_1 + v2_rr * normal_direction_2 +

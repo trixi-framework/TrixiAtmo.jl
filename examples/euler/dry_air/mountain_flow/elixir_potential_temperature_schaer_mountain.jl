@@ -9,9 +9,9 @@ using Trixi, TrixiAtmo
 
 ###############################################################################
 # semidiscretization of the compressible Euler equations
-equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004,
-                                                                        c_v = 717,
-                                                                        gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+equations = CompressibleEulerPotentialTemperatureEquations2D(c_p = 1004,
+                                                             c_v = 717,
+                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 
 setup = MountainWaveSetup(theta_0 = 280, u0 = 10, brunt_vaisala_frequency = 0.01,
                           z_damping_start = 13000, z_damping_end = 21000,

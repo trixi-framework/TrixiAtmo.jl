@@ -10,7 +10,7 @@ using OrdinaryDiffEqLowStorageRK
 using Trixi, TrixiAtmo
 
 @inline function source_terms_hs_relaxation(u, aux, x, t,
-                                            equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                            equations::CompressibleEulerPotentialTemperatureEquations3D)
     # equations (55)-(58) in the paper
     k_f = 1 / SECONDS_PER_DAY         # Damping scale for momentum
     k_a = 1 / (40 * SECONDS_PER_DAY)  # Polar relaxation scale
@@ -54,14 +54,14 @@ using Trixi, TrixiAtmo
 end
 
 @inline function source_terms_held_suarez(u, aux, x, t,
-                                          equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                          equations::CompressibleEulerPotentialTemperatureEquations3D)
     return source_terms_coriolis(u, aux, x, t, equations) +
            source_terms_hs_relaxation(u, aux, x, t, equations)
 end
 
-equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004,
-                                                                        c_v = 717,
-                                                                        gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+equations = CompressibleEulerPotentialTemperatureEquations3D(c_p = 1004,
+                                                             c_v = 717,
+                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 
 initial_condition = initial_condition_isothermal
 aux_field = aux_field_gravity_earth

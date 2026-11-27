@@ -5,7 +5,7 @@ using Trixi, TrixiAtmo
 aux_field_no_gravity(x, equations) = SVector(zero(eltype(x)))
 
 function initial_condition_taylor_green_vortex(x, t,
-                                               equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+                                               equations::CompressibleEulerPotentialTemperatureEquations3D)
     rho = 1.0
     v1 = sin(x[1]) * cos(x[2]) * cos(x[3])
     v2 = -cos(x[1]) * sin(x[2]) * cos(x[3])
@@ -18,9 +18,9 @@ function initial_condition_taylor_green_vortex(x, t,
     return prim2cons(SVector(rho, v1, v2, v3, p), aux, equations)
 end
 
-equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004,
-                                                                        c_v = 717,
-                                                                        gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+equations = CompressibleEulerPotentialTemperatureEquations3D(c_p = 1004,
+                                                             c_v = 717,
+                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
 surface_flux = (flux_etec, flux_zero)

@@ -21,7 +21,7 @@
     JacobianVerticalTwoSided(; c = 340)
 
 Approximate Jacobian of the vertical dynamics (vertically propagating acoustic waves and
-gravity) of the [`CompressibleEulerPotentialTemperatureEquationsWithGravity3D`](@ref) on a
+gravity) of the [`CompressibleEulerPotentialTemperatureEquations3D`](@ref) on a
 [`P4estMeshCubedSphereTopography`](@ref), used as linear operator of linearly implicit time
 integration methods, i.e., Rosenbrock-W methods such as [`SSPRW32`](@ref) and linear IMEX
 methods such as [`ARS343`](@ref), for horizontally explicit, vertically implicit (HEVI)
@@ -272,9 +272,9 @@ end
 
 function create_cache_jacobian(jacobian::JacobianVerticalTwoSided, semi, u_ode)
     (; mesh, equations, solver, cache) = semi
-    if !(equations isa CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+    if !(equations isa CompressibleEulerPotentialTemperatureEquations3D)
         throw(ArgumentError("`JacobianVerticalTwoSided` requires the " *
-                            "`CompressibleEulerPotentialTemperatureEquationsWithGravity3D`"))
+                            "`CompressibleEulerPotentialTemperatureEquations3D`"))
     end
     nlayers_ = nlayers(mesh)
     nnodes_ = nnodes(solver)

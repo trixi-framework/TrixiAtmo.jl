@@ -11,7 +11,7 @@ using Trixi, TrixiAtmo
 aux_field_no_gravity(x, equations) = SVector(zero(eltype(x)))
 
 function initial_condition_robert_bubble(x, t,
-                                         equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+                                         equations::CompressibleEulerPotentialTemperatureEquations2D)
     # center of perturbation
     center_x = 500.0
     center_z = 260.0
@@ -49,15 +49,15 @@ function initial_condition_robert_bubble(x, t,
 end
 
 @inline function source_terms_gravity(u, aux, x, t,
-                                      equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+                                      equations::CompressibleEulerPotentialTemperatureEquations2D)
     rho, _, _, _ = u
     g = EARTH_GRAVITATIONAL_ACCELERATION
     return SVector(zero(eltype(u)), zero(eltype(u)), -g * rho, zero(eltype(u)))
 end
 
-equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004,
-                                                                        c_v = 717,
-                                                                        gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+equations = CompressibleEulerPotentialTemperatureEquations2D(c_p = 1004,
+                                                             c_v = 717,
+                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 
 surface_flux = (FluxLMARS(340), flux_zero)
 volume_flux = (flux_tec, flux_zero)
