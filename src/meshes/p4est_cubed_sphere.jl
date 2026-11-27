@@ -91,7 +91,7 @@ function connectivity_cubed_sphere_2D(trees_per_face_dimension)
     n_vertices = 0
     n_trees = 6 * n_cells_x * n_cells_y
 
-    # No corner connectivity is needed
+    # The corners connecting trees are added by `complete_connectivity` below
     n_corners = 0
     vertices = Trixi.C_NULL
     tree_to_vertex = Trixi.C_NULL
@@ -281,7 +281,7 @@ function connectivity_cubed_sphere_2D(trees_per_face_dimension)
 
     tree_to_corner = Trixi.C_NULL
     # `p4est` docs: "in trivial cases it is just a pointer to a p4est_topix value of 0."
-    # We don't need corner connectivity, so this is a trivial case.
+    # The corners are added by `complete_connectivity` below, so this is a trivial case.
     ctt_offset = zeros(Trixi.p4est_topidx_t, 1)
 
     corner_to_tree = Trixi.C_NULL
@@ -295,7 +295,9 @@ function connectivity_cubed_sphere_2D(trees_per_face_dimension)
 
     @assert Trixi.p4est_connectivity_is_valid(connectivity) == 1
 
-    return connectivity
+    # Add all corners (and edges in 3D) connecting trees, which are required by
+    # `p4est_balance` to produce a balanced forest
+    return complete_connectivity(connectivity)
 end
 
 # Calculate physical coordinates of each node of a 2D cubed sphere mesh by mapping
