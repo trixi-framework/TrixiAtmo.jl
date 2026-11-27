@@ -26,7 +26,7 @@ mesh = P4estMesh(cells_per_dimension, polydeg = polydeg,
                  periodicity = (true, false))
 source_terms = nothing
 initial_condition = initial_condition_gravity_waves
-aux_field = aux_field_geopotential
+aux_field = aux_field_gravity
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_terms,
                                     boundary_conditions = boundary_conditions,

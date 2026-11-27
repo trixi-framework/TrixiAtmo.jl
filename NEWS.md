@@ -18,7 +18,7 @@ for human readability.
   `flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)` and
   `cons2prim(u, aux, equations)` (also `cons2entropy` and `entropy`, as required by
   Trixi.jl v0.18), and `SemidiscretizationHyperbolic` requires the keyword argument
-  `aux_field`, e.g., the new `aux_field_geopotential`. Since auxiliary variables are only
+  `aux_field`, e.g., the new `aux_field_gravity`. Since auxiliary variables are only
   available for `P4estMesh`es, the elixirs
   `elixir_potential_temperature_inertia_gravity_waves.jl` and
   `elixir_energy_inertia_gravity_waves.jl` use a `P4estMesh` instead of a `StructuredMesh`.

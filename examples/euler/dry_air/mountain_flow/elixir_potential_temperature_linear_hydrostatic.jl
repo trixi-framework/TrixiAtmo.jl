@@ -25,7 +25,7 @@ setup = MountainWaveSetup(theta_0 = 250, u0 = 20,
                           z_damping_start = 15000, z_damping_end = 30000,
                           x_damping_start = 60000, x_damping_end = 120000,
                           damping_rate = 0.035)
-aux_field = aux_field_geopotential
+aux_field = aux_field_gravity
 
 boundary = BoundaryConditionDirichlet(setup)
 

@@ -8,7 +8,7 @@ Test cases for linearized analytical solution by
    for numerical models using the non-hydrostatic, compressible {E}uler equations
    [DOI: 10.1002/qj.2105] (https://doi.org/10.1002/qj.2105)
 
-The corresponding geopotential is given by [`aux_field_geopotential`](@ref).
+The corresponding geopotential is given by [`aux_field_gravity`](@ref).
 """
 function initial_condition_gravity_waves(x, t,
                                          equations::AbstractCompressibleEulerEquations{2,
@@ -33,7 +33,7 @@ function initial_condition_gravity_waves(x, t,
     v1 = 20
     v2 = 0
 
-    aux = aux_field_geopotential(x, equations)
+    aux = aux_field_gravity(x, equations)
     return prim2cons(SVector(rho, v1, v2, p), aux, equations)
 end
 
@@ -43,7 +43,7 @@ end
 
 Atmosphere at rest with constant potential temperature ``\theta = 300\ \mathrm{K}`` in
 hydrostatic balance, used to assess the well-balanced property of a discretization. The
-corresponding geopotential is given by [`aux_field_geopotential`](@ref).
+corresponding geopotential is given by [`aux_field_gravity`](@ref).
 """
 function initial_condition_adiabatic(x, t,
                                      equations::AbstractCompressibleEulerEquations{2, 4})
@@ -67,12 +67,12 @@ function initial_condition_adiabatic(x, t,
     v1 = 0
     v2 = 0
 
-    aux = aux_field_geopotential(x, equations)
+    aux = aux_field_gravity(x, equations)
     return prim2cons(SVector(rho, v1, v2, p), aux, equations)
 end
 
 @doc raw"""
-    aux_field_geopotential(x, equations::AbstractCompressibleEulerEquations{2, 4})
+    aux_field_gravity(x, equations::AbstractCompressibleEulerEquations{2, 4})
 
 Geopotential ``\phi = g z`` of a constant gravitational acceleration ``g`` = `equations.g`
 pointing in the negative ``z = x_2`` direction, as in
@@ -80,8 +80,8 @@ pointing in the negative ``z = x_2`` direction, as in
 [`MountainWaveSetup`](@ref). It is returned as the auxiliary variables, see
 `Trixi.nauxvariables`, and passed as `aux_field` to `SemidiscretizationHyperbolic`.
 """
-@inline function aux_field_geopotential(x,
-                                        equations::AbstractCompressibleEulerEquations{2, 4})
+@inline function aux_field_gravity(x,
+                                   equations::AbstractCompressibleEulerEquations{2, 4})
     return SVector(equations.g * x[2])
 end
 
@@ -185,7 +185,7 @@ end
     v1 = u0
     v2 = 0
 
-    aux = aux_field_geopotential(x, equations)
+    aux = aux_field_gravity(x, equations)
     return prim2cons(SVector(rho, v1, v2, p), aux, equations)
 end
 

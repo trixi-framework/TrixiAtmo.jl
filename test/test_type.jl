@@ -199,7 +199,7 @@ end
         end
 
         x_2d = SVector(zero(RealT), one(RealT))
-        @test eltype(@inferred aux_field_geopotential(x_2d, equations)) == RealT
+        @test eltype(@inferred aux_field_gravity(x_2d, equations)) == RealT
         @test eltype(@inferred cons2prim(u, aux, equations)) == RealT
         @test eltype(@inferred prim2cons(u, aux, equations)) == RealT
         @test eltype(@inferred cons2entropy(u, aux, equations)) == RealT

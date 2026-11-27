@@ -47,7 +47,7 @@ mesh = P4estMesh(trees_per_dimension, polydeg = polydeg,
                  periodicity = (true, false))
 
 initial_condition = initial_condition_gravity_waves
-aux_field = aux_field_geopotential
+aux_field = aux_field_gravity
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     boundary_conditions = boundary_conditions,
                                     aux_field = aux_field)
