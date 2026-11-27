@@ -42,7 +42,8 @@ for human readability.
   `CompressibleMoistEulerEquations2D` and the `CompressibleRainyEulerEquations2D`. Use the
   methods based on `normal_direction` together with `P4estMesh` instead. The physical flux
   `flux(u, orientation, equations)` is kept since `VolumeIntegralWeakForm` uses it also on
-  `P4estMesh`. The 1D equations and the equations in covariant form are not affected.
+  `P4estMesh`. The 1D equations and the equations in covariant form are not affected
+  ([#263]).
 
 ## Changes in the v0.1 lifecycle
 
