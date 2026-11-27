@@ -18,6 +18,20 @@ for human readability.
   `CompressibleEulerEnergyEquations{2,3}D`, the
   `CompressibleEulerInternalEnergyEquations2D`, and the
   `CompressibleEulerVectorInvariantEquations3D`.
+- The `CompressibleEulerPotentialTemperatureEquationsWithGravity3D`, the
+  `CompressibleEulerEnergyEquationsWithGravity3D`, and the
+  `CompressibleEulerVectorInvariantEquationsWithGravity3D` store the geopotential as an
+  auxiliary variable of Trixi.jl (see `Trixi.nauxvariables`) instead of as the last
+  variable of the state. Thus, they have one variable fewer, their pointwise functions,
+  including user-defined source terms and boundary conditions, take the auxiliary
+  variables as additional arguments after the states, e.g.,
+  `flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)`,
+  `source_terms_coriolis(u, aux, x, t, equations)`, and `cons2prim(u, aux, equations)`
+  (also `cons2entropy` and `entropy`, as required by Trixi.jl v0.18), and
+  `SemidiscretizationHyperbolic` requires the keyword argument `aux_field`, e.g.,
+  `aux_field_gravity_earth` or `aux_field_gravity_small_earth`.
+  With adaptive time stepping, results change slightly since the geopotential no longer
+  enters the error estimate of the time integrator ([#267]).
 - The `CompressibleEulerPotentialTemperatureEquationsWithGravity2D`, the
   `CompressibleEulerEnergyEquationsWithGravity2D`, and the
   `CompressibleEulerInternalEnergyEquationsWithGravity2D` store the geopotential as an
@@ -34,30 +48,18 @@ for human readability.
   `elixir_energy_inertia_gravity_waves.jl` use a `P4estMesh` instead of a `StructuredMesh`.
   With adaptive time stepping, results change slightly since the geopotential no longer
   enters the error estimate of the time integrator ([#268]).
-- The `CompressibleEulerPotentialTemperatureEquationsWithGravity3D`, the
-  `CompressibleEulerEnergyEquationsWithGravity3D`, and the
-  `CompressibleEulerVectorInvariantEquationsWithGravity3D` store the geopotential as an
-  auxiliary variable of Trixi.jl (see `Trixi.nauxvariables`) instead of as the last
-  variable of the state. Thus, they have one variable fewer, their pointwise functions,
-  including user-defined source terms and boundary conditions, take the auxiliary
-  variables as additional arguments after the states, e.g.,
-  `flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)`,
-  `source_terms_coriolis(u, aux, x, t, equations)`, and `cons2prim(u, aux, equations)`
-  (also `cons2entropy` and `entropy`, as required by Trixi.jl v0.18), and
-  `SemidiscretizationHyperbolic` requires the keyword argument `aux_field`, e.g.,
-  `aux_field_gravity_earth` or `aux_field_gravity_small_earth`.
-  With adaptive time stepping, results change slightly since the geopotential no longer
-  enters the error estimate of the time integrator ([#267]).
 
 #### Removed
 - The `CompressibleEulerPotentialTemperatureEquations1D`, the
   `CompressibleEulerPotentialTemperatureEquations2D`, and the
-  `CompressibleEulerPotentialTemperatureEquations3D` without gravity have been removed.
+  `CompressibleEulerPotentialTemperatureEquations3D` without gravity are removed.
   Use the `CompressibleEulerPotentialTemperatureEquationsWithGravity1D`, the
   `CompressibleEulerPotentialTemperatureEquationsWithGravity2D`, and the
   `CompressibleEulerPotentialTemperatureEquationsWithGravity3D` instead, which include
   gravity as a nonconservative term and are now called
-  `CompressibleEulerPotentialTemperatureEquations{1,2,3}D` ([#255]).
+  `CompressibleEulerPotentialTemperatureEquations{1,2,3}D`. A zero geopotential gives the
+  equations without gravity, as in `elixir_potential_temperature_ec.jl` and
+  `elixir_potential_temperature_taylor_green_vortex.jl` ([#276]).
 - TrixiAtmo.jl now consistently uses `P4estMesh` for the Cartesian equations in 2D and 3D.
   Thus, the methods based on `orientation` (for `TreeMesh` and `StructuredMesh`) of
   `max_abs_speed_naive`, `max_abs_speed`, `flux_ec_rain`, `boundary_condition_slip_wall`,

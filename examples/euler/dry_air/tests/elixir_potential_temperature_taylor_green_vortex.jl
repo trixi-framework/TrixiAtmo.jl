@@ -1,0 +1,67 @@
+using OrdinaryDiffEqSSPRK
+using Trixi, TrixiAtmo
+
+# Without gravity, i.e., with zero geopotential
+aux_field_no_gravity(x, equations) = SVector(zero(eltype(x)))
+
+function initial_condition_taylor_green_vortex(x, t,
+                                               equations::CompressibleEulerPotentialTemperatureEquations3D)
+    rho = 1.0
+    v1 = sin(x[1]) * cos(x[2]) * cos(x[3])
+    v2 = -cos(x[1]) * sin(x[2]) * cos(x[3])
+    v3 = 0.0
+    p = 10 +
+        1.0 / 16.0 *
+        ((cos(2 * x[1]) + cos(2 * x[2])) * (cos(2 * x[1]) + 2) - 2)
+
+    aux = aux_field_no_gravity(x, equations)
+    return prim2cons(SVector(rho, v1, v2, v3, p), aux, equations)
+end
+
+equations = CompressibleEulerPotentialTemperatureEquations3D(c_p = 1004,
+                                                             c_v = 717,
+                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+polydeg = 3
+basis = LobattoLegendreBasis(polydeg)
+surface_flux = (flux_etec, flux_zero)
+volume_flux = (flux_etec, flux_nonconservative_souza_etal)
+volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
+
+solver = DGSEM(basis, surface_flux, volume_integral)
+
+coordinates_min = (0.0, 0.0, 0.0)
+coordinates_max = (1.0, 1.0, 1.0) .* (2 * pi)
+cells_per_dimension = (8, 8, 8)
+mesh = P4estMesh(cells_per_dimension, polydeg = 1,
+                 coordinates_min = coordinates_min, coordinates_max = coordinates_max,
+                 periodicity = (true, true, true))
+
+semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_taylor_green_vortex,
+                                    solver,
+                                    boundary_conditions = boundary_condition_periodic,
+                                    aux_field = aux_field_no_gravity)
+###############################################################################
+# ODE solvers, callbacks etc.
+tspan = (0.0, 0.2)
+
+ode = semidiscretize(semi, tspan)
+
+summary_callback = SummaryCallback()
+
+analysis_interval = 1000
+
+analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
+                                     extra_analysis_integrals = (entropy,))
+
+alive_callback = AliveCallback(analysis_interval = analysis_interval)
+
+callbacks = CallbackSet(summary_callback,
+                        analysis_callback,
+                        alive_callback)
+
+###############################################################################
+# run the simulation
+sol = solve(ode,
+            SSPRK43(thread = Trixi.Threaded());
+            maxiters = 1.0e7,
+            ode_default_options()..., callback = callbacks)
