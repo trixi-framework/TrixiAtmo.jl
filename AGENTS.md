@@ -70,9 +70,10 @@ items tagged `upstream` in its own downstream CI.
   `initial_condition_*`, `boundary_condition_*`, `source_terms_*`, and variable
   conversions (`cons2prim`, `cons2entropy`, ...). There are
   - equations in Cartesian coordinates, e.g.,
-    `CompressibleEulerPotentialTemperatureEquations{1,2,3}D` (with
-    `...WithGravity{1,2,3}D` variants including the geopotential as an
-    auxiliary variable), `CompressibleEulerEnergyEquationsWithGravity{2,3}D`,
+    `CompressibleEulerPotentialTemperatureEquations{1,2,3}D` (including the
+    geopotential, as the last state variable in 1D and as an auxiliary variable
+    of Trixi.jl in 2D and 3D),
+    `CompressibleEulerEnergyEquations{2,3}D`,
     `CompressibleMoistEulerEquations2D`, `CompressibleRainyEulerEquations2D`,
     and `ShallowWaterEquations3D` (shallow water equations on the sphere in 3D
     Cartesian coordinates);
@@ -433,12 +434,15 @@ starts the Julia sessions itself.
   `test/test_unit.jl` (see the existing `"Unit: Consistency check for ..."`
   test items). For a conservative numerical flux `f`, check consistency with
   the physical flux, i.e.,
-  `f(u, u, orientation, equations) ≈ flux(u, orientation, equations)` and the
-  same with `normal_direction` (with `aux_vars` arguments for covariant
-  equations). Check that the 1D, 2D, and 3D versions of an equation agree for
-  corresponding states and directions. For all fluxes and wave speed estimates
-  with `normal_direction` methods, check agreement with the `orientation`
-  methods for axis-aligned unit normals.
+  `f(u, u, normal_direction, equations) ≈ flux(u, normal_direction, equations)`
+  (with `aux_vars` arguments for covariant equations), and the same with
+  `orientation` where such methods exist, i.e., for the 1D equations and the
+  equations in covariant form; the Cartesian equations in 2D and 3D only have
+  `normal_direction` methods apart from the physical flux. Check that the 1D,
+  2D, and 3D versions of an equation agree for corresponding states and
+  directions. For all fluxes and wave speed estimates with both
+  `normal_direction` and `orientation` methods, check their agreement for
+  axis-aligned unit normals.
 - Except for consistency checks, unit tests for numerical fluxes and wave speed
   estimates should use *different* left and right states: many copy-paste bugs
   are invisible for `u_ll == u_rr`.
@@ -467,9 +471,12 @@ starts the Julia sessions itself.
 - Argument order: the modified argument first (e.g., `du`, or `cache` if only
   the cache is modified), otherwise `mesh, equations, solver, cache`; dispatch
   helpers before the general argument (e.g.,
-  `have_nonconservative_terms(equations), equations`). For covariant equations,
-  `aux_vars` follows the state(s), e.g., `flux(u, aux_vars, orientation, equations)`
-  or `flux_ec(u_ll, u_rr, aux_vars_ll, aux_vars_rr, orientation, equations)`.
+  `have_nonconservative_terms(equations), equations`). Auxiliary variables
+  follow the state(s), e.g., `flux(u, aux_vars, orientation, equations)` or
+  `flux_ec(u_ll, u_rr, aux_vars_ll, aux_vars_rr, orientation, equations)` for
+  covariant equations and
+  `flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)` for the
+  compressible Euler equations in 2D and 3D.
 - Name related functions with the general category first, e.g.,
   `flux_central` (not `central_flux`), `source_terms_coriolis`.
 - Use a suffix `_` (`name_`) for local variables that would otherwise shadow
@@ -515,23 +522,29 @@ starts the Julia sessions itself.
   using it must account for its magnitude exactly once. Numerical fluxes and
   wave speed estimates must be homogeneous of degree one in
   `normal_direction`, i.e., `f(u_ll, u_rr, α * n) == α * f(u_ll, u_rr, n)` for
-  `α > 0` (e.g., multiply sound speeds by `norm(normal_direction)`). Check
-  agreement with the corresponding `orientation` method for axis-aligned unit
-  normals.
+  `α > 0` (e.g., multiply sound speeds by `norm(normal_direction)`). Where a
+  corresponding `orientation` method exists, check agreement with it for
+  axis-aligned unit normals.
 - Nonconservative surface terms depend on the argument order: the element
   receiving the flux passes its own state first,
   `nonconservative_flux(u_own, u_neighbor, ...)`.
 - Some equations carry auxiliary variables as part of the state vector, e.g.,
-  the geopotential in the `...WithGravity` equations or the bottom topography in
-  `ShallowWaterEquations3D`. Fluxes must leave them unchanged (zero flux), and
-  well-balancedness tests (`elixir_*well_balanced*`) check that steady states
-  are preserved.
+  the geopotential in the 1D compressible Euler equations or the bottom
+  topography in `ShallowWaterEquations3D`. Fluxes must leave them unchanged
+  (zero flux), and well-balancedness tests (`elixir_*well_balanced*`) check that
+  steady states are preserved. The compressible Euler equations in 2D and 3D store
+  the geopotential as an auxiliary variable of Trixi.jl (`Trixi.nauxvariables`),
+  as does `CompressibleEulerMoistPotentialTemperatureEquations3D` together with
+  the upward unit vector, given by the `aux_field` of
+  `SemidiscretizationHyperbolic`; their pointwise
+  functions take it as additional arguments after the states, e.g.,
+  `flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)`.
 - Arrays visible to the time integrator have the suffix `_ode` (`u_ode`,
   `du_ode`); when passed with `semi`, normally wrap them with
   `wrap_array(u_ode, semi)` before internal use. Wrapped arrays have no suffix.
 - Compare 1D/2D/3D and x/y/z implementations of the same function when
   changing one of them (e.g., the `CompressibleEulerPotentialTemperature...`
-  equations exist in 1D, 2D, and 3D, with and without gravity); copy-paste
+  equations exist in 1D, 2D, and 3D); copy-paste
   errors between dimensions and directions are the most common source of bugs.
 
 ## Pull requests and documentation

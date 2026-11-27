@@ -1,9 +1,9 @@
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
-equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004,
-                                                                        c_v = 717,
-                                                                        gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+equations = CompressibleEulerPotentialTemperatureEquations2D(c_p = 1004,
+                                                             c_v = 717,
+                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 
 # We have an isothermal background state with T0 = 250 K.
 # The reference speed of sound can be computed as:
@@ -15,21 +15,22 @@ polydeg = 3
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
 
-boundary_conditions = (; x_neg = boundary_condition_periodic,
-                       x_pos = boundary_condition_periodic,
-                       y_neg = boundary_condition_slip_wall,
+boundary_conditions = (; y_neg = boundary_condition_slip_wall,
                        y_pos = boundary_condition_slip_wall)
 
 coordinates_min = (0.0, 0.0)
 coordinates_max = (300_000.0, 10_000.0)
 cells_per_dimension = (60, 8)
-mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
-                      periodicity = (true, false))
+mesh = P4estMesh(cells_per_dimension, polydeg = 1,
+                 coordinates_min = coordinates_min, coordinates_max = coordinates_max,
+                 periodicity = (true, false))
 source_terms = nothing
 initial_condition = initial_condition_gravity_waves
+aux_field = aux_field_gravity
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_terms,
-                                    boundary_conditions = boundary_conditions)
+                                    boundary_conditions = boundary_conditions,
+                                    aux_field = aux_field)
 tspan = (0.0, 1800.0)
 ode = semidiscretize(semi, tspan)
 

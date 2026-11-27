@@ -12,14 +12,15 @@
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
-equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004,
-                                                                        c_v = 717,
-                                                                        gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+equations = CompressibleEulerPotentialTemperatureEquations2D(c_p = 1004,
+                                                             c_v = 717,
+                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 
 setup = MountainWaveSetup(theta_0 = 280, u0 = 10, brunt_vaisala_frequency = 0.01,
                           z_damping_start = 15000, z_damping_end = 30000,
                           x_damping_start = 40000, x_damping_end = 72000,
                           damping_rate = 0.03)
+aux_field = aux_field_gravity
 
 boundary = BoundaryConditionDirichlet(setup)
 
@@ -47,7 +48,8 @@ mesh = P4estMesh(cells_per_dimension, polydeg = polydeg,
 
 semi = SemidiscretizationHyperbolic(mesh, equations, setup, solver,
                                     source_terms = setup,
-                                    boundary_conditions = boundary_conditions)
+                                    boundary_conditions = boundary_conditions,
+                                    aux_field = aux_field)
 T = 8
 ###############################################################################
 # ODE solvers, callbacks etc.

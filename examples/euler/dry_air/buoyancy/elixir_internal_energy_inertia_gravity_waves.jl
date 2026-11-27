@@ -24,9 +24,9 @@
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
-equations = CompressibleEulerInternalEnergyEquationsWithGravity2D(c_p = 1004,
-                                                                  c_v = 717,
-                                                                  gravity = 9.81)
+equations = CompressibleEulerInternalEnergyEquations2D(c_p = 1004,
+                                                       c_v = 717,
+                                                       gravity = 9.81)
 
 surface_flux = (flux_conservative_es, flux_nonconservative_es)
 volume_flux = (flux_conservative_etec, flux_nonconservative_etec)
@@ -47,8 +47,10 @@ mesh = P4estMesh(trees_per_dimension, polydeg = polydeg,
                  periodicity = (true, false))
 
 initial_condition = initial_condition_gravity_waves
+aux_field = aux_field_gravity
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
-                                    boundary_conditions = boundary_conditions)
+                                    boundary_conditions = boundary_conditions,
+                                    aux_field = aux_field)
 tspan = (0.0, 1800.0)
 ode = semidiscretize(semi, tspan)
 

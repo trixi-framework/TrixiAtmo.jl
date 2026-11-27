@@ -76,15 +76,12 @@ export CompressibleMoistEulerEquations2D,
        CompressibleEulerPotentialTemperatureEquations1D,
        CompressibleEulerPotentialTemperatureEquations2D,
        CompressibleEulerPotentialTemperatureEquations3D,
-       CompressibleEulerPotentialTemperatureEquationsWithGravity1D,
-       CompressibleEulerPotentialTemperatureEquationsWithGravity2D,
-       CompressibleEulerPotentialTemperatureEquationsWithGravity3D,
        CompressibleEulerMoistPotentialTemperatureEquations3D,
        KesslerMicrophysics,
-       CompressibleEulerEnergyEquationsWithGravity2D,
-       CompressibleEulerEnergyEquationsWithGravity3D,
-       CompressibleEulerInternalEnergyEquationsWithGravity2D,
-       CompressibleEulerVectorInvariantEquationsWithGravity3D
+       CompressibleEulerEnergyEquations2D,
+       CompressibleEulerEnergyEquations3D,
+       CompressibleEulerInternalEnergyEquations2D,
+       CompressibleEulerVectorInvariantEquations3D
 
 export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
@@ -130,7 +127,9 @@ export initial_condition_adiabatic, initial_condition_gravity_waves,
        initial_condition_baroclinic_instability, initial_condition_isothermal,
        initial_condition_vortex_shedding, initial_condition_moist_baroclinic_instability
 
-export aux_field_gravity_earth
+export aux_field_gravity_earth, aux_field_gravity_small_earth
+
+export aux_field_gravity
 
 export boundary_condition_horizontal_slip_wall
 

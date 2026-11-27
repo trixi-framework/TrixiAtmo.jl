@@ -1,6 +1,9 @@
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
+# Without gravity, i.e., with zero geopotential
+aux_field_no_gravity(x, equations) = SVector(zero(eltype(x)))
+
 function initial_condition_taylor_green_vortex(x, t,
                                                equations::CompressibleEulerPotentialTemperatureEquations3D)
     rho = 1.0
@@ -11,14 +14,17 @@ function initial_condition_taylor_green_vortex(x, t,
         1.0 / 16.0 *
         ((cos(2 * x[1]) + cos(2 * x[2])) * (cos(2 * x[1]) + 2) - 2)
 
-    return prim2cons(SVector(rho, v1, v2, v3, p), equations)
+    aux = aux_field_no_gravity(x, equations)
+    return prim2cons(SVector(rho, v1, v2, v3, p), aux, equations)
 end
 
-equations = CompressibleEulerPotentialTemperatureEquations3D(c_p = 1004, c_v = 717)
+equations = CompressibleEulerPotentialTemperatureEquations3D(c_p = 1004,
+                                                             c_v = 717,
+                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
-surface_flux = flux_etec
-volume_flux = flux_etec
+surface_flux = (flux_etec, flux_zero)
+volume_flux = (flux_etec, flux_zero)
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
 solver = DGSEM(basis, surface_flux, volume_integral)
@@ -26,12 +32,14 @@ solver = DGSEM(basis, surface_flux, volume_integral)
 coordinates_min = (0.0, 0.0, 0.0)
 coordinates_max = (1.0, 1.0, 1.0) .* (2 * pi)
 cells_per_dimension = (8, 8, 8)
-mesh = StructuredMesh(cells_per_dimension, coordinates_min, coordinates_max,
-                      periodicity = (true, true, true))
+mesh = P4estMesh(cells_per_dimension, polydeg = 1,
+                 coordinates_min = coordinates_min, coordinates_max = coordinates_max,
+                 periodicity = (true, true, true))
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_taylor_green_vortex,
                                     solver,
-                                    boundary_conditions = boundary_condition_periodic)
+                                    boundary_conditions = boundary_condition_periodic,
+                                    aux_field = aux_field_no_gravity)
 ###############################################################################
 # ODE solvers, callbacks etc.
 tspan = (0.0, 0.2)

@@ -13,11 +13,12 @@
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
-equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004,
-                                                                        c_v = 717,
-                                                                        gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+equations = CompressibleEulerPotentialTemperatureEquations3D(c_p = 1004,
+                                                             c_v = 717,
+                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 
 initial_condition = initial_condition_vortex_shedding
+aux_field = aux_field_gravity_small_earth
 
 boundary_conditions = (; inside = boundary_condition_slip_wall,
                        outside = boundary_condition_slip_wall)
@@ -55,7 +56,8 @@ mesh = P4estMeshCubedSphereTopography(trees_per_cube_face..., SMALL_EARTH_RADIUS
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_terms_coriolis_small_earth,
-                                    boundary_conditions = boundary_conditions)
+                                    boundary_conditions = boundary_conditions,
+                                    aux_field = aux_field)
 
 ###############################################################################
 # ODE solvers, callbacks etc.

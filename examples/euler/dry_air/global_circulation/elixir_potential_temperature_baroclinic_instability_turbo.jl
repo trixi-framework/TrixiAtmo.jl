@@ -11,11 +11,12 @@
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
-equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004,
-                                                                        c_v = 717,
-                                                                        gravity = EARTH_GRAVITATIONAL_ACCELERATION)
+equations = CompressibleEulerPotentialTemperatureEquations3D(c_p = 1004,
+                                                             c_v = 717,
+                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 
 initial_condition = initial_condition_baroclinic_instability
+aux_field = aux_field_gravity_earth
 
 boundary_conditions = (; inside = boundary_condition_slip_wall,
                        outside = boundary_condition_slip_wall)
@@ -36,7 +37,8 @@ mesh = P4estMeshCubedSphereTopography(trees_per_cube_face..., EARTH_RADIUS, 3000
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_terms_coriolis,
-                                    boundary_conditions = boundary_conditions)
+                                    boundary_conditions = boundary_conditions,
+                                    aux_field = aux_field)
 
 # Setting `real_type` allows to change the real number type, e.g., to `Float32`.
 # This is particularly useful when changing the `storage_type` to a GPU array

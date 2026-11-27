@@ -21,7 +21,7 @@
     JacobianVerticalTwoSided(; c = 340)
 
 Approximate Jacobian of the vertical dynamics (vertically propagating acoustic waves and
-gravity) of the [`CompressibleEulerPotentialTemperatureEquationsWithGravity3D`](@ref) and
+gravity) of the [`CompressibleEulerPotentialTemperatureEquations3D`](@ref) and
 the [`CompressibleEulerMoistPotentialTemperatureEquations3D`](@ref) on a
 [`P4estMeshCubedSphereTopography`](@ref), used as linear operator of linearly implicit time
 integration methods, i.e., Rosenbrock-W methods such as [`SSPRW32`](@ref) and linear IMEX
@@ -47,8 +47,8 @@ interfaces and at the walls is the one of the LMARS flux with the constant speed
 For the same reason, the gravity term uses the constant gravitational acceleration `g` of
 the equations in the radial direction, projected onto the vertical direction, also if the
 geopotential of the semidiscretization yields a gravitational acceleration that varies with
-the height (e.g., `phi = -a^2 g / norm(x)` with the radius `a` of the Earth in
-[`initial_condition_baroclinic_instability`](@ref)).
+the height (e.g., `phi = g a (norm(x) - a) / norm(x)` with the radius `a` of the Earth in
+[`aux_field_gravity_earth`](@ref)).
 
 For the [`CompressibleEulerMoistPotentialTemperatureEquations3D`](@ref), the unknowns are the
 total density, the vertical momentum, and the virtual potential temperature density
@@ -279,10 +279,10 @@ end
 function create_cache_jacobian(jacobian::JacobianVerticalTwoSided, semi, u_ode)
     (; mesh, equations, solver, cache) = semi
     if !(equations isa
-         Union{CompressibleEulerPotentialTemperatureEquationsWithGravity3D,
+         Union{CompressibleEulerPotentialTemperatureEquations3D,
                CompressibleEulerMoistPotentialTemperatureEquations3D})
         throw(ArgumentError("`JacobianVerticalTwoSided` requires the " *
-                            "`CompressibleEulerPotentialTemperatureEquationsWithGravity3D` " *
+                            "`CompressibleEulerPotentialTemperatureEquations3D` " *
                             "or the " *
                             "`CompressibleEulerMoistPotentialTemperatureEquations3D`"))
     end

@@ -6,9 +6,9 @@
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
-equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004,
-                                                                        c_v = 717,
-                                                                        gravity = 9.81)
+equations = CompressibleEulerPotentialTemperatureEquations2D(c_p = 1004,
+                                                             c_v = 717,
+                                                             gravity = 9.81)
 polydeg = 2
 basis = LobattoLegendreBasis(polydeg)
 cs = 340
@@ -33,8 +33,10 @@ boundary_conditions = (; x_pos = boundary_condition_slip_wall,
                        y_pos = boundary_condition_slip_wall,
                        y_neg = boundary_condition_slip_wall)
 
+aux_field = aux_field_gravity
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_adiabatic, solver,
-                                    boundary_conditions = boundary_conditions)
+                                    boundary_conditions = boundary_conditions,
+                                    aux_field = aux_field)
 
 dt = 0.01
 tspan = (0, 0.4)
