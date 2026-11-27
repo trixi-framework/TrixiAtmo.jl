@@ -1,4 +1,4 @@
-@testitem "Unit: Consistency check for EC flux with Potential Temperature with gravity: CEPTEWG" setup=[Setup] tags=[:unit_fluxes] begin
+@testitem "Unit: Consistency check for EC flux with Potential Temperature: CEPTE" setup=[Setup] tags=[:unit_fluxes] begin
     # Set up equations and dummy conservative variables state
     equations = CompressibleEulerPotentialTemperatureEquations2D(c_p = 1004.0,
                                                                  c_v = 717.0,
@@ -65,7 +65,7 @@
     @test flux_1d[1:3] ≈ flux_3d[[1, 2, 5]]
 end
 
-@testitem "Unit: Consistency check for FluxTurbo EC flux with Potential Temperature with gravity: CEPTEWG" setup=[Setup] tags=[:unit_fluxes] begin
+@testitem "Unit: Consistency check for FluxTurbo EC flux with Potential Temperature: CEPTE" setup=[Setup] tags=[:unit_fluxes] begin
     # The `FluxTurbo` specialization of `(flux_ec, flux_nonconservative_isothermal)`
     # must return the same left and right contributions as the fused evaluation of the
     # conservative and the nonconservative flux.
@@ -105,7 +105,7 @@ end
     end
 end
 
-@testitem "Unit: Consistency check for TEC flux with Potential Temperature with gravity: CEPTEWG" setup=[Setup] tags=[:unit_fluxes] begin
+@testitem "Unit: Consistency check for TEC flux with Potential Temperature: CEPTE" setup=[Setup] tags=[:unit_fluxes] begin
     # Set up equations and dummy conservative variables state
     equations = CompressibleEulerPotentialTemperatureEquations2D(c_p = 1004.0,
                                                                  c_v = 717.0,
@@ -172,7 +172,7 @@ end
     @test flux_1d[1:3] ≈ flux_3d[[1, 2, 5]]
 end
 
-@testitem "Unit: Consistency check for ETEC flux with Potential Temperature with gravity: CEPTEWG" setup=[Setup] tags=[:unit_fluxes] begin
+@testitem "Unit: Consistency check for ETEC flux with Potential Temperature: CEPTE" setup=[Setup] tags=[:unit_fluxes] begin
     # Set up equations and dummy conservative variables state
     equations = CompressibleEulerPotentialTemperatureEquations2D(c_p = 1004.0,
                                                                  c_v = 717.0,
@@ -239,7 +239,7 @@ end
     @test flux_1d[1:3] ≈ flux_3d[[1, 2, 5]]
 end
 
-@testitem "Unit: Consistency check for LMARS flux with Potential Temperature with gravity: CEPTEWG" setup=[Setup] tags=[:unit_fluxes] begin
+@testitem "Unit: Consistency check for LMARS flux with Potential Temperature: CEPTE" setup=[Setup] tags=[:unit_fluxes] begin
     # Set up equations and dummy conservative variables state
     equations = CompressibleEulerPotentialTemperatureEquations2D(c_p = 1004.0,
                                                                  c_v = 717.0,
@@ -299,7 +299,7 @@ end
     @test flux_1d[1:3] ≈ flux_3d[[1, 2, 5]]
 end
 
-@testitem "Unit: Consistency check for ES LMARS flux with Potential Temperature with gravity: CEPTEWG" setup=[Setup] tags=[:unit_fluxes] begin
+@testitem "Unit: Consistency check for ES LMARS flux with Potential Temperature: CEPTE" setup=[Setup] tags=[:unit_fluxes] begin
     # Set up equations and dummy conservative variables state
     equations = CompressibleEulerPotentialTemperatureEquations2D(c_p = 1004.0,
                                                                  c_v = 717.0,
@@ -369,7 +369,7 @@ end
     end
 end
 
-@testitem "Unit: Consistency check for gravity terms with energy with gravity: CEEEWG" setup=[Setup] tags=[:unit_fluxes] begin
+@testitem "Unit: Consistency check for gravity terms with energy: CEEE" setup=[Setup] tags=[:unit_fluxes] begin
     # Set up equations and dummy conservative variables states with the same temperature
     equations = CompressibleEulerEnergyEquations3D(c_p = 1004.0, c_v = 717.0,
                                                    gravity = EARTH_GRAVITATIONAL_ACCELERATION)
@@ -548,7 +548,7 @@ end
     end
 end
 
-@testitem "Unit: Consistency check for ETEC flux with vector-invariant equations: CEVIEWG" setup=[Setup] tags=[:unit_fluxes] begin
+@testitem "Unit: Consistency check for ETEC flux with vector-invariant equations: CEVIE" setup=[Setup] tags=[:unit_fluxes] begin
     equations = CompressibleEulerVectorInvariantEquations3D(c_p = 1004.0,
                                                             c_v = 717.0,
                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION)
@@ -609,7 +609,7 @@ end
     end
 end
 
-@testitem "Unit: Consistency check for ES LMARS flux with vector-invariant equations: CEVIEWG" setup=[Setup] tags=[:unit_fluxes] begin
+@testitem "Unit: Consistency check for ES LMARS flux with vector-invariant equations: CEVIE" setup=[Setup] tags=[:unit_fluxes] begin
     equations = CompressibleEulerVectorInvariantEquations3D(c_p = 1004.0,
                                                             c_v = 717.0,
                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION)
@@ -649,7 +649,7 @@ end
     end
 end
 
-@testitem "Unit: Conversions with auxiliary variables for 3D equations with gravity" setup=[Setup] tags=[:unit_fluxes] begin
+@testitem "Unit: Conversions with auxiliary variables for 3D equations" setup=[Setup] tags=[:unit_fluxes] begin
     # `prim2cons` is the inverse of `cons2prim`
     prim = SVector(1.1, 2.0, -1.5, 0.5, 9.0e4)
     aux = SVector(1700.0)
