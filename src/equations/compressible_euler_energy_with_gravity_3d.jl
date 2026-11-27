@@ -6,7 +6,7 @@
 #! format: noindent
 
 @doc raw"""
-    CompressibleEulerEnergyEquationsWithGravity3D(gamma)
+    CompressibleEulerEnergyEquationsWithGravity3D(; c_p, c_v, gravity)
 
 The compressible Euler equations with gravity
 ```math
@@ -22,7 +22,7 @@ The compressible Euler equations with gravity
 +
 \frac{\partial}{\partial y}
 \begin{pmatrix}
-\rho v_2 \\ \rho v_1 v_2 \\ \rho v_2^2 + p \\ \rho v_1 v_3 \\ ( \rho e +p) v_2
+\rho v_2 \\ \rho v_1 v_2 \\ \rho v_2^2 + p \\ \rho v_2 v_3 \\ ( \rho e +p) v_2
 \end{pmatrix}
 +
 \frac{\partial}{\partial z}
@@ -31,12 +31,12 @@ The compressible Euler equations with gravity
 \end{pmatrix}
 =
 \begin{pmatrix}
-    0 \\ -\rho \frac{\partial}{\partial x} \phi \\ -\rho \frac{\partial}{\partial y} \phi \\ -\rho \frac{\partial}{\partial z} \\  -\rho v_1 \frac{\partial}{\partial x} \phi  -\rho v_2 \frac{\partial}{\partial y} \phi  -\rho v_3 \frac{\partial}{\partial z} \phi
+    0 \\ -\rho \frac{\partial}{\partial x} \phi \\ -\rho \frac{\partial}{\partial y} \phi \\ -\rho \frac{\partial}{\partial z} \phi \\  -\rho v_1 \frac{\partial}{\partial x} \phi  -\rho v_2 \frac{\partial}{\partial y} \phi  -\rho v_3 \frac{\partial}{\partial z} \phi
 \end{pmatrix}
 ```
-for an ideal gas with ratio of specific heats `gamma`
+for an ideal gas with ratio of specific heats ``\gamma = c_p / c_v``
 in three space dimensions.
-Here, ``\rho`` is the density, ``v_1``, ``v_2``, ``v_3`` the velocities, ``e`` the specific energy **rather than** specific internal energy, ``\phi`` is the gravitational potential, and
+Here, ``\rho`` is the density, ``v_1``, ``v_2``, ``v_3`` the velocities, ``e`` the specific energy **rather than** specific internal energy, ``\phi`` is the geopotential, and
 ```math
 p = (\gamma - 1) \left( \rho e - \frac{1}{2} \rho (v_1^2+v_2^2+v_3^2) \right)
 ```
@@ -44,8 +44,8 @@ the pressure.
 
 The geopotential ``\phi`` is the only auxiliary variable, see `Trixi.nauxvariables`. Its
 values are given by the function `aux_field(x, equations)` passed to
-`SemidiscretizationHyperbolic`, e.g., [`aux_field_gravity_earth`](@ref). Thus,
-the pointwise functions take the auxiliary variables `aux = SVector(phi)` as additional
+`SemidiscretizationHyperbolic`, e.g., [`aux_field_gravity_earth`](@ref). The pointwise
+functions take the auxiliary variables `aux = SVector(phi)` as additional
 argument after the state, e.g., `flux(u, aux, normal_direction, equations)` or
 `flux_ranocha(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)`.
 """
@@ -101,8 +101,6 @@ have_nonconservative_terms(::CompressibleEulerEnergyEquationsWithGravity3D) = Tr
     return SVector(f1, f2, f3, f4, f5)
 end
 
-# There are no separate auxiliary variables outside of the domain, so the inner ones are
-# used on both sides.
 @inline function boundary_condition_slip_wall(u_inner, aux_inner,
                                               normal_direction::AbstractVector,
                                               x, t,
@@ -298,10 +296,10 @@ end
 end
 
 """
-    flux_shima_etal(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
+    flux_shima_etal(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector,
                     equations::CompressibleEulerEnergyEquationsWithGravity3D)
 
-This flux is is a modification of the original kinetic energy preserving two-point flux by
+This flux is a modification of the original kinetic energy preserving two-point flux by
 - Yuichi Kuya, Kosuke Totani and Soshi Kawai (2018)
   Kinetic energy and entropy preserving schemes for compressible flows
   by split convective forms
@@ -346,7 +344,7 @@ The modification is in the energy flux to guarantee pressure equilibrium and was
 end
 
 """
-    flux_kennedy_gruber(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
+    flux_kennedy_gruber(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector,
                         equations::CompressibleEulerEnergyEquationsWithGravity3D)
 
 Kinetic energy preserving two-point flux by
@@ -388,7 +386,7 @@ Kinetic energy preserving two-point flux by
 end
 
 """
-    flux_chandrashekar(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations::CompressibleEulerEnergyEquationsWithGravity3D)
+    flux_chandrashekar(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector, equations::CompressibleEulerEnergyEquationsWithGravity3D)
 
 Entropy conserving two-point flux by
 - Chandrashekar (2013)
@@ -436,7 +434,7 @@ Entropy conserving two-point flux by
 end
 
 """
-    flux_ranocha(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
+    flux_ranocha(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector,
                  equations::CompressibleEulerEnergyEquationsWithGravity3D)
 
 Entropy conserving and kinetic energy preserving two-point flux by
@@ -487,7 +485,7 @@ See also
 end
 
 """
-    FluxLMARS(c)(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
+    FluxLMARS(c)(u_ll, u_rr, aux_ll, aux_rr, normal_direction::AbstractVector,
                  equations::CompressibleEulerEnergyEquationsWithGravity3D)
 
 Low Mach number approximate Riemann solver (LMARS) for atmospheric flows using
@@ -540,29 +538,6 @@ end
 
 # Calculate maximum wave speed for local Lax-Friedrichs-type dissipation as the
 # maximum velocity magnitude plus the maximum speed of sound
-@inline function max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr, orientation::Integer,
-                                     equations::CompressibleEulerEnergyEquationsWithGravity3D)
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
-
-    # Get the velocity value in the appropriate direction
-    if orientation == 1
-        v_ll = v1_ll
-        v_rr = v1_rr
-    elseif orientation == 2
-        v_ll = v2_ll
-        v_rr = v2_rr
-    else # orientation == 3
-        v_ll = v3_ll
-        v_rr = v3_rr
-    end
-    # Calculate sound speeds
-    c_ll = sqrt(equations.gamma * p_ll / rho_ll)
-    c_rr = sqrt(equations.gamma * p_rr / rho_rr)
-
-    return max(abs(v_ll), abs(v_rr)) + max(c_ll, c_rr)
-end
-
 @inline function max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr,
                                      normal_direction::AbstractVector,
                                      equations::CompressibleEulerEnergyEquationsWithGravity3D)
@@ -582,30 +557,6 @@ end
     c_rr = sqrt(equations.gamma * p_rr / rho_rr)
 
     return max(abs(v_ll), abs(v_rr)) + max(c_ll, c_rr) * norm(normal_direction)
-end
-
-# Less "cautious", i.e., less overestimating `λ_max` compared to `max_abs_speed_naive`
-@inline function max_abs_speed(u_ll, u_rr, aux_ll, aux_rr, orientation::Integer,
-                               equations::CompressibleEulerEnergyEquationsWithGravity3D)
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
-
-    # Get the velocity value in the appropriate direction
-    if orientation == 1
-        v_ll = v1_ll
-        v_rr = v1_rr
-    elseif orientation == 2
-        v_ll = v2_ll
-        v_rr = v2_rr
-    else # orientation == 3
-        v_ll = v3_ll
-        v_rr = v3_rr
-    end
-    # Calculate sound speeds
-    c_ll = sqrt(equations.gamma * p_ll / rho_ll)
-    c_rr = sqrt(equations.gamma * p_rr / rho_rr)
-
-    return max(abs(v_ll) + c_ll, abs(v_rr) + c_rr)
 end
 
 # Less "cautious", i.e., less overestimating `λ_max` compared to `max_abs_speed_naive`

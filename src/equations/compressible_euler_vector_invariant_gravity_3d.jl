@@ -16,7 +16,7 @@ temperature as prognostic variable
 ```
 for an ideal gas with ratio of specific heats ``\gamma = c_p / c_v`` in three space dimensions.
 Here, ``\rho`` is the density, ``\vec{v} = (v_1, v_2, v_3)`` the velocity, ``\theta`` the
-potential temperature, ``\phi`` the gravitational potential,
+potential temperature, ``\phi`` the geopotential,
 ```math
 \pi = \left( \frac{p}{p_0} \right)^{R / c_p} = \left( \frac{R \rho \theta}{p_0} \right)^{R / c_v}
 ```
@@ -29,8 +29,8 @@ the pressure, where ``p_0 = 10^5\,\mathrm{Pa}`` is the reference pressure and
 
 The geopotential ``\phi`` is the only auxiliary variable, see `Trixi.nauxvariables`. Its
 values are given by the function `aux_field(x, equations)` passed to
-`SemidiscretizationHyperbolic`, e.g., [`aux_field_gravity_earth`](@ref). Thus,
-the pointwise functions take the auxiliary variables `aux = SVector(phi)` as additional
+`SemidiscretizationHyperbolic`, e.g., [`aux_field_gravity_earth`](@ref). The pointwise
+functions take the auxiliary variables `aux = SVector(phi)` as additional
 argument after the state, e.g.,
 `flux_etec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)`.
 """
@@ -77,8 +77,7 @@ have_nonconservative_terms(::CompressibleEulerVectorInvariantEquationsWithGravit
 
 # The numerical fluxes of these equations combine the conservative and the nonconservative
 # contributions. Thus, the boundary condition returns only the first contribution of the
-# surface flux. There are no separate auxiliary variables outside of the domain, so the
-# inner ones are used on both sides.
+# surface flux.
 @inline function boundary_condition_slip_wall(u_inner, aux_inner,
                                               normal_direction::AbstractVector,
                                               x, t,
@@ -427,8 +426,8 @@ end
     g3 = vorticity_2 + gradient * normal_direction_2
     g4 = vorticity_3 + gradient * normal_direction_3
 
-    flux_left = (f1, f2 + 0.5f0 * g2, f3 + 0.5f0 * g3, f4 + 0.5f0 * g4, f5)
-    flux_right = (f1, f2 - 0.5f0 * g2, f3 - 0.5f0 * g3, f4 - 0.5f0 * g4, f5)
+    flux_left = SVector(f1, f2 + 0.5f0 * g2, f3 + 0.5f0 * g3, f4 + 0.5f0 * g4, f5)
+    flux_right = SVector(f1, f2 - 0.5f0 * g2, f3 - 0.5f0 * g3, f4 - 0.5f0 * g4, f5)
 
     return flux_left, flux_right
 end

@@ -10,17 +10,38 @@ for human readability.
 #### Changed
 - The `CompressibleEulerPotentialTemperatureEquationsWithGravity3D`, the
   `CompressibleEulerEnergyEquationsWithGravity3D`, and the
-  `CompressibleEulerVectorInvariantEquationsWithGravity3D` store the geopotential as
-  auxiliary variable of Trixi.jl (see `Trixi.nauxvariables`) instead of as last variable
-  of the state. Thus, they have one variable less, their pointwise functions take the
-  auxiliary variables as additional arguments after the states, e.g.,
+  `CompressibleEulerVectorInvariantEquationsWithGravity3D` store the geopotential as an
+  auxiliary variable of Trixi.jl (see `Trixi.nauxvariables`) instead of as the last
+  variable of the state. Thus, they have one variable fewer, their pointwise functions,
+  including user-defined source terms and boundary conditions, take the auxiliary
+  variables as additional arguments after the states, e.g.,
   `flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)`,
   `source_terms_coriolis(u, aux, x, t, equations)`, and `cons2prim(u, aux, equations)`
   (also `cons2entropy` and `entropy`, as required by Trixi.jl v0.18), and
   `SemidiscretizationHyperbolic` requires the keyword argument `aux_field`, e.g.,
-  `aux_field_gravity_earth`.
+  `aux_field_gravity_earth` or `aux_field_gravity_small_earth`.
   With adaptive time stepping, results change slightly since the geopotential no longer
-  enters the error estimate of the time integrator.
+  enters the error estimate of the time integrator ([#267]).
+
+#### Removed
+- TrixiAtmo.jl now consistently uses `P4estMesh` for the Cartesian equations in 2D and 3D.
+  Thus, the methods based on `orientation` (for `TreeMesh` and `StructuredMesh`) of
+  `max_abs_speed_naive`, `max_abs_speed`, `flux_ec_rain`, `boundary_condition_slip_wall`,
+  and `boundary_condition_simple_slip_wall` are removed for the
+  `CompressibleEulerPotentialTemperatureEquations2D`, the
+  `CompressibleEulerPotentialTemperatureEquations3D`, the
+  `CompressibleEulerPotentialTemperatureEquationsWithGravity2D`, the
+  `CompressibleEulerPotentialTemperatureEquationsWithGravity3D`, the
+  `CompressibleEulerEnergyEquationsWithGravity2D`, the
+  `CompressibleEulerEnergyEquationsWithGravity3D`, the
+  `CompressibleMoistEulerEquations2D`, and the `CompressibleRainyEulerEquations2D`. The
+  methods of `boundary_condition_slip_wall` with the additional argument `direction`,
+  which fixed the sign convention of `StructuredMesh`, are removed for the
+  `CompressibleMoistEulerEquations2D` and the `CompressibleRainyEulerEquations2D`. Use the
+  methods based on `normal_direction` together with `P4estMesh` instead. The physical flux
+  `flux(u, orientation, equations)` is kept since `VolumeIntegralWeakForm` uses it also on
+  `P4estMesh`. The 1D equations and the equations in covariant form are not affected
+  ([#263]).
 
 #### Added
 - The `CompressibleEulerPotentialTemperatureEquationsWithGravity3D` and the

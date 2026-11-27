@@ -588,6 +588,8 @@ end
                                 equations_3d)
         for i in 1:2
             @test flux_2d[i][1:4] ≈ flux_3d[i][[1, 2, 3, 5]]
+            # The 2D equations carry the geopotential in the state, with zero flux
+            @test iszero(flux_2d[i][5])
         end
     end
 end
@@ -630,6 +632,7 @@ end
             @test flux_gravity(u_ll_2d, u_rr_2d, normal_direction, equations_2d)[1:4] ≈
                   flux_gravity(u_ll_3d, u_rr_3d, aux_ll, aux_rr, normal_direction_3d,
                                equations)[[1, 2, 3, 5]]
+            @test iszero(flux_gravity(u_ll_2d, u_rr_2d, normal_direction, equations_2d)[5])
         end
     end
 end

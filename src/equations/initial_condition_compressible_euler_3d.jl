@@ -165,14 +165,15 @@ end
 
 Geopotential
 ```math
-\phi(\vec{x}) = g \left(a - \frac{a^2}{\lVert \vec{x} \rVert}\right)
+\phi(\vec{x}) = g \frac{a z}{\lVert \vec{x} \rVert}, \qquad z = \lVert \vec{x} \rVert - a,
 ```
 of the gravity of the Earth, which points to the center of the Earth and decreases with
 ``1 / \lVert \vec{x} \rVert^2``. Here, ``a`` is the radius of the Earth
 ([`EARTH_RADIUS`](@ref)) and ``g`` the gravitational acceleration at its surface
-([`EARTH_GRAVITATIONAL_ACCELERATION`](@ref)), where ``\phi = 0``. It is returned as the
-auxiliary variables, see `Trixi.nauxvariables`, and passed as `aux_field` to
-`SemidiscretizationHyperbolic`.
+([`EARTH_GRAVITATIONAL_ACCELERATION`](@ref)), where ``\phi = 0``, and ``\phi \approx g z``
+near it. Computing it from the height ``z`` avoids the cancellation of two large terms,
+which matters in `Float32`. It is returned as the auxiliary variables, see
+`Trixi.nauxvariables`, and passed as `aux_field` to `SemidiscretizationHyperbolic`.
 """
 @inline function aux_field_gravity_earth(x,
                                          equations::AbstractCompressibleEulerEquations{3,
@@ -180,7 +181,8 @@ auxiliary variables, see `Trixi.nauxvariables`, and passed as `aux_field` to
     RealT = eltype(x)
     radius_earth = convert(RealT, EARTH_RADIUS)
     gravitational_acceleration = convert(RealT, EARTH_GRAVITATIONAL_ACCELERATION)
-    phi = gravitational_acceleration * (radius_earth - radius_earth^2 / norm(x))
+    r = norm(x)
+    phi = gravitational_acceleration * radius_earth * (r - radius_earth) / r
 
     return SVector(phi)
 end
@@ -281,15 +283,17 @@ end
 
 Geopotential
 ```math
-\phi(\vec{x}) = g \left(a - \frac{a^2}{\lVert \vec{x} \rVert}\right)
+\phi(\vec{x}) = g \frac{a z}{\lVert \vec{x} \rVert}, \qquad z = \lVert \vec{x} \rVert - a,
 ```
 of the gravity of the Earth, which points to the center of the Earth and decreases with
 ``1 / \lVert \vec{x} \rVert^2``, and the upward unit vector
 ``\hat{k} = \vec{x} / \lVert \vec{x} \rVert``. Here, ``a`` is the radius of the Earth
 ([`EARTH_RADIUS`](@ref)) and ``g`` the gravitational acceleration at its surface
-([`EARTH_GRAVITATIONAL_ACCELERATION`](@ref)), where ``\phi = 0``. They are returned as the
-auxiliary variables `SVector(phi, k1, k2, k3)`, see `Trixi.nauxvariables`, and passed as
-`aux_field` to `SemidiscretizationHyperbolic`.
+([`EARTH_GRAVITATIONAL_ACCELERATION`](@ref)), where ``\phi = 0``, and ``\phi \approx g z``
+near it. Computing it from the height ``z`` avoids the cancellation of two large terms,
+which matters in `Float32`. They are returned as the auxiliary variables
+`SVector(phi, k1, k2, k3)`, see `Trixi.nauxvariables`, and passed as `aux_field` to
+`SemidiscretizationHyperbolic`.
 """
 @inline function aux_field_gravity_earth(x,
                                          equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
@@ -297,7 +301,7 @@ auxiliary variables `SVector(phi, k1, k2, k3)`, see `Trixi.nauxvariables`, and p
     radius_earth = convert(RealT, EARTH_RADIUS)
     gravitational_acceleration = convert(RealT, EARTH_GRAVITATIONAL_ACCELERATION)
     r = norm(x)
-    phi = gravitational_acceleration * (radius_earth - radius_earth^2 / r)
+    phi = gravitational_acceleration * radius_earth * (r - radius_earth) / r
 
     return SVector(phi, x[1] / r, x[2] / r, x[3] / r)
 end
@@ -328,9 +332,7 @@ function initial_condition_isothermal(x, t,
 
     # pressure, geopotential formulation
     p = p_0 *
-        exp(EARTH_GRAVITATIONAL_ACCELERATION *
-            (EARTH_RADIUS^2 / r - EARTH_RADIUS) /
-            (R * T))
+        exp(-EARTH_GRAVITATIONAL_ACCELERATION * EARTH_RADIUS * z / r / (R * T))
 
     # density (via ideal gas law)
     rho = p / (R * T)
@@ -388,14 +390,14 @@ end
 
 @doc raw"""
     aux_field_gravity_small_earth(x,
-                                            equations::AbstractCompressibleEulerEquations{3, 5})
+                                  equations::AbstractCompressibleEulerEquations{3, 5})
 
 Geopotential
 ```math
-\phi(\vec{x}) = g \max\left(\lVert \vec{x} \rVert - a_s, 0\right)
+\phi(\vec{x}) = g \left(\lVert \vec{x} \rVert - \frac{a}{X}\right)
 ```
 of a gravity of constant magnitude ``g`` ([`EARTH_GRAVITATIONAL_ACCELERATION`](@ref))
-pointing to the center of the reduced-radius Earth of radius ``a_s``
+pointing to the center of the reduced-radius Earth of radius ``a / X``
 ([`SMALL_EARTH_RADIUS`](@ref)), see [`SMALL_EARTH_SCALING`](@ref). It is returned as the
 auxiliary variables, see `Trixi.nauxvariables`, and passed as `aux_field` to
 `SemidiscretizationHyperbolic`.
@@ -406,9 +408,7 @@ auxiliary variables, see `Trixi.nauxvariables`, and passed as `aux_field` to
     RealT = eltype(x)
     radius_earth = convert(RealT, SMALL_EARTH_RADIUS)
     gravitational_acceleration = convert(RealT, EARTH_GRAVITATIONAL_ACCELERATION)
-    # Make sure that r is not smaller than radius_earth
-    z = max(norm(x) - radius_earth, 0)
-    phi = gravitational_acceleration * z
+    phi = gravitational_acceleration * (norm(x) - radius_earth)
 
     return SVector(phi)
 end
