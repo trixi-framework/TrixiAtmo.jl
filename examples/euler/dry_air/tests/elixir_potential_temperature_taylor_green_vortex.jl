@@ -24,7 +24,7 @@ equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 10
 polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
 surface_flux = (flux_etec, flux_zero)
-volume_flux = (flux_etec, flux_nonconservative_souza_etal)
+volume_flux = (flux_etec, flux_zero)
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
 solver = DGSEM(basis, surface_flux, volume_integral)
