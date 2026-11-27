@@ -21,6 +21,10 @@ for human readability.
   `aux_field_gravity_earth`.
   With adaptive time stepping, results change slightly since the geopotential no longer
   enters the error estimate of the time integrator.
+- `energy_total` of the `CompressibleEulerEnergyEquationsWithGravity{2,3}D` and the
+  `CompressibleEulerPotentialTemperatureEquationsWithGravity{2,3}D` is renamed to
+  `energy_internal_kinetic`, since it is the sum of the internal and the kinetic energy
+  without the potential energy of gravity.
 
 ## Changes in the v0.1 lifecycle
 

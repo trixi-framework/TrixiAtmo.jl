@@ -708,8 +708,8 @@ end
     return 0.5f0 * (rho_v1^2 + rho_v2^2 + rho_v3^2) / rho
 end
 
-@inline function energy_total(cons, aux,
-                              equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
+@inline function energy_internal_kinetic(cons, aux,
+                                         equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     # Mathematical entropy
     p = equations.p_0 * (equations.R * cons[5] / equations.p_0)^equations.gamma
 

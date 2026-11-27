@@ -197,7 +197,7 @@ end
         @test typeof(@inferred pressure(u, equations)) == RealT
         @test typeof(@inferred entropy(cons, equations)) == RealT
         @test typeof(@inferred energy_kinetic(cons, equations)) == RealT
-        @test typeof(@inferred energy_total(cons, equations)) == RealT
+        @test typeof(@inferred energy_internal_kinetic(cons, equations)) == RealT
         @test eltype(@inferred Trixi.max_abs_speeds(u, equations)) == RealT
         @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, normal_direction,
                                                    equations)) == RealT
@@ -330,7 +330,7 @@ end
         @test typeof(@inferred pressure(u, aux, equations)) == RealT
         @test typeof(@inferred entropy(cons, aux, equations)) == RealT
         @test typeof(@inferred energy_kinetic(cons, aux, equations)) == RealT
-        @test typeof(@inferred energy_total(cons, aux, equations)) == RealT
+        @test typeof(@inferred energy_internal_kinetic(cons, aux, equations)) == RealT
         @test eltype(@inferred Trixi.max_abs_speeds(u, aux, equations)) == RealT
         @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr,
                                                    normal_direction,
@@ -660,7 +660,7 @@ end
         @test typeof(@inferred pressure(u, equations)) == RealT
         @test typeof(@inferred entropy(cons, equations)) == RealT
         @test typeof(@inferred energy_kinetic(cons, equations)) == RealT
-        @test typeof(@inferred energy_total(cons, equations)) == RealT
+        @test typeof(@inferred energy_internal_kinetic(cons, equations)) == RealT
         @test typeof(@inferred energy_internal(cons, equations)) == RealT
         @test eltype(@inferred Trixi.max_abs_speeds(u, equations)) == RealT
         @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, normal_direction,
@@ -733,7 +733,7 @@ end
         @test typeof(@inferred pressure(u, aux, equations)) == RealT
         @test typeof(@inferred entropy(cons, aux, equations)) == RealT
         @test typeof(@inferred energy_kinetic(cons, aux, equations)) == RealT
-        @test typeof(@inferred energy_total(cons, aux, equations)) == RealT
+        @test typeof(@inferred energy_internal_kinetic(cons, aux, equations)) == RealT
         @test typeof(@inferred energy_internal(cons, aux, equations)) == RealT
         @test eltype(@inferred Trixi.max_abs_speeds(u, aux, equations)) == RealT
         @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr,

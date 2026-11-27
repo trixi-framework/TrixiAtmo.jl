@@ -153,7 +153,7 @@ end
 # Note, this directional vector is not normalized
 @inline function flux(u, normal_direction::AbstractVector,
                       equations::CompressibleEulerEnergyEquationsWithGravity2D)
-    rho_e = energy_total(u, equations)
+    rho_e = energy_internal_kinetic(u, equations)
     rho, v1, v2, p = cons2prim(u, equations)
 
     v_normal = v1 * normal_direction[1] + v2 * normal_direction[2]
@@ -368,8 +368,8 @@ Kinetic energy preserving two-point flux by
 @inline function flux_kennedy_gruber(u_ll, u_rr, normal_direction::AbstractVector,
                                      equations::CompressibleEulerEnergyEquationsWithGravity2D)
     # Unpack left and right state
-    rho_e_ll = energy_total(u_ll, equations)
-    rho_e_rr = energy_total(u_rr, equations)
+    rho_e_ll = energy_internal_kinetic(u_ll, equations)
+    rho_e_rr = energy_internal_kinetic(u_rr, equations)
     rho_ll, v1_ll, v2_ll, p_ll = cons2prim(u_ll, equations)
     rho_rr, v1_rr, v2_rr, p_rr = cons2prim(u_rr, equations)
 
@@ -668,8 +668,9 @@ end
     entropy_math(cons, equations)
 end
 
-# Calculate total energy for a conservative state `cons`
-@inline energy_total(cons, ::CompressibleEulerEnergyEquationsWithGravity2D) = cons[4]
+# Calculate the internal and kinetic energy, without the potential energy, for a
+# conservative state `cons`
+@inline energy_internal_kinetic(cons, ::CompressibleEulerEnergyEquationsWithGravity2D) = cons[4]
 
 # Calculate kinetic energy for a conservative state `cons`
 @inline function energy_kinetic(u,
@@ -681,6 +682,6 @@ end
 # Calculate internal energy for a conservative state `cons`
 @inline function energy_internal(cons,
                                  equations::CompressibleEulerEnergyEquationsWithGravity2D)
-    return energy_total(cons, equations) - energy_kinetic(cons, equations)
+    return energy_internal_kinetic(cons, equations) - energy_kinetic(cons, equations)
 end
 end # @muladd

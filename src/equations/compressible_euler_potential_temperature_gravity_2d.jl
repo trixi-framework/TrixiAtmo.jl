@@ -491,8 +491,8 @@ end
     return S
 end
 
-@inline function energy_total(cons,
-                              equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
+@inline function energy_internal_kinetic(cons,
+                                         equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     # Mathematical entropy
     p = equations.p_0 * (equations.R * cons[4] / equations.p_0)^equations.gamma
 

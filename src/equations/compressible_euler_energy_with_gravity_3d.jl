@@ -87,7 +87,7 @@ have_nonconservative_terms(::CompressibleEulerEnergyEquationsWithGravity3D) = Tr
 # Calculate 1D flux for a single point
 @inline function flux(u, aux, normal_direction::AbstractVector,
                       equations::CompressibleEulerEnergyEquationsWithGravity3D)
-    rho_e = energy_total(u, aux, equations)
+    rho_e = energy_internal_kinetic(u, aux, equations)
     rho, v1, v2, v3, p = cons2prim(u, aux, equations)
 
     v_normal = v1 * normal_direction[1] + v2 * normal_direction[2] +
@@ -359,8 +359,8 @@ Kinetic energy preserving two-point flux by
                                      normal_direction::AbstractVector,
                                      equations::CompressibleEulerEnergyEquationsWithGravity3D)
     # Unpack left and right state
-    rho_e_ll = energy_total(u_ll, aux_ll, equations)
-    rho_e_rr = energy_total(u_rr, aux_rr, equations)
+    rho_e_ll = energy_internal_kinetic(u_ll, aux_ll, equations)
+    rho_e_rr = energy_internal_kinetic(u_rr, aux_rr, equations)
     rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, aux_ll, equations)
     rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, aux_rr, equations)
 
@@ -750,8 +750,9 @@ end
     entropy_math(cons, aux, equations)
 end
 
-# Calculate total energy for a conservative state `cons`
-@inline energy_total(cons, aux, ::CompressibleEulerEnergyEquationsWithGravity3D) = cons[5]
+# Calculate the internal and kinetic energy, without the potential energy, for a
+# conservative state `cons`
+@inline energy_internal_kinetic(cons, aux, ::CompressibleEulerEnergyEquationsWithGravity3D) = cons[5]
 
 # Calculate kinetic energy for a conservative state `cons`
 @inline function energy_kinetic(u, aux,
@@ -763,6 +764,7 @@ end
 # Calculate internal energy for a conservative state `cons`
 @inline function energy_internal(cons, aux,
                                  equations::CompressibleEulerEnergyEquationsWithGravity3D)
-    return energy_total(cons, aux, equations) - energy_kinetic(cons, aux, equations)
+    return energy_internal_kinetic(cons, aux, equations) -
+           energy_kinetic(cons, aux, equations)
 end
 end # @muladd
