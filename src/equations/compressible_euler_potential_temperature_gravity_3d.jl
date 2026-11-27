@@ -2,7 +2,8 @@
 #! format: noindent
 
 @doc raw"""
-    CompressibleEulerPotentialTemperatureEquationsWithGravity3D(; c_p, c_v, gravity)
+    CompressibleEulerPotentialTemperatureEquationsWithGravity3D(; c_p, c_v, gravity,
+                                                                turbulence = NoTurbulence())
 
 The compressible Euler equations with gravity in potential temperature formulation
 ```math
@@ -45,8 +46,13 @@ values are given by the function `aux_field(x, equations)` passed to
 functions take the auxiliary variables `aux = SVector(phi)` as additional
 argument after the state, e.g., `flux(u, aux, normal_direction, equations)` or
 `flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)`.
+
+The turbulent fluxes of the model `turbulence`, e.g., a
+[`HorizontalVerticalTurbulence`](@ref), are the parabolic terms of
+[`TurbulentDiffusion3D`](@ref).
 """
-struct CompressibleEulerPotentialTemperatureEquationsWithGravity3D{RealT <: Real} <:
+struct CompressibleEulerPotentialTemperatureEquationsWithGravity3D{RealT <: Real,
+                                                                   Turbulence} <:
        AbstractCompressibleEulerEquations{3, 5}
     p_0::RealT # reference pressure in Pa
     c_p::RealT # specific heat at constant pressure in J/(kg K)
@@ -57,19 +63,22 @@ struct CompressibleEulerPotentialTemperatureEquationsWithGravity3D{RealT <: Real
     inv_gamma_minus_one::RealT # = inv(gamma - 1); can be used to write slow divisions as fast multiplications
     K::RealT # = p_0 * (R / p_0)^gamma; scaling factor between pressure and weighted potential temperature
     stolarsky_factor::RealT # = (gamma - 1) / gamma; used in the stolarsky mean
+    turbulence::Turbulence
     function CompressibleEulerPotentialTemperatureEquationsWithGravity3D(; c_p, c_v,
-                                                                         gravity)
+                                                                         gravity,
+                                                                         turbulence = NoTurbulence())
         c_p, c_v, g = promote(c_p, c_v, gravity)
+        turbulence = similar(turbulence, typeof(c_p))
         p_0 = 100_000
         R = c_p - c_v
         gamma = c_p / c_v
         inv_gamma_minus_one = inv(gamma - 1)
         K = p_0 * (R / p_0)^gamma
         stolarsky_factor = (gamma - 1) / gamma
-        return new{typeof(c_p)}(p_0, c_p, c_v, g, R,
-                                gamma,
-                                inv_gamma_minus_one,
-                                K, stolarsky_factor)
+        return new{typeof(c_p), typeof(turbulence)}(p_0, c_p, c_v, g, R,
+                                                    gamma,
+                                                    inv_gamma_minus_one,
+                                                    K, stolarsky_factor, turbulence)
     end
 end
 
@@ -80,8 +89,10 @@ end
 function Base.similar(equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D,
                       ::Type{NewRealT}) where {NewRealT}
     c_p, c_v, gravity = convert.(NewRealT, (equations.c_p, equations.c_v, equations.g))
+    turbulence = similar(equations.turbulence, NewRealT)
     return CompressibleEulerPotentialTemperatureEquationsWithGravity3D(; c_p, c_v,
-                                                                       gravity)
+                                                                       gravity,
+                                                                       turbulence)
 end
 
 function varnames(::typeof(cons2cons),

@@ -59,6 +59,15 @@ for human readability.
   `P4estMesh`. The 1D equations and the equations in covariant form are not affected
   ([#263]).
 
+#### Added
+- The `CompressibleEulerPotentialTemperatureEquationsWithGravity3D` and the
+  `CompressibleEulerMoistPotentialTemperatureEquations3D` take a turbulence model as
+  keyword argument `turbulence` (default `NoTurbulence()`), whose turbulent fluxes are the
+  parabolic terms `TurbulentDiffusion3D` of a `SemidiscretizationHyperbolicParabolic`
+  with the keyword argument `aux_field`. A `HorizontalVerticalTurbulence` combines a
+  horizontal and a vertical model, e.g., `ConstantEddyViscosity`, with respect to the
+  upward unit vector, i.e., the normalized gradient of the geopotential.
+
 ## Changes in the v0.1 lifecycle
 
 #### Added
@@ -79,6 +88,8 @@ for human readability.
   `P4estMeshCubedSphereTopography` as linear operator of linearly implicit methods, i.e.,
   Rosenbrock-W methods such as `SSPRW32` and linear IMEX methods such as `ARS343`, also on
   GPUs ([#243]).
+- `JacobianVerticalTwoSided` supports the `CompressibleEulerMoistPotentialTemperatureEquations3D`,
+  whose moisture variables are treated explicitly.
 - The `CompressibleEulerVectorInvariantEquationsWithGravity3D` are the compressible Euler
   equations with gravity in vector-invariant form with the potential temperature as
   prognostic variable. They come with the entropy and total energy conservative volume flux

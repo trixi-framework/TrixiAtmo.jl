@@ -1099,3 +1099,127 @@ end
         @test isapprox(residuals[1] / residuals[2], 10, rtol = 1e-2)
     end
 end
+
+@testitem "Unit: Consistency check for turbulent fluxes: TurbulentDiffusion3D" setup=[Setup] tags=[:unit_fluxes] begin
+    using LinearAlgebra: I, norm, tr
+    nu_h, kappa_h, nu_v, kappa_v = 3.0e4, 2.0e4, 5.0, 7.0
+    turbulence = HorizontalVerticalTurbulence(ConstantEddyViscosity(nu_h;
+                                                                    prandtl_number = nu_h /
+                                                                                     kappa_h),
+                                              ConstantEddyViscosity(nu_v;
+                                                                    prandtl_number = nu_v /
+                                                                                     kappa_v))
+    equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
+                                                                            c_v = 717.0,
+                                                                            gravity = EARTH_GRAVITATIONAL_ACCELERATION,
+                                                                            turbulence = turbulence)
+    equations_parabolic = TurbulentDiffusion3D(equations)
+
+    u = SVector(1.1, -0.5, 2.34, 0.7, 310.0)
+    w = cons2specific(u, equations)
+    @test w ≈ SVector(1.1, -0.5 / 1.1, 2.34 / 1.1, 0.7 / 1.1, 310.0 / 1.1)
+    gradients = (SVector(0.3, -1.2, 0.4, 2.0, -0.7), SVector(-0.1, 0.5, 1.3, -0.6, 0.9),
+                 SVector(0.2, 0.8, -0.4, 1.1, 0.25))
+    k = SVector(0.3, -0.4, 0.86) / norm(SVector(0.3, -0.4, 0.86))
+    rho = w[1]
+
+    # Stress `2 rho (nu_h P S P + nu_v (S - P S P))` and diffusivity tensor
+    # `kappa_h P + kappa_v k k'` assembled with dense matrices
+    G = [gradients[b][1 + a] for a in 1:3, b in 1:3] # dv_a / dx_b
+    S = (G + G') / 2
+    P = I - k * k'
+    PSP = P * S * P
+    tau_reference = 2 * rho * (nu_h * PSP + nu_v * (S - PSP))
+    D = kappa_h * P + kappa_v * k * k'
+    gradient_theta = [gradients[b][5] for b in 1:3]
+    fluxes = [flux(w, gradients, k, d, equations_parabolic) for d in 1:3]
+    for d in 1:3
+        @test fluxes[d][1] == 0
+        @test fluxes[d][2:4] ≈ tau_reference[:, d]
+        @test fluxes[d][5] ≈ rho * (D * gradient_theta)[d]
+    end
+    tau = [fluxes[d][1 + a] for a in 1:3, d in 1:3]
+    @test tau ≈ tau'
+    dissipation = tr(tau * S)
+    @test dissipation ≈ 2 * rho * (nu_h * sum(abs2, PSP) + nu_v * sum(abs2, S - PSP))
+    @test dissipation > 0
+
+    # The stress is invariant under rotations `Q`, which rotate `k` and the gradients
+    Q = [cos(0.7) -sin(0.7) 0; sin(0.7) cos(0.7) 0; 0 0 1] *
+        [1 0 0; 0 cos(-1.1) -sin(-1.1); 0 sin(-1.1) cos(-1.1)]
+    k_rotated = SVector{3}(Q * k)
+    # In the rotated frame, the velocity gradient is `Q * G * Q'` and the gradient of the
+    # potential temperature `Q * gradient_theta`
+    G_rotated = Q * G * Q'
+    gradient_theta_rotated = Q * gradient_theta
+    gradients_rotated = ntuple(b -> SVector(0.0, G_rotated[1, b], G_rotated[2, b],
+                                            G_rotated[3, b], gradient_theta_rotated[b]),
+                               3)
+    tau_rotated = [flux(w, gradients_rotated, k_rotated, d, equations_parabolic)[1 + a]
+                   for a in 1:3, d in 1:3]
+    @test tau_rotated ≈ Q * tau * Q'
+
+    # With `k = e_z`, the vertical shear `du/dz` of `v = (u(z), 0, 0)` gets `nu_v` and the
+    # horizontal shear `du/dy` gets `nu_h`
+    e_z = SVector(0.0, 0.0, 1.0)
+    zero_ = SVector(0.0, 0.0, 0.0, 0.0, 0.0)
+    vertical_shear = (zero_, zero_, SVector(0.0, 2.0, 0.0, 0.0, 0.0))
+    @test flux(w, vertical_shear, e_z, 3, equations_parabolic)[2] ≈ rho * nu_v * 2
+    @test flux(w, vertical_shear, e_z, 1, equations_parabolic)[4] ≈ rho * nu_v * 2
+    horizontal_shear = (zero_, SVector(0.0, 2.0, 0.0, 0.0, 0.0), zero_)
+    @test flux(w, horizontal_shear, e_z, 2, equations_parabolic)[2] ≈ rho * nu_h * 2
+
+    # Equal horizontal and vertical models give the isotropic stress `2 rho nu S`
+    equations_isotropic = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
+                                                                                      c_v = 717.0,
+                                                                                      gravity = EARTH_GRAVITATIONAL_ACCELERATION,
+                                                                                      turbulence = HorizontalVerticalTurbulence(ConstantEddyViscosity(nu_v),
+                                                                                                                                ConstantEddyViscosity(nu_v)))
+    for d in 1:3
+        f = flux(w, gradients, k, d, TurbulentDiffusion3D(equations_isotropic))
+        @test f[2:4] ≈ 2 * rho * nu_v * S[:, d]
+        @test f[5] ≈ rho * nu_v * gradient_theta[d]
+    end
+
+    # The moist equations have the same fluxes of the velocity and the potential temperature,
+    # and the moisture mass fractions are diffused as the potential temperature
+    equations_moist = CompressibleEulerMoistPotentialTemperatureEquations3D(c_p = 1004.0,
+                                                                            c_v = 717.0,
+                                                                            gravity = EARTH_GRAVITATIONAL_ACCELERATION,
+                                                                            turbulence = turbulence)
+    equations_parabolic_moist = TurbulentDiffusion3D(equations_moist)
+    u_moist = SVector(1.1, -0.5, 2.34, 0.7, 310.0, 0.012, 0.003, 0.002)
+    w_moist = cons2specific(u_moist, equations_moist)
+    @test w_moist[1:5] ≈ w
+    @test w_moist[6:8] ≈ u_moist[6:8] / u_moist[1]
+    moisture_gradients = (SVector(1.0e-6, -2.0e-6, 3.0e-7), SVector(4.0e-7, 0.0, -1.0e-6),
+                          SVector(-3.0e-6, 1.0e-6, 2.0e-6))
+    gradients_moist = ntuple(b -> SVector(gradients[b]..., moisture_gradients[b]...), 3)
+    for d in 1:3
+        f = flux(w_moist, gradients_moist, k, d, equations_parabolic_moist)
+        @test f[1:5] ≈ fluxes[d]
+        for m in 1:3
+            @test f[5 + m] ≈ rho * (D * [moisture_gradients[b][m] for b in 1:3])[d]
+        end
+    end
+
+    # The upward unit vector of the dry equations is the normalized gradient of the
+    # geopotential
+    x = SVector(4.0e6, -3.0e6, 2.5e6)
+    @test TrixiAtmo.upward_unit_vector(x, aux_field_gravity_earth, equations) ≈ x / norm(x)
+    @test TrixiAtmo.upward_unit_vector(x, aux_field_gravity_earth, equations_moist) ≈
+          x / norm(x)
+
+    # No turbulent flux through the boundary
+    no_flux = BoundaryConditionNeumann((x, t, equations) -> zero(SVector{5, eltype(x)}))
+    normal = SVector(0.5, -0.5, 2.0)
+    @test no_flux(fluxes[1], w, normal, x, 0.0, TrixiAtmo.Trixi.Divergence(),
+                  equations_parabolic) == zero(SVector{5, Float64})
+    @test no_flux(w, w, normal, x, 0.0, TrixiAtmo.Trixi.Gradient(), equations_parabolic) ==
+          w
+
+    # The turbulent fluxes require a turbulence model
+    @test_throws ArgumentError TurbulentDiffusion3D(CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
+                                                                                                                c_v = 717.0,
+                                                                                                                gravity = EARTH_GRAVITATIONAL_ACCELERATION))
+end
