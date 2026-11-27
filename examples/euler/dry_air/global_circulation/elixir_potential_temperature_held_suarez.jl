@@ -9,7 +9,7 @@
 using OrdinaryDiffEqLowStorageRK
 using Trixi, TrixiAtmo
 
-@inline function source_terms_hs_relaxation(u, x, t,
+@inline function source_terms_hs_relaxation(u, aux, x, t,
                                             equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     # equations (55)-(58) in the paper
     k_f = 1 / SECONDS_PER_DAY         # Damping scale for momentum
@@ -23,7 +23,7 @@ using Trixi, TrixiAtmo
 
     @unpack p_0, c_p, c_v, R = equations
 
-    p = pressure(u, equations)
+    p = pressure(u, aux, equations)
     lon, lat, r = cartesian_to_sphere(x)
     temperature = p / (u[1] * R)
 
@@ -50,13 +50,13 @@ using Trixi, TrixiAtmo
 
     du5 = -k_T * u[5] / temperature * (temperature - T_equi)
 
-    return SVector(du0, du2, du3, du4, du5, du0)
+    return SVector(du0, du2, du3, du4, du5)
 end
 
-@inline function source_terms_held_suarez(u, x, t,
+@inline function source_terms_held_suarez(u, aux, x, t,
                                           equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
-    return source_terms_coriolis(u, x, t, equations) +
-           source_terms_hs_relaxation(u, x, t, equations)
+    return source_terms_coriolis(u, aux, x, t, equations) +
+           source_terms_hs_relaxation(u, aux, x, t, equations)
 end
 
 equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004,
@@ -64,6 +64,7 @@ equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 10
                                                                         gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 
 initial_condition = initial_condition_isothermal
+aux_field = aux_field_gravity_earth
 
 boundary_conditions = (; inside = boundary_condition_slip_wall,
                        outside = boundary_condition_slip_wall)
@@ -83,7 +84,8 @@ mesh = P4estMeshCubedSphereTopography(trees_per_cube_face..., EARTH_RADIUS, 3000
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_terms_held_suarez,
-                                    boundary_conditions = boundary_conditions)
+                                    boundary_conditions = boundary_conditions,
+                                    aux_field = aux_field)
 
 ###############################################################################
 # ODE solvers, callbacks etc.
