@@ -18,16 +18,14 @@ end
                             0.05144411394023726,
                             0.05238807358575555,
                             0.012609443441337428,
-                            0.8067575925333563,
-                            570.8566086563927
+                            0.8067575925333563
                         ],
                         linf=[
                             0.021751907036954288,
                             0.8297225783677513,
                             1.2589734934841315,
                             0.9103791727770297,
-                            4.833051748224818,
-                            1704.147344700992
+                            4.833051748224818
                         ],
                         tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
                         dt=20)
@@ -50,6 +48,7 @@ end
     @test Trixi.storage_type(semi.cache.interfaces) === Array
     @test Trixi.storage_type(semi.cache.boundaries) === Array
     @test Trixi.storage_type(semi.cache.mortars) === Array
+    @test semi.cache.aux_vars.aux isa Array
 
     # Ensure that the RHS computation overwrites existing data in `du` correctly.
     u_ode = copy(ode.u0)
@@ -61,8 +60,8 @@ end
     # Check that the total mass and the total mass-weighted potential temperature are
     # conserved up to round-off errors also with the kernels of KernelAbstractions.jl
     for v in (1, 5)
-        integral_initial = Trixi.integrate((u, equations) -> u[v], ode.u0, semi)
-        integral_final = Trixi.integrate((u, equations) -> u[v], sol.u[end], semi)
+        integral_initial = Trixi.integrate((u, aux, equations) -> u[v], ode.u0, semi)
+        integral_final = Trixi.integrate((u, aux, equations) -> u[v], sol.u[end], semi)
         @test isapprox(integral_final, integral_initial, rtol = 1e-13)
     end
 end
@@ -76,20 +75,18 @@ end
                         # Expected errors are exactly the same as with CUDA, see
                         # `test_cuda_3d.jl`
                         l2=[
-                            0.0005231487476660257,
-                            0.01697962311431438,
-                            0.015947211723936594,
-                            0.016561823433691548,
-                            0.14232904565449617,
-                            98.99596252593312
+                            0.0005231487494040615,
+                            0.016979615333646277,
+                            0.01594720348014793,
+                            0.016561813384810754,
+                            0.14232904756222564
                         ],
                         linf=[
-                            0.004219636209495059,
-                            1.1709300104924298,
-                            0.6920569865271409,
-                            1.1056507865964287,
-                            0.9997828853548185,
-                            333.1178018152714
+                            0.004219636334625854,
+                            1.1709299053250506,
+                            0.6920569567040576,
+                            1.1056508753294336,
+                            0.9997829208306257
                         ],
                         tspan=(0.0, 20.0), trees_per_cube_face=(2, 2))
     # The kernels of KernelAbstractions.jl are used on the CPU
@@ -110,6 +107,7 @@ end
     @test Trixi.storage_type(semi.cache.interfaces) === Array
     @test Trixi.storage_type(semi.cache.boundaries) === Array
     @test Trixi.storage_type(semi.cache.mortars) === Array
+    @test semi.cache.aux_vars.aux isa Array
 
     # Ensure that the RHS computation overwrites existing data in `du` correctly.
     u_ode = copy(ode.u0)

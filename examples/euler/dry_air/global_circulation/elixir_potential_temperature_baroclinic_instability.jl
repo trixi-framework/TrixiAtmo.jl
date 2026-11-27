@@ -16,6 +16,7 @@ equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 10
                                                                         gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 
 initial_condition = initial_condition_baroclinic_instability
+aux_field = aux_field_gravity_earth
 
 boundary_conditions = (; inside = boundary_condition_slip_wall,
                        outside = boundary_condition_slip_wall)
@@ -33,7 +34,8 @@ mesh = P4estMeshCubedSphereTopography(trees_per_cube_face..., EARTH_RADIUS, 3000
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_terms_coriolis,
-                                    boundary_conditions = boundary_conditions)
+                                    boundary_conditions = boundary_conditions,
+                                    aux_field = aux_field)
 
 ###############################################################################
 # ODE solvers, callbacks etc.

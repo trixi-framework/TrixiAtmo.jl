@@ -130,7 +130,7 @@ export initial_condition_adiabatic, initial_condition_gravity_waves,
        initial_condition_baroclinic_instability, initial_condition_isothermal,
        initial_condition_vortex_shedding, initial_condition_moist_baroclinic_instability
 
-export aux_field_gravity_earth
+export aux_field_gravity_earth, aux_field_gravity_small_earth
 
 export aux_field_gravity
 
