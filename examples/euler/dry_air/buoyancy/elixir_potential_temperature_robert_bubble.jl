@@ -7,8 +7,11 @@
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
+# Gravity enters via `source_terms_gravity`, so the geopotential is zero
+aux_field_no_gravity(x, equations) = SVector(zero(eltype(x)))
+
 function initial_condition_robert_bubble(x, t,
-                                         equations::CompressibleEulerPotentialTemperatureEquations2D)
+                                         equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     # center of perturbation
     center_x = 500.0
     center_z = 260.0
@@ -41,20 +44,23 @@ function initial_condition_robert_bubble(x, t,
 
     v1 = 20
     v2 = 0
-    return prim2cons(SVector(rho, v1, v2, p), equations)
+    aux = aux_field_no_gravity(x, equations)
+    return prim2cons(SVector(rho, v1, v2, p), aux, equations)
 end
 
-@inline function source_terms_gravity(u, x, t,
-                                      equations::CompressibleEulerPotentialTemperatureEquations2D)
+@inline function source_terms_gravity(u, aux, x, t,
+                                      equations::CompressibleEulerPotentialTemperatureEquationsWithGravity2D)
     rho, _, _, _ = u
     g = EARTH_GRAVITATIONAL_ACCELERATION
     return SVector(zero(eltype(u)), zero(eltype(u)), -g * rho, zero(eltype(u)))
 end
 
-equations = CompressibleEulerPotentialTemperatureEquations2D(c_p = 1004, c_v = 717)
+equations = CompressibleEulerPotentialTemperatureEquationsWithGravity2D(c_p = 1004,
+                                                                        c_v = 717,
+                                                                        gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 
-surface_flux = FluxLMARS(340)
-volume_flux = flux_tec
+surface_flux = (FluxLMARS(340), flux_zero)
+volume_flux = (flux_tec, flux_zero)
 polydeg = 3
 solver = DGSEM(polydeg = polydeg, surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
@@ -73,7 +79,8 @@ source_terms = source_terms_gravity
 initial_condition = initial_condition_robert_bubble
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_terms,
-                                    boundary_conditions = boundary_conditions)
+                                    boundary_conditions = boundary_conditions,
+                                    aux_field = aux_field_no_gravity)
 tspan = (0.0, 1000.0)
 ode = semidiscretize(semi, tspan)
 

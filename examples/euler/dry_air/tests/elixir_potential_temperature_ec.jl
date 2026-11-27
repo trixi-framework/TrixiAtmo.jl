@@ -1,20 +1,24 @@
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
+# Without gravity, i.e., with zero geopotential
 function initial_condition_density_wave(x, t,
-                                        equations::CompressibleEulerPotentialTemperatureEquations1D)
+                                        equations::CompressibleEulerPotentialTemperatureEquationsWithGravity1D)
     v1 = 1
     rho = 1 + exp(sinpi(2 * x[1]))
     p = 1
-    return prim2cons(SVector(rho, v1, p), equations)
+    phi = 0
+    return prim2cons(SVector(rho, v1, p, phi), equations)
 end
 
-equations = CompressibleEulerPotentialTemperatureEquations1D(c_p = 1004, c_v = 717)
+equations = CompressibleEulerPotentialTemperatureEquationsWithGravity1D(c_p = 1004,
+                                                                        c_v = 717,
+                                                                        gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 
 polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
-surface_flux = flux_ec
-volume_flux = flux_ec
+surface_flux = (flux_ec, flux_zero)
+volume_flux = (flux_ec, flux_zero)
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
 solver = DGSEM(basis, surface_flux, volume_integral)

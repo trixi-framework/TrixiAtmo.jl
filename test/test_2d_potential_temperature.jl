@@ -216,8 +216,9 @@ end
                             0.011480660134785742,
                             0.012652115689945731
                         ],
-                        tspan=(0.0, 1.0), cells_per_dimension=(8, 8), surface_flux=flux_ec,
-                        volume_flux=flux_etec)
+                        tspan=(0.0, 1.0), cells_per_dimension=(8, 8),
+                        surface_flux=(flux_ec, flux_zero),
+                        volume_flux=(flux_etec, flux_zero))
 
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)

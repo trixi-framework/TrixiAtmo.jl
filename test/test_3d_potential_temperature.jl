@@ -48,7 +48,8 @@ end
                             0.2914131870829597,
                             0.010284993042893986
                         ],
-                        tspan=(0.0, 1.0), surface_flux=flux_ec, volume_flux=flux_ec)
+                        tspan=(0.0, 1.0), surface_flux=(flux_ec, flux_zero),
+                        volume_flux=(flux_ec, flux_zero))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
@@ -74,7 +75,8 @@ end
                             0.29141401520767773,
                             00.010285068999815183
                         ],
-                        tspan=(0.0, 1.0), surface_flux=flux_tec, volume_flux=flux_tec)
+                        tspan=(0.0, 1.0), surface_flux=(flux_tec, flux_zero),
+                        volume_flux=(flux_tec, flux_zero))
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
@@ -100,8 +102,8 @@ end
                             0.030904595875059383,
                             0.012502671674568866
                         ],
-                        tspan=(0.0, 0.2), surface_flux=FluxLMARS(340.0),
-                        volume_flux=flux_tec, atol=5e-6)
+                        tspan=(0.0, 0.2), surface_flux=(FluxLMARS(340.0), flux_zero),
+                        volume_flux=(flux_tec, flux_zero), atol=5e-6)
     # Ensure that we do not have excessive memory allocations
     # (e.g., from type instabilities)
     @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
