@@ -58,9 +58,9 @@ degree `polydeg` (`M = polydeg + 1` LGL nodes), the unknowns are grouped, by var
 a small *local* block per element and a small *global* (edge) block shared by the whole
 column:
 
-* all `rho` DOFs of element 1 (nodes `1..M`), then
-* the `rho_theta` DOFs `2..M-1` of element 1 (interior only), then
-* the `rho_w` DOFs `2..M-1` of element 1 (interior only), then
+* all `rho` DOFs of element 1 (nodes `1, ..., M`), then
+* the `rho_theta` DOFs `2, ..., M-1` of element 1 (interior only), then
+* the `rho_w` DOFs `2, ..., M-1` of element 1 (interior only), then
 * ... (repeated, element by element) ...
 * finally, 4 edge DOFs per element, ordered element by element:
   `rho_theta_1, rho_w_1, rho_w_M, rho_theta_M`.
@@ -1273,7 +1273,8 @@ end
 
 ###############################################################################
 # Dense LU factorization and solve of the local Schur complement `S_e` of one element
-# (indexed `[column, i, j, layer]`, `N = nnodes - 2`)
+# (indexed `[column, i, j, layer]`, `N = nnodes - 2`, or `N = nnodes - 1` for the
+# factorization in `jacobian_one_sided.jl`)
 Base.@propagate_inbounds function lu_dense!(A, ::Val{N}, column, layer) where {N}
     for j in 1:(N - 1)
         # One division and `N - j` multiplications instead of `N - j` divisions

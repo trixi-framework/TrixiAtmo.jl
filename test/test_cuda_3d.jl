@@ -156,6 +156,39 @@ end
     @test all(isfinite, du_ode)
 end
 
+@testitem "CUDA 3D: elixir_potential_temperature_baroclinic_instability JacobianVerticalOneSided Float64 / CUDA" setup=[
+    Setup,
+    CUDA3DExamples
+] tags=[:CUDA] begin
+    # Using CUDA inside the testitem since otherwise the bindings are hidden by the anonymous modules
+    using CUDA
+    @test_trixi_include(joinpath(EXAMPLES_DIR,
+                                 "elixir_potential_temperature_baroclinic_instability.jl"),
+                        # Same reference values as on CPU with `JacobianVerticalTwoSided`
+                        l2=[
+                            0.0030320086112184466,
+                            0.05144411394023726,
+                            0.05238807358575555,
+                            0.012609443441337428,
+                            0.8067575925333563,
+                            570.8566086563927
+                        ],
+                        linf=[
+                            0.021751907036954288,
+                            0.8297225783677513,
+                            1.2589734934841315,
+                            0.9103791727770297,
+                            4.833051748224818,
+                            1704.147344700992
+                        ],
+                        tspan=(0.0, 0.01 * SECONDS_PER_DAY), trees_per_cube_face=(2, 2),
+                        dt=20, jacobian=JacobianVerticalOneSided(c = 340),
+                        storage_type=CuArray)
+    # The stages of the Rosenbrock-W method and the vertical Jacobian run on the GPU
+    @test Trixi.trixi_backend(ode.u0) isa CUDABackend
+    @test ode.u0 isa CuArray
+end
+
 @testitem "CUDA 3D: elixir_potential_temperature_baroclinic_instability Float32 / CUDA" setup=[
     Setup,
     CUDA3DExamples

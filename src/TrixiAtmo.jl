@@ -52,7 +52,7 @@ else
 end
 using DataStructures: BinaryHeap, FasterForward
 using KernelAbstractions: KernelAbstractions, @kernel, @index, @Const, Backend, get_backend
-using StaticArrays: MVector
+using StaticArrays: MVector, MMatrix
 using Adapt: Adapt
 using Trixi: wrap_array, get_node_coords, get_contravariant_vector
 
@@ -90,7 +90,7 @@ export GlobalCartesianCoordinates, GlobalSphericalCoordinates
 
 export NonlinearSolveDG
 
-export JacobianVerticalTwoSided
+export JacobianVerticalTwoSided, JacobianVerticalOneSided
 export SSPRW32, ROS2, ARK2, ARS232, ARS343
 
 export flux_chandrashekar, FluxLMARS

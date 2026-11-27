@@ -79,6 +79,9 @@ for human readability.
   `P4estMeshCubedSphereTopography` as linear operator of linearly implicit methods, i.e.,
   Rosenbrock-W methods such as `SSPRW32` and linear IMEX methods such as `ARS343`, also on
   GPUs ([#243]).
+- `JacobianVerticalOneSided` is the same vertical Jacobian as `JacobianVerticalTwoSided`,
+  but with the one-sided condensation of the nested Schur-complement solver, whose reduced
+  system is block-tridiagonal with 3x3 blocks, also on GPUs ([#269]).
 - The `CompressibleEulerVectorInvariantEquationsWithGravity3D` are the compressible Euler
   equations with gravity in vector-invariant form with the potential temperature as
   prognostic variable. They come with the entropy and total energy conservative volume flux
