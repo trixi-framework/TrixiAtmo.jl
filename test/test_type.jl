@@ -110,18 +110,10 @@ end
 
         normal_direction = SVector(one(RealT), one(RealT))
         surface_flux_function = flux_lax_friedrichs
-        orientations = [1, 2]
-        directions = [1, 2]
 
-        for direction in directions, orientation in orientations
-            @test eltype(@inferred boundary_condition_slip_wall(u_inner, orientation,
-                                                                direction,
-                                                                x, t,
-                                                                surface_flux_function,
-                                                                equations)) == RealT
-            @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, orientation,
-                                                       equations)) == RealT
-        end
+        @test eltype(@inferred boundary_condition_slip_wall(u_inner, normal_direction,
+                                                            x, t, surface_flux_function,
+                                                            equations)) == RealT
 
         @test eltype(@inferred flux(u, normal_direction, equations)) == RealT
         @test eltype(@inferred flux_ec(u_ll, u_rr, normal_direction, equations)) ==
@@ -164,21 +156,11 @@ end
 
         normal_direction = SVector(one(RealT), one(RealT))
         surface_flux_function = (flux_lax_friedrichs, flux_zero)
-        orientations = [1, 2]
-        directions = [1, 2]
 
-        for direction in directions, orientation in orientations
-            @test eltype(@inferred boundary_condition_slip_wall(u_inner, orientation,
-                                                                direction,
-                                                                x, t,
-                                                                surface_flux_function,
-                                                                equations)) ==
-                  SVector{5, RealT}
-            @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, orientation,
-                                                       equations)) == RealT
-            @test typeof(@inferred max_abs_speed(u_ll, u_rr, orientation,
-                                                 equations)) == RealT
-        end
+        @test eltype(@inferred boundary_condition_slip_wall(u_inner, normal_direction,
+                                                            x, t, surface_flux_function,
+                                                            equations)) ==
+              SVector{5, RealT}
         @test eltype(@inferred flux(u, normal_direction, equations)) == RealT
         @test eltype(@inferred flux_ec(u_ll, u_rr, normal_direction, equations)) ==
               RealT
@@ -223,14 +205,7 @@ end
                                                    one(RealT), one(RealT))
 
         surface_flux_function = flux_lax_friedrichs
-        orientations = [1, 2, 3]
 
-        for orientation in orientations
-            @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, orientation,
-                                                       equations)) == RealT
-            @test typeof(@inferred max_abs_speed(u_ll, u_rr, orientation,
-                                                 equations)) == RealT
-        end
         normal_direction = SVector(one(RealT), one(RealT), one(RealT))
         @test eltype(@inferred flux(u, normal_direction, equations)) == RealT
         @test eltype(@inferred flux_ec(u_ll, u_rr, normal_direction, equations)) ==
@@ -273,15 +248,6 @@ end
 
         normal_direction = SVector(one(RealT), one(RealT), one(RealT))
 
-        orientations = [1, 2, 3]
-
-        for orientation in orientations
-            @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr,
-                                                       orientation,
-                                                       equations)) == RealT
-            @test typeof(@inferred max_abs_speed(u_ll, u_rr, aux_ll, aux_rr, orientation,
-                                                 equations)) == RealT
-        end
         @test eltype(@inferred flux(u, aux, normal_direction, equations)) == RealT
         @test eltype(@inferred flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
                                        equations)) ==
@@ -444,16 +410,11 @@ end
 
         normal_direction = SVector(one(RealT), one(RealT))
         surface_flux_function = FluxLMARS(RealT(340))
-        directions = [1, 2]
-
-        for direction in directions
-            @test eltype(@inferred boundary_condition_slip_wall(u_inner,
-                                                                normal_direction,
-                                                                direction,
-                                                                x, t,
-                                                                surface_flux_function,
-                                                                equations)) == RealT
-        end
+        @test eltype(@inferred boundary_condition_slip_wall(u_inner,
+                                                            normal_direction,
+                                                            x, t,
+                                                            surface_flux_function,
+                                                            equations)) == RealT
         @test eltype(@inferred flux(u, normal_direction, equations)) == RealT
         @test eltype(@inferred flux_chandrashekar(u_ll, u_rr, normal_direction,
                                                   equations)) == RealT
@@ -501,34 +462,14 @@ end
 
         normal_direction = SVector(one(RealT), one(RealT))
         surface_flux_function = flux_lax_friedrichs
-        orientations = [1, 2]
-        directions = [1, 2]
 
-        for direction in directions, orientation in orientations
-            @test eltype(@inferred boundary_condition_simple_slip_wall(u, orientation,
-                                                                       direction,
-                                                                       x, t,
-                                                                       surface_flux_function,
-                                                                       equations)) ==
-                  RealT
-        end
-        for direction in directions
-            @test eltype(@inferred boundary_condition_slip_wall(u, normal_direction,
-                                                                direction,
-                                                                x, t,
-                                                                surface_flux_function,
-                                                                equations)) == RealT
-        end
-        for orientation in orientations
-            @test eltype(@inferred max_abs_speed(u_ll, u_rr, orientation, equations)) ==
-                  RealT
-            @test eltype(@inferred max_abs_speed_naive(u_ll, u_rr, orientation,
-                                                       equations)) == RealT
+        @test eltype(@inferred boundary_condition_simple_slip_wall(u, normal_direction,
+                                                                   x, t,
+                                                                   surface_flux_function,
+                                                                   equations)) == RealT
+        for orientation in (1, 2)
             @test eltype(@inferred flux(u, orientation, equations)) == RealT
-            @test eltype(@inferred flux_ec_rain(u_ll, u_rr, orientation, equations)) ==
-                  RealT
         end
-
         @test eltype(@inferred flux(u, normal_direction, equations)) == RealT
         @test eltype(@inferred flux_ec_rain(u_ll, u_rr, normal_direction, equations)) ==
               RealT
@@ -557,6 +498,8 @@ end
         @test eltype(@inferred saturation_residual_jacobian(u, u, equations)) == RealT
         @test eltype(@inferred max_abs_speed_naive(u_ll, u_rr, normal_direction,
                                                    equations)) == RealT
+        @test eltype(@inferred max_abs_speed(u_ll, u_rr, normal_direction, equations)) ==
+              RealT
         @test eltype(@inferred theta_d(x[1], equations)) == RealT
 
         @inferred AtmosphereLayersRainyBubble(equations; total_height = x[1])
@@ -605,21 +548,6 @@ end
 
         normal_direction = SVector(one(RealT), one(RealT))
         surface_flux_function = (flux_lax_friedrichs, flux_zero)
-        orientations = [1, 2]
-        directions = [1, 2]
-
-        for direction in directions, orientation in orientations
-            @test eltype(@inferred boundary_condition_slip_wall(u_inner, orientation,
-                                                                direction,
-                                                                x, t,
-                                                                surface_flux_function,
-                                                                equations)) ==
-                  SVector{5, RealT}
-            @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, orientation,
-                                                       equations)) == RealT
-            @test typeof(@inferred max_abs_speed(u_ll, u_rr, orientation,
-                                                 equations)) == RealT
-        end
         @test eltype(@inferred flux(u, normal_direction, equations)) == RealT
         @test eltype(@inferred flux_ranocha(u_ll, u_rr, normal_direction, equations)) ==
               RealT
@@ -684,15 +612,6 @@ end
 
         normal_direction = SVector(one(RealT), one(RealT), one(RealT))
 
-        orientations = [1, 2, 3]
-
-        for orientation in orientations
-            @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr,
-                                                       orientation,
-                                                       equations)) == RealT
-            @test typeof(@inferred max_abs_speed(u_ll, u_rr, aux_ll, aux_rr, orientation,
-                                                 equations)) == RealT
-        end
         @test eltype(@inferred flux(u, aux, normal_direction, equations)) == RealT
         @test eltype(@inferred flux_ranocha(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
                                             equations)) ==

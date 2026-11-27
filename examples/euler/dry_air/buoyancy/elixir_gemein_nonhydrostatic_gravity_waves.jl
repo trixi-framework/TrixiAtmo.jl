@@ -54,9 +54,7 @@ end
 
 source_term = source
 
-boundary_conditions = (; x_neg = boundary_condition_periodic,
-                       x_pos = boundary_condition_periodic,
-                       y_neg = boundary_condition_slip_wall,
+boundary_conditions = (; y_neg = boundary_condition_slip_wall,
                        y_pos = boundary_condition_slip_wall)
 
 polydeg = 4
@@ -93,7 +91,8 @@ faces = (f1, f2, f3, f4)
 # dx = 0.2*a  dz = 10-200 m  für (40,16) km
 cells_per_dimension = (100, 80)
 
-mesh = StructuredMesh(cells_per_dimension, faces, periodicity = (true, false))
+mesh = P4estMesh(cells_per_dimension, polydeg = polydeg, faces = faces,
+                 periodicity = (true, false))
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
                                     source_terms = source_term,
