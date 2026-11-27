@@ -70,9 +70,9 @@ items tagged `upstream` in its own downstream CI.
   `initial_condition_*`, `boundary_condition_*`, `source_terms_*`, and variable
   conversions (`cons2prim`, `cons2entropy`, ...). There are
   - equations in Cartesian coordinates, e.g.,
-    `CompressibleEulerPotentialTemperatureEquations{1,2,3}D` (with
-    `...WithGravity{1,2,3}D` variants including the geopotential, as the last
-    state variable in 1D and as an auxiliary variable of Trixi.jl in 2D and 3D),
+    `CompressibleEulerPotentialTemperatureEquationsWithGravity{1,2,3}D`
+    (including the geopotential, as the last state variable in 1D and as an
+    auxiliary variable of Trixi.jl in 2D and 3D),
     `CompressibleEulerEnergyEquationsWithGravity{2,3}D`,
     `CompressibleMoistEulerEquations2D`, `CompressibleRainyEulerEquations2D`,
     and `ShallowWaterEquations3D` (shallow water equations on the sphere in 3D
@@ -544,7 +544,7 @@ starts the Julia sessions itself.
   `wrap_array(u_ode, semi)` before internal use. Wrapped arrays have no suffix.
 - Compare 1D/2D/3D and x/y/z implementations of the same function when
   changing one of them (e.g., the `CompressibleEulerPotentialTemperature...`
-  equations exist in 1D, 2D, and 3D, with and without gravity); copy-paste
+  equations exist in 1D, 2D, and 3D); copy-paste
   errors between dimensions and directions are the most common source of bugs.
 
 ## Pull requests and documentation
