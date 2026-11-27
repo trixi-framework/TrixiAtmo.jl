@@ -574,8 +574,8 @@ end
                                                        ::Val{NNODES}) where {NLAYERS,
                                                                              NNODES}
     column = @index(Global)
-    theta_element = MVector{NNODES, eltype(u_vertical)}(undef)
-    dp_drho_theta_element = MVector{NNODES, eltype(u_vertical)}(undef)
+    theta_element = @private eltype(u_vertical) (NNODES,)
+    dp_drho_theta_element = @private eltype(u_vertical) (NNODES,)
 
     for layer in 1:NLAYERS
         fill_jacobian_per_element!(schur_element, schur_band, theta, dp_drho_theta,
@@ -863,10 +863,9 @@ end
                                                                                          NNODES
                                                                                          }
     column = @index(Global)
-    RealT = eltype(schur_band)
-    x_rho = MVector{NNODES, RealT}(undef)
-    x_rho_theta = MVector{NNODES - 2, RealT}(undef)
-    x_rho_w = MVector{NNODES - 2, RealT}(undef)
+    x_rho = @private eltype(schur_band) (NNODES,)
+    x_rho_theta = @private eltype(schur_band) (NNODES - 2,)
+    x_rho_w = @private eltype(schur_band) (NNODES - 2,)
 
     for layer in 1:NLAYERS
         schur_complement_boundary_per_element!(schur_band, x_rho, x_rho_theta, x_rho_w,
@@ -1047,9 +1046,9 @@ end
                                                                gamma_dt,
                                                                ::Val{NNODES}) where {NNODES}
     column, layer = @index(Global, NTuple)
-    x_rho = MVector{NNODES, eltype(b)}(undef)
-    x_rho_theta = MVector{NNODES - 2, eltype(b)}(undef)
-    x_rho_w = MVector{NNODES - 2, eltype(b)}(undef)
+    x_rho = @private eltype(b) (NNODES,)
+    x_rho_theta = @private eltype(b) (NNODES - 2,)
+    x_rho_w = @private eltype(b) (NNODES - 2,)
 
     ldiv_interior_forward_per_element!(schur_rhs, x_rho, x_rho_theta, x_rho_w,
                                        b, schur_element, gravity,
@@ -1236,9 +1235,9 @@ end
                                                                                       NNODES
                                                                                       }
     column, layer = @index(Global, NTuple)
-    x_rho = MVector{NNODES, eltype(b)}(undef)
-    x_rho_theta = MVector{NNODES - 2, eltype(b)}(undef)
-    x_rho_w = MVector{NNODES - 2, eltype(b)}(undef)
+    x_rho = @private eltype(b) (NNODES,)
+    x_rho_theta = @private eltype(b) (NNODES - 2,)
+    x_rho_w = @private eltype(b) (NNODES - 2,)
 
     ldiv_interior_backward_per_element!(b, x_rho, x_rho_theta, x_rho_w, schur_rhs,
                                         schur_element, gravity, theta, dp_drho_theta,
