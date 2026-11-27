@@ -117,16 +117,13 @@ end
 
 @doc raw"""
     initial_condition_baroclinic_instability(x, t,
-                                             equations::AbstractCompressibleEulerEquations{3, 6})
+                                             equations::AbstractCompressibleEulerEquations{3, 5})
 
 Initial condition for an idealized baroclinic instability test on a spherical shell of inner
 radius [`EARTH_RADIUS`](@ref). It consists of a balanced, hydrostatic and geostrophically balanced
 steady state, to which a localized stream function perturbation is added in order to trigger
-the instability. The geopotential is prescribed as
-```math
-\phi(\vec{x}) = -\frac{a^2 g}{\lVert \vec{x} \rVert},
-```
-where ``a`` is the radius of the Earth and ``g`` the gravitational acceleration.
+the instability. The corresponding geopotential is given by
+[`aux_field_gravity_earth`](@ref).
 
 This initial condition is meant to be used together with [`source_terms_coriolis`](@ref),
 which accounts for the rotation of the Earth.
@@ -138,7 +135,7 @@ See Section 3.2 and Appendix A of the following paper:
 """
 function initial_condition_baroclinic_instability(x, t,
                                                   equations::AbstractCompressibleEulerEquations{3,
-                                                                                                6})
+                                                                                                5})
     RealT = eltype(x)
     lon, lat, r = cartesian_to_sphere(x)
     radius_earth = convert(RealT, EARTH_RADIUS)
@@ -159,10 +156,35 @@ function initial_condition_baroclinic_instability(x, t,
     v2 = cos(lon) * u - sin(lat) * sin(lon) * v
     v3 = cos(lat) * v
 
-    gravitational_acceleration = convert(RealT, EARTH_GRAVITATIONAL_ACCELERATION)  # g
-    phi = -radius_earth^2 * gravitational_acceleration / norm(x)
+    aux = aux_field_gravity_earth(x, equations)
+    return prim2cons(SVector(rho, v1, v2, v3, p), aux, equations)
+end
 
-    return prim2cons(SVector(rho, v1, v2, v3, p, phi), equations)
+@doc raw"""
+    aux_field_gravity_earth(x, equations::AbstractCompressibleEulerEquations{3, 5})
+
+Geopotential
+```math
+\phi(\vec{x}) = g \frac{a z}{\lVert \vec{x} \rVert}, \qquad z = \lVert \vec{x} \rVert - a,
+```
+of the gravity of the Earth, which points to the center of the Earth and decreases with
+``1 / \lVert \vec{x} \rVert^2``. Here, ``a`` is the radius of the Earth
+([`EARTH_RADIUS`](@ref)) and ``g`` the gravitational acceleration at its surface
+([`EARTH_GRAVITATIONAL_ACCELERATION`](@ref)), where ``\phi = 0``, and ``\phi \approx g z``
+near it. Computing it from the height ``z`` avoids the cancellation of two large terms,
+which matters in `Float32`. It is returned as the auxiliary variables, see
+`Trixi.nauxvariables`, and passed as `aux_field` to `SemidiscretizationHyperbolic`.
+"""
+@inline function aux_field_gravity_earth(x,
+                                         equations::AbstractCompressibleEulerEquations{3,
+                                                                                       5})
+    RealT = eltype(x)
+    radius_earth = convert(RealT, EARTH_RADIUS)
+    gravitational_acceleration = convert(RealT, EARTH_GRAVITATIONAL_ACCELERATION)
+    r = norm(x)
+    phi = gravitational_acceleration * radius_earth * (r - radius_earth) / r
+
+    return SVector(phi)
 end
 
 # Exponential perturbation of the zonal wind of the moist baroclinic wave of DCMIP2016
@@ -261,15 +283,17 @@ end
 
 Geopotential
 ```math
-\phi(\vec{x}) = g \left(a - \frac{a^2}{\lVert \vec{x} \rVert}\right)
+\phi(\vec{x}) = g \frac{a z}{\lVert \vec{x} \rVert}, \qquad z = \lVert \vec{x} \rVert - a,
 ```
 of the gravity of the Earth, which points to the center of the Earth and decreases with
 ``1 / \lVert \vec{x} \rVert^2``, and the upward unit vector
 ``\hat{k} = \vec{x} / \lVert \vec{x} \rVert``. Here, ``a`` is the radius of the Earth
 ([`EARTH_RADIUS`](@ref)) and ``g`` the gravitational acceleration at its surface
-([`EARTH_GRAVITATIONAL_ACCELERATION`](@ref)), where ``\phi = 0``. They are returned as the
-auxiliary variables `SVector(phi, k1, k2, k3)`, see `Trixi.nauxvariables`, and passed as
-`aux_field` to `SemidiscretizationHyperbolic`.
+([`EARTH_GRAVITATIONAL_ACCELERATION`](@ref)), where ``\phi = 0``, and ``\phi \approx g z``
+near it. Computing it from the height ``z`` avoids the cancellation of two large terms,
+which matters in `Float32`. They are returned as the auxiliary variables
+`SVector(phi, k1, k2, k3)`, see `Trixi.nauxvariables`, and passed as `aux_field` to
+`SemidiscretizationHyperbolic`.
 """
 @inline function aux_field_gravity_earth(x,
                                          equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
@@ -277,24 +301,25 @@ auxiliary variables `SVector(phi, k1, k2, k3)`, see `Trixi.nauxvariables`, and p
     radius_earth = convert(RealT, EARTH_RADIUS)
     gravitational_acceleration = convert(RealT, EARTH_GRAVITATIONAL_ACCELERATION)
     r = norm(x)
-    phi = gravitational_acceleration * (radius_earth - radius_earth^2 / r)
+    phi = gravitational_acceleration * radius_earth * (r - radius_earth) / r
 
     return SVector(phi, x[1] / r, x[2] / r, x[3] / r)
 end
 
 @doc raw"""
     initial_condition_isothermal(x, t,
-                                 equations::AbstractCompressibleEulerEquations{3, 6})
+                                 equations::AbstractCompressibleEulerEquations{3, 5})
 
 Isothermal atmosphere at rest in hydrostatic balance on a spherical shell of inner radius
-[`EARTH_RADIUS`](@ref), used as the initial state of the Held-Suarez test case.
+[`EARTH_RADIUS`](@ref), used as the initial state of the Held-Suarez test case. The
+corresponding geopotential is given by [`aux_field_gravity_earth`](@ref).
 
 - Souza et al. (2023). The Flux-Differencing Discontinuous Galerkin Method Applied to an
   Idealized Fully Compressible Nonhydrostatic Dry Atmosphere.
   [DOI: 10.1029/2022MS003527](https://doi.org/10.1029/2022MS003527)
 """
 function initial_condition_isothermal(x, t,
-                                      equations::AbstractCompressibleEulerEquations{3, 6})
+                                      equations::AbstractCompressibleEulerEquations{3, 5})
     # equation (60) in the paper
     T = 285
 
@@ -307,22 +332,18 @@ function initial_condition_isothermal(x, t,
 
     # pressure, geopotential formulation
     p = p_0 *
-        exp(EARTH_GRAVITATIONAL_ACCELERATION *
-            (EARTH_RADIUS^2 / r - EARTH_RADIUS) /
-            (R * T))
+        exp(-EARTH_GRAVITATIONAL_ACCELERATION * EARTH_RADIUS * z / r / (R * T))
 
     # density (via ideal gas law)
     rho = p / (R * T)
 
-    # geopotential
-    phi = EARTH_GRAVITATIONAL_ACCELERATION * (EARTH_RADIUS - EARTH_RADIUS^2 / r)
-
-    return prim2cons(SVector(rho, 0, 0, 0, p, phi), equations)
+    aux = aux_field_gravity_earth(x, equations)
+    return prim2cons(SVector(rho, 0, 0, 0, p), aux, equations)
 end
 
 @doc raw"""
     initial_condition_vortex_shedding(x, t,
-                                      equations::AbstractCompressibleEulerEquations{3, 6})
+                                      equations::AbstractCompressibleEulerEquations{3, 5})
 
 Initial condition for an idealized mountain-triggered mesoscale flow test case (DCMIP-2025
 Test Case 2), which examines the interaction between a stratified rotating flow and an
@@ -333,7 +354,8 @@ stably stratified atmosphere with constant Brunt-Väisälä frequency
 
 The test case uses the reduced-radius Earth configuration described by
 [`SMALL_EARTH_SCALING`](@ref), and is therefore meant to be used together with
-[`source_terms_coriolis_small_earth`](@ref).
+[`source_terms_coriolis_small_earth`](@ref). The corresponding geopotential is given by
+[`aux_field_gravity_small_earth`](@ref).
 
 - DCMIP-2025 Organizing Committee (2025). Test Case 2: Mountain-Triggered Meso-scale Flow
   Phenomena.
@@ -341,7 +363,7 @@ The test case uses the reduced-radius Earth configuration described by
 """
 function initial_condition_vortex_shedding(x, t,
                                            equations::AbstractCompressibleEulerEquations{3,
-                                                                                         6})
+                                                                                         5})
     lon, lat, r = cartesian_to_sphere(x)
     radius_earth = SMALL_EARTH_RADIUS
     R = equations.c_p - equations.c_v
@@ -362,12 +384,38 @@ function initial_condition_vortex_shedding(x, t,
             (u0 / radius_earth + 2 * angular_velocity) * (sin(lat)^2 - 1) -
             N^2 / (g^2 * k) * phi)
     rho = p / (R * T)
-    return prim2cons(SVector(rho, v1, v2, v3, p, phi), equations)
+    aux = aux_field_gravity_small_earth(x, equations)
+    return prim2cons(SVector(rho, v1, v2, v3, p), aux, equations)
+end
+
+@doc raw"""
+    aux_field_gravity_small_earth(x,
+                                  equations::AbstractCompressibleEulerEquations{3, 5})
+
+Geopotential
+```math
+\phi(\vec{x}) = g \left(\lVert \vec{x} \rVert - \frac{a}{X}\right)
+```
+of a gravity of constant magnitude ``g`` ([`EARTH_GRAVITATIONAL_ACCELERATION`](@ref))
+pointing to the center of the reduced-radius Earth of radius ``a / X``
+([`SMALL_EARTH_RADIUS`](@ref)), see [`SMALL_EARTH_SCALING`](@ref). It is returned as the
+auxiliary variables, see `Trixi.nauxvariables`, and passed as `aux_field` to
+`SemidiscretizationHyperbolic`.
+"""
+@inline function aux_field_gravity_small_earth(x,
+                                               equations::AbstractCompressibleEulerEquations{3,
+                                                                                             5})
+    RealT = eltype(x)
+    radius_earth = convert(RealT, SMALL_EARTH_RADIUS)
+    gravitational_acceleration = convert(RealT, EARTH_GRAVITATIONAL_ACCELERATION)
+    phi = gravitational_acceleration * (norm(x) - radius_earth)
+
+    return SVector(phi)
 end
 
 # Coriolis force for a rotation about the z axis with the given angular velocity, used by
 # `source_terms_coriolis` and `source_terms_coriolis_small_earth`
-@inline function coriolis_source(u, angular_velocity,
+@inline function coriolis_source(u, aux, angular_velocity,
                                  equations::AbstractCompressibleEulerEquations{3})
     du0 = zero(eltype(u))
     angular_velocity = convert(eltype(u), angular_velocity)
@@ -381,8 +429,8 @@ end
 end
 
 @doc raw"""
-    source_terms_coriolis(u, x, t,
-                          equations::AbstractCompressibleEulerEquations{3, 6})
+    source_terms_coriolis(u, aux, x, t,
+                          equations::AbstractCompressibleEulerEquations{3, 5})
 
 Source term accounting for the Coriolis force ``-2 \vec{\Omega} \times \rho \vec{v}``
 induced by the rotation of the Earth about the ``z`` axis, with the rotation rate given by
@@ -392,26 +440,26 @@ whose variables contain the velocity instead of the momentum, this is the Coriol
 
 See also [`source_terms_coriolis_small_earth`](@ref) for the reduced-radius configuration.
 """
-@inline function source_terms_coriolis(u, x, t,
-                                       equations::AbstractCompressibleEulerEquations{3, 6})
-    return coriolis_source(u, EARTH_ROTATION_RATE, equations)
+@inline function source_terms_coriolis(u, aux, x, t,
+                                       equations::AbstractCompressibleEulerEquations{3, 5})
+    return coriolis_source(u, aux, EARTH_ROTATION_RATE, equations)
 end
 
 # The Coriolis force acts on the momentum of the total density
 @inline function source_terms_coriolis(u, aux, x, t,
                                        equations::CompressibleEulerMoistPotentialTemperatureEquations3D)
-    return coriolis_source(u, EARTH_ROTATION_RATE, equations)
+    return coriolis_source(u, aux, EARTH_ROTATION_RATE, equations)
 end
 
 @doc raw"""
-    source_terms_coriolis_small_earth(u, x, t,
-                                      equations::AbstractCompressibleEulerEquations{3, 6})
+    source_terms_coriolis_small_earth(u, aux, x, t,
+                                      equations::AbstractCompressibleEulerEquations{3, 5})
 
 Counterpart of [`source_terms_coriolis`](@ref) for the reduced-radius ("small Earth")
 configuration, using the scaled rotation rate [`SMALL_EARTH_ROTATION_RATE`](@ref).
 """
-@inline function source_terms_coriolis_small_earth(u, x, t,
+@inline function source_terms_coriolis_small_earth(u, aux, x, t,
                                                    equations::AbstractCompressibleEulerEquations{3,
-                                                                                                 6})
-    return coriolis_source(u, SMALL_EARTH_ROTATION_RATE, equations)
+                                                                                                 5})
+    return coriolis_source(u, aux, SMALL_EARTH_ROTATION_RATE, equations)
 end
