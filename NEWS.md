@@ -80,6 +80,11 @@ for human readability.
   `P4estMesh`. The 1D equations and the equations in covariant form are not affected
   ([#263]).
 
+#### Added
+- `JacobianVerticalTwoSided` supports the
+  `CompressibleEulerMoistPotentialTemperatureEquations3D`, whose moisture variables are
+  treated explicitly ([#272]).
+
 ## Changes in the v0.1 lifecycle
 
 #### Added

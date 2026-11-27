@@ -6,8 +6,10 @@
 #! format: noindent
 
 # Copies of the data of one node between Trixi.jl's layout and the columns for the
-# `CompressibleEulerPotentialTemperatureEquations3D`, called by the copy kernels
-# in `jacobian_gpu.jl`
+# `CompressibleEulerPotentialTemperatureEquations3D` and the
+# `CompressibleEulerMoistPotentialTemperatureEquations3D`, whose first variables are
+# `(rho, rho_v1, rho_v2, rho_v3, rho_theta)` or `rho_theta_v`, called by the copy kernels in
+# `jacobian_gpu.jl`
 
 # Copy the vertical variables of the node `(i, j, k, element)` of `u`, multiplied by
 # `scaling`, where the vertical momentum is the component of the momentum in the
@@ -58,6 +60,11 @@ Base.@propagate_inbounds function copy_node_from_columns!(b, u_vertical,
     b[3, i, j, k, element] = rho_v[2]
     b[4, i, j, k, element] = rho_v[3]
     b[5, i, j, k, element] = inv_norm_Ja3 * u_vertical[column, 3, k, layer]
+    # The remaining variables, i.e., the moisture variables of the
+    # `CompressibleEulerMoistPotentialTemperatureEquations3D`, are solved with `J = 0`
+    for v in 6:size(b, 1)
+        b[v, i, j, k, element] *= gamma_dt
+    end
     return nothing
 end
 end # @muladd
