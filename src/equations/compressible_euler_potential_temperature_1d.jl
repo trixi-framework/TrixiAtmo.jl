@@ -176,7 +176,7 @@ end
 end
 
 """
-    flux_tec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEquationsPotentialTemperature1D)
+    flux_tec(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerPotentialTemperatureEquations1D)
 
 Total energy conservative two-point flux by
 -  Marco Artiano, Oswald Knoth, Peter Spichtinger, Hendrik Ranocha (2025)
