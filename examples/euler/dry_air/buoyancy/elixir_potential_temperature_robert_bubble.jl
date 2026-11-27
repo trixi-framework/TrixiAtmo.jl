@@ -7,7 +7,7 @@
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
-# Gravity enters as a source term, so that the geopotential vanishes
+# Gravity enters via `source_terms_gravity`, so the geopotential is zero
 aux_field_no_gravity(x, equations) = SVector(zero(eltype(x)))
 
 function initial_condition_robert_bubble(x, t,
