@@ -1,4 +1,4 @@
-@testitem "Type stability: Compressible Euler Potential Temperature With Gravity 1D" setup=[Setup] tags=[:type_stable_tests] begin
+@testitem "Type stability: Compressible Euler Potential Temperature 1D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
         equations = @inferred CompressibleEulerPotentialTemperatureEquations1D(c_p = RealT(1004),
                                                                                c_v = RealT(717),
@@ -63,7 +63,7 @@
     end
 end
 
-@testitem "Type stability: Compressible Euler Potential Temperature With Gravity 2D" setup=[Setup] tags=[:type_stable_tests] begin
+@testitem "Type stability: Compressible Euler Potential Temperature 2D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
         equations = @inferred CompressibleEulerPotentialTemperatureEquations2D(c_p = RealT(1004),
                                                                                c_v = RealT(717),
@@ -123,7 +123,7 @@ end
     end
 end
 
-@testitem "Type stability: Compressible Euler Potential Temperature With Gravity 3D" setup=[Setup] tags=[:type_stable_tests] begin
+@testitem "Type stability: Compressible Euler Potential Temperature 3D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
         equations = @inferred CompressibleEulerPotentialTemperatureEquations3D(c_p = RealT(1004),
                                                                                c_v = RealT(717),
@@ -424,7 +424,7 @@ end
     end
 end
 
-@testitem "Type stability: Compressible Euler Energy With Gravity 2D" setup=[Setup] tags=[:type_stable_tests] begin
+@testitem "Type stability: Compressible Euler Energy 2D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
         equations = @inferred CompressibleEulerEnergyEquations2D(c_p = RealT(1004),
                                                                  c_v = RealT(717),
@@ -559,7 +559,7 @@ end
     end
 end
 
-@testitem "Type stability: Compressible Euler Internal Energy With Gravity 2D" setup=[Setup] tags=[:type_stable_tests] begin
+@testitem "Type stability: Compressible Euler Internal Energy 2D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
         equations = @inferred CompressibleEulerInternalEnergyEquations2D(c_p = RealT(1004),
                                                                          c_v = RealT(717),
@@ -610,7 +610,7 @@ end
     end
 end
 
-@testitem "Type stability: Compressible Euler Vector Invariant With Gravity 3D" setup=[Setup] tags=[:type_stable_tests] begin
+@testitem "Type stability: Compressible Euler Vector Invariant 3D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
         equations = @inferred CompressibleEulerVectorInvariantEquations3D(c_p = RealT(1004),
                                                                           c_v = RealT(717),
