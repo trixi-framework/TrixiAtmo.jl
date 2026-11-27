@@ -1,8 +1,11 @@
 using OrdinaryDiffEqSSPRK
 using Trixi, TrixiAtmo
 
+# Without gravity, i.e., with zero geopotential
+aux_field_no_gravity(x, equations) = SVector(zero(eltype(x)))
+
 function initial_condition_taylor_green_vortex(x, t,
-                                               equations::CompressibleEulerPotentialTemperatureEquations3D)
+                                               equations::CompressibleEulerPotentialTemperatureEquationsWithGravity3D)
     rho = 1.0
     v1 = sin(x[1]) * cos(x[2]) * cos(x[3])
     v2 = -cos(x[1]) * sin(x[2]) * cos(x[3])
@@ -11,14 +14,17 @@ function initial_condition_taylor_green_vortex(x, t,
         1.0 / 16.0 *
         ((cos(2 * x[1]) + cos(2 * x[2])) * (cos(2 * x[1]) + 2) - 2)
 
-    return prim2cons(SVector(rho, v1, v2, v3, p), equations)
+    aux = aux_field_no_gravity(x, equations)
+    return prim2cons(SVector(rho, v1, v2, v3, p), aux, equations)
 end
 
-equations = CompressibleEulerPotentialTemperatureEquations3D(c_p = 1004, c_v = 717)
+equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004,
+                                                                        c_v = 717,
+                                                                        gravity = EARTH_GRAVITATIONAL_ACCELERATION)
 polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
-surface_flux = flux_etec
-volume_flux = flux_etec
+surface_flux = (flux_etec, flux_zero)
+volume_flux = (flux_etec, flux_nonconservative_souza_etal)
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
 solver = DGSEM(basis, surface_flux, volume_integral)
@@ -32,7 +38,8 @@ mesh = P4estMesh(cells_per_dimension, polydeg = 1,
 
 semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition_taylor_green_vortex,
                                     solver,
-                                    boundary_conditions = boundary_condition_periodic)
+                                    boundary_conditions = boundary_condition_periodic,
+                                    aux_field = aux_field_no_gravity)
 ###############################################################################
 # ODE solvers, callbacks etc.
 tspan = (0.0, 0.2)
