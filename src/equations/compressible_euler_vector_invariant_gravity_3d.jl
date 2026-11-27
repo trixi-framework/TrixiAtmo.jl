@@ -426,8 +426,8 @@ end
     g3 = vorticity_2 + gradient * normal_direction_2
     g4 = vorticity_3 + gradient * normal_direction_3
 
-    flux_left = (f1, f2 + 0.5f0 * g2, f3 + 0.5f0 * g3, f4 + 0.5f0 * g4, f5)
-    flux_right = (f1, f2 - 0.5f0 * g2, f3 - 0.5f0 * g3, f4 - 0.5f0 * g4, f5)
+    flux_left = SVector(f1, f2 + 0.5f0 * g2, f3 + 0.5f0 * g3, f4 + 0.5f0 * g4, f5)
+    flux_right = SVector(f1, f2 - 0.5f0 * g2, f3 - 0.5f0 * g3, f4 - 0.5f0 * g4, f5)
 
     return flux_left, flux_right
 end
