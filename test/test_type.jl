@@ -335,6 +335,88 @@ end
     end
 end
 
+@testitem "Type stability: Compressible Euler Moist Potential Temperature 3D" setup=[Setup] tags=[:type_stable_tests] begin
+    for RealT in (Float32, Float64)
+        equations = @inferred CompressibleEulerMoistPotentialTemperatureEquations3D(c_p = RealT(1004),
+                                                                                    c_v = RealT(717),
+                                                                                    gravity = RealT(EARTH_GRAVITATIONAL_ACCELERATION))
+
+        x = SVector(RealT(10_000), RealT(2_000), RealT(1_000))
+        t = zero(RealT)
+        u = u_ll = u_inner = SVector(RealT(1.1), RealT(-0.5), RealT(2.3), RealT(0.7),
+                                     RealT(310), RealT(0.012), RealT(0.003),
+                                     RealT(0.002))
+        u_rr = SVector(RealT(1.05), RealT(0.4), RealT(-1.3), RealT(-0.2), RealT(300),
+                       RealT(0.01), zero(RealT), RealT(0.004))
+        aux = aux_ll = aux_rr = aux_inner = SVector(RealT(1700), RealT(0.6), RealT(0),
+                                                    RealT(0.8))
+
+        normal_direction = SVector(one(RealT), one(RealT), one(RealT))
+
+        @test eltype(@inferred boundary_condition_slip_wall(u_inner, aux_inner,
+                                                            normal_direction, x, t,
+                                                            flux_lmars_combined,
+                                                            equations)) == RealT
+        @test eltype(@inferred flux(u, aux, normal_direction, equations)) == RealT
+        for i in 1:2
+            @test eltype(@inferred flux_lmars_combined(u_ll, u_rr, aux_ll, aux_rr,
+                                                       normal_direction, equations)[i]) ==
+                  RealT
+            @test eltype(@inferred flux_kennedy_gruber_souza_etal(u_ll, u_rr, aux_ll,
+                                                                  aux_rr,
+                                                                  normal_direction,
+                                                                  equations)[i]) ==
+                  RealT
+        end
+
+        @test eltype(@inferred cons2prim(u, aux, equations)) == RealT
+        @test eltype(@inferred prim2cons(u, aux, equations)) == RealT
+        @test typeof(@inferred pressure(u, equations)) == RealT
+        @test typeof(@inferred TrixiAtmo.temperature(u, equations)) == RealT
+        @test typeof(@inferred TrixiAtmo.terminal_velocity_rain(TrixiAtmo.density_dry(u,
+                                                                                      equations),
+                                                                u[8],
+                                                                equations.microphysics)) ==
+              RealT
+        @test typeof(@inferred TrixiAtmo.density_dry(u, equations)) == RealT
+        @test typeof(@inferred TrixiAtmo.saturation_mixing_ratio_tetens(RealT(280),
+                                                                        RealT(90_000))) ==
+              RealT
+        @test eltype(@inferred Trixi.max_abs_speeds(u, aux, equations)) == RealT
+        @test typeof(@inferred max_abs_speed_naive(u_ll, u_rr, aux_ll, aux_rr,
+                                                   normal_direction, equations)) == RealT
+        @test typeof(@inferred max_abs_speed(u_ll, u_rr, aux_ll, aux_rr,
+                                             normal_direction, equations)) == RealT
+        @test eltype(@inferred source_terms_microphysics(u, aux, x, t, equations)) == RealT
+        @test eltype(@inferred source_terms_coriolis(u, aux, x, t, equations)) == RealT
+        @test eltype(@inferred aux_field_gravity_earth(x, equations)) == RealT
+        x_sphere = SVector(RealT(EARTH_RADIUS + 1_000), RealT(2_000), RealT(1_000))
+        @test eltype(@inferred initial_condition_moist_baroclinic_instability(x_sphere, t,
+                                                                              equations)) ==
+              RealT
+        turbo_ll = @inferred Trixi.cons2turbo(flux_kennedy_gruber_souza_etal, u_ll...,
+                                              aux_ll..., equations)
+        turbo_rr = Trixi.cons2turbo(flux_kennedy_gruber_souza_etal, u_rr..., aux_rr...,
+                                    equations)
+        @test eltype(turbo_ll) == RealT
+        for flux_turbo_ in @inferred Trixi.flux_turbo(flux_kennedy_gruber_souza_etal,
+                                                      turbo_ll..., turbo_rr...,
+                                                      normal_direction..., equations)
+            @test eltype(flux_turbo_) == RealT
+        end
+
+        # Adapt the real type, e.g., to move a semidiscretization to a GPU
+        equations_float64 = @inferred similar(equations, Float64)
+        @test typeof(equations_float64.c_p) == Float64
+        @test typeof(equations_float64.microphysics.condensation_time) == Float64
+        @test typeof(@inferred KesslerMicrophysics(latent_heat = RealT(2.5e6),
+                                                   rho_surface = RealT(1.2),
+                                                   condensation_time = one(RealT))) ==
+              KesslerMicrophysics{RealT}
+        @test typeof(@inferred similar(equations_float64, RealT)) == typeof(equations)
+    end
+end
+
 @testitem "Type stability: Compressible Euler Moist Euler 2D" setup=[Setup] tags=[:type_stable_tests] begin
     for RealT in (Float32, Float64)
         equations = @inferred CompressibleMoistEulerEquations2D(c_pd = RealT(2.1),

@@ -377,6 +377,25 @@ end
     return SVector(v_sound, gamma_m)
 end
 
+@doc raw"""
+    terminal_velocity_rain(rho_moist, rho_rain,
+                           equations::CompressibleRainyEulerEquations2D)
+
+Mean terminal velocity of rain in m/s of the warm-rain scheme of the COSMO model as in
+Doppler et al. (2024, Section 2.1),
+```math
+v_r = \frac{v_0 \, \Gamma(4.5)}{6} \left(\frac{\rho_r}{\pi \rho_w N_0}\right)^{1/8},
+```
+with the water density ``\rho_w = \rho_m + \rho_r`` of moist air (vapor and cloud water)
+and rain, the parameter ``N_0`` `= rain_water_distr` (default ``8 \cdot 10^6`` m⁻⁴) of the
+rain drop size distribution, and ``v_0`` `= v_mean_rain` (default 130 m^{1/2}/s) of the
+equations. Without rain (``\rho_r \le 0``), ``v_r = 0``.
+
+## Reference
+S. Doppler et al. (2024). A discontinuous Galerkin approach for atmospheric flows with
+implicit condensation. Journal of Computational Physics. 499:112713.
+[DOI: 10.1016/j.jcp.2023.112713](https://doi.org/10.1016/j.jcp.2023.112713)
+"""
 @inline function terminal_velocity_rain(rho_moist, rho_rain,
                                         equations::CompressibleRainyEulerEquations2D{RealT}) where {RealT}
     # constants
