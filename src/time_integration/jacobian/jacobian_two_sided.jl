@@ -412,7 +412,7 @@ Base.@propagate_inbounds function fill_jacobian_per_element!(schur_element, schu
                                                              speed_of_sound,
                                                              inv_speed_of_sound,
                                                              inv_boundary_weight,
-                                                             dp_factor, dp_exponent,
+                                                             equations,
                                                              inv_gamma_dt, gamma_dt,
                                                              ::Val{NLAYERS},
                                                              ::Val{NNODES},
@@ -424,10 +424,9 @@ Base.@propagate_inbounds function fill_jacobian_per_element!(schur_element, schu
     # Index of the first of the 4 boundary unknowns of this layer in the condensed system
     index_boundary = (layer - 1) * 4 + 1
     for i in 1:NNODES
-        theta_element[i] = u_vertical[column, 3, i, layer] /
-                           u_vertical[column, 1, i, layer]
-        dp_drho_theta_element[i] = dp_factor *
-                                   u_vertical[column, 3, i, layer]^dp_exponent
+        u_vertical_node = get_column_node_vars(u_vertical, column, i, layer)
+        theta_element[i], dp_drho_theta_element[i] = hevi_pressure_derivative(u_vertical_node,
+                                                                              equations)
         theta[column, i, layer] = theta_element[i]
         dp_drho_theta[column, i, layer] = dp_drho_theta_element[i]
     end
@@ -568,8 +567,8 @@ end
                                                        @Const(derivative_hat),
                                                        speed_of_sound,
                                                        inv_speed_of_sound,
-                                                       inv_boundary_weight, dp_factor,
-                                                       dp_exponent, inv_gamma_dt,
+                                                       inv_boundary_weight, equations,
+                                                       inv_gamma_dt,
                                                        gamma_dt, ::Val{NLAYERS},
                                                        ::Val{NNODES}) where {NLAYERS,
                                                                              NNODES}
@@ -582,7 +581,7 @@ end
                                    theta_element, dp_drho_theta_element, u_vertical,
                                    metric_factor, gravity, derivative_hat,
                                    speed_of_sound, inv_speed_of_sound,
-                                   inv_boundary_weight, dp_factor, dp_exponent,
+                                   inv_boundary_weight, equations,
                                    inv_gamma_dt, gamma_dt, Val(NLAYERS), Val(NNODES),
                                    column, layer)
     end
@@ -596,8 +595,6 @@ function fill_jacobian!(backend::Backend, jacobian::JacobianVerticalTwoSidedCach
     speed_of_sound = jacobian.speed_of_sound
     nnodes_ = nnodes(jacobian)
     nlayers_ = nlayers(jacobian)
-    dp_factor = equations.gamma * equations.K
-    dp_exponent = equations.gamma - 1
     inv_speed_of_sound = inv(speed_of_sound)
     inv_gamma_dt = inv(gamma_dt)
     # Explicit bounds check, which allows us to assume inbounds access in the kernel
@@ -609,7 +606,7 @@ function fill_jacobian!(backend::Backend, jacobian::JacobianVerticalTwoSidedCach
     kernel! = fill_jacobian_KAkernel!(backend)
     kernel!(schur_element, schur_band, theta, dp_drho_theta, u_vertical, metric_factor,
             gravity, derivative_hat, speed_of_sound, inv_speed_of_sound,
-            inv_boundary_weight, dp_factor, dp_exponent, inv_gamma_dt, gamma_dt,
+            inv_boundary_weight, equations, inv_gamma_dt, gamma_dt,
             Val(nlayers_), Val(nnodes_);
             ndrange = ncolumns, column_kernel_workgroupsize()...)
     return nothing

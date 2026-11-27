@@ -48,7 +48,7 @@ function copy_state_to_columns!(backend::Backend, u_vertical, u, jacobian, semi)
     nnodes_ = nnodes(jacobian)
     kernel! = copy_state_to_columns_KAkernel!(backend)
     kernel!(u_vertical, u, vertical_direction_and_norm, horizontal_index_of_element,
-            vertical_index_of_element, nnodes_;
+            vertical_index_of_element, nnodes_, equations, solver;
             ndrange = Base.tail(size(u)))
     return nothing
 end
@@ -57,12 +57,13 @@ end
                                                                @Const(vertical_direction_and_norm),
                                                                @Const(horizontal_index_of_element),
                                                                @Const(vertical_index_of_element),
-                                                               nnodes_)
+                                                               nnodes_, equations,
+                                                               solver)
     indices = @index(Global, NTuple)
     copy_node_to_columns!(u_vertical, u, one(eltype(u_vertical)),
                           vertical_direction_and_norm,
                           horizontal_index_of_element, vertical_index_of_element,
-                          nnodes_, indices...)
+                          nnodes_, equations, solver, indices...)
 end
 
 # Copy the right-hand side `b` of the linear system, multiplied by the norm
@@ -80,7 +81,7 @@ function copy_rhs_to_columns!(backend::Backend, u_vertical, b, jacobian, semi)
     nnodes_ = nnodes(jacobian)
     kernel! = copy_rhs_to_columns_KAkernel!(backend)
     kernel!(u_vertical, b, vertical_direction_and_norm, horizontal_index_of_element,
-            vertical_index_of_element, nnodes_;
+            vertical_index_of_element, nnodes_, equations, solver;
             ndrange = Base.tail(size(b)))
     return nothing
 end
@@ -89,12 +90,13 @@ end
                                                              @Const(vertical_direction_and_norm),
                                                              @Const(horizontal_index_of_element),
                                                              @Const(vertical_index_of_element),
-                                                             nnodes_)
+                                                             nnodes_, equations, solver)
     indices = @index(Global, NTuple)
     # The last slot of `vertical_direction_and_norm` holds the norm `n`
     copy_node_to_columns!(u_vertical, b, vertical_direction_and_norm[end, indices...],
                           vertical_direction_and_norm, horizontal_index_of_element,
-                          vertical_index_of_element, nnodes_, indices...)
+                          vertical_index_of_element, nnodes_, equations, solver,
+                          indices...)
 end
 
 # Copy the solution of the linear system, divided by the norm `n`, from the
@@ -113,7 +115,7 @@ function copy_solution_from_columns!(backend::Backend, b, u_vertical, jacobian, 
     nnodes_ = nnodes(jacobian)
     kernel! = copy_solution_from_columns_KAkernel!(backend)
     kernel!(b, u_vertical, vertical_direction_and_norm, horizontal_index_of_element,
-            vertical_index_of_element, nnodes_, gamma_dt;
+            vertical_index_of_element, nnodes_, gamma_dt, equations, solver;
             ndrange = Base.tail(size(b)))
     return nothing
 end
@@ -123,10 +125,11 @@ end
                                                                     @Const(vertical_direction_and_norm),
                                                                     @Const(horizontal_index_of_element),
                                                                     @Const(vertical_index_of_element),
-                                                                    nnodes_, gamma_dt)
+                                                                    nnodes_, gamma_dt,
+                                                                    equations, solver)
     indices = @index(Global, NTuple)
     copy_node_from_columns!(b, u_vertical, vertical_direction_and_norm,
-                            horizontal_index_of_element,
-                            vertical_index_of_element, nnodes_, gamma_dt, indices...)
+                            horizontal_index_of_element, vertical_index_of_element,
+                            nnodes_, gamma_dt, equations, solver, indices...)
 end
 end # @muladd
