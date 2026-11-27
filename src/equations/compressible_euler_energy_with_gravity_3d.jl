@@ -277,7 +277,7 @@ end
 end
 
 """
-    flux_shima_etal(u_ll, u_rr, orientation_or_normal_direction,
+    flux_shima_etal(u_ll, u_rr, normal_direction::AbstractVector,
                     equations::CompressibleEulerEnergyEquationsWithGravity3D)
 
 This flux is is a modification of the original kinetic energy preserving two-point flux by
@@ -324,7 +324,7 @@ The modification is in the energy flux to guarantee pressure equilibrium and was
 end
 
 """
-    flux_kennedy_gruber(u_ll, u_rr, orientation_or_normal_direction,
+    flux_kennedy_gruber(u_ll, u_rr, normal_direction::AbstractVector,
                         equations::CompressibleEulerEnergyEquationsWithGravity3D)
 
 Kinetic energy preserving two-point flux by
@@ -365,7 +365,7 @@ Kinetic energy preserving two-point flux by
 end
 
 """
-    flux_chandrashekar(u_ll, u_rr, orientation_or_normal_direction, equations::CompressibleEulerEnergyEquationsWithGravity3D)
+    flux_chandrashekar(u_ll, u_rr, normal_direction::AbstractVector, equations::CompressibleEulerEnergyEquationsWithGravity3D)
 
 Entropy conserving two-point flux by
 - Chandrashekar (2013)
@@ -412,7 +412,7 @@ Entropy conserving two-point flux by
 end
 
 """
-    flux_ranocha(u_ll, u_rr, orientation_or_normal_direction,
+    flux_ranocha(u_ll, u_rr, normal_direction::AbstractVector,
                  equations::CompressibleEulerEnergyEquationsWithGravity3D)
 
 Entropy conserving and kinetic energy preserving two-point flux by
@@ -462,7 +462,7 @@ See also
 end
 
 """
-    FluxLMARS(c)(u_ll, u_rr, orientation_or_normal_direction,
+    FluxLMARS(c)(u_ll, u_rr, normal_direction::AbstractVector,
                  equations::CompressibleEulerEnergyEquationsWithGravity3D)
 
 Low Mach number approximate Riemann solver (LMARS) for atmospheric flows using
@@ -514,29 +514,6 @@ end
 
 # Calculate maximum wave speed for local Lax-Friedrichs-type dissipation as the
 # maximum velocity magnitude plus the maximum speed of sound
-@inline function max_abs_speed_naive(u_ll, u_rr, orientation::Integer,
-                                     equations::CompressibleEulerEnergyEquationsWithGravity3D)
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
-
-    # Get the velocity value in the appropriate direction
-    if orientation == 1
-        v_ll = v1_ll
-        v_rr = v1_rr
-    elseif orientation == 2
-        v_ll = v2_ll
-        v_rr = v2_rr
-    else # orientation == 3
-        v_ll = v3_ll
-        v_rr = v3_rr
-    end
-    # Calculate sound speeds
-    c_ll = sqrt(equations.gamma * p_ll / rho_ll)
-    c_rr = sqrt(equations.gamma * p_rr / rho_rr)
-
-    return max(abs(v_ll), abs(v_rr)) + max(c_ll, c_rr)
-end
-
 @inline function max_abs_speed_naive(u_ll, u_rr, normal_direction::AbstractVector,
                                      equations::CompressibleEulerEnergyEquationsWithGravity3D)
     rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
@@ -555,30 +532,6 @@ end
     c_rr = sqrt(equations.gamma * p_rr / rho_rr)
 
     return max(abs(v_ll), abs(v_rr)) + max(c_ll, c_rr) * norm(normal_direction)
-end
-
-# Less "cautious", i.e., less overestimating `λ_max` compared to `max_abs_speed_naive`
-@inline function max_abs_speed(u_ll, u_rr, orientation::Integer,
-                               equations::CompressibleEulerEnergyEquationsWithGravity3D)
-    rho_ll, v1_ll, v2_ll, v3_ll, p_ll = cons2prim(u_ll, equations)
-    rho_rr, v1_rr, v2_rr, v3_rr, p_rr = cons2prim(u_rr, equations)
-
-    # Get the velocity value in the appropriate direction
-    if orientation == 1
-        v_ll = v1_ll
-        v_rr = v1_rr
-    elseif orientation == 2
-        v_ll = v2_ll
-        v_rr = v2_rr
-    else # orientation == 3
-        v_ll = v3_ll
-        v_rr = v3_rr
-    end
-    # Calculate sound speeds
-    c_ll = sqrt(equations.gamma * p_ll / rho_ll)
-    c_rr = sqrt(equations.gamma * p_rr / rho_rr)
-
-    return max(abs(v_ll) + c_ll, abs(v_rr) + c_rr)
 end
 
 # Less "cautious", i.e., less overestimating `λ_max` compared to `max_abs_speed_naive`

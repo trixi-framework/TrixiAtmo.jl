@@ -418,8 +418,8 @@ end
     g4 = vorticity_3 + gradient * normal_direction_3
 
     zero_ = zero(RealT)
-    flux_left = (f1, f2 + 0.5f0 * g2, f3 + 0.5f0 * g3, f4 + 0.5f0 * g4, f5, zero_)
-    flux_right = (f1, f2 - 0.5f0 * g2, f3 - 0.5f0 * g3, f4 - 0.5f0 * g4, f5, zero_)
+    flux_left = SVector(f1, f2 + 0.5f0 * g2, f3 + 0.5f0 * g3, f4 + 0.5f0 * g4, f5, zero_)
+    flux_right = SVector(f1, f2 - 0.5f0 * g2, f3 - 0.5f0 * g3, f4 - 0.5f0 * g4, f5, zero_)
 
     return flux_left, flux_right
 end

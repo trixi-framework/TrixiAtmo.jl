@@ -44,7 +44,7 @@ boundary_conditions = (; y_neg = boundary_condition_slip_wall,
 coordinates_min = (0.0, 0.0)
 coordinates_max = (300_000.0, 10_000.0)
 cells_per_dimension = (60, 8)
-mesh = P4estMesh(cells_per_dimension, polydeg = polydeg,
+mesh = P4estMesh(cells_per_dimension, polydeg = 1,
                  coordinates_min = coordinates_min, coordinates_max = coordinates_max,
                  periodicity = (true, false))
 source_terms = nothing
