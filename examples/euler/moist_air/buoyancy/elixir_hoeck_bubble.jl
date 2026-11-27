@@ -4,7 +4,7 @@ using TrixiAtmo
 using TrixiAtmo: source_terms_no_phase_change, saturation_residual,
                  saturation_residual_jacobian, NonlinearSolveDG,
                  cons2eq_pot_temp, flux_chandrashekar,
-                 boundary_condition_simple_slip_wall, initial_condition_moist_bubble
+                 initial_condition_moist_bubble
 using NLsolve: nlsolve
 
 equations_moist = CompressibleMoistEulerEquations2D(c_pd = 1004, c_vd = 717, c_pv = 1885,
