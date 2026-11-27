@@ -71,8 +71,9 @@ items tagged `upstream` in its own downstream CI.
   conversions (`cons2prim`, `cons2entropy`, ...). There are
   - equations in Cartesian coordinates, e.g.,
     `CompressibleEulerPotentialTemperatureEquations{1,2,3}D` (with
-    `...WithGravity{1,2,3}D` variants including the geopotential as an
-    auxiliary variable), `CompressibleEulerEnergyEquationsWithGravity{2,3}D`,
+    `...WithGravity{1,2,3}D` variants including the geopotential, as the last
+    state variable in 1D and 2D and as an auxiliary variable of Trixi.jl in 3D),
+    `CompressibleEulerEnergyEquationsWithGravity{2,3}D`,
     `CompressibleMoistEulerEquations2D`, `CompressibleRainyEulerEquations2D`,
     and `ShallowWaterEquations3D` (shallow water equations on the sphere in 3D
     Cartesian coordinates);
@@ -470,9 +471,12 @@ starts the Julia sessions itself.
 - Argument order: the modified argument first (e.g., `du`, or `cache` if only
   the cache is modified), otherwise `mesh, equations, solver, cache`; dispatch
   helpers before the general argument (e.g.,
-  `have_nonconservative_terms(equations), equations`). For covariant equations,
-  `aux_vars` follows the state(s), e.g., `flux(u, aux_vars, orientation, equations)`
-  or `flux_ec(u_ll, u_rr, aux_vars_ll, aux_vars_rr, orientation, equations)`.
+  `have_nonconservative_terms(equations), equations`). Auxiliary variables
+  follow the state(s), e.g., `flux(u, aux_vars, orientation, equations)` or
+  `flux_ec(u_ll, u_rr, aux_vars_ll, aux_vars_rr, orientation, equations)` for
+  covariant equations and
+  `flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)` for the 3D
+  equations with gravity.
 - Name related functions with the general category first, e.g.,
   `flux_central` (not `central_flux`), `source_terms_coriolis`.
 - Use a suffix `_` (`name_`) for local variables that would otherwise shadow
@@ -525,10 +529,16 @@ starts the Julia sessions itself.
   receiving the flux passes its own state first,
   `nonconservative_flux(u_own, u_neighbor, ...)`.
 - Some equations carry auxiliary variables as part of the state vector, e.g.,
-  the geopotential in the `...WithGravity` equations or the bottom topography in
-  `ShallowWaterEquations3D`. Fluxes must leave them unchanged (zero flux), and
-  well-balancedness tests (`elixir_*well_balanced*`) check that steady states
-  are preserved.
+  the geopotential in the `...WithGravity{1,2}D` equations or the bottom
+  topography in `ShallowWaterEquations3D`. Fluxes must leave them unchanged
+  (zero flux), and well-balancedness tests (`elixir_*well_balanced*`) check that
+  steady states are preserved. The `...WithGravity3D` equations instead store
+  the geopotential as an auxiliary variable of Trixi.jl (`Trixi.nauxvariables`),
+  as does `CompressibleEulerMoistPotentialTemperatureEquations3D` together with
+  the upward unit vector, given by the `aux_field` of
+  `SemidiscretizationHyperbolic`; their pointwise
+  functions take it as additional arguments after the states, e.g.,
+  `flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)`.
 - Arrays visible to the time integrator have the suffix `_ode` (`u_ode`,
   `du_ode`); when passed with `semi`, normally wrap them with
   `wrap_array(u_ode, semi)` before internal use. Wrapped arrays have no suffix.

@@ -271,7 +271,8 @@ end
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
                                                                             c_v = 717.0,
                                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION)
-    u = SVector(1.1, -0.5, 2.34, 2.4, 330.0, 1500)
+    u = SVector(1.1, -0.5, 2.34, 2.4, 330.0)
+    aux = SVector(1500.0)
 
     normal_directions = [SVector(1.0, 0.0, 0.0),
         SVector(0.0, 1.0, 0.0),
@@ -280,17 +281,17 @@ end
         SVector(-1.2, 0.3, 1.4)]
 
     for normal_direction in normal_directions
-        @test flux_ec(u, u, normal_direction, equations) ≈
-              flux(u, normal_direction, equations)
+        @test flux_ec(u, u, aux, aux, normal_direction, equations) ≈
+              flux(u, aux, normal_direction, equations)
     end
 
     # check consistency between 1D and 3D EC fluxes
-    u_3d = SVector(u[1], u[2], 0.0, 0.0, u[5], u[6])
+    u_3d = SVector(u[1], u[2], 0.0, 0.0, u[5])
     normal_3d = SVector(normal_1d[1], 0.0, 0.0)
     equations_3d = equations
-    flux_3d = flux_ec(u_3d, u_3d, normal_3d, equations_3d)
+    flux_3d = flux_ec(u_3d, u_3d, aux, aux, normal_3d, equations_3d)
     flux_1d = normal_1d[1] * flux_ec(u_1d, u_1d, 1, equations_1d)
-    @test flux_1d ≈ flux_3d[[1, 2, 5, 6]]
+    @test flux_1d[1:3] ≈ flux_3d[[1, 2, 5]]
 end
 
 @testitem "Unit: Consistency check for FluxTurbo EC flux with Potential Temperature with gravity: CEPTEWG" setup=[Setup] tags=[:unit_fluxes] begin
@@ -301,8 +302,10 @@ end
                                                                             c_v = 717.0,
                                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION)
     volume_flux = (flux_ec, flux_nonconservative_isothermal)
-    u_ll = SVector(1.1, -0.5, 2.34, 2.4, 330.0, 1500.0)
-    u_rr = SVector(0.9, 0.3, -1.2, 1.7, 280.5, 1700.0)
+    u_ll = SVector(1.1, -0.5, 2.34, 2.4, 330.0)
+    u_rr = SVector(0.9, 0.3, -1.2, 1.7, 280.5)
+    aux_ll = SVector(1500.0)
+    aux_rr = SVector(1700.0)
 
     normal_directions = [SVector(1.0, 0.0, 0.0),
         SVector(0.0, 1.0, 0.0),
@@ -311,19 +314,20 @@ end
         SVector(-1.2, 0.3, 1.4)]
 
     @test Trixi.nturbovars(volume_flux, equations) == Val(7)
-    turbo_ll = Trixi.cons2turbo(volume_flux, u_ll..., equations)
-    turbo_rr = Trixi.cons2turbo(volume_flux, u_rr..., equations)
+    turbo_ll = Trixi.cons2turbo(volume_flux, u_ll..., aux_ll..., equations)
+    turbo_rr = Trixi.cons2turbo(volume_flux, u_rr..., aux_rr..., equations)
     @test length(turbo_ll) == 7
     # rho, v1, v2, v3, theta, p, phi
-    @test SVector(turbo_ll[1], turbo_ll[2], turbo_ll[3], turbo_ll[4], turbo_ll[6],
-                  turbo_ll[7]) ≈ cons2prim(u_ll, equations)
+    @test SVector(turbo_ll[1], turbo_ll[2], turbo_ll[3], turbo_ll[4], turbo_ll[6]) ≈
+          cons2prim(u_ll, aux_ll, equations)
     @test turbo_ll[5] ≈ u_ll[5] / u_ll[1]
+    @test turbo_ll[7] == aux_ll[1]
 
     for normal_direction in normal_directions
         flux_left, flux_right = Trixi.flux_turbo(volume_flux, turbo_ll..., turbo_rr...,
                                                  normal_direction..., equations)
-        flux_cons = flux_ec(u_ll, u_rr, normal_direction, equations)
-        flux_noncons = flux_nonconservative_isothermal(u_ll, u_rr,
+        flux_cons = flux_ec(u_ll, u_rr, aux_ll, aux_rr, normal_direction, equations)
+        flux_noncons = flux_nonconservative_isothermal(u_ll, u_rr, aux_ll, aux_rr,
                                                        normal_direction, equations)
         @test SVector(flux_left) ≈ flux_cons + 0.5 * flux_noncons
         @test SVector(flux_right) ≈ flux_cons - 0.5 * flux_noncons
@@ -372,7 +376,8 @@ end
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
                                                                             c_v = 717.0,
                                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION)
-    u = SVector(1.1, -0.5, 2.34, 2.4, 330.0, 1500)
+    u = SVector(1.1, -0.5, 2.34, 2.4, 330.0)
+    aux = SVector(1500.0)
 
     normal_directions = [SVector(1.0, 0.0, 0.0),
         SVector(0.0, 1.0, 0.0),
@@ -381,17 +386,17 @@ end
         SVector(-1.2, 0.3, 1.4)]
 
     for normal_direction in normal_directions
-        @test flux_tec(u, u, normal_direction, equations) ≈
-              flux(u, normal_direction, equations)
+        @test flux_tec(u, u, aux, aux, normal_direction, equations) ≈
+              flux(u, aux, normal_direction, equations)
     end
 
     # check consistency between 1D and 3D EC fluxes
-    u_3d = SVector(u[1], u[2], 0.0, 0.0, u[5], u[6])
+    u_3d = SVector(u[1], u[2], 0.0, 0.0, u[5])
     normal_3d = SVector(normal_1d[1], 0.0, 0.0)
     equations_3d = equations
-    flux_3d = flux_tec(u_3d, u_3d, normal_3d, equations_3d)
+    flux_3d = flux_tec(u_3d, u_3d, aux, aux, normal_3d, equations_3d)
     flux_1d = normal_1d[1] * flux_tec(u_1d, u_1d, 1, equations_1d)
-    @test flux_1d ≈ flux_3d[[1, 2, 5, 6]]
+    @test flux_1d[1:3] ≈ flux_3d[[1, 2, 5]]
 end
 
 @testitem "Unit: Consistency check for ETEC flux with Potential Temperature with gravity: CEPTEWG" setup=[Setup] tags=[:unit_fluxes] begin
@@ -436,7 +441,8 @@ end
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
                                                                             c_v = 717.0,
                                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION)
-    u = SVector(1.1, -0.5, 2.34, 2.4, 330.0, 1500)
+    u = SVector(1.1, -0.5, 2.34, 2.4, 330.0)
+    aux = SVector(1500.0)
 
     normal_directions = [SVector(1.0, 0.0, 0.0),
         SVector(0.0, 1.0, 0.0),
@@ -445,17 +451,17 @@ end
         SVector(-1.2, 0.3, 1.4)]
 
     for normal_direction in normal_directions
-        @test flux_etec(u, u, normal_direction, equations) ≈
-              flux(u, normal_direction, equations)
+        @test flux_etec(u, u, aux, aux, normal_direction, equations) ≈
+              flux(u, aux, normal_direction, equations)
     end
 
     # check consistency between 1D and 3D EC fluxes
-    u_3d = SVector(u[1], u[2], 0.0, 0.0, u[5], u[6])
+    u_3d = SVector(u[1], u[2], 0.0, 0.0, u[5])
     normal_3d = SVector(normal_1d[1], 0.0, 0.0)
     equations_3d = equations
-    flux_3d = flux_etec(u_3d, u_3d, normal_3d, equations_3d)
+    flux_3d = flux_etec(u_3d, u_3d, aux, aux, normal_3d, equations_3d)
     flux_1d = normal_1d[1] * flux_etec(u_1d, u_1d, 1, equations_1d)
-    @test flux_1d ≈ flux_3d[[1, 2, 5, 6]]
+    @test flux_1d[1:3] ≈ flux_3d[[1, 2, 5]]
 end
 
 @testitem "Unit: Consistency check for LMARS flux with Potential Temperature with gravity: CEPTEWG" setup=[Setup] tags=[:unit_fluxes] begin
@@ -494,7 +500,8 @@ end
     equations = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
                                                                             c_v = 717.0,
                                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION)
-    u = SVector(1.1, -0.5, 2.34, 2.4, 330.0, 1700)
+    u = SVector(1.1, -0.5, 2.34, 2.4, 330.0)
+    aux = SVector(1700.0)
 
     normal_directions = [SVector(1.0, 0.0, 0.0),
         SVector(0.0, 1.0, 0.0),
@@ -503,17 +510,17 @@ end
         SVector(-1.2, 0.3, 1.4)]
 
     for normal_direction in normal_directions
-        @test flux_lmars(u, u, normal_direction, equations) ≈
-              flux(u, normal_direction, equations)
+        @test flux_lmars(u, u, aux, aux, normal_direction, equations) ≈
+              flux(u, aux, normal_direction, equations)
     end
 
     # check consistency between 1D and 3D EC fluxes
-    u_3d = SVector(u[1], u[2], 0.0, 0.0, u[5], u[6])
+    u_3d = SVector(u[1], u[2], 0.0, 0.0, u[5])
     normal_3d = SVector(normal_1d[1], 0.0, 0.0)
     equations_3d = equations
-    flux_3d = flux_lmars(u_3d, u_3d, normal_3d, equations_3d)
+    flux_3d = flux_lmars(u_3d, u_3d, aux, aux, normal_3d, equations_3d)
     flux_1d = normal_1d[1] * flux_lmars(u_1d, u_1d, 1, equations_1d)
-    @test flux_1d ≈ flux_3d[[1, 2, 5, 6]]
+    @test flux_1d[1:3] ≈ flux_3d[[1, 2, 5]]
 end
 
 @testitem "Unit: Consistency check for ES LMARS flux with Potential Temperature with gravity: CEPTEWG" setup=[Setup] tags=[:unit_fluxes] begin
@@ -545,8 +552,10 @@ end
     equations_3d = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
                                                                                c_v = 717.0,
                                                                                gravity = EARTH_GRAVITATIONAL_ACCELERATION)
-    u_3d = SVector(1.1, -0.5, 2.34, 2.4, 330.0, 1700)
-    u_rr_3d = SVector(0.9, 0.3, -1.2, 1.7, 280.5, 1500)
+    u_3d = SVector(1.1, -0.5, 2.34, 2.4, 330.0)
+    u_rr_3d = SVector(0.9, 0.3, -1.2, 1.7, 280.5)
+    aux_3d = SVector(1700.0)
+    aux_rr_3d = SVector(1500.0)
 
     normal_directions_3d = [SVector(1.0, 0.0, 0.0),
         SVector(0.0, 1.0, 0.0),
@@ -556,24 +565,31 @@ end
 
     for normal_direction in normal_directions_3d
         for i in 1:2
-            @test flux_lmars_es(u_3d, u_3d, normal_direction, equations_3d)[i] ≈
-                  flux(u_3d, normal_direction, equations_3d)
+            @test flux_lmars_es(u_3d, u_3d, aux_3d, aux_3d, normal_direction,
+                                equations_3d)[i] ≈
+                  flux(u_3d, aux_3d, normal_direction, equations_3d)
         end
-        flux_left, flux_right = flux_lmars_es(u_3d, u_rr_3d, normal_direction, equations_3d)
+        flux_left, flux_right = flux_lmars_es(u_3d, u_rr_3d, aux_3d, aux_rr_3d,
+                                              normal_direction, equations_3d)
         @test flux_left == flux_right
-        @test flux_lmars_es(u_3d, u_rr_3d, 2.5 * normal_direction, equations_3d)[1] ≈
-              2.5 * flux_left
+        @test flux_lmars_es(u_3d, u_rr_3d, aux_3d, aux_rr_3d, 2.5 * normal_direction,
+                            equations_3d)[1] ≈ 2.5 * flux_left
     end
 
     # Check consistency between the 2D and 3D fluxes for different left and right states
-    u_3d = SVector(u[1], u[2], u[3], 0.0, u[4], u[5])
-    u_rr_3d = SVector(u_rr[1], u_rr[2], u_rr[3], 0.0, u_rr[4], u_rr[5])
+    u_3d = SVector(u[1], u[2], u[3], 0.0, u[4])
+    u_rr_3d = SVector(u_rr[1], u_rr[2], u_rr[3], 0.0, u_rr[4])
+    aux_3d = SVector(u[5])
+    aux_rr_3d = SVector(u_rr[5])
     for normal_direction in normal_directions
         normal_3d = SVector(normal_direction[1], normal_direction[2], 0.0)
         flux_2d = flux_lmars_es(u, u_rr, normal_direction, equations)
-        flux_3d = flux_lmars_es(u_3d, u_rr_3d, normal_3d, equations_3d)
+        flux_3d = flux_lmars_es(u_3d, u_rr_3d, aux_3d, aux_rr_3d, normal_3d,
+                                equations_3d)
         for i in 1:2
-            @test flux_2d[i] ≈ flux_3d[i][[1, 2, 3, 5, 6]]
+            @test flux_2d[i][1:4] ≈ flux_3d[i][[1, 2, 3, 5]]
+            # The 2D equations carry the geopotential in the state, with zero flux
+            @test iszero(flux_2d[i][5])
         end
     end
 end
@@ -582,8 +598,10 @@ end
     # Set up equations and dummy conservative variables states with the same temperature
     equations = CompressibleEulerEnergyEquationsWithGravity3D(c_p = 1004.0, c_v = 717.0,
                                                               gravity = EARTH_GRAVITATIONAL_ACCELERATION)
-    u_ll = prim2cons(SVector(1.1, 2.0, -1.5, 0.5, 9.0e4, 1700.0), equations)
-    u_rr = prim2cons(SVector(0.9, -1.0, 3.0, 1.2, 0.9 / 1.1 * 9.0e4, 2900.0), equations)
+    aux_ll = SVector(1700.0)
+    aux_rr = SVector(2900.0)
+    u_ll = prim2cons(SVector(1.1, 2.0, -1.5, 0.5, 9.0e4), aux_ll, equations)
+    u_rr = prim2cons(SVector(0.9, -1.0, 3.0, 1.2, 0.9 / 1.1 * 9.0e4), aux_rr, equations)
 
     normal_directions = [SVector(1.0, 0.0, 0.0),
         SVector(0.0, 1.0, 0.0),
@@ -593,9 +611,10 @@ end
 
     # Both gravity terms coincide for an isothermal state
     for normal_direction in normal_directions
-        @test flux_nonconservative_waruszewski_etal(u_ll, u_rr, normal_direction,
-                                                    equations) ≈
-              flux_nonconservative_isothermal(u_ll, u_rr, normal_direction, equations)
+        @test flux_nonconservative_waruszewski_etal(u_ll, u_rr, aux_ll, aux_rr,
+                                                    normal_direction, equations) ≈
+              flux_nonconservative_isothermal(u_ll, u_rr, aux_ll, aux_rr,
+                                              normal_direction, equations)
     end
 
     # Check consistency between the 2D and 3D gravity terms
@@ -603,16 +622,17 @@ end
                                                                  gravity = EARTH_GRAVITATIONAL_ACCELERATION)
     u_ll_2d = prim2cons(SVector(1.1, 2.0, -1.5, 9.0e4, 1700.0), equations_2d)
     u_rr_2d = prim2cons(SVector(0.9, -1.0, 3.0, 7.5e4, 2900.0), equations_2d)
-    u_ll_3d = prim2cons(SVector(1.1, 2.0, -1.5, 0.0, 9.0e4, 1700.0), equations)
-    u_rr_3d = prim2cons(SVector(0.9, -1.0, 3.0, 0.0, 7.5e4, 2900.0), equations)
+    u_ll_3d = prim2cons(SVector(1.1, 2.0, -1.5, 0.0, 9.0e4), aux_ll, equations)
+    u_rr_3d = prim2cons(SVector(0.9, -1.0, 3.0, 0.0, 7.5e4), aux_rr, equations)
     for normal_direction in (SVector(1.0, 0.0), SVector(0.0, 1.0), SVector(0.5, -0.5),
                              SVector(-1.2, 0.3))
         normal_direction_3d = SVector(normal_direction[1], normal_direction[2], 0.0)
         for flux_gravity in (flux_nonconservative_waruszewski_etal,
                              flux_nonconservative_isothermal)
-            @test flux_gravity(u_ll_2d, u_rr_2d, normal_direction, equations_2d) ≈
-                  flux_gravity(u_ll_3d, u_rr_3d, normal_direction_3d,
-                               equations)[[1, 2, 3, 5, 6]]
+            @test flux_gravity(u_ll_2d, u_rr_2d, normal_direction, equations_2d)[1:4] ≈
+                  flux_gravity(u_ll_3d, u_rr_3d, aux_ll, aux_rr, normal_direction_3d,
+                               equations)[[1, 2, 3, 5]]
+            @test iszero(flux_gravity(u_ll_2d, u_rr_2d, normal_direction, equations_2d)[5])
         end
     end
 end
@@ -755,8 +775,10 @@ end
     equations = CompressibleEulerVectorInvariantEquationsWithGravity3D(c_p = 1004.0,
                                                                        c_v = 717.0,
                                                                        gravity = EARTH_GRAVITATIONAL_ACCELERATION)
-    u_ll = SVector(1.1, -0.5, 2.34, 2.4, 330.0, 1500.0)
-    u_rr = SVector(0.9, 0.3, -1.2, 1.7, 280.5, 1700.0)
+    u_ll = SVector(1.1, -0.5, 2.34, 2.4, 330.0)
+    u_rr = SVector(0.9, 0.3, -1.2, 1.7, 280.5)
+    aux_ll = SVector(1500.0)
+    aux_rr = SVector(1700.0)
 
     normal_directions = [SVector(1.0, 0.0, 0.0),
         SVector(0.0, 1.0, 0.0),
@@ -773,21 +795,23 @@ end
         flux_physical = SVector(rho * v_normal, kinetic_energy * normal_direction[1],
                                 kinetic_energy * normal_direction[2],
                                 kinetic_energy * normal_direction[3],
-                                rho_theta * v_normal, 0.0)
+                                rho_theta * v_normal)
         for i in 1:2
-            @test flux_etec(u_ll, u_ll, normal_direction, equations)[i] ≈ flux_physical
+            @test flux_etec(u_ll, u_ll, aux_ll, aux_ll, normal_direction, equations)[i] ≈
+                  flux_physical
         end
 
         # The nonconservative contribution is antisymmetric
-        flux_left, flux_right = flux_etec(u_ll, u_rr, normal_direction, equations)
-        flux_left_swapped, flux_right_swapped = flux_etec(u_rr, u_ll, normal_direction,
-                                                          equations)
+        flux_left, flux_right = flux_etec(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
+                                          equations)
+        flux_left_swapped, flux_right_swapped = flux_etec(u_rr, u_ll, aux_rr, aux_ll,
+                                                          normal_direction, equations)
         @test flux_left ≈ flux_right_swapped
         @test flux_right ≈ flux_left_swapped
 
         # The `FluxTurbo` specialization returns the same contributions
-        turbo_ll = Trixi.cons2turbo(flux_etec, u_ll..., equations)
-        turbo_rr = Trixi.cons2turbo(flux_etec, u_rr..., equations)
+        turbo_ll = Trixi.cons2turbo(flux_etec, u_ll..., aux_ll..., equations)
+        turbo_rr = Trixi.cons2turbo(flux_etec, u_rr..., aux_rr..., equations)
         flux_left_turbo, flux_right_turbo = Trixi.flux_turbo(flux_etec, turbo_ll...,
                                                              turbo_rr...,
                                                              normal_direction...,
@@ -800,10 +824,11 @@ end
     # The entropy variables are the derivatives of the entropy
     epsilon = 1.0e-6
     for v in (1, 5)
-        e_v = SVector(ntuple(i -> i == v ? epsilon : 0.0, 6))
-        @test isapprox(cons2entropy(u_ll, equations)[v],
-                       (entropy(u_ll + e_v, equations) -
-                        entropy(u_ll - e_v, equations)) / (2 * epsilon); rtol = 1.0e-6)
+        e_v = SVector(ntuple(i -> i == v ? epsilon : 0.0, 5))
+        @test isapprox(cons2entropy(u_ll, aux_ll, equations)[v],
+                       (entropy(u_ll + e_v, aux_ll, equations) -
+                        entropy(u_ll - e_v, aux_ll, equations)) / (2 * epsilon);
+                       rtol = 1.0e-6)
     end
 end
 
@@ -811,8 +836,10 @@ end
     equations = CompressibleEulerVectorInvariantEquationsWithGravity3D(c_p = 1004.0,
                                                                        c_v = 717.0,
                                                                        gravity = EARTH_GRAVITATIONAL_ACCELERATION)
-    u_ll = SVector(1.1, -0.5, 2.34, 2.4, 330.0, 1500.0)
-    u_rr = SVector(0.9, 0.3, -1.2, 1.7, 280.5, 1500.0)
+    u_ll = SVector(1.1, -0.5, 2.34, 2.4, 330.0)
+    u_rr = SVector(0.9, 0.3, -1.2, 1.7, 280.5)
+    aux_ll = SVector(1500.0)
+    aux_rr = SVector(1500.0)
 
     normal_directions = [SVector(1.0, 0.0, 0.0),
         SVector(0.0, 1.0, 0.0),
@@ -829,16 +856,37 @@ end
         flux_physical = SVector(rho * v_normal, kinetic_energy * normal_direction[1],
                                 kinetic_energy * normal_direction[2],
                                 kinetic_energy * normal_direction[3],
-                                rho_theta * v_normal, 0.0)
+                                rho_theta * v_normal)
         for i in 1:2
-            @test flux_lmars_es(u_ll, u_ll, normal_direction, equations)[i] ≈ flux_physical
+            @test flux_lmars_es(u_ll, u_ll, aux_ll, aux_ll, normal_direction,
+                                equations)[i] ≈ flux_physical
         end
 
         # The flux is homogeneous of degree one in the normal direction
         for i in 1:2
-            @test flux_lmars_es(u_ll, u_rr, 2.5 * normal_direction, equations)[i] ≈
-                  2.5 * flux_lmars_es(u_ll, u_rr, normal_direction, equations)[i]
+            @test flux_lmars_es(u_ll, u_rr, aux_ll, aux_rr, 2.5 * normal_direction,
+                                equations)[i] ≈
+                  2.5 * flux_lmars_es(u_ll, u_rr, aux_ll, aux_rr, normal_direction,
+                                equations)[i]
         end
+    end
+end
+
+@testitem "Unit: Conversions with auxiliary variables for 3D equations with gravity" setup=[Setup] tags=[:unit_fluxes] begin
+    # `prim2cons` is the inverse of `cons2prim`
+    prim = SVector(1.1, 2.0, -1.5, 0.5, 9.0e4)
+    aux = SVector(1700.0)
+    for equations in (CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
+                                                                                  c_v = 717.0,
+                                                                                  gravity = EARTH_GRAVITATIONAL_ACCELERATION),
+                      CompressibleEulerEnergyEquationsWithGravity3D(c_p = 1004.0,
+                                                                    c_v = 717.0,
+                                                                    gravity = EARTH_GRAVITATIONAL_ACCELERATION),
+                      CompressibleEulerVectorInvariantEquationsWithGravity3D(c_p = 1004.0,
+                                                                             c_v = 717.0,
+                                                                             gravity = EARTH_GRAVITATIONAL_ACCELERATION))
+        u = prim2cons(prim, aux, equations)
+        @test cons2prim(u, aux, equations) ≈ prim
     end
 end
 
@@ -921,23 +969,24 @@ end
     end
 
     # Without water, the physical and the volume flux are the ones of the dry equations,
-    # which carry the geopotential in the state. The surface flux is not compared since
+    # whose auxiliary variable is the geopotential. The surface flux is not compared since
     # `flux_lmars_combined` of the dry equations uses a constant speed of sound.
     equations_dry = CompressibleEulerPotentialTemperatureEquationsWithGravity3D(c_p = 1004.0,
                                                                                 c_v = 717.0,
                                                                                 gravity = EARTH_GRAVITATIONAL_ACCELERATION)
     dry(u) = SVector(u[1], u[2], u[3], u[4], u[5], 0.0, 0.0, 0.0)
-    dry_with_geopotential(u, aux) = SVector(u[1], u[2], u[3], u[4], u[5], aux[1])
-    u_ll_dry = dry_with_geopotential(u_ll, aux_ll)
-    u_rr_dry = dry_with_geopotential(u_rr, aux_rr)
+    u_ll_dry = SVector(u_ll[1], u_ll[2], u_ll[3], u_ll[4], u_ll[5])
+    u_rr_dry = SVector(u_rr[1], u_rr[2], u_rr[3], u_rr[4], u_rr[5])
+    aux_ll_dry = SVector(aux_ll[1])
+    aux_rr_dry = SVector(aux_rr[1])
     for normal_direction in normal_directions
         @test flux(dry(u_ll), aux_ll, normal_direction, equations)[1:5] ≈
-              flux(u_ll_dry, normal_direction, equations_dry)[1:5]
+              flux(u_ll_dry, aux_ll_dry, normal_direction, equations_dry)
         for i in 1:2
             @test flux_kennedy_gruber_souza_etal(dry(u_ll), dry(u_rr), aux_ll, aux_rr,
                                                  normal_direction, equations)[i][1:5] ≈
-                  flux_kennedy_gruber_souza_etal(u_ll_dry, u_rr_dry, normal_direction,
-                                                 equations_dry)[i][1:5]
+                  flux_kennedy_gruber_souza_etal(u_ll_dry, u_rr_dry, aux_ll_dry, aux_rr_dry,
+                                                 normal_direction, equations_dry)[i]
         end
     end
 
@@ -946,7 +995,8 @@ end
     # velocity through a face whose normal is vertical
     v_ll = SVector(u_ll[2], u_ll[3], u_ll[4]) / u_ll[1]
     rain = u_ll[8] *
-           TrixiAtmo.terminal_velocity_rain(TrixiAtmo.density_dry(u_ll, equations), u_ll[8],
+           TrixiAtmo.terminal_velocity_rain(TrixiAtmo.density_dry(u_ll, aux_ll, equations),
+                                            u_ll[8],
                                             equations.microphysics)
     vertical = SVector(aux_ll[2], aux_ll[3], aux_ll[4])
     horizontal = SVector(x_ll[2], -x_ll[1], 0.0) / 1.0e5
@@ -987,7 +1037,7 @@ end
         u = SVector(rho_d * (1 + q_v + q_c + q_r), 1.0, -2.0, 0.5,
                     rho_d * T / exner * (1 + R_v / R * q_v),
                     rho_d * q_v, rho_d * q_c, rho_d * q_r)
-        @test pressure(u, equations) ≈ p
+        @test pressure(u, aux, equations) ≈ p
         du = source_terms_microphysics(u, aux, nothing, 0.0, equations)
 
         # The microphysics only moves water between the species and does not change the
