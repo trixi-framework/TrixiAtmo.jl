@@ -144,8 +144,7 @@ end
 # As usual, the external state mirrors the normal velocity, such that there is no flux of
 # mass through the boundary. In addition, the precipitation leaves the domain through the
 # lower boundary with the sedimentation flux of the inner state, while no precipitation
-# falls into the domain through the upper boundary. There are no separate auxiliary
-# variables outside of the domain, so the inner ones are used on both sides.
+# falls into the domain through the upper boundary.
 @inline function boundary_condition_slip_wall(u_inner, aux_inner,
                                               normal_direction::AbstractVector,
                                               x, t,
