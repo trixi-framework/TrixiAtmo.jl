@@ -145,6 +145,9 @@ export AtmosphereLayers, AtmosphereLayersRainyBubble
 
 export P4estMeshCubedSphereTopography, GalChen, Sleve
 
+export ndynamicvariables, nmoisturevariables, nturbulencevariables,
+       eachdynamicvariable, eachmoisturevariable, eachturbulencevariable
+
 export examples_dir
 
 end # module TrixiAtmo

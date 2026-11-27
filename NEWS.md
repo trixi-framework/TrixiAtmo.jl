@@ -8,6 +8,11 @@ for human readability.
 ## Changes in the v0.2 lifecycle
 
 #### Added
+- The variables of the equations are grouped as dynamic variables, moisture variables, and
+  turbulence variables, whose numbers are given by `ndynamicvariables`,
+  `nmoisturevariables`, and `nturbulencevariables` and whose indices by
+  `eachdynamicvariable`, `eachmoisturevariable`, and `eachturbulencevariable`, similar to
+  `nvariables` and `eachvariable` of Trixi.jl.
 
 #### Changed
 
