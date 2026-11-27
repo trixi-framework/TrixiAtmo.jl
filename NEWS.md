@@ -30,6 +30,11 @@ for human readability.
 ## Changes in the v0.1 lifecycle
 
 #### Added
+- The new type `PlotDataShell` holds the variables on a horizontal layer of a
+  simulation on a spherical shell, triangulated in a map projection, currently the
+  longitude-latitude projection `LonLat`. With Makie.jl loaded, `Makie.contourf` and
+  `Makie.contourf!` create filled contour plots of its variables, e.g., of the surface
+  pressure of the baroclinic instability ([#266]).
 - The `CompressibleEulerMoistPotentialTemperatureEquations3D` are the compressible Euler
   equations with gravity with the virtual potential temperature as prognostic variable and
   the moisture variables of a microphysics scheme, whose right-hand sides are given by

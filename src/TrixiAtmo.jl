@@ -59,6 +59,9 @@ using Trixi: wrap_array, get_node_coords, get_contravariant_vector
 # DGMulti Solvers
 using StartUpDG: MeshData, RefElemData
 
+# Visualization
+using RecipesBase: RecipesBase
+
 include("auxiliary/auxiliary.jl")
 include("equations/equations.jl")
 include("meshes/meshes.jl")
@@ -67,6 +70,7 @@ include("solvers/solvers.jl")
 include("callbacks_step/callbacks_step.jl")
 include("callbacks_stage/callbacks_stage.jl")
 include("time_integration/time_integration.jl")
+include("visualization/visualization.jl")
 
 export CompressibleMoistEulerEquations2D,
        CompressibleRainyEulerEquations2D,
@@ -147,5 +151,7 @@ export AtmosphereLayers, AtmosphereLayersRainyBubble
 export P4estMeshCubedSphereTopography, GalChen, Sleve
 
 export examples_dir
+
+export PlotDataShell, LonLat
 
 end # module TrixiAtmo
