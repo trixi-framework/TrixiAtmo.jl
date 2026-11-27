@@ -2,50 +2,6 @@
     EXAMPLES_DIR = joinpath(examples_dir(), "euler", "dry_air", "tests")
 end
 
-@testitem "Euler potential temperature 1D: elixir_potential_temperature_ec" setup=[
-    Setup,
-    EulerPotentialTemperature1D
-] tags=[:euler_potential_temperature_1d] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_potential_temperature_ec.jl"),
-                        l2=[1.5370166271447887, 1.5370166326302963, 8.204456414321612e-7],
-                        linf=[2.2832636713770533, 2.2832429092995072, 4.835357438226495e-6],
-                        tspan=(0.0, 0.4), atol=1.2e-4)
-    # Ensure that we do not have excessive memory allocations
-    # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
-end
-
-@testitem "Euler potential temperature 1D: elixir_potential_temperature_tec" setup=[
-    Setup,
-    EulerPotentialTemperature1D
-] tags=[:euler_potential_temperature_1d] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_potential_temperature_ec.jl"),
-                        l2=[1.537016627436546, 1.537016627247785, 1.9668131414528186e-7],
-                        linf=[2.283288573878569, 2.283292545888576, 1.1052571658176635e-6],
-                        tspan=(0.0, 0.4), surface_flux=flux_tec, volume_flux=flux_tec,
-                        atol=2e-5)
-    # Ensure that we do not have excessive memory allocations
-    # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
-end
-
-@testitem "Euler potential temperature 1D: elixir_potential_temperature_etec" setup=[
-    Setup,
-    EulerPotentialTemperature1D
-] tags=[:euler_potential_temperature_1d] begin
-    @test_trixi_include(joinpath(EXAMPLES_DIR,
-                                 "elixir_potential_temperature_ec.jl"),
-                        l2=[1.5370166265639917, 1.5370166276315467, 4.6312969205197763e-7],
-                        linf=[2.2832797537013914, 2.283274979103027, 2.547940256003578e-6],
-                        tspan=(0.0, 0.4), surface_flux=flux_etec, volume_flux=flux_etec,
-                        atol=2e-5)
-    # Ensure that we do not have excessive memory allocations
-    # (e.g., from type instabilities)
-    @test_allocations(TrixiAtmo.Trixi.rhs_hyperbolic!, semi, sol, 100)
-end
-
 @testitem "Euler potential temperature 1D: elixir_potential_temperature_well_balanced_1d" setup=[
     Setup,
     EulerPotentialTemperature1D

@@ -40,6 +40,13 @@ for human readability.
   enters the error estimate of the time integrator ([#267]).
 
 #### Removed
+- The `CompressibleEulerPotentialTemperatureEquations1D`, the
+  `CompressibleEulerPotentialTemperatureEquations2D`, and the
+  `CompressibleEulerPotentialTemperatureEquations3D` without gravity have been removed.
+  Use the `CompressibleEulerPotentialTemperatureEquationsWithGravity1D`, the
+  `CompressibleEulerPotentialTemperatureEquationsWithGravity2D`, and the
+  `CompressibleEulerPotentialTemperatureEquationsWithGravity3D` instead, which include
+  gravity as a nonconservative term ([#255]).
 - TrixiAtmo.jl now consistently uses `P4estMesh` for the Cartesian equations in 2D and 3D.
   Thus, the methods based on `orientation` (for `TreeMesh` and `StructuredMesh`) of
   `max_abs_speed_naive`, `max_abs_speed`, `flux_ec_rain`, `boundary_condition_slip_wall`,
