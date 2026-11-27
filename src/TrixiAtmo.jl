@@ -132,7 +132,7 @@ export initial_condition_adiabatic, initial_condition_gravity_waves,
 
 export aux_field_gravity_earth
 
-export aux_field_geopotential
+export aux_field_gravity
 
 export boundary_condition_horizontal_slip_wall
 

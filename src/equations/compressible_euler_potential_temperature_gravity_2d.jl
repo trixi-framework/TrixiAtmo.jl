@@ -49,7 +49,7 @@ varnames(::typeof(cons2prim),
                                                                   "v2",
                                                                   "p1")
 
-# The geopotential is the only auxiliary variable, see `aux_field_geopotential`
+# The geopotential is the only auxiliary variable, see `aux_field_gravity`
 @inline Trixi.nauxvariables(::CompressibleEulerPotentialTemperatureEquationsWithGravity2D) = 1
 
 Trixi.auxvarnames(::CompressibleEulerPotentialTemperatureEquationsWithGravity2D) = ("phi",)
