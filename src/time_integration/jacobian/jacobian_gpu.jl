@@ -16,7 +16,9 @@
 # Copy data between Trixi.jl's layout `[v, i, j, k, element]` and the layout of the columns
 # `[column, v, node, layer]`, with the variables `1 => rho`, `2 => rho_w` (vertical
 # momentum), and `3 => rho_theta`, via `cons2hevi` and `hevi2cons` of the equations (see
-# `jacobian_3d_gpu.jl`). The kernels launch one thread per node `(i, j, k, element)`.
+# `jacobian_3d_gpu.jl`), where the right-hand side and the solution are transformed at the
+# state `u_jacobian` from which the Jacobian is assembled. The kernels launch one thread per
+# node `(i, j, k, element)`.
 
 # Check whether the arrays in `jacobian` have the axes we assume they must have in the copy
 # kernels between Trixi.jl's layout and the columns.
@@ -73,9 +75,11 @@ end
 # `n`, to the columns
 function b2columns!(backend::Backend, u_vertical, b, jacobian, semi)
     mesh, equations, solver, cache = Trixi.mesh_equations_solver_cache(semi)
+    u_jacobian = wrap_array(jacobian.u_jacobian, semi)
     # Explicit bounds check, which allows us to assume inbounds access in the kernel
     @boundscheck begin
         Trixi.check_axes(b, mesh, equations, solver, cache)
+        Trixi.check_axes(u_jacobian, mesh, equations, solver, cache)
         check_axes_element_layout(jacobian, solver, cache)
         Trixi.check_axes(u_vertical, axes(jacobian.u_vertical))
     end
@@ -83,13 +87,15 @@ function b2columns!(backend::Backend, u_vertical, b, jacobian, semi)
     vertical_index_of_element) = jacobian
     nnodes_ = nnodes(jacobian)
     kernel! = b2columns_KAkernel!(backend)
-    kernel!(u_vertical, b, vertical_direction_and_norm, horizontal_index_of_element,
-            vertical_index_of_element, nnodes_, equations, solver;
+    kernel!(u_vertical, b, u_jacobian, vertical_direction_and_norm,
+            horizontal_index_of_element, vertical_index_of_element, nnodes_, equations,
+            solver;
             ndrange = Base.tail(size(b)))
     return nothing
 end
 
 @kernel inbounds=true function b2columns_KAkernel!(u_vertical, @Const(b),
+                                                   @Const(u_jacobian),
                                                    @Const(vertical_direction_and_norm),
                                                    @Const(horizontal_index_of_element),
                                                    @Const(vertical_index_of_element),
@@ -102,8 +108,10 @@ end
                                                 i, j, k, element)
     norm_Ja3 = get_vertical_norm(vertical_direction_and_norm, i, j, k, element)
     b_node = get_node_vars(b, equations, solver, i, j, k, element)
+    u_node = get_node_vars(u_jacobian, equations, solver, i, j, k, element)
     set_column_node_vars!(u_vertical,
-                          norm_Ja3 * cons2hevi(b_node, vertical_direction, equations),
+                          norm_Ja3 *
+                          cons2hevi_b(b_node, u_node, vertical_direction, equations),
                           column, k, layer)
 end
 
@@ -112,9 +120,11 @@ end
 function columns2solution!(backend::Backend, b, u_vertical, jacobian, semi,
                            gamma_dt)
     mesh, equations, solver, cache = Trixi.mesh_equations_solver_cache(semi)
+    u_jacobian = wrap_array(jacobian.u_jacobian, semi)
     # Explicit bounds check, which allows us to assume inbounds access in the kernel
     @boundscheck begin
         Trixi.check_axes(b, mesh, equations, solver, cache)
+        Trixi.check_axes(u_jacobian, mesh, equations, solver, cache)
         check_axes_element_layout(jacobian, solver, cache)
         Trixi.check_axes(u_vertical, axes(jacobian.u_vertical))
     end
@@ -122,14 +132,16 @@ function columns2solution!(backend::Backend, b, u_vertical, jacobian, semi,
     vertical_index_of_element) = jacobian
     nnodes_ = nnodes(jacobian)
     kernel! = columns2solution_KAkernel!(backend)
-    kernel!(b, u_vertical, vertical_direction_and_norm, horizontal_index_of_element,
-            vertical_index_of_element, nnodes_, gamma_dt, equations, solver;
+    kernel!(b, u_vertical, u_jacobian, vertical_direction_and_norm,
+            horizontal_index_of_element, vertical_index_of_element, nnodes_, gamma_dt,
+            equations, solver;
             ndrange = Base.tail(size(b)))
     return nothing
 end
 
 @kernel inbounds=true function columns2solution_KAkernel!(b,
                                                           @Const(u_vertical),
+                                                          @Const(u_jacobian),
                                                           @Const(vertical_direction_and_norm),
                                                           @Const(horizontal_index_of_element),
                                                           @Const(vertical_index_of_element),
@@ -144,8 +156,9 @@ end
     inv_norm_Ja3 = inv(get_vertical_norm(vertical_direction_and_norm, i, j, k, element))
     x_vertical = inv_norm_Ja3 * get_column_node_vars(u_vertical, column, k, layer)
     b_node = get_node_vars(b, equations, solver, i, j, k, element)
+    u_node = get_node_vars(u_jacobian, equations, solver, i, j, k, element)
     set_node_vars!(b,
-                   hevi2cons(x_vertical, b_node, vertical_direction, gamma_dt,
+                   hevi2cons(x_vertical, b_node, u_node, vertical_direction, gamma_dt,
                              equations),
                    equations, solver, i, j, k, element)
 end

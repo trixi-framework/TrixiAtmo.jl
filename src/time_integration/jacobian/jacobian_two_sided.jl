@@ -21,7 +21,10 @@
     JacobianVerticalTwoSided(; c = 340)
 
 Approximate Jacobian of the vertical dynamics (vertically propagating acoustic waves and
-gravity) of the [`CompressibleEulerPotentialTemperatureEquations3D`](@ref) on a
+gravity) of the [`CompressibleEulerPotentialTemperatureEquations3D`](@ref), the
+[`CompressibleEulerMoistPotentialTemperatureEquations3D`](@ref), the
+[`CompressibleEulerEnergyEquations3D`](@ref), and the
+[`CompressibleEulerVectorInvariantEquations3D`](@ref) on a
 [`P4estMeshCubedSphereTopography`](@ref), used as linear operator of linearly implicit time
 integration methods, i.e., Rosenbrock-W methods such as [`SSPRW32`](@ref) and linear IMEX
 methods such as [`ARS343`](@ref), for horizontally explicit, vertically implicit (HEVI)
@@ -48,6 +51,15 @@ the equations in the radial direction, projected onto the vertical direction, al
 geopotential of the semidiscretization yields a gravitational acceleration that varies with
 the height (e.g., `phi = g a (norm(x) - a) / norm(x)` with the radius `a` of the Earth in
 [`aux_field_gravity_earth`](@ref)).
+
+The Jacobian is the one of the potential temperature formulation, with the unknowns of the
+columns described below. For the other equations, it is transformed with the linearization
+of the change of variables between their variables and these unknowns at the state from
+which it is assembled, which is exact at the continuous level since all formulations
+describe the same flow. For the [`CompressibleEulerMoistPotentialTemperatureEquations3D`](@ref),
+the unknowns are the total density, the vertical momentum, and the virtual potential
+temperature density `rho_theta_v`, on which the pressure depends as on `rho_theta` for dry
+air, and the moisture variables are treated explicitly, i.e., with `J = 0`.
 
 ### Permutation
 The unknowns of a column are the density `rho`, the vertical momentum `rho_w`, i.e., the
@@ -201,7 +213,8 @@ struct JacobianVerticalTwoSidedCache{NLAYERS, NNODES, RealT <: Real, BackendType
                                      ArrayRealT4 <: DenseArray{RealT, 4},
                                      ArrayRealT5 <: DenseArray{RealT, 5},
                                      VectorInt <: DenseVector{Int},
-                                     DerivativeMatrix <: AbstractMatrix{RealT}}
+                                     DerivativeMatrix <: AbstractMatrix{RealT},
+                                     VectorRealT <: DenseVector{RealT}}
     ncolumns::Int
     speed_of_sound::RealT
     # Inverse quadrature weight `1 / w_1 = 1 / w_M` of the edge nodes; the weights of the
@@ -234,6 +247,11 @@ struct JacobianVerticalTwoSidedCache{NLAYERS, NNODES, RealT <: Real, BackendType
     # system, `[column, row]`
     schur_band::ArrayRealT3
     schur_rhs::MatrixRealT
+    # State from which the Jacobian is assembled, laid out as the state of the ODE
+    # problem, at which the right-hand side and the solution of the linear system are
+    # transformed to and from the unknowns of the columns (see `cons2hevi_b` and
+    # `hevi2cons`)
+    u_jacobian::VectorRealT
 end
 
 # Number of layers of elements of a column and number of nodes per coordinate direction of
@@ -272,9 +290,12 @@ end
 
 function create_cache_jacobian(jacobian::JacobianVerticalTwoSided, semi, u_ode)
     (; mesh, equations, solver, cache) = semi
-    if !(equations isa CompressibleEulerPotentialTemperatureEquations3D)
+    if !(equations isa EquationsJacobianVertical)
         throw(ArgumentError("`JacobianVerticalTwoSided` requires the " *
-                            "`CompressibleEulerPotentialTemperatureEquations3D`"))
+                            "`CompressibleEulerPotentialTemperatureEquations3D`, the " *
+                            "`CompressibleEulerMoistPotentialTemperatureEquations3D`, " *
+                            "the `CompressibleEulerEnergyEquations3D`, or the " *
+                            "`CompressibleEulerVectorInvariantEquations3D`"))
     end
     nlayers_ = nlayers(mesh)
     nnodes_ = nnodes(solver)
@@ -316,27 +337,30 @@ function create_cache_jacobian(jacobian::JacobianVerticalTwoSided, semi, u_ode)
                                              nlayers_)
     schur_band = KernelAbstractions.zeros(backend, RealT, ncolumns, 7, 4 * nlayers_)
     schur_rhs = KernelAbstractions.zeros(backend, RealT, ncolumns, 4 * nlayers_)
+    u_jacobian = similar(u_ode)
 
     return JacobianVerticalTwoSidedCache{nlayers_, nnodes_, RealT, typeof(backend),
                                          typeof(schur_rhs), typeof(gravity),
                                          typeof(schur_element),
                                          typeof(vertical_direction_and_norm),
                                          typeof(horizontal_index_of_element),
-                                         typeof(derivative_hat)}(ncolumns,
-                                                                 convert(RealT,
-                                                                         jacobian.speed_of_sound),
-                                                                 inv_boundary_weight,
-                                                                 backend,
-                                                                 vertical_direction_and_norm,
-                                                                 metric_factor,
-                                                                 gravity,
-                                                                 horizontal_index_of_element,
-                                                                 vertical_index_of_element,
-                                                                 derivative_hat,
-                                                                 u_vertical,
-                                                                 theta, dp_drho_theta,
-                                                                 schur_element,
-                                                                 schur_band, schur_rhs)
+                                         typeof(derivative_hat),
+                                         typeof(u_jacobian)}(ncolumns,
+                                                             convert(RealT,
+                                                                     jacobian.speed_of_sound),
+                                                             inv_boundary_weight,
+                                                             backend,
+                                                             vertical_direction_and_norm,
+                                                             metric_factor,
+                                                             gravity,
+                                                             horizontal_index_of_element,
+                                                             vertical_index_of_element,
+                                                             derivative_hat,
+                                                             u_vertical,
+                                                             theta, dp_drho_theta,
+                                                             schur_element,
+                                                             schur_band, schur_rhs,
+                                                             u_jacobian)
 end
 
 # Assemble and factorize `I / gamma_dt - J` from the state `u_ode`, see `jacobian.jl`
@@ -344,6 +368,7 @@ function update_jacobian!(jacobian::JacobianVerticalTwoSidedCache, u_ode, semi,
                           gamma_dt)
     (; backend, u_vertical) = jacobian
     u = wrap_array(u_ode, semi)
+    copyto!(jacobian.u_jacobian, u_ode)
 
     @trixi_timeit_ext backend timer() "copy state" state2columns!(backend,
                                                                   u_vertical,
