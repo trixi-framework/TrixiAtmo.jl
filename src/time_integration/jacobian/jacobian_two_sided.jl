@@ -290,10 +290,7 @@ end
 
 function create_cache_jacobian(jacobian::JacobianVerticalTwoSided, semi, u_ode)
     (; mesh, equations, solver, cache) = semi
-    if !(equations isa Union{CompressibleEulerPotentialTemperatureEquations3D,
-               CompressibleEulerMoistPotentialTemperatureEquations3D,
-               CompressibleEulerEnergyEquations3D,
-               CompressibleEulerVectorInvariantEquations3D})
+    if !(equations isa EquationsJacobianVertical)
         throw(ArgumentError("`JacobianVerticalTwoSided` requires the " *
                             "`CompressibleEulerPotentialTemperatureEquations3D`, the " *
                             "`CompressibleEulerMoistPotentialTemperatureEquations3D`, " *

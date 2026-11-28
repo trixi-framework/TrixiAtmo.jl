@@ -29,6 +29,22 @@ end
     return nothing
 end
 
+# Equations supported by the vertical Jacobian
+const EquationsJacobianVertical = Union{CompressibleEulerPotentialTemperatureEquations3D,
+                                        CompressibleEulerMoistPotentialTemperatureEquations3D,
+                                        CompressibleEulerEnergyEquations3D,
+                                        CompressibleEulerVectorInvariantEquations3D}
+
+# Potential temperature and derivative of the pressure `p = K rho_theta^gamma` with respect
+# to `rho_theta` of the unknowns `u_vertical_node` of the vertical Jacobian
+@inline function hevi_pressure_derivative(u_vertical_node,
+                                          equations::EquationsJacobianVertical)
+    rho, _, rho_theta = u_vertical_node
+    theta = rho_theta / rho
+    dp_drho_theta = (equations.gamma * equations.K) * rho_theta^(equations.gamma - 1)
+    return theta, dp_drho_theta
+end
+
 ###############################################################################
 # Equations with the potential temperature (density) as prognostic variable and the
 # momentum, i.e., with the first variables `(rho, rho_v1, rho_v2, rho_v3, rho_theta)`, or
@@ -64,17 +80,6 @@ end
             (rho_w - gamma_dt * dot(vertical_direction, rho_v)) * vertical_direction
     return SVector(rho, rho_v[1], rho_v[2], rho_v[3], rho_theta,
                    ntuple(v -> gamma_dt * b[5 + v], Val(nvariables(equations) - 5))...)
-end
-
-# Potential temperature and derivative of the pressure `p = K rho_theta^gamma` with respect
-# to `rho_theta` of the unknowns `u_vertical_node` of the vertical Jacobian
-@inline function hevi_pressure_derivative(u_vertical_node,
-                                          equations::Union{PotentialTemperatureEquations3D,
-                                                           CompressibleEulerVectorInvariantEquations3D})
-    rho, _, rho_theta = u_vertical_node
-    theta = rho_theta / rho
-    dp_drho_theta = (equations.gamma * equations.K) * rho_theta^(equations.gamma - 1)
-    return theta, dp_drho_theta
 end
 
 ###############################################################################
@@ -119,18 +124,13 @@ end
 # of the energy `E = p / (gamma - 1) + |rho_v|^2 / (2 rho)` and the potential temperature
 # density `rho_theta = (p / K)^(1 / gamma)` with `K = p_0 (R / p_0)^gamma`
 
-@inline function hevi_K(equations::CompressibleEulerEnergyEquations3D)
-    (; p_0, R, gamma) = equations
-    return p_0 * (R / p_0)^gamma
-end
-
 # Velocity, pressure, and potential temperature density of the state `u`
 @inline function hevi_velocity_pressure_rho_theta(u,
                                                   equations::CompressibleEulerEnergyEquations3D)
     rho = u[1]
     v = SVector(u[2], u[3], u[4]) / rho
     p = (equations.gamma - 1) * (u[5] - 0.5f0 * rho * dot(v, v))
-    rho_theta = (p / hevi_K(equations))^inv(equations.gamma)
+    rho_theta = (p / equations.K)^inv(equations.gamma)
     return v, p, rho_theta
 end
 
@@ -166,15 +166,6 @@ end
     x_E = gamma * p / ((gamma - 1) * rho_theta) * x_rho_theta -
           0.5f0 * dot(v, v) * x_rho + dot(v, x_rho_v)
     return SVector(x_rho, x_rho_v[1], x_rho_v[2], x_rho_v[3], x_E)
-end
-
-@inline function hevi_pressure_derivative(u_vertical_node,
-                                          equations::CompressibleEulerEnergyEquations3D)
-    rho, _, rho_theta = u_vertical_node
-    (; gamma) = equations
-    theta = rho_theta / rho
-    dp_drho_theta = (gamma * hevi_K(equations)) * rho_theta^(gamma - 1)
-    return theta, dp_drho_theta
 end
 
 ###############################################################################

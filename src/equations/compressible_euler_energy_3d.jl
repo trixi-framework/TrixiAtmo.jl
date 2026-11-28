@@ -58,6 +58,7 @@ struct CompressibleEulerEnergyEquations3D{RealT <: Real} <:
     R::RealT # gas constant in J/(kg K)
     gamma::RealT # ratio of specific heats
     inv_gamma_minus_one::RealT # = inv(gamma - 1); can be used to write slow divisions as fast multiplications
+    K::RealT # = p_0 * (R / p_0)^gamma; scaling factor between pressure and weighted potential temperature
     function CompressibleEulerEnergyEquations3D(; c_p, c_v,
                                                 gravity)
         c_p, c_v, g = promote(c_p, c_v, gravity)
@@ -65,9 +66,10 @@ struct CompressibleEulerEnergyEquations3D{RealT <: Real} <:
         R = c_p - c_v
         gamma = c_p / c_v
         inv_gamma_minus_one = inv(gamma - 1)
+        K = p_0 * (R / p_0)^gamma
         return new{typeof(c_p)}(p_0, c_p, c_v, g, R,
                                 gamma,
-                                inv_gamma_minus_one)
+                                inv_gamma_minus_one, K)
     end
 end
 
