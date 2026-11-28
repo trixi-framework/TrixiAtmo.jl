@@ -160,11 +160,11 @@ end
                                                                     jacobian_cache,
                                                                     u_vertical_too_small,
                                                                     20.0)
-    @test_throws DimensionMismatch TrixiAtmo.copy_state_to_columns!(backend,
-                                                                    u_vertical_too_small,
-                                                                    Trixi.wrap_array(ode.u0,
-                                                                                     semi),
-                                                                    jacobian_cache, semi)
+    @test_throws DimensionMismatch TrixiAtmo.state2columns!(backend,
+                                                            u_vertical_too_small,
+                                                            Trixi.wrap_array(ode.u0,
+                                                                             semi),
+                                                            jacobian_cache, semi)
 end
 
 @testitem "Euler potential temperature 3D: elixir_potential_temperature_baroclinic_instability Souza" setup=[

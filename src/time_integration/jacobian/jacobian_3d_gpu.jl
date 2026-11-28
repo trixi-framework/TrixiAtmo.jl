@@ -5,59 +5,80 @@
 @muladd begin
 #! format: noindent
 
-# Copies of the data of one node between Trixi.jl's layout and the columns for the
-# `CompressibleEulerPotentialTemperatureEquations3D`, called by the copy kernels
-# in `jacobian_gpu.jl`
+# Variables of the vertical Jacobian at one node: the unknowns `(rho, rho_w, rho_theta)` of
+# the linear systems of the columns, laid out `[column, v, node, layer]`, where `rho_w` is
+# the component of the momentum in the unit contravariant direction `vertical_direction` of
+# the vertical reference coordinate (see `compute_vertical_direction_and_norm`). Equations
+# support the vertical Jacobian by implementing `cons2hevi`, `hevi2cons`, and
+# `hevi_pressure_derivative`.
 
-# Copy the vertical variables of the node `(i, j, k, element)` of `u`, multiplied by
-# `scaling`, where the vertical momentum is the component of the momentum in the
-# `vertical_direction` `nu` (see `compute_vertical_direction_and_norm`). The `scaling` is
-# one for the state and the norm `n` for the right-hand side of the linear system, i.e.,
-# the diagonal similarity transformation `N` of the vertical operator.
-Base.@propagate_inbounds function copy_node_to_columns!(u_vertical, u, scaling,
-                                                        vertical_direction_and_norm,
-                                                        horizontal_index_of_element,
-                                                        vertical_index_of_element,
-                                                        nnodes_,
-                                                        i, j, k, element)
-    column = column_index(horizontal_index_of_element, nnodes_, i, j, element)
-    layer = vertical_index_of_element[element]
-    vertical_direction = SVector(vertical_direction_and_norm[1, i, j, k, element],
-                                 vertical_direction_and_norm[2, i, j, k, element],
-                                 vertical_direction_and_norm[3, i, j, k, element])
-    rho_v = SVector(u[2, i, j, k, element], u[3, i, j, k, element],
-                    u[4, i, j, k, element])
-    u_vertical[column, 1, k, layer] = scaling * u[1, i, j, k, element]
-    u_vertical[column, 2, k, layer] = scaling * dot(vertical_direction, rho_v)
-    u_vertical[column, 3, k, layer] = scaling * u[5, i, j, k, element]
+@inline function get_column_node_vars(u_vertical, column, node, layer)
+    return SVector(u_vertical[column, 1, node, layer],
+                   u_vertical[column, 2, node, layer],
+                   u_vertical[column, 3, node, layer])
+end
+
+@inline function set_column_node_vars!(u_vertical, u_node, column, node, layer)
+    u_vertical[column, 1, node, layer] = u_node[1]
+    u_vertical[column, 2, node, layer] = u_node[2]
+    u_vertical[column, 3, node, layer] = u_node[3]
     return nothing
 end
 
-# Copy the solution of the linear system, divided by the norm `n`, to `b`. The
-# horizontal components of the momentum are multiplied by `gamma_dt`, i.e., solved with
-# `J = 0`, and the component in the `vertical_direction` is replaced by the solution.
-Base.@propagate_inbounds function copy_node_from_columns!(b, u_vertical,
-                                                          vertical_direction_and_norm,
-                                                          horizontal_index_of_element,
-                                                          vertical_index_of_element,
-                                                          nnodes_, gamma_dt,
-                                                          i, j, k, element)
-    column = column_index(horizontal_index_of_element, nnodes_, i, j, element)
-    layer = vertical_index_of_element[element]
-    vertical_direction = SVector(vertical_direction_and_norm[1, i, j, k, element],
-                                 vertical_direction_and_norm[2, i, j, k, element],
-                                 vertical_direction_and_norm[3, i, j, k, element])
-    inv_norm_Ja3 = inv(vertical_direction_and_norm[4, i, j, k, element])
-    rho_v = SVector(b[2, i, j, k, element], b[3, i, j, k, element],
-                    b[4, i, j, k, element])
-    rho_w = inv_norm_Ja3 * u_vertical[column, 2, k, layer]
+# Unknowns of the vertical Jacobian of the conservative variables `u`. The map is linear,
+# so that it also maps the right-hand side of the linear system.
+@inline function cons2hevi(u, vertical_direction,
+                           equations::CompressibleEulerPotentialTemperatureEquations3D)
+    rho_v = SVector(u[2], u[3], u[4])
+    return SVector(u[1], dot(vertical_direction, rho_v), u[5])
+end
+
+# Conservative variables of the solution of the linear system from the solution
+# `x_vertical` of the vertical Jacobian. The horizontal components of the momentum are not
+# unknowns of the vertical Jacobian and are solved with `J = 0`, i.e., their right-hand side
+# `b` is multiplied by `gamma_dt`.
+@inline function hevi2cons(x_vertical, b, vertical_direction, gamma_dt,
+                           equations::CompressibleEulerPotentialTemperatureEquations3D)
+    rho, rho_w, rho_theta = x_vertical
+    rho_v = SVector(b[2], b[3], b[4])
     rho_v = gamma_dt * rho_v +
             (rho_w - gamma_dt * dot(vertical_direction, rho_v)) * vertical_direction
-    b[1, i, j, k, element] = inv_norm_Ja3 * u_vertical[column, 1, k, layer]
-    b[2, i, j, k, element] = rho_v[1]
-    b[3, i, j, k, element] = rho_v[2]
-    b[4, i, j, k, element] = rho_v[3]
-    b[5, i, j, k, element] = inv_norm_Ja3 * u_vertical[column, 3, k, layer]
-    return nothing
+    return SVector(rho, rho_v[1], rho_v[2], rho_v[3], rho_theta)
+end
+
+# Potential temperature and derivative of the pressure `p = K rho_theta^gamma` with respect
+# to `rho_theta` of the unknowns `u_vertical_node` of the vertical Jacobian
+@inline function hevi_pressure_derivative(u_vertical_node,
+                                          equations::CompressibleEulerPotentialTemperatureEquations3D)
+    rho, _, rho_theta = u_vertical_node
+    theta = rho_theta / rho
+    dp_drho_theta = (equations.gamma * equations.K) * rho_theta^(equations.gamma - 1)
+    return theta, dp_drho_theta
+end
+
+# Column and layer of the node `(i, j, k)` of `element` in the arrays of the columns
+Base.@propagate_inbounds function get_column_and_layer(horizontal_index_of_element,
+                                                       vertical_index_of_element,
+                                                       nnodes_,
+                                                       i, j, element)
+    column = column_index(horizontal_index_of_element, nnodes_, i, j, element)
+    layer = vertical_index_of_element[element]
+    return column, layer
+end
+
+# Unit contravariant direction `nu` of the vertical reference coordinate at the node
+# `(i, j, k, element)`
+Base.@propagate_inbounds function get_vertical_direction(vertical_direction_and_norm,
+                                                         i, j, k, element)
+    return SVector(vertical_direction_and_norm[1, i, j, k, element],
+                   vertical_direction_and_norm[2, i, j, k, element],
+                   vertical_direction_and_norm[3, i, j, k, element])
+end
+
+# Norm `n = |Ja^3|` at the node `(i, j, k, element)`, i.e., the entry of the diagonal
+# similarity transformation `N` of the vertical operator
+Base.@propagate_inbounds function get_vertical_norm(vertical_direction_and_norm,
+                                                    i, j, k, element)
+    return vertical_direction_and_norm[4, i, j, k, element]
 end
 end # @muladd
