@@ -34,7 +34,7 @@ function check_axes_element_layout(jacobian, solver, cache)
 end
 
 # Copy the state `u`, from which the Jacobian is assembled, to the columns
-function copy_state_to_columns!(backend::Backend, u_vertical, u, jacobian, semi)
+function state2columns!(backend::Backend, u_vertical, u, jacobian, semi)
     mesh, equations, solver, cache = Trixi.mesh_equations_solver_cache(semi)
     # Explicit bounds check, which allows us to assume inbounds access in the kernel
     @boundscheck begin
@@ -45,19 +45,19 @@ function copy_state_to_columns!(backend::Backend, u_vertical, u, jacobian, semi)
     (; vertical_direction_and_norm, horizontal_index_of_element,
     vertical_index_of_element) = jacobian
     nnodes_ = nnodes(jacobian)
-    kernel! = copy_state_to_columns_KAkernel!(backend)
+    kernel! = state2columns_KAkernel!(backend)
     kernel!(u_vertical, u, vertical_direction_and_norm, horizontal_index_of_element,
             vertical_index_of_element, nnodes_, equations, solver;
             ndrange = Base.tail(size(u)))
     return nothing
 end
 
-@kernel inbounds=true function copy_state_to_columns_KAkernel!(u_vertical, @Const(u),
-                                                               @Const(vertical_direction_and_norm),
-                                                               @Const(horizontal_index_of_element),
-                                                               @Const(vertical_index_of_element),
-                                                               nnodes_, equations,
-                                                               solver)
+@kernel inbounds=true function state2columns_KAkernel!(u_vertical, @Const(u),
+                                                       @Const(vertical_direction_and_norm),
+                                                       @Const(horizontal_index_of_element),
+                                                       @Const(vertical_index_of_element),
+                                                       nnodes_, equations,
+                                                       solver)
     i, j, k, element = @index(Global, NTuple)
     column, layer = get_column_and_layer(horizontal_index_of_element,
                                          vertical_index_of_element, nnodes_, i, j,
@@ -71,7 +71,7 @@ end
 
 # Copy the right-hand side `b` of the linear system, multiplied by the norm
 # `n`, to the columns
-function copy_rhs_to_columns!(backend::Backend, u_vertical, b, jacobian, semi)
+function b2columns!(backend::Backend, u_vertical, b, jacobian, semi)
     mesh, equations, solver, cache = Trixi.mesh_equations_solver_cache(semi)
     # Explicit bounds check, which allows us to assume inbounds access in the kernel
     @boundscheck begin
@@ -82,18 +82,18 @@ function copy_rhs_to_columns!(backend::Backend, u_vertical, b, jacobian, semi)
     (; vertical_direction_and_norm, horizontal_index_of_element,
     vertical_index_of_element) = jacobian
     nnodes_ = nnodes(jacobian)
-    kernel! = copy_rhs_to_columns_KAkernel!(backend)
+    kernel! = b2columns_KAkernel!(backend)
     kernel!(u_vertical, b, vertical_direction_and_norm, horizontal_index_of_element,
             vertical_index_of_element, nnodes_, equations, solver;
             ndrange = Base.tail(size(b)))
     return nothing
 end
 
-@kernel inbounds=true function copy_rhs_to_columns_KAkernel!(u_vertical, @Const(b),
-                                                             @Const(vertical_direction_and_norm),
-                                                             @Const(horizontal_index_of_element),
-                                                             @Const(vertical_index_of_element),
-                                                             nnodes_, equations, solver)
+@kernel inbounds=true function b2columns_KAkernel!(u_vertical, @Const(b),
+                                                   @Const(vertical_direction_and_norm),
+                                                   @Const(horizontal_index_of_element),
+                                                   @Const(vertical_index_of_element),
+                                                   nnodes_, equations, solver)
     i, j, k, element = @index(Global, NTuple)
     column, layer = get_column_and_layer(horizontal_index_of_element,
                                          vertical_index_of_element, nnodes_, i, j,
@@ -109,8 +109,8 @@ end
 
 # Copy the solution of the linear system, divided by the norm `n`, from the
 # columns to `b`
-function copy_solution_from_columns!(backend::Backend, b, u_vertical, jacobian, semi,
-                                     gamma_dt)
+function columns2solution!(backend::Backend, b, u_vertical, jacobian, semi,
+                           gamma_dt)
     mesh, equations, solver, cache = Trixi.mesh_equations_solver_cache(semi)
     # Explicit bounds check, which allows us to assume inbounds access in the kernel
     @boundscheck begin
@@ -121,20 +121,20 @@ function copy_solution_from_columns!(backend::Backend, b, u_vertical, jacobian, 
     (; vertical_direction_and_norm, horizontal_index_of_element,
     vertical_index_of_element) = jacobian
     nnodes_ = nnodes(jacobian)
-    kernel! = copy_solution_from_columns_KAkernel!(backend)
+    kernel! = columns2solution_KAkernel!(backend)
     kernel!(b, u_vertical, vertical_direction_and_norm, horizontal_index_of_element,
             vertical_index_of_element, nnodes_, gamma_dt, equations, solver;
             ndrange = Base.tail(size(b)))
     return nothing
 end
 
-@kernel inbounds=true function copy_solution_from_columns_KAkernel!(b,
-                                                                    @Const(u_vertical),
-                                                                    @Const(vertical_direction_and_norm),
-                                                                    @Const(horizontal_index_of_element),
-                                                                    @Const(vertical_index_of_element),
-                                                                    nnodes_, gamma_dt,
-                                                                    equations, solver)
+@kernel inbounds=true function columns2solution_KAkernel!(b,
+                                                          @Const(u_vertical),
+                                                          @Const(vertical_direction_and_norm),
+                                                          @Const(horizontal_index_of_element),
+                                                          @Const(vertical_index_of_element),
+                                                          nnodes_, gamma_dt,
+                                                          equations, solver)
     i, j, k, element = @index(Global, NTuple)
     column, layer = get_column_and_layer(horizontal_index_of_element,
                                          vertical_index_of_element, nnodes_, i, j,

@@ -11,10 +11,10 @@
 # element edges form a band matrix with 7 diagonals (`schur_band`), factorized by a
 # banded LU.
 # The vertical operator is the one of Eq. (34) of the reference below, transformed by the
-# diagonal matrix of the norms `n = |Ja^3|` (see `copy_rhs_to_columns!` and
-# `copy_solution_from_columns!` in `jacobian_gpu.jl`), with the unit contravariant
-# direction `nu = Ja^3 / n` (`compute_vertical_direction_and_norm`) and the metric factor
-# `n / J` (`compute_metric_factor`).
+# diagonal matrix of the norms `n = |Ja^3|` (see `b2columns!` and `columns2solution!` in
+# `jacobian_gpu.jl`), with the unit contravariant direction `nu = Ja^3 / n`
+# (`compute_vertical_direction_and_norm`) and the metric factor `n / J`
+# (`compute_metric_factor`).
 # It conserves mass and mass-weighted potential temperature.
 
 """
@@ -345,10 +345,10 @@ function update_jacobian!(jacobian::JacobianVerticalTwoSidedCache, u_ode, semi,
     (; backend, u_vertical) = jacobian
     u = wrap_array(u_ode, semi)
 
-    @trixi_timeit_ext backend timer() "copy state" copy_state_to_columns!(backend,
-                                                                          u_vertical,
-                                                                          u, jacobian,
-                                                                          semi)
+    @trixi_timeit_ext backend timer() "copy state" state2columns!(backend,
+                                                                  u_vertical,
+                                                                  u, jacobian,
+                                                                  semi)
     @trixi_timeit_ext backend timer() "fill Jacobian" fill_jacobian!(backend, jacobian,
                                                                      semi.equations,
                                                                      gamma_dt)
@@ -365,11 +365,11 @@ function solve_jacobian!(b_ode, jacobian::JacobianVerticalTwoSidedCache, semi, g
     (; backend, u_vertical) = jacobian
     b = wrap_array(b_ode, semi)
 
-    @trixi_timeit_ext backend timer() "copy right-hand side" copy_rhs_to_columns!(backend,
-                                                                                  u_vertical,
-                                                                                  b,
-                                                                                  jacobian,
-                                                                                  semi)
+    @trixi_timeit_ext backend timer() "copy right-hand side" b2columns!(backend,
+                                                                        u_vertical,
+                                                                        b,
+                                                                        jacobian,
+                                                                        semi)
 
     # Right-hand side of the condensed system, `schur_rhs = b_D - C * A^{-1} * b_A`
     @trixi_timeit_ext backend timer() "forward substitution" ldiv_interior_forward!(backend,
@@ -385,12 +385,12 @@ function solve_jacobian!(b_ode, jacobian::JacobianVerticalTwoSidedCache, semi, g
                                                                                       u_vertical,
                                                                                       gamma_dt)
 
-    @trixi_timeit_ext backend timer() "copy solution" copy_solution_from_columns!(backend,
-                                                                                  b,
-                                                                                  u_vertical,
-                                                                                  jacobian,
-                                                                                  semi,
-                                                                                  gamma_dt)
+    @trixi_timeit_ext backend timer() "copy solution" columns2solution!(backend,
+                                                                        b,
+                                                                        u_vertical,
+                                                                        jacobian,
+                                                                        semi,
+                                                                        gamma_dt)
 
     return nothing
 end
